@@ -5,13 +5,13 @@
 namespace upd {
 namespace system {
 
-enum class Endianess { little, big };
-extern const Endianess endianess;
+enum class endianess { LITTLE, BIG };
+extern const endianess platform_endianess;
 
 //
-inline Endianess get_endianess() {
+inline endianess deduce_endianess() {
   unsigned short word = 0xff00;
-  return (*reinterpret_cast<byte_t*>(&word) == 0xff ? Endianess::big : Endianess::little );
+  return (*reinterpret_cast<byte_t*>(&word) == 0xff ? endianess::BIG : endianess::LITTLE );
 }
 
 }

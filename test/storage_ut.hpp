@@ -6,7 +6,7 @@
 inline void io_operation_write_and_interpret_little_endian() {
   using namespace upd;
 
-  UnalignedData<4 * sizeof(uint16_t)> unaligned_data{system::Endianess::little};
+  unaligned_data<4 * sizeof(uint16_t)> unaligned_data{system::endianess::LITTLE};
   unaligned_data.write(uint16_t{0xabcd}, sizeof(uint16_t));
   TEST_ASSERT_EQUAL_UINT16(0xabcd, unaligned_data.interpret_as<uint16_t>(sizeof(uint16_t)));
 }
@@ -14,7 +14,7 @@ inline void io_operation_write_and_interpret_little_endian() {
 inline void io_operation_write_and_interpret_big_endian() {
   using namespace upd;
 
-  UnalignedData<4 * sizeof(uint16_t)> unaligned_data{system::Endianess::big};
+  unaligned_data<4 * sizeof(uint16_t)> unaligned_data{system::endianess::BIG};
   unaligned_data.write(uint16_t{0xabcd}, sizeof(uint16_t));
   TEST_ASSERT_EQUAL_UINT16(0xabcd, unaligned_data.interpret_as<uint16_t>(sizeof(uint16_t)));
 }
@@ -22,7 +22,7 @@ inline void io_operation_write_and_interpret_big_endian() {
 inline void io_operation_set_and_get_little_endian() {
   using namespace upd;
 
-  UnalignedArguments<int, char, long, bool> unaligned_arguments{system::Endianess::little};
+  unaligned_tuple<int, char, long, bool> unaligned_arguments{system::endianess::LITTLE};
   unaligned_arguments.set<2>(0xabcd);
   TEST_ASSERT_EQUAL_UINT16(0xabcd, unaligned_arguments.get<2>());
 }
@@ -30,7 +30,7 @@ inline void io_operation_set_and_get_little_endian() {
 inline void io_operation_set_and_get_big_endian() {
   using namespace upd;
 
-  UnalignedArguments<int, char, long, bool> unaligned_arguments{system::Endianess::big};
+  unaligned_tuple<int, char, long, bool> unaligned_arguments{system::endianess::BIG};
   unaligned_arguments.set<2>(0xabcd);
   TEST_ASSERT_EQUAL_UINT16(0xabcd, unaligned_arguments.get<2>());
 }
@@ -39,7 +39,7 @@ inline void io_operation_iterate_unaligned_data() {
   using namespace upd;
 
   uint8_t raw_data[] {0xaa, 0xbb, 0xcc};
-  UnalignedData<sizeof(raw_data)> unaligned_data{raw_data, system::Endianess::little};
+  unaligned_data<sizeof(raw_data)> unaligned_data{raw_data, system::endianess::LITTLE};
   TEST_ASSERT_TRUE(unaligned_data.begin() != unaligned_data.end());
   size_t i = 0;
   for (auto byte : unaligned_data) TEST_ASSERT_EQUAL_UINT16(raw_data[i++], byte);
@@ -49,8 +49,8 @@ inline void io_operation_iterate_unaligned_arguments() {
   using namespace upd;
 
   uint8_t raw_data[] {0xaa, 0xcc, 0xbb, 0x00, 0xff, 0xee, 0xdd};
-  UnalignedArguments<uint8_t, uint16_t, uint32_t> unaligned_arguments{
-    system::Endianess::little,
+  unaligned_tuple<uint8_t, uint16_t, uint32_t> unaligned_arguments{
+    system::endianess::LITTLE,
     0xaa,
     0xbbcc,
     0xddeeff00};
@@ -64,7 +64,7 @@ inline void io_operation_access_raw_data() {
 
   uint8_t raw_data[] {0xaa, 0xbb, 0xcc, 0xdd};
   auto unaligned_arguments = make_unaligned_arguments(
-    system::Endianess::big,
+    system::endianess::BIG,
     uint8_t{0xaa},
     uint8_t{0xbb},
     uint16_t{0xccdd});

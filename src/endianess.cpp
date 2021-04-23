@@ -2,4 +2,4 @@
 
 using namespace upd::system;
 
-const Endianess endianess = get_endianess();
+const endianess platform_endianess = deduce_endianess();

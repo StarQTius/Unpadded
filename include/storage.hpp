@@ -96,14 +96,14 @@ inline void rmemcpy(byte_t* dest, const byte_t* src, size_t len) {
   \details
     The class holds an array of bytes used to store the serialized representation of values without padding due
     to memory alignment.
-    The only reasonably serializable value are integer values; Thus the implementation of UnalignedData only support
+    The only reasonably serializable value are integer values; Thus the implementation of unaligned_data only support
     integer values. However, it doesn't handle signed representation yet.
     The user shall provide the target endianess so that the integer are serialized without depending on the platform
     endianess.
   \tparam N Size of the content in bytes
 */
 template<size_t N>
-class UnalignedData {
+class unaligned_data {
 public:
   /*!
     \brief Storage size in byte
@@ -116,7 +116,7 @@ public:
   */
 
   /*!
-    \brief Iterator for accessing UnalignedData internal storage
+    \brief Iterator for accessing unaligned_data internal storage
     \details It satisfies the forward iterator requirement.
   */
   class iterator {
@@ -172,7 +172,7 @@ public:
     \brief Default initialize the object content
     \param endianess Target endianess for serialization
   */
-  explicit UnalignedData(system::Endianess endianess) : m_endianess{endianess} {};
+  explicit unaligned_data(system::endianess endianess) : m_endianess{endianess} {};
 
   /*!
     \brief Initialize the object content of the object by copying from a buffer
@@ -180,7 +180,7 @@ public:
     \param raw_data Pointer to the buffer
     \param endianess Target endianess for serialization
   */
-  explicit UnalignedData(const byte_t* raw_data, system::Endianess endianess) : m_endianess{endianess} {
+  explicit unaligned_data(const byte_t* raw_data, system::endianess endianess) : m_endianess{endianess} {
     memcpy(m_raw_data, raw_data, N);
   }
 
@@ -221,7 +221,7 @@ public:
   concept::require_integer<T, T>
   interpret_as(size_t i) const {
     union { T base; byte_t raw[sizeof(T)]; } byte_rep;
-    if (system::endianess == m_endianess)
+    if (system::platform_endianess == m_endianess)
       memcpy(byte_rep.raw, m_raw_data + i, sizeof(T));
     else
       detail::rmemcpy(byte_rep.raw, m_raw_data + i, sizeof(T));
@@ -263,7 +263,7 @@ public:
   template<typename T>
   concept::require_integer<T>
   write(const T& x, size_t i) {
-    if (system::endianess == m_endianess)
+    if (system::platform_endianess == m_endianess)
       memcpy(m_raw_data + i, reinterpret_cast<const void*>(&x), sizeof(T));
     else
       detail::rmemcpy(m_raw_data + i, reinterpret_cast<const byte_t*>(&x), sizeof(T));
@@ -294,20 +294,20 @@ public:
 
 private:
   byte_t m_raw_data[N];
-  system::Endianess m_endianess;
+  system::endianess m_endianess;
 
 };
 
 /*!
-  \brief Construct an UnalignedData object provided a lvalue to a bounded array
+  \brief Construct an unaligned_data object provided a lvalue to a bounded array
   \tparam N Size of the bounded array
   \param raw_data Array used to initiliaze the return value
   \param endianess Target endianess for serialization
-  \return A UnalignedData object which content is equal to raw_data
+  \return A unaligned_data object which content is equal to raw_data
 */
 template<size_t N>
-UnalignedData<N> make_unaligned_data(const byte_t (&raw_data)[N], system::Endianess endianess) {
-  return UnalignedData<N>{raw_data, endianess};
+unaligned_data<N> make_unaligned_data(const byte_t (&raw_data)[N], system::endianess endianess) {
+  return unaligned_data<N>{raw_data, endianess};
 }
 
 /*!
@@ -318,7 +318,7 @@ UnalignedData<N> make_unaligned_data(const byte_t (&raw_data)[N], system::Endian
   \tparam Ts... Types of the serialized values
 */
 template<typename... Ts>
-class UnalignedArguments : public UnalignedData<ctm::sum(sizeof(Ts)...)> {
+class unaligned_tuple : public unaligned_data<ctm::sum(sizeof(Ts)...)> {
   constexpr static auto list = ctm::typelist<Ts...>{};
   constexpr static auto size = ctm::sum(sizeof(Ts)...);
 
@@ -331,9 +331,9 @@ public:
   /*!
     \brief Forward arguments to base's constructor
     \param endianess Target endianess for serialization
-    \see UnalignedData::UnalignedData(system::Endianess)
+    \see unaligned_data::unaligned_data(system::endianess)
   */
-  explicit UnalignedArguments(system::Endianess endianess) : UnalignedData<size>{endianess} {}
+  explicit unaligned_tuple(system::endianess endianess) : unaligned_data<size>{endianess} {}
 
   /*!
     \brief Serialize the provided values
@@ -342,7 +342,7 @@ public:
     \param args... Values to be serialized
   */
   template<typename... Args, typename = ctm::enable_t<sizeof...(Args) == sizeof...(Ts)>>
-  explicit UnalignedArguments(system::Endianess endianess, const Args&... args) : UnalignedData<size>{endianess} {
+  explicit unaligned_tuple(system::endianess endianess, const Args&... args) : unaligned_data<size>{endianess} {
     lay(ctm::srange<0, sizeof...(Ts)>{}, args...);
   }
 
@@ -352,13 +352,13 @@ public:
     \return A copy of the serialized value
   */
   template<size_t I>
-  decltype(ctm::declval<UnalignedData<size>>().template interpret_as<arg_t<I>>(0))
+  decltype(ctm::declval<unaligned_data<size>>().template interpret_as<arg_t<I>>(0))
   get() const {
     constexpr auto offset = ctm::slist<sizeof(Ts)...>{}
       .take(ctm::size_h<I>{})
       .accumulate(0, ctm::sum<size_t, size_t>);
 
-    return UnalignedData<size>::template interpret_as<arg_t<I>>(offset);
+    return unaligned_data<size>::template interpret_as<arg_t<I>>(offset);
   }
 
   /*!
@@ -372,7 +372,7 @@ public:
       .take(ctm::size_h<I>{})
       .accumulate(0, ctm::sum<size_t, size_t>);
 
-    UnalignedData<size>::write(value, offset);
+    unaligned_data<size>::write(value, offset);
   }
 
 private:
@@ -386,15 +386,15 @@ private:
 };
 
 /*!
-  \brief Construct an UnalignedArguments object provided constant lvalue to values
+  \brief Construct an unaligned_tuple object provided constant lvalue to values
   \tparam Args... Deduced types of the provided values.
   \param endianess Target endianess for serialization
   \param args... Values to be serialized into the return value
-  \return UnalignedArguments object holding a serialized copy of the provided values.
+  \return unaligned_tuple object holding a serialized copy of the provided values.
 */
 template<typename... Args>
-UnalignedArguments<Args...> make_unaligned_arguments(system::Endianess endianess, const Args&... args) {
-  return UnalignedArguments<Args...>{endianess, args...};
+unaligned_tuple<Args...> make_unaligned_arguments(system::endianess endianess, const Args&... args) {
+  return unaligned_tuple<Args...>{endianess, args...};
 }
 
 } // namespace upd

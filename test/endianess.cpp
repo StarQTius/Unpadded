@@ -1,4 +1,4 @@
 #include "endianess.hpp"
 
-const upd::system::Endianess
-upd::system::endianess = upd::system::get_endianess();
+const upd::system::endianess
+upd::system::platform_endianess = upd::system::deduce_endianess();
