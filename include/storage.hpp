@@ -9,7 +9,7 @@
 
 /*!
   \file
-  \brief Definitions of unaligned storage class for serializing value.
+  \brief Definitions of unaligned storage class for serializing value
 */
 
 namespace upd {

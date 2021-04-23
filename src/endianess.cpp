@@ -1,5 +1,4 @@
 #include "endianess.hpp"
 
-using namespace upd::system;
-
-const endianess platform_endianess = deduce_endianess();
+const udp::system::endianess
+udp::system::platform_endianess = udp::system::deduce_endianess();
