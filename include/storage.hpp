@@ -15,15 +15,34 @@
 namespace upd {
 namespace concept {
 
+/*!
+  \brief Utility class for SFINAE to check if a type is an integer
+*/
 template<typename T, typename U = void>
-using require_integer = ctm::enable_t<ctm::category::integer.has(ctm::type_h<T>{}), U>;
+using require_integer = ctm::enable_t<ctm::category::integer.has<T>(), U>;
 
+/*!
+  \brief Utility class for SFINAE to check if a type is an array type
+*/
 template<typename T, typename U = void>
 using require_array = ctm::enable_t<ctm::is_array<T>::value, U>;
 
 } // namespace concept
 
 namespace detail {
+
+/*!
+  \brief Perform a reversed memcpy
+  \param dest Destination of the copy
+  \param src Source of the copy
+  \param len Number of byte read from src
+*/
+inline void rmemcpy(byte_t* dest, const byte_t* src, size_t len) {
+  for (size_t i = 0; i < len; i++)
+    dest[i] = src[len - i - 1];
+}
+
+} // namespace detail
 
 /*!
   \brief Utility class wrapping an C-style array, analogously to std::array
@@ -76,20 +95,7 @@ struct array_wrapper {
   \tparam T Given array type
 */
 template<typename T>
-using wrap_array = typename detail::array_wrapper<ctm::element_t<T>, ctm::introspect_array<T>::size>;
-
-/*!
-  \brief Perform a reversed memcpy
-  \param dest Destination of the copy
-  \param src Source of the copy
-  \param len Number of byte read from src
-*/
-inline void rmemcpy(byte_t* dest, const byte_t* src, size_t len) {
-  for (size_t i = 0; i < len; i++)
-    dest[i] = src[len - i - 1];
-}
-
-} // namespace detail
+using wrap_array = array_wrapper<ctm::element_t<T>, ctm::introspect_array<T>::size>;
 
 /*!
   \brief Unaligned storage enabling reading and writing at any offset
@@ -217,6 +223,9 @@ public:
     \param i Offset of the object content to be interpreted
     \return A copy of the value represented by the raw data at the given offset
   */
+#ifdef DOXYGEN
+  template<typename T> T interpret_as(size_t i) const;
+#else
   template<typename T>
   concept::require_integer<T, T>
   interpret_as(size_t i) const {
@@ -227,6 +236,7 @@ public:
       detail::rmemcpy(byte_rep.raw, m_raw_data + i, sizeof(T));
     return byte_rep.base;
   }
+#endif
 
   /*!
     \brief Interpret a part of the object content as the given type
@@ -235,12 +245,15 @@ public:
       This overload kicks in when T is the type of an array of integer.
     \tparam T Requested type
     \param i Offset of the object content to be interpreted
-    \return A copy of the array represented by the raw data at the given offset wrapped in a detail::array_wrapper
+    \return An array_wrapper object containing a copy of the requested array
   */
+#ifdef DOXYGEN
+  template<typename T> wrap_array<T> interpret_as(size_t i) const;
+#else
   template<typename T>
-  concept::require_array<T, detail::wrap_array<T>>
+  concept::require_array<T, wrap_array<T>>
   interpret_as(size_t i) const {
-    detail::wrap_array<T> array_wrapper;
+    wrap_array<T> array_wrapper;
 
     using element_t = typename decltype(array_wrapper)::type;
     constexpr auto size = decltype(array_wrapper)::size;
@@ -250,6 +263,7 @@ public:
 
     return array_wrapper;
   }
+#endif
 
   /*!
     \brief Serialize a value into the object's content
@@ -260,6 +274,9 @@ public:
     \param x Value to be serialized
     \param i Offset where the value will be serialized
   */
+#ifdef DOXYGEN
+  template<typename T> void write(const T& x, size_t i);
+#else
   template<typename T>
   concept::require_integer<T>
   write(const T& x, size_t i) {
@@ -268,6 +285,7 @@ public:
     else
       detail::rmemcpy(m_raw_data + i, reinterpret_cast<const byte_t*>(&x), sizeof(T));
   }
+#endif
 
   /*!
     \brief Serialize a value into the object's content
@@ -278,6 +296,9 @@ public:
     \param x Value to be serialized
     \param i Offset where the value will be serialized
   */
+#ifdef DOXYGEN
+  template<typename T> void write(const T& array, size_t i)
+#else
   template<typename T>
   concept::require_array<T>
   write(const T& array, size_t i) {
@@ -285,6 +306,7 @@ public:
     constexpr auto array_size = ctm::introspect_array<T>::size;
     for (size_t j = 0; j < array_size; j++) write(array[j], i + j * sizeof(element_t));
   }
+#endif
 
   /*!
     \brief Give a read-only view to the object's content
@@ -349,8 +371,11 @@ public:
   /*!
     \brief Unserialize one of the value held by the object
     \tparam I Index of the requested value
-    \return A copy of the serialized value
+    \return A copy of the serialized value or an array_wrapper if I designate an array type
   */
+#ifdef DOXYGEN
+  template<size_t I> auto get() const;
+#else
   template<size_t I>
   decltype(ctm::declval<unaligned_data<size>>().template interpret_as<arg_t<I>>(0))
   get() const {
@@ -360,6 +385,7 @@ public:
 
     return unaligned_data<size>::template interpret_as<arg_t<I>>(offset);
   }
+#endif
 
   /*!
     \brief Set one of the value held by the object
