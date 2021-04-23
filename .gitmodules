@@ -1,0 +1,6 @@
+[submodule "lib/ct_magic"]
+	path = lib/ct_magic
+	url = https://github.com/StarQTius/ct_magic
+[submodule "lib/Unity"]
+	path = lib/Unity
+	url = https://github.com/ThrowTheSwitch/Unity
