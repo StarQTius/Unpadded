@@ -45,10 +45,19 @@ inline void rmemcpy(byte_t* dest, const byte_t* src, size_t len) {
 } // namespace detail
 
 /*!
+  \brief Template class not meant to be instantiated
+  \details It allows to introduce the partial specialization array_wrapper<T[N]>
+*/
+template<typename T> struct array_wrapper;
+
+/*!
   \brief Utility class wrapping an C-style array, analogously to std::array
+  \details This is a partial specialization of array_wrapper.
+  \tparam T Type of the element of the contained array
+  \tparam N Size of the contained array
 */
 template<typename T, size_t N>
-struct array_wrapper {
+struct array_wrapper<T[N]> {
   //! \brief Type of the contained elements
   using type = T;
 
@@ -89,13 +98,6 @@ struct array_wrapper {
   //! \details Every operation on the object has the same result on the object's content.
   T content[N];
 };
-
-/*!
-  \brief Equivalent array_wrapper of the given array type
-  \tparam T Given array type
-*/
-template<typename T>
-using wrap_array = array_wrapper<ctm::element_t<T>, ctm::introspect_array<T>::size>;
 
 /*!
   \brief Unaligned storage enabling reading and writing at any offset
@@ -248,20 +250,20 @@ public:
     \return An array_wrapper object containing a copy of the requested array
   */
 #ifdef DOXYGEN
-  template<typename T> wrap_array<T> interpret_as(size_t i) const;
+  template<typename T> array_wrapper<T> interpret_as(size_t i) const;
 #else
   template<typename T>
-  concept::require_array<T, wrap_array<T>>
+  concept::require_array<T, array_wrapper<T>>
   interpret_as(size_t i) const {
-    wrap_array<T> array_wrapper;
+    array_wrapper<T> array;
 
-    using element_t = typename decltype(array_wrapper)::type;
-    constexpr auto size = decltype(array_wrapper)::size;
+    using element_t = typename decltype(array)::type;
+    constexpr auto size = decltype(array)::size;
 
     for (size_t j = 0; j < size; j++)
-      array_wrapper[j] = interpret_as<element_t>(i + j * sizeof(element_t));
+      array[j] = interpret_as<element_t>(i + j * sizeof(element_t));
 
-    return array_wrapper;
+    return array;
   }
 #endif
 
