@@ -16,10 +16,10 @@ namespace upd {
 namespace concept {
 
 /*!
-  \brief Utility class for SFINAE to check if a type is an integer
+  \brief Utility class for SFINAE to check if a type is an unsigned integer
 */
 template<typename T, typename U = void>
-using require_integer = ctm::enable_t<ctm::category::integer.has<T>(), U>;
+using require_unsigned_integer = ctm::enable_t<ctm::category::unsigned_integer.has<T>(), U>;
 
 /*!
   \brief Utility class for SFINAE to check if a type is an array type
@@ -105,9 +105,9 @@ struct array_wrapper<T[N]> {
     The class holds an array of bytes used to store the serialized representation of values without padding due
     to memory alignment.
     The only reasonably serializable value are integer values; Thus the implementation of unaligned_data only support
-    integer values. However, it doesn't handle signed representation yet.
-    The user shall provide the target endianess so that the integer are serialized without depending on the platform
-    endianess.
+    unsigned integer values. It doesn't handle signed representation yet.
+    The user shall provide the target endianess so that the unsigned integer are serialized without depending on the
+    platform endianess.
   \tparam N Size of the content in bytes
 */
 template<size_t N>
@@ -220,7 +220,7 @@ public:
     \brief Interpret a part of the object content as the given type
     \details
       There is no bound check performed.
-      This overload kicks in when T is an integer type.
+      This overload kicks in when T is an unsigned integer type.
     \tparam T Requested type
     \param offset Offset of the object content to be interpreted
     \return A copy of the value represented by the raw data at the given offset
@@ -229,7 +229,7 @@ public:
   template<typename T> T interpret_as(size_t offset) const;
 #else
   template<typename T>
-  concept::require_integer<T, T>
+  concept::require_unsigned_integer<T, T>
   interpret_as(size_t offset) const {
     T retval = 0;
     size_t shift = 0;
@@ -253,7 +253,7 @@ public:
     \brief Interpret a part of the object content as the given type
     \details
       There is no bound check performed.
-      This overload kicks in when T is the type of an array of integer.
+      This overload kicks in when T is an array type.
     \tparam T Requested type
     \param offset Offset of the object content to be interpreted
     \return An array_wrapper object containing a copy of the requested array
@@ -280,7 +280,7 @@ public:
     \brief Serialize a value into the object's content
     \details
       There is no bound check performed.
-      This overload kicks in when T is an integer type.
+      This overload kicks in when T is an unsigned integer type.
     \tparam T Serilized value's type
     \param x Value to be serialized
     \param offset Offset where the value will be serialized
@@ -289,7 +289,7 @@ public:
   template<typename T> void write(T x, size_t offset);
 #else
   template<typename T>
-  concept::require_integer<T>
+  concept::require_unsigned_integer<T>
   write(T x, size_t offset) {
     switch(m_endianess) {
       case endianess::LITTLE:
@@ -308,7 +308,7 @@ public:
     \brief Serialize a value into the object's content
     \details
       There is no bound check performed.
-      This overload kicks in when T is the type of an array of integer.
+      This overload kicks in when T is an array type.
     \tparam T Serilized value's type
     \param x Value to be serialized
     \param offset Offset where the value will be serialized
