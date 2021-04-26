@@ -3,7 +3,7 @@
 #include "storage.hpp"
 #include "unity.h"
 
-inline void io_operation_write_and_interpret_little_endian() {
+inline void io_operation_write_and_interpret_unsigned_little_endian() {
   using namespace upd;
 
   unaligned_data<4 * sizeof(uint16_t)> unaligned_data{endianess::LITTLE};
@@ -11,7 +11,7 @@ inline void io_operation_write_and_interpret_little_endian() {
   TEST_ASSERT_EQUAL_HEX16(0xabcd, unaligned_data.interpret_as<uint16_t>(sizeof(uint16_t)));
 }
 
-inline void io_operation_write_and_interpret_big_endian() {
+inline void io_operation_write_and_interpret_unsigned_big_endian() {
   using namespace upd;
 
   unaligned_data<4 * sizeof(uint16_t)> unaligned_data{endianess::BIG};
@@ -19,18 +19,18 @@ inline void io_operation_write_and_interpret_big_endian() {
   TEST_ASSERT_EQUAL_HEX16(0xabcd, unaligned_data.interpret_as<uint16_t>(sizeof(uint16_t)));
 }
 
-inline void io_operation_set_and_get_little_endian() {
+inline void io_operation_set_and_get_unsigned_little_endian() {
   using namespace upd;
 
-  unaligned_tuple<int, char, long, bool> unaligned_arguments{endianess::LITTLE};
+  unaligned_tuple<unsigned int, unsigned char, unsigned long> unaligned_arguments{endianess::LITTLE};
   unaligned_arguments.set<2>(0xabcd);
   TEST_ASSERT_EQUAL_HEX16(0xabcd, unaligned_arguments.get<2>());
 }
 
-inline void io_operation_set_and_get_big_endian() {
+inline void io_operation_set_and_get_unsigned_big_endian() {
   using namespace upd;
 
-  unaligned_tuple<int, char, long, bool> unaligned_arguments{endianess::BIG};
+  unaligned_tuple<unsigned int, unsigned char, unsigned long> unaligned_arguments{endianess::BIG};
   unaligned_arguments.set<2>(0xabcd);
   TEST_ASSERT_EQUAL_HEX16(0xabcd, unaligned_arguments.get<2>());
 }
