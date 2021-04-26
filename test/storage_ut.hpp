@@ -3,7 +3,7 @@
 #include "storage.hpp"
 #include "unity.h"
 
-inline void io_operation_write_and_interpret_unsigned_little_endian() {
+inline void storage_write_and_interpret_unsigned_little_endian() {
   using namespace upd;
 
   unaligned_data<4 * sizeof(uint16_t)> unaligned_data{endianess::LITTLE};
@@ -11,7 +11,7 @@ inline void io_operation_write_and_interpret_unsigned_little_endian() {
   TEST_ASSERT_EQUAL_HEX16(0xabcd, unaligned_data.interpret_as<uint16_t>(sizeof(uint16_t)));
 }
 
-inline void io_operation_write_and_interpret_unsigned_big_endian() {
+inline void storage_write_and_interpret_unsigned_big_endian() {
   using namespace upd;
 
   unaligned_data<4 * sizeof(uint16_t)> unaligned_data{endianess::BIG};
@@ -19,7 +19,7 @@ inline void io_operation_write_and_interpret_unsigned_big_endian() {
   TEST_ASSERT_EQUAL_HEX16(0xabcd, unaligned_data.interpret_as<uint16_t>(sizeof(uint16_t)));
 }
 
-inline void io_operation_set_and_get_unsigned_little_endian() {
+inline void storage_set_and_get_unsigned_little_endian() {
   using namespace upd;
 
   unaligned_tuple<unsigned int, unsigned char, unsigned long> unaligned_arguments{endianess::LITTLE};
@@ -27,7 +27,7 @@ inline void io_operation_set_and_get_unsigned_little_endian() {
   TEST_ASSERT_EQUAL_HEX16(0xabcd, unaligned_arguments.get<2>());
 }
 
-inline void io_operation_set_and_get_unsigned_big_endian() {
+inline void storage_set_and_get_unsigned_big_endian() {
   using namespace upd;
 
   unaligned_tuple<unsigned int, unsigned char, unsigned long> unaligned_arguments{endianess::BIG};
@@ -35,7 +35,7 @@ inline void io_operation_set_and_get_unsigned_big_endian() {
   TEST_ASSERT_EQUAL_HEX16(0xabcd, unaligned_arguments.get<2>());
 }
 
-inline void io_operation_iterate_unaligned_data() {
+inline void storage_iterate_unaligned_data() {
   using namespace upd;
 
   uint8_t raw_data[] {0xaa, 0xbb, 0xcc};
@@ -45,7 +45,7 @@ inline void io_operation_iterate_unaligned_data() {
   for (auto byte : unaligned_data) TEST_ASSERT_EQUAL_HEX16(raw_data[i++], byte);
 }
 
-inline void io_operation_iterate_unaligned_arguments() {
+inline void storage_iterate_unaligned_arguments() {
   using namespace upd;
 
   uint8_t raw_data[] {0xaa, 0xcc, 0xbb, 0x00, 0xff, 0xee, 0xdd};
@@ -59,7 +59,7 @@ inline void io_operation_iterate_unaligned_arguments() {
   for (auto byte : unaligned_arguments) TEST_ASSERT_EQUAL_HEX16(raw_data[i++], byte);
 }
 
-inline void io_operation_access_raw_data() {
+inline void storage_access_raw_data() {
   using namespace upd;
 
   uint8_t raw_data[] {0xaa, 0xbb, 0xcc, 0xdd};
