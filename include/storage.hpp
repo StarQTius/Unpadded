@@ -180,7 +180,7 @@ public:
     \brief Default initialize the object content
     \param endianess Target endianess for serialization
   */
-  explicit unaligned_data(system::endianess endianess) : m_endianess{endianess} {};
+  explicit unaligned_data(endianess endianess) : m_endianess{endianess} {};
 
   /*!
     \brief Initialize the object content of the object by copying from a buffer
@@ -188,7 +188,7 @@ public:
     \param raw_data Pointer to the buffer
     \param endianess Target endianess for serialization
   */
-  explicit unaligned_data(const byte_t* raw_data, system::endianess endianess) : m_endianess{endianess} {
+  explicit unaligned_data(const byte_t* raw_data, endianess endianess) : m_endianess{endianess} {
     memcpy(m_raw_data, raw_data, N);
   }
 
@@ -222,21 +222,30 @@ public:
       There is no bound check performed.
       This overload kicks in when T is an integer type.
     \tparam T Requested type
-    \param i Offset of the object content to be interpreted
+    \param offset Offset of the object content to be interpreted
     \return A copy of the value represented by the raw data at the given offset
   */
 #ifdef DOXYGEN
-  template<typename T> T interpret_as(size_t i) const;
+  template<typename T> T interpret_as(size_t offset) const;
 #else
   template<typename T>
   concept::require_integer<T, T>
-  interpret_as(size_t i) const {
-    union { T base; byte_t raw[sizeof(T)]; } byte_rep;
-    if (system::platform_endianess == m_endianess)
-      memcpy(byte_rep.raw, m_raw_data + i, sizeof(T));
-    else
-      detail::rmemcpy(byte_rep.raw, m_raw_data + i, sizeof(T));
-    return byte_rep.base;
+  interpret_as(size_t offset) const {
+    T retval = 0;
+    size_t shift = 0;
+
+    switch(m_endianess) {
+      case endianess::LITTLE:
+        for (size_t i = 0; i < sizeof(retval); i++, shift += 8)
+          retval |= m_raw_data[offset + i] << shift;
+        break;
+      case endianess::BIG:
+        for (size_t i = 0; i < sizeof(retval); i++, shift += 8)
+          retval |= m_raw_data[offset + (sizeof(retval) - i - 1)] << shift;
+        break;
+    }
+
+    return retval;
   }
 #endif
 
@@ -246,24 +255,24 @@ public:
       There is no bound check performed.
       This overload kicks in when T is the type of an array of integer.
     \tparam T Requested type
-    \param i Offset of the object content to be interpreted
+    \param offset Offset of the object content to be interpreted
     \return An array_wrapper object containing a copy of the requested array
   */
 #ifdef DOXYGEN
-  template<typename T> array_wrapper<T> interpret_as(size_t i) const;
+  template<typename T> array_wrapper<T> interpret_as(size_t offset) const;
 #else
   template<typename T>
   concept::require_array<T, array_wrapper<T>>
-  interpret_as(size_t i) const {
-    array_wrapper<T> array;
+  interpret_as(size_t offset) const {
+    array_wrapper<T> retval;
 
-    using element_t = typename decltype(array)::type;
-    constexpr auto size = decltype(array)::size;
+    using element_t = typename decltype(retval)::type;
+    constexpr auto size = decltype(retval)::size;
 
-    for (size_t j = 0; j < size; j++)
-      array[j] = interpret_as<element_t>(i + j * sizeof(element_t));
+    for (size_t i = 0; i < size; i++)
+      retval[i] = interpret_as<element_t>(offset + i * sizeof(element_t));
 
-    return array;
+    return retval;
   }
 #endif
 
@@ -274,18 +283,24 @@ public:
       This overload kicks in when T is an integer type.
     \tparam T Serilized value's type
     \param x Value to be serialized
-    \param i Offset where the value will be serialized
+    \param offset Offset where the value will be serialized
   */
 #ifdef DOXYGEN
-  template<typename T> void write(const T& x, size_t i);
+  template<typename T> void write(T x, size_t offset);
 #else
   template<typename T>
   concept::require_integer<T>
-  write(const T& x, size_t i) {
-    if (system::platform_endianess == m_endianess)
-      memcpy(m_raw_data + i, reinterpret_cast<const void*>(&x), sizeof(T));
-    else
-      detail::rmemcpy(m_raw_data + i, reinterpret_cast<const byte_t*>(&x), sizeof(T));
+  write(T x, size_t offset) {
+    switch(m_endianess) {
+      case endianess::LITTLE:
+        for (size_t i = 0; i < sizeof(x); i++, x >>= 8)
+          m_raw_data[offset + i] = x & 0xff;
+        break;
+      case endianess::BIG:
+        for (size_t i = 0; i < sizeof(x); i++, x >>= 8)
+          m_raw_data[offset + (sizeof(x) - i - 1)] = x & 0xff;
+        break;
+    }
   }
 #endif
 
@@ -296,17 +311,17 @@ public:
       This overload kicks in when T is the type of an array of integer.
     \tparam T Serilized value's type
     \param x Value to be serialized
-    \param i Offset where the value will be serialized
+    \param offset Offset where the value will be serialized
   */
 #ifdef DOXYGEN
-  template<typename T> void write(const T& array, size_t i)
+  template<typename T> void write(const T& array, size_t offset)
 #else
   template<typename T>
   concept::require_array<T>
-  write(const T& array, size_t i) {
+  write(const T& array, size_t offset) {
     using element_t = ctm::element_t<T>;
     constexpr auto array_size = ctm::introspect_array<T>::size;
-    for (size_t j = 0; j < array_size; j++) write(array[j], i + j * sizeof(element_t));
+    for (size_t i = 0; i < array_size; i++) write(array[i], offset + i * sizeof(element_t));
   }
 #endif
 
@@ -318,7 +333,7 @@ public:
 
 private:
   byte_t m_raw_data[N];
-  system::endianess m_endianess;
+  endianess m_endianess;
 
 };
 
@@ -330,7 +345,7 @@ private:
   \return A unaligned_data object which content is equal to raw_data
 */
 template<size_t N>
-unaligned_data<N> make_unaligned_data(const byte_t (&raw_data)[N], system::endianess endianess) {
+unaligned_data<N> make_unaligned_data(const byte_t (&raw_data)[N], endianess endianess) {
   return unaligned_data<N>{raw_data, endianess};
 }
 
@@ -355,9 +370,9 @@ public:
   /*!
     \brief Forward arguments to base's constructor
     \param endianess Target endianess for serialization
-    \see unaligned_data::unaligned_data(system::endianess)
+    \see unaligned_data::unaligned_data(endianess)
   */
-  explicit unaligned_tuple(system::endianess endianess) : unaligned_data<size>{endianess} {}
+  explicit unaligned_tuple(endianess endianess) : unaligned_data<size>{endianess} {}
 
   /*!
     \brief Serialize the provided values
@@ -366,7 +381,7 @@ public:
     \param args... Values to be serialized
   */
   template<typename... Args, typename = ctm::enable_t<sizeof...(Args) == sizeof...(Ts)>>
-  explicit unaligned_tuple(system::endianess endianess, const Args&... args) : unaligned_data<size>{endianess} {
+  explicit unaligned_tuple(endianess endianess, const Args&... args) : unaligned_data<size>{endianess} {
     lay(ctm::srange<0, sizeof...(Ts)>{}, args...);
   }
 
@@ -421,7 +436,7 @@ private:
   \return unaligned_tuple object holding a serialized copy of the provided values.
 */
 template<typename... Args>
-unaligned_tuple<Args...> make_unaligned_arguments(system::endianess endianess, const Args&... args) {
+unaligned_tuple<Args...> make_unaligned_arguments(endianess endianess, const Args&... args) {
   return unaligned_tuple<Args...>{endianess, args...};
 }
 
