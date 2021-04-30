@@ -1,6 +1,9 @@
 cpp_flags = \
 	-std=c++11 \
 	-g \
+	-Wall \
+	-Wextra \
+	-Werror \
 	-Iinclude \
 	-Ilib/Unity/src \
 	-Ilib/ct_magic/include
@@ -9,8 +12,11 @@ c_flags = \
 	-std=c99 \
 	-Ilib/Unity/src
 
+libs = \
+	-lstdc++
+
 check: obj/main.o obj/unity.o
-	gcc $^ -o run_ut
+	gcc $^ $(libs) -o run_ut
 	./run_ut
 
 clean:

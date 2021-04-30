@@ -21,7 +21,7 @@ inline void storage_write_and_interpret() {
       upd::unaligned_data<4 * sizeof(Int)> unaligned_data{endianess, signed_mode};
       unaligned_data.write(V, sizeof(Int));
 
-      snprintf(error_msg, sizeof(error_msg), error_format, endianess, signed_mode);
+      snprintf(error_msg, sizeof(error_msg), error_format, static_cast<int>(endianess), static_cast<int>(signed_mode));
       TEST_ASSERT_EQUAL_HEX64_MESSAGE(V, unaligned_data.template interpret_as<Int>(sizeof(Int)), error_msg);
     }
   }
@@ -43,7 +43,7 @@ inline void storage_set_and_get() {
       upd::unaligned_tuple<Args...> unaligned_tuple{endianess, signed_mode};
       unaligned_tuple.template set<I>(V);
 
-      snprintf(error_msg, sizeof(error_msg), error_format, endianess, signed_mode);
+      snprintf(error_msg, sizeof(error_msg), error_format, static_cast<int>(endianess), static_cast<int>(signed_mode));
       TEST_ASSERT_EQUAL_HEX64_MESSAGE(V, unaligned_tuple.template get<I>(), error_msg);
     }
   }
