@@ -22,6 +22,12 @@ template<typename T, typename U = void>
 using require_unsigned_integer = ctm::enable_t<ctm::category::unsigned_integer.has<T>(), U>;
 
 /*!
+  \brief Utility class for SFINAE to check if a type is an signed integer
+*/
+template<typename T, typename U = void>
+using require_signed_integer = ctm::enable_t<ctm::category::signed_integer.has<T>(), U>;
+
+/*!
   \brief Utility class for SFINAE to check if a type is an array type
 */
 template<typename T, typename U = void>
@@ -40,6 +46,48 @@ namespace detail {
 inline void rmemcpy(byte_t* dest, const byte_t* src, size_t len) {
   for (size_t i = 0; i < len; i++)
     dest[i] = src[len - i - 1];
+}
+
+/*!
+  \brief Interpret an unsigned integer as a signed integer represented with one's complement
+  \param value The unsigned integer to interpret
+  \return A signed integer which is represented by value in one's complement
+*/
+template<typename T>
+inline T interpret_from_one_complement(unsigned long long value) {
+  constexpr auto sign_mask = 0b10000000ull << 8 * (sizeof(T) - 1);
+  return value & sign_mask ? -static_cast<T>(~value) : static_cast<T>(value);
+}
+
+/*!
+  \brief Interpret a signed integer as a unsigned integer representing it with one's complement
+  \param value The signed integer to interpret
+  \return A unsigned integer representing value in one's complement
+*/
+template<typename T>
+inline unsigned long long interpret_to_one_complement(T value) {
+  return value >= 0 ? static_cast<unsigned long long>(value) : ~static_cast<unsigned long long>(-value);
+}
+
+/*!
+  \brief Interpret an unsigned integer as a signed integer represented with two's complement
+  \param value The unsigned integer to interpret
+  \return A signed integer which is represented by value in two's complement
+*/
+template<typename T>
+inline T interpret_from_two_complement(unsigned long long value) {
+  constexpr auto sign_mask = 0b10000000ull << 8 * (sizeof(T) - 1);
+  return value & sign_mask ? -static_cast<T>(~value + 1) : static_cast<T>(value);
+}
+
+/*!
+  \brief Interpret an unsigned integer as a signed integer represented with two's complement
+  \param value The unsigned integer to interpret
+  \return A signed integer which is represented by value in two's complement
+*/
+template<typename T>
+inline unsigned long long interpret_to_two_complement(T value) {
+  return value >= 0 ? static_cast<unsigned long long>(value) : static_cast<unsigned long long>(~(-value - 1));
 }
 
 } // namespace detail
@@ -180,7 +228,10 @@ public:
     \brief Default initialize the object content
     \param endianess Target endianess for serialization
   */
-  explicit unaligned_data(endianess endianess) : m_endianess{endianess} {};
+  explicit unaligned_data(endianess data_endianess, signed_mode data_signed_mode) :
+    m_endianess{data_endianess},
+    m_signed_mode{data_signed_mode}
+  {};
 
   /*!
     \brief Initialize the object content of the object by copying from a buffer
@@ -188,7 +239,13 @@ public:
     \param raw_data Pointer to the buffer
     \param endianess Target endianess for serialization
   */
-  explicit unaligned_data(const byte_t* raw_data, endianess endianess) : m_endianess{endianess} {
+  explicit unaligned_data(
+    const byte_t* raw_data,
+    endianess data_endianess,
+    signed_mode data_signed_mode) :
+    m_endianess{data_endianess},
+    m_signed_mode{data_signed_mode}
+  {
     memcpy(m_raw_data, raw_data, N);
   }
 
@@ -230,22 +287,31 @@ public:
 #else
   template<typename T>
   concept::require_unsigned_integer<T, T>
+  interpret_as(size_t offset) const { return interpret_with_endianess<T>(offset, sizeof(T)); }
+#endif
+
+  /*!
+    \brief Interpret a part of the object content as the given type
+    \details
+      There is no bound check performed.
+      This overload kicks in when T is an signed integer type.
+    \tparam T Requested type
+    \param offset Offset of the object content to be interpreted
+    \return A copy of the value represented by the raw data at the given offset
+  */
+#ifdef DOXYGEN
+  template<typename T> T interpret_as(size_t offset) const;
+#else
+  template<typename T>
+  concept::require_signed_integer<T, T>
   interpret_as(size_t offset) const {
-    T retval = 0;
-    size_t shift = 0;
+    auto tmp = interpret_with_endianess<unsigned long long>(offset, sizeof(T));
 
-    switch(m_endianess) {
-      case endianess::LITTLE:
-        for (size_t i = 0; i < sizeof(retval); i++, shift += 8)
-          retval |= m_raw_data[offset + i] << shift;
-        break;
-      case endianess::BIG:
-        for (size_t i = 0; i < sizeof(retval); i++, shift += 8)
-          retval |= m_raw_data[offset + (sizeof(retval) - i - 1)] << shift;
-        break;
+    switch(m_signed_mode) {
+      case signed_mode::ONE_COMPLEMENT: return detail::interpret_from_one_complement<T>(tmp);
+      case signed_mode::TWO_COMPLEMENT: return detail::interpret_from_two_complement<T>(tmp);
+      default: return 0; // other representation not yet supported
     }
-
-    return retval;
   }
 #endif
 
@@ -286,21 +352,42 @@ public:
     \param offset Offset where the value will be serialized
   */
 #ifdef DOXYGEN
-  template<typename T> void write(T x, size_t offset);
+  template<typename T> void write(const T& x, size_t offset);
 #else
   template<typename T>
   concept::require_unsigned_integer<T>
-  write(T x, size_t offset) {
-    switch(m_endianess) {
-      case endianess::LITTLE:
-        for (size_t i = 0; i < sizeof(x); i++, x >>= 8)
-          m_raw_data[offset + i] = x & 0xff;
+  write(const T& x, size_t offset) { write_with_endianess(x, offset, sizeof(x)); }
+#endif
+
+  /*!
+    \brief Serialize a value into the object's content
+    \details
+      There is no bound check performed.
+      This overload kicks in when T is an unsigned integer type.
+    \tparam T Serilized value's type
+    \param x Value to be serialized
+    \param offset Offset where the value will be serialized
+  */
+#ifdef DOXYGEN
+  template<typename T> void write(const T& x, size_t offset);
+#else
+  template<typename T>
+  concept::require_signed_integer<T>
+  write(const T& x, size_t offset) {
+    auto tmp = 0ull;
+
+    switch(m_signed_mode) {
+      case signed_mode::ONE_COMPLEMENT:
+        tmp = detail::interpret_to_one_complement(x);
         break;
-      case endianess::BIG:
-        for (size_t i = 0; i < sizeof(x); i++, x >>= 8)
-          m_raw_data[offset + (sizeof(x) - i - 1)] = x & 0xff;
+      case signed_mode::TWO_COMPLEMENT:
+        tmp = detail::interpret_to_two_complement(x);
         break;
+      default:
+        return; // not yet implemented
     }
+
+    write_with_endianess(tmp, offset, sizeof(x));
   }
 #endif
 
@@ -332,8 +419,42 @@ public:
   const byte_t* raw_data() const { return m_raw_data; }
 
 private:
+  template<typename T>
+  T interpret_with_endianess(size_t offset, size_t n) const {
+    T retval = 0;
+    size_t shift = 0;
+
+    switch(m_endianess) {
+      case endianess::LITTLE:
+        for (size_t i = 0; i < n; i++, shift += 8)
+          retval |= static_cast<T>(m_raw_data[offset + i]) << shift;
+        break;
+      case endianess::BIG:
+        for (size_t i = 0; i < n; i++, shift += 8)
+          retval |= static_cast<T>(m_raw_data[offset + (n - i - 1)]) << shift;
+        break;
+    }
+
+    return retval;
+  }
+
+  template<typename T>
+  void write_with_endianess(T x, size_t offset, size_t n) {
+    switch(m_endianess) {
+      case endianess::LITTLE:
+        for (size_t i = 0; i < n; i++, x >>= 8)
+          m_raw_data[offset + i] = x & 0xff;
+        break;
+      case endianess::BIG:
+        for (size_t i = 0; i < n; i++, x >>= 8)
+          m_raw_data[offset + (n - i - 1)] = x & 0xff;
+        break;
+    }
+  }
+
   byte_t m_raw_data[N];
   endianess m_endianess;
+  signed_mode m_signed_mode;
 
 };
 
@@ -345,8 +466,8 @@ private:
   \return A unaligned_data object which content is equal to raw_data
 */
 template<size_t N>
-unaligned_data<N> make_unaligned_data(const byte_t (&raw_data)[N], endianess endianess) {
-  return unaligned_data<N>{raw_data, endianess};
+unaligned_data<N> make_unaligned_data(const byte_t (&raw_data)[N], endianess data_endianess) {
+  return unaligned_data<N>{raw_data, data_endianess};
 }
 
 /*!
@@ -372,16 +493,23 @@ public:
     \param endianess Target endianess for serialization
     \see unaligned_data::unaligned_data(endianess)
   */
-  explicit unaligned_tuple(endianess endianess) : unaligned_data<size>{endianess} {}
+  explicit unaligned_tuple(endianess data_endianess, signed_mode data_signed_mode) :
+    unaligned_data<size>{data_endianess, data_signed_mode} {}
 
   /*!
     \brief Serialize the provided values
     \tparam Args... Serialized values' types
-    \param endianess Target endianess for serialization
+    \param data_endianess Target endianess for serialization
+    \param data_signed_mode Target signed representation for serialization
     \param args... Values to be serialized
   */
   template<typename... Args, typename = ctm::enable_t<sizeof...(Args) == sizeof...(Ts)>>
-  explicit unaligned_tuple(endianess endianess, const Args&... args) : unaligned_data<size>{endianess} {
+  explicit unaligned_tuple(
+    endianess data_endianess,
+    signed_mode data_signed_mode,
+    const Args&... args) :
+    unaligned_data<size>{data_endianess, data_signed_mode}
+  {
     lay(ctm::srange<0, sizeof...(Ts)>{}, args...);
   }
 
@@ -431,13 +559,18 @@ private:
 /*!
   \brief Construct an unaligned_tuple object provided constant lvalue to values
   \tparam Args... Deduced types of the provided values.
-  \param endianess Target endianess for serialization
+  \param data_endianess Target endianess for serialization
+  \param data_signed_mode Target signed representation for serialization
   \param args... Values to be serialized into the return value
   \return unaligned_tuple object holding a serialized copy of the provided values.
 */
 template<typename... Args>
-unaligned_tuple<Args...> make_unaligned_arguments(endianess endianess, const Args&... args) {
-  return unaligned_tuple<Args...>{endianess, args...};
+unaligned_tuple<Args...> make_unaligned_arguments(
+  endianess data_endianess,
+  signed_mode data_signed_mode,
+  const Args&... args)
+{
+  return unaligned_tuple<Args...>{data_endianess, data_signed_mode, args...};
 }
 
 } // namespace upd

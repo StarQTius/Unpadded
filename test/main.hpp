@@ -17,6 +17,8 @@ int main() { setup(); return 0; }
 extern "C" void setUp() {}
 extern "C" void tearDown() {}
 
+#include <cstring>
+
 #include "endianess.hpp"
 
 #include "storage_ut.hpp"
