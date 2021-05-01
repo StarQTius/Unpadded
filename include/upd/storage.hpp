@@ -264,14 +264,14 @@ public:
     \details There is no bound check performed.
     \param i Index of the accessed byte
   */
-  byte_t& operator[](size_t i) { return raw_data[i]; }
+  byte_t& operator[](size_t i) { return m_raw_data[i]; }
 
   /*!
     \brief Access the object content
     \details There is no bound check performed.
     \param i Index of the accessed byte
   */
-  const byte_t& operator[](size_t i) const { return raw_data[i]; }
+  const byte_t& operator[](size_t i) const { return m_raw_data[i]; }
 
   /*!
     \brief Interpret a part of the object content as the given type
