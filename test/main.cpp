@@ -3,9 +3,6 @@
 void setup() {
   UNITY_BEGIN();
 
-  upd::unaligned_data<16> unaligned_data{upd::endianess::LITTLE, upd::signed_mode::TWO_COMPLEMENT};
-  unaligned_data.write(0xabc, 0);
-
   RUN_TEST((storage_write_and_interpret<uint16_t, 0xabc>));
   RUN_TEST((storage_write_and_interpret<int16_t, 0xabc>));
   RUN_TEST((storage_write_and_interpret<int16_t, -0xabc>));

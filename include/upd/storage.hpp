@@ -5,7 +5,7 @@
 #include "ct_magic.hpp"
 
 #include "type.hpp"
-#include "endianess.hpp"
+#include "format.hpp"
 
 /*!
   \file

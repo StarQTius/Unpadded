@@ -4,7 +4,7 @@
 
 /*!
   \file
-  \brief Definitions for deducing platform specificity
+  \brief Definitions for specifying data format
 */
 
 namespace upd {

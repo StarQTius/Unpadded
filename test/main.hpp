@@ -19,6 +19,4 @@ extern "C" void tearDown() {}
 
 #include <cstring>
 
-#include "upd/endianess.hpp"
-
 #include "storage_ut.hpp"
