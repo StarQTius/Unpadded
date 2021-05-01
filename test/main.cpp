@@ -1,7 +1,43 @@
 #include "main.hpp"
 
 void setup() {
+  using namespace upd;
+
   UNITY_BEGIN();
+
+  RUN_TEST((storage_write_and_inspect_raw_data<
+    int16_t, 0xabc,
+    endianess::LITTLE, signed_mode::ONE_COMPLEMENT,
+    0xbc, 0x0a>));
+  RUN_TEST((storage_write_and_inspect_raw_data<
+    int16_t, -2,
+    endianess::LITTLE, signed_mode::ONE_COMPLEMENT,
+    0xfd, 0xff>));
+  RUN_TEST((storage_write_and_inspect_raw_data<
+    int16_t, 0xabc,
+    endianess::BIG, signed_mode::ONE_COMPLEMENT,
+    0x0a, 0xbc>));
+  RUN_TEST((storage_write_and_inspect_raw_data<
+    int16_t, -2,
+    endianess::BIG, signed_mode::ONE_COMPLEMENT,
+    0xff, 0xfd>));
+
+  RUN_TEST((storage_write_and_inspect_raw_data<
+    int16_t, 0xabc,
+    endianess::LITTLE, signed_mode::TWO_COMPLEMENT,
+    0xbc, 0x0a>));
+  RUN_TEST((storage_write_and_inspect_raw_data<
+    int16_t, -126,
+    endianess::LITTLE, signed_mode::TWO_COMPLEMENT,
+    0x82, 0xff>));
+  RUN_TEST((storage_write_and_inspect_raw_data<
+    int16_t, 0xabc,
+    endianess::BIG, signed_mode::TWO_COMPLEMENT,
+    0x0a, 0xbc>));
+  RUN_TEST((storage_write_and_inspect_raw_data<
+    int16_t, -126,
+    endianess::BIG, signed_mode::TWO_COMPLEMENT,
+    0xff, 0x82>));
 
   RUN_TEST((storage_write_and_interpret<uint16_t, 0xabc>));
   RUN_TEST((storage_write_and_interpret<int16_t, 0xabc>));
