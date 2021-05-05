@@ -39,7 +39,7 @@ public:
     \param endianess Target endianess for serialization
   */
   explicit tuple(endianess data_endianess, signed_mode data_signed_mode) :
-    storage{data_endianess, data_signed_mode} {}
+    m_storage{data_endianess, data_signed_mode} {}
 
   /*!
     \brief Serialize the provided values
@@ -53,7 +53,7 @@ public:
     endianess data_endianess,
     signed_mode data_signed_mode,
     const Args&... args) :
-    storage{data_endianess, data_signed_mode}
+    m_storage{data_endianess, data_signed_mode}
   {
     lay(ctm::srange<0, sizeof...(Ts)>{}, args...);
   }
@@ -63,15 +63,15 @@ public:
     \details There is no bound check performed.
     \param i Index of the accessed byte
   */
-  const byte_t& operator[](size_t i) const { return storage[i]; }
+  const byte_t& operator[](size_t i) const { return m_storage[i]; }
 
   /*!
     \name Iterability
     @{
   */
 
-  const byte_t* begin() const { return storage.begin(); }
-  const byte_t* end() const { return storage.end(); }
+  const byte_t* begin() const { return m_storage.begin(); }
+  const byte_t* end() const { return m_storage.end(); }
 
   //! @}
 
@@ -90,7 +90,7 @@ public:
       .take(ctm::size_h<I>{})
       .accumulate(0, ctm::sum<size_t, size_t>);
 
-    return storage.template interpret_as<arg_t<I>>(offset);
+    return m_storage.template interpret_as<arg_t<I>>(offset);
   }
 #endif
 
@@ -105,7 +105,7 @@ public:
       .take(ctm::size_h<I>{})
       .accumulate(0, ctm::sum<size_t, size_t>);
 
-    storage.write(value, offset);
+    m_storage.write(value, offset);
   }
 
 private:
@@ -116,7 +116,7 @@ private:
      discard {0, (set<Is>(args), 0)...};
   }
 
-  unaligned_data<ctm::sum(sizeof(Ts)...)> storage;
+  unaligned_data<ctm::sum(sizeof(Ts)...)> m_storage;
 
 };
 
