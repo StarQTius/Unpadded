@@ -92,8 +92,8 @@ inline void storage_access_raw_data() {
     uint8_t{0xaa},
     uint8_t{0xbb},
     uint16_t{0xccdd});
-  TEST_ASSERT_EQUAL_HEX8(raw_data[0], unaligned_arguments.raw_data()[0]);
-  TEST_ASSERT_EQUAL_HEX8(raw_data[1], unaligned_arguments.raw_data()[1]);
-  TEST_ASSERT_EQUAL_HEX8(raw_data[2], unaligned_arguments.raw_data()[2]);
-  TEST_ASSERT_EQUAL_HEX8(raw_data[3], unaligned_arguments.raw_data()[3]);
+  TEST_ASSERT_EQUAL_HEX8(raw_data[0], unaligned_arguments.begin()[0]);
+  TEST_ASSERT_EQUAL_HEX8(raw_data[1], unaligned_arguments.begin()[1]);
+  TEST_ASSERT_EQUAL_HEX8(raw_data[2], unaligned_arguments.begin()[2]);
+  TEST_ASSERT_EQUAL_HEX8(raw_data[3], unaligned_arguments.begin()[3]);
 }

@@ -22,7 +22,7 @@ namespace upd {
   \tparam Ts... Types of the serialized values
 */
 template<typename... Ts>
-class unaligned_tuple : public unaligned_data<ctm::sum(sizeof(Ts)...)> {
+class unaligned_tuple {
   constexpr static auto list = ctm::typelist<Ts...>{};
   constexpr static auto size = ctm::sum(sizeof(Ts)...);
 
@@ -33,12 +33,11 @@ public:
   using arg_t = ctm::grab<decltype(list.get(ctm::size_h<I>{}))>;
 
   /*!
-    \brief Forward arguments to base's constructor
+    \brief Default initialize the object content
     \param endianess Target endianess for serialization
-    \see unaligned_data::unaligned_data(endianess)
   */
   explicit unaligned_tuple(endianess data_endianess, signed_mode data_signed_mode) :
-    unaligned_data<size>{data_endianess, data_signed_mode} {}
+    storage{data_endianess, data_signed_mode} {}
 
   /*!
     \brief Serialize the provided values
@@ -52,10 +51,20 @@ public:
     endianess data_endianess,
     signed_mode data_signed_mode,
     const Args&... args) :
-    unaligned_data<size>{data_endianess, data_signed_mode}
+    storage{data_endianess, data_signed_mode}
   {
     lay(ctm::srange<0, sizeof...(Ts)>{}, args...);
   }
+
+  /*!
+    \name Iterability
+    @{
+  */
+
+  const byte_t* begin() const { return storage.begin(); }
+  const byte_t* end() const { return storage.end(); }
+
+  //! @}
 
   /*!
     \brief Unserialize one of the value held by the object
@@ -72,7 +81,7 @@ public:
       .take(ctm::size_h<I>{})
       .accumulate(0, ctm::sum<size_t, size_t>);
 
-    return unaligned_data<size>::template interpret_as<arg_t<I>>(offset);
+    return storage.template interpret_as<arg_t<I>>(offset);
   }
 #endif
 
@@ -87,7 +96,7 @@ public:
       .take(ctm::size_h<I>{})
       .accumulate(0, ctm::sum<size_t, size_t>);
 
-    unaligned_data<size>::write(value, offset);
+    storage.write(value, offset);
   }
 
 private:
@@ -97,6 +106,8 @@ private:
      using discard = int[];
      discard {0, (set<Is>(args), 0)...};
   }
+
+  unaligned_data<ctm::sum(sizeof(Ts)...)> storage;
 
 };
 
