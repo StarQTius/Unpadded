@@ -6,7 +6,8 @@ cpp_flags = \
 	-Werror \
 	-Iinclude \
 	-Ilib/Unity/src \
-	-Ilib/ct_magic/include
+	-Ilib/ct_magic/include \
+	-Ilib/mp11/include
 
 c_flags = \
 	-std=c99 \
@@ -15,15 +16,15 @@ c_flags = \
 libs = \
 	-lstdc++
 
-check: obj/main.o obj/unity.o
+check: obj/main.o obj/lib/unity.o
 	gcc $^ $(libs) -o run_ut
 	./run_ut
 
 clean:
-	rm obj/*
+	rm obj/*.o
 
 obj/main.o: test/main.cpp
 	gcc $(cpp_flags) -DUT_ONLY -c $^ -o obj/main.o
 
-obj/unity.o:
-	gcc $(c_flags) -c lib/Unity/src/unity.c -o obj/unity.o
+obj/lib/unity.o:
+	gcc $(c_flags) -c lib/Unity/src/unity.c -o obj/lib/unity.o
