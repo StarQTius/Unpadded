@@ -61,6 +61,18 @@ struct array_wrapper<T[N]> {
 
   //! @}
 
+  /*!
+    \name Iterability
+    @{
+  */
+
+  T* begin() { return content; }
+  T* end() { return content + N; }
+  const T* begin() const { return content; }
+  const T* end() const { return content + N; }
+
+  //! @}
+
   //! \brief Object's content
   //! \details Every operation on the object has the same result on the object's content.
   T content[N];
