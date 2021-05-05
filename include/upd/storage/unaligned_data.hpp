@@ -226,12 +226,6 @@ public:
   }
 #endif
 
-  /*!
-    \brief Give a read-only view to the object's content
-    \return A pointer to the beginning of the object's content
-  */
-  const byte_t* raw_data() const { return m_raw_data; }
-
 private:
   template<typename T>
   T interpret_with_endianess(size_t offset, size_t n) const {
