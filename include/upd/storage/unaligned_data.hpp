@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstring>
+
 #include "ct_magic.hpp"
 
 #include "upd/format.hpp"
