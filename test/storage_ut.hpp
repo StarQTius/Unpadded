@@ -12,7 +12,7 @@ inline void storage_write_and_inspect_raw_data() {
   upd::unaligned_data<4 * sizeof(Int)> unaligned_data{endianess, signed_mode};
   unaligned_data.write(V, sizeof(Int));
 
-  TEST_ASSERT_EQUAL_HEX8_ARRAY(expected_data, unaligned_data.raw_data() + sizeof(Int), sizeof(Int));
+  TEST_ASSERT_EQUAL_HEX8_ARRAY(expected_data, unaligned_data.begin() + sizeof(Int), sizeof(Int));
 }
 
 template<typename Int, Int V>

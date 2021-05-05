@@ -57,6 +57,13 @@ public:
   }
 
   /*!
+    \brief Access the object content
+    \details There is no bound check performed.
+    \param i Index of the accessed byte
+  */
+  const byte_t& operator[](size_t i) const { return storage[i]; }
+
+  /*!
     \name Iterability
     @{
   */
