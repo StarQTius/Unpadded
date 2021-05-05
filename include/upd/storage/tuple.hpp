@@ -24,13 +24,15 @@ namespace upd {
 template<typename... Ts>
 class tuple {
   constexpr static auto list = ctm::typelist<Ts...>{};
-  constexpr static auto size = ctm::sum(sizeof(Ts)...);
 
 public:
   //! \brief Type of one of the serialized values
   //! \tparam I Index of the requested value's type
   template<size_t I>
   using arg_t = ctm::grab<decltype(list.get(ctm::size_h<I>{}))>;
+
+  //! \brief Storage size in byte
+  constexpr static auto size = ctm::sum(sizeof(Ts)...);
 
   /*!
     \brief Default initialize the object content
