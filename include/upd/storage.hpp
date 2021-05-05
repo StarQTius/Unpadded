@@ -38,17 +38,6 @@ using require_array = ctm::enable_t<ctm::is_array<T>::value, U>;
 namespace detail {
 
 /*!
-  \brief Perform a reversed memcpy
-  \param dest Destination of the copy
-  \param src Source of the copy
-  \param len Number of byte read from src
-*/
-inline void rmemcpy(byte_t* dest, const byte_t* src, size_t len) {
-  for (size_t i = 0; i < len; i++)
-    dest[i] = src[len - i - 1];
-}
-
-/*!
   \brief Interpret an unsigned integer as a signed integer represented with one's complement
   \param value The unsigned integer to interpret
   \return A signed integer which is represented by value in one's complement
@@ -253,10 +242,10 @@ public:
     \name Iterability
     @{
   */
-  const iterator begin() { return iterator{m_raw_data}; }
-  const iterator end() { return iterator{m_raw_data + N}; }
-  const const_iterator begin() const { return const_iterator{m_raw_data}; }
-  const const_iterator end() const { return const_iterator{m_raw_data + N}; }
+  iterator begin() { return iterator{m_raw_data}; }
+  iterator end() { return iterator{m_raw_data + N}; }
+  const_iterator begin() const { return const_iterator{m_raw_data}; }
+  const_iterator end() const { return const_iterator{m_raw_data + N}; }
   //! @}
 
   /*!
