@@ -37,64 +37,6 @@ public:
   constexpr static auto size = N;
 
   /*!
-    \name Iterators
-    @{
-  */
-
-  /*!
-    \brief Iterator for accessing unaligned_data internal storage
-    \details It satisfies the forward iterator requirement.
-  */
-  class iterator {
-  public:
-    iterator() : ptr{nullptr} {}
-
-    explicit iterator(byte_t* ptr) : ptr{ptr} {}
-
-    iterator operator++() {
-      iterator previous;
-      previous.ptr = ptr;
-      ptr++;
-      return previous;
-    }
-
-    byte_t& operator*() const { return *ptr; }
-    bool operator!=(const iterator& other) const { return ptr != other.ptr; }
-
-  private:
-    byte_t* ptr;
-
-  };
-
-  /*!
-    \brief Construct the object without initializing the object content
-    \details
-      It satisfies the forward iterator requirement.
-      It is a constant iterator, meaning it permits read-only access to the container.
-  */
-  class const_iterator {
-  public:
-    const_iterator() : ptr{nullptr} {}
-
-    explicit const_iterator(const byte_t* ptr) : ptr{ptr} {}
-
-    const_iterator operator++() {
-      const_iterator previous;
-      previous.ptr = ptr;
-      ptr++;
-      return previous;
-    }
-
-    const byte_t& operator*() const { return *ptr; }
-    bool operator!=(const iterator& other) const { return ptr != other.ptr; }
-
-  private:
-    const byte_t* ptr;
-
-  };
-  //! @}
-
-  /*!
     \brief Default initialize the object content
     \param endianess Target endianess for serialization
   */
@@ -123,10 +65,10 @@ public:
     \name Iterability
     @{
   */
-  iterator begin() { return iterator{m_raw_data}; }
-  iterator end() { return iterator{m_raw_data + N}; }
-  const_iterator begin() const { return const_iterator{m_raw_data}; }
-  const_iterator end() const { return const_iterator{m_raw_data + N}; }
+  byte_t* begin() { return m_raw_data; }
+  byte_t* end() { return m_raw_data + N; }
+  const byte_t* begin() const { return m_raw_data; }
+  const byte_t* end() const { return m_raw_data + N; }
   //! @}
 
   /*!
