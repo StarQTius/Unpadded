@@ -9,7 +9,7 @@
 
 /*!
   \file
-  \brief Definition of the unaligned_tuple class
+  \brief Definition of the tuple class
 */
 
 namespace upd {
@@ -22,7 +22,7 @@ namespace upd {
   \tparam Ts... Types of the serialized values
 */
 template<typename... Ts>
-class unaligned_tuple {
+class tuple {
   constexpr static auto list = ctm::typelist<Ts...>{};
   constexpr static auto size = ctm::sum(sizeof(Ts)...);
 
@@ -36,7 +36,7 @@ public:
     \brief Default initialize the object content
     \param endianess Target endianess for serialization
   */
-  explicit unaligned_tuple(endianess data_endianess, signed_mode data_signed_mode) :
+  explicit tuple(endianess data_endianess, signed_mode data_signed_mode) :
     storage{data_endianess, data_signed_mode} {}
 
   /*!
@@ -47,7 +47,7 @@ public:
     \param args... Values to be serialized
   */
   template<typename... Args, typename = ctm::enable_t<sizeof...(Args) == sizeof...(Ts)>>
-  explicit unaligned_tuple(
+  explicit tuple(
     endianess data_endianess,
     signed_mode data_signed_mode,
     const Args&... args) :
@@ -119,20 +119,20 @@ private:
 };
 
 /*!
-  \brief Construct an unaligned_tuple object provided constant lvalue to values
+  \brief Construct a tuple object provided constant lvalue to values
   \tparam Args... Deduced types of the provided values.
   \param data_endianess Target endianess for serialization
   \param data_signed_mode Target signed representation for serialization
   \param args... Values to be serialized into the return value
-  \return unaligned_tuple object holding a serialized copy of the provided values.
+  \return tuple object holding a serialized copy of the provided values.
 */
 template<typename... Args>
-unaligned_tuple<Args...> make_unaligned_arguments(
+tuple<Args...> make_tuple(
   endianess data_endianess,
   signed_mode data_signed_mode,
   const Args&... args)
 {
-  return unaligned_tuple<Args...>{data_endianess, data_signed_mode, args...};
+  return tuple<Args...>{data_endianess, data_signed_mode, args...};
 }
 
 } // namespace upd

@@ -50,11 +50,11 @@ inline void storage_set_and_get() {
 
   for (auto endianess : endianesses) {
     for (auto signed_mode : signed_modes) {
-      upd::unaligned_tuple<Args...> unaligned_tuple{endianess, signed_mode};
-      unaligned_tuple.template set<I>(V);
+      upd::tuple<Args...> tuple{endianess, signed_mode};
+      tuple.template set<I>(V);
 
       snprintf(error_msg, sizeof(error_msg), error_format, static_cast<int>(endianess), static_cast<int>(signed_mode));
-      TEST_ASSERT_EQUAL_HEX64_MESSAGE(V, unaligned_tuple.template get<I>(), error_msg);
+      TEST_ASSERT_EQUAL_HEX64_MESSAGE(V, tuple.template get<I>(), error_msg);
     }
   }
 }
@@ -69,31 +69,31 @@ inline void storage_iterate_unaligned_data() {
   for (auto byte : unaligned_data) TEST_ASSERT_EQUAL_HEX16(raw_data[i++], byte);
 }
 
-inline void storage_iterate_unaligned_arguments() {
+inline void storage_iterate_tuple() {
   using namespace upd;
 
   uint8_t raw_data[] {0xaa, 0xcc, 0xbb, 0x00, 0xff, 0xee, 0xdd};
-  unaligned_tuple<uint8_t, uint16_t, uint32_t> unaligned_arguments{
+  tuple<uint8_t, uint16_t, uint32_t> tuple{
     endianess::LITTLE, signed_mode::ONE_COMPLEMENT,
     0xaa,
     0xbbcc,
     0xddeeff00};
-  TEST_ASSERT_TRUE(unaligned_arguments.begin() != unaligned_arguments.end());
+  TEST_ASSERT_TRUE(tuple.begin() != tuple.end());
   size_t i = 0;
-  for (auto byte : unaligned_arguments) TEST_ASSERT_EQUAL_HEX16(raw_data[i++], byte);
+  for (auto byte : tuple) TEST_ASSERT_EQUAL_HEX16(raw_data[i++], byte);
 }
 
 inline void storage_access_raw_data() {
   using namespace upd;
 
   uint8_t raw_data[] {0xaa, 0xbb, 0xcc, 0xdd};
-  auto unaligned_arguments = make_unaligned_arguments(
+  auto tuple = make_tuple(
     endianess::BIG, signed_mode::ONE_COMPLEMENT,
     uint8_t{0xaa},
     uint8_t{0xbb},
     uint16_t{0xccdd});
-  TEST_ASSERT_EQUAL_HEX8(raw_data[0], unaligned_arguments.begin()[0]);
-  TEST_ASSERT_EQUAL_HEX8(raw_data[1], unaligned_arguments.begin()[1]);
-  TEST_ASSERT_EQUAL_HEX8(raw_data[2], unaligned_arguments.begin()[2]);
-  TEST_ASSERT_EQUAL_HEX8(raw_data[3], unaligned_arguments.begin()[3]);
+  TEST_ASSERT_EQUAL_HEX8(raw_data[0], tuple.begin()[0]);
+  TEST_ASSERT_EQUAL_HEX8(raw_data[1], tuple.begin()[1]);
+  TEST_ASSERT_EQUAL_HEX8(raw_data[2], tuple.begin()[2]);
+  TEST_ASSERT_EQUAL_HEX8(raw_data[3], tuple.begin()[3]);
 }

@@ -54,7 +54,7 @@ void setup() {
   RUN_TEST((storage_set_and_get<3, -0xabc, char, int, unsigned short, long, unsigned long, bool>));
 
   RUN_TEST(storage_iterate_unaligned_data);
-  RUN_TEST(storage_iterate_unaligned_arguments);
+  RUN_TEST(storage_iterate_tuple);
   RUN_TEST(storage_access_raw_data);
 
   UNITY_END();
