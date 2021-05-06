@@ -5,13 +5,15 @@ cpp_flags = \
 	-Wextra \
 	-Werror \
 	-Iinclude \
+	-Ilib/config/include \
+	-Ilib/mp11/include \
+	-Ilib/static_assert/include \
+	-Ilib/type_traits/include \
 	-Ilib/Unity/src \
-	-Ilib/ct_magic/include \
-	-Ilib/mp11/include
 
 c_flags = \
 	-std=c99 \
-	-Ilib/Unity/src
+	-Ilib/Unity/src \
 
 libs = \
 	-lstdc++

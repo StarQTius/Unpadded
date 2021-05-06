@@ -1,9 +1,15 @@
-[submodule "lib/ct_magic"]
-	path = lib/ct_magic
-	url = https://github.com/StarQTius/ct_magic
 [submodule "lib/Unity"]
 	path = lib/Unity
 	url = https://github.com/ThrowTheSwitch/Unity
 [submodule "lib/mp11"]
 	path = lib/mp11
 	url = https://github.com/boostorg/mp11
+[submodule "lib/type_traits"]
+	path = lib/type_traits
+	url = https://github.com/boostorg/type_traits
+[submodule "lib/config"]
+	path = lib/config
+	url = https://github.com/boostorg/config
+[submodule "lib/static_assert"]
+	path = lib/static_assert
+	url = https://github.com/boostorg/static_assert

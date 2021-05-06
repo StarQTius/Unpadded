@@ -1,6 +1,7 @@
 #pragma once
 
-#include "ct_magic.hpp"
+#include "boost/mp11.hpp"
+#include "boost/type_traits.hpp"
 
 #include "upd/format.hpp"
 #include "upd/type.hpp"
@@ -23,16 +24,17 @@ namespace upd {
 */
 template<typename... Ts>
 class tuple {
-  constexpr static auto list = ctm::typelist<Ts...>{};
+  using typelist = boost::mp11::mp_list<Ts...>;
+  using type_sizes = boost::mp11::mp_list<boost::mp11::mp_size_t<sizeof(Ts)>...>;
 
 public:
   //! \brief Type of one of the serialized values
   //! \tparam I Index of the requested value's type
   template<size_t I>
-  using arg_t = ctm::grab<decltype(list.get(ctm::size_h<I>{}))>;
+  using arg_t = boost::mp11::mp_at_c<typelist, I>;
 
   //! \brief Storage size in byte
-  constexpr static auto size = ctm::sum(sizeof(Ts)...);
+  constexpr static auto size = boost::mp11::mp_fold<type_sizes, boost::mp11::mp_size_t<0>, boost::mp11::mp_plus>::value;
 
   /*!
     \brief Default initialize the object content
@@ -48,14 +50,15 @@ public:
     \param data_signed_mode Target signed representation for serialization
     \param args... Values to be serialized
   */
-  template<typename... Args, typename = ctm::enable_t<sizeof...(Args) == sizeof...(Ts)>>
+  template<typename... Args, typename = concept::enable_t<sizeof...(Args) == sizeof...(Ts)>>
   explicit tuple(
     endianess data_endianess,
     signed_mode data_signed_mode,
     const Args&... args) :
     m_storage{data_endianess, data_signed_mode}
   {
-    lay(ctm::srange<0, sizeof...(Ts)>{}, args...);
+    using boost::mp11::index_sequence_for;
+    lay(index_sequence_for<Ts...>{}, args...);
   }
 
   /*!
@@ -84,11 +87,10 @@ public:
   template<size_t I> auto get() const;
 #else
   template<size_t I>
-  decltype(ctm::declval<unaligned_data<size>>().template interpret_as<arg_t<I>>(0))
+  decltype(boost::declval<unaligned_data<size>>().template interpret_as<arg_t<I>>(0))
   get() const {
-    constexpr auto offset = ctm::slist<sizeof(Ts)...>{}
-      .take(ctm::size_h<I>{})
-      .accumulate(0, ctm::sum<size_t, size_t>);
+    using namespace boost::mp11;
+    constexpr auto offset = mp_fold<mp_take_c<type_sizes, I>, mp_size_t<0>, mp_plus>::value;
 
     return m_storage.template interpret_as<arg_t<I>>(offset);
   }
@@ -101,22 +103,20 @@ public:
   */
   template<size_t I>
   void set(const arg_t<I>& value) {
-    constexpr auto offset = ctm::slist<sizeof(Ts)...>{}
-      .take(ctm::size_h<I>{})
-      .accumulate(0, ctm::sum<size_t, size_t>);
-
+    using namespace boost::mp11;
+    constexpr auto offset = mp_fold<mp_take_c<type_sizes, I>, mp_size_t<0>, mp_plus>::value;
     m_storage.write(value, offset);
   }
 
 private:
   template<size_t... Is, typename... Args>
-  void lay(ctm::size_h<Is...>, const Args&... args) {
+  void lay(boost::mp11::index_sequence<Is...>, const Args&... args) {
      // TODO : à changer pour quelque chose de plus propre
      using discard = int[];
      discard {0, (set<Is>(args), 0)...};
   }
 
-  unaligned_data<ctm::sum(sizeof(Ts)...)> m_storage;
+  unaligned_data<size> m_storage;
 
 };
 

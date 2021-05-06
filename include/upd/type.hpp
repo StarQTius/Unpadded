@@ -1,7 +1,5 @@
 #pragma once
 
-#include "ct_magic.hpp"
-
 /*!
   \file
   \brief Utility types for portability

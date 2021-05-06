@@ -2,8 +2,6 @@
 
 #include <cstring>
 
-#include "ct_magic.hpp"
-
 #include "upd/format.hpp"
 #include "upd/type.hpp"
 
@@ -142,12 +140,12 @@ public:
   template<typename T> array_wrapper<T> interpret_as(size_t offset) const;
 #else
   template<typename T>
-  concept::require_array<T, array_wrapper<T>>
+  concept::require_bounded_array<T, array_wrapper<T>>
   interpret_as(size_t offset) const {
     array_wrapper<T> retval;
 
-    using element_t = typename decltype(retval)::type;
-    constexpr auto size = decltype(retval)::size;
+    using element_t = decltype(*retval);
+    constexpr auto size = retval.size;
 
     for (size_t i = 0; i < size; i++)
       retval[i] = interpret_as<element_t>(offset + i * sizeof(element_t));
@@ -218,10 +216,10 @@ public:
   template<typename T> void write(const T& array, size_t offset)
 #else
   template<typename T>
-  concept::require_array<T>
+  concept::require_bounded_array<T>
   write(const T& array, size_t offset) {
-    using element_t = ctm::element_t<T>;
-    constexpr auto array_size = ctm::introspect_array<T>::size;
+    using element_t = decltype(*array);
+    constexpr auto array_size = sizeof(array) / sizeof(*array);
     for (size_t i = 0; i < array_size; i++) write(array[i], offset + i * sizeof(element_t));
   }
 #endif
