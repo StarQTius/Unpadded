@@ -19,7 +19,7 @@ namespace detail {
 template<typename T>
 T interpret_from_signed_magnitude(unsigned long long value) {
   constexpr auto sign_mask = 0b10000000ull << 8 * (sizeof(T) - 1);
-  constexpr auto magnitude_mask = ~(~0ull >> 8 * (sizeof(value) - sizeof(T))) ^ sign_mask;
+  constexpr auto magnitude_mask = (~0ull >> 8 * (sizeof(value) - sizeof(T))) ^ sign_mask;
   return value & sign_mask ? -static_cast<T>(value & magnitude_mask) : static_cast<T>(value);
 }
 

@@ -19,6 +19,7 @@ template<typename Int, Int V>
 inline void storage_write_and_interpret() {
   constexpr upd::endianess endianesses[] = { upd::endianess::LITTLE, upd::endianess::BIG };
   constexpr upd::signed_mode signed_modes[] = {
+    upd::signed_mode::SIGNED_MAGNITUDE,
     upd::signed_mode::ONE_COMPLEMENT,
     upd::signed_mode::TWO_COMPLEMENT
   };
@@ -41,6 +42,7 @@ template<size_t I, long long V, typename... Args>
 inline void storage_set_and_get() {
   constexpr upd::endianess endianesses[] = { upd::endianess::LITTLE, upd::endianess::BIG };
   constexpr upd::signed_mode signed_modes[] = {
+    upd::signed_mode::SIGNED_MAGNITUDE,
     upd::signed_mode::ONE_COMPLEMENT,
     upd::signed_mode::TWO_COMPLEMENT
   };
