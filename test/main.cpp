@@ -7,6 +7,23 @@ void setup() {
 
   RUN_TEST((storage_write_and_inspect_raw_data<
     int16_t, 0xabc,
+    endianess::LITTLE, signed_mode::SIGNED_MAGNITUDE,
+    0xbc, 0x0a>));
+  RUN_TEST((storage_write_and_inspect_raw_data<
+    int16_t, -0xabc,
+    endianess::LITTLE, signed_mode::SIGNED_MAGNITUDE,
+    0xbc, 0x8a>));
+  RUN_TEST((storage_write_and_inspect_raw_data<
+    int16_t, 0xabc,
+    endianess::BIG, signed_mode::SIGNED_MAGNITUDE,
+    0x0a, 0xbc>));
+  RUN_TEST((storage_write_and_inspect_raw_data<
+    int16_t, -0xabc,
+    endianess::BIG, signed_mode::SIGNED_MAGNITUDE,
+    0x8a, 0xbc>));
+
+  RUN_TEST((storage_write_and_inspect_raw_data<
+    int16_t, 0xabc,
     endianess::LITTLE, signed_mode::ONE_COMPLEMENT,
     0xbc, 0x0a>));
   RUN_TEST((storage_write_and_inspect_raw_data<

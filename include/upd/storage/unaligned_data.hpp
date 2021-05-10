@@ -120,6 +120,7 @@ public:
     auto tmp = interpret_with_endianess<unsigned long long>(offset, sizeof(T));
 
     switch(m_signed_mode) {
+      case signed_mode::SIGNED_MAGNITUDE: return detail::interpret_from_signed_magnitude<T>(tmp);
       case signed_mode::ONE_COMPLEMENT: return detail::interpret_from_one_complement<T>(tmp);
       case signed_mode::TWO_COMPLEMENT: return detail::interpret_from_two_complement<T>(tmp);
       default: return 0; // other representation not yet supported
@@ -189,6 +190,9 @@ public:
     auto tmp = 0ull;
 
     switch(m_signed_mode) {
+      case signed_mode::SIGNED_MAGNITUDE:
+        tmp = detail::interpret_to_signed_magnitude(x);
+        break;
       case signed_mode::ONE_COMPLEMENT:
         tmp = detail::interpret_to_one_complement(x);
         break;
