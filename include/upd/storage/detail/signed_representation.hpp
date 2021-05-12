@@ -73,5 +73,21 @@ unsigned long long interpret_to_two_complement(T value) {
   return value >= 0 ? static_cast<unsigned long long>(value) : static_cast<unsigned long long>(~(-value - 1));
 }
 
+/*!
+*/
+template<typename T>
+T interpret_from_offset_binary(unsigned long long value) {
+  constexpr auto offset = 0b10000000ull << 8 *(sizeof(T) - 1);
+  return static_cast<T>(value - offset);
+}
+
+/*!
+*/
+template<typename T>
+unsigned long long interpret_to_offset_binary(T value) {
+  constexpr auto offset = 0b10000000ull << 8 *(sizeof(T) - 1);
+  return static_cast<unsigned long long>(value + offset);
+}
+
 } // namespace detail
 } // namespace upd

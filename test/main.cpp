@@ -56,6 +56,23 @@ void setup() {
     endianess::BIG, signed_mode::TWO_COMPLEMENT,
     0xff, 0x82>));
 
+  RUN_TEST((storage_write_and_inspect_raw_data<
+    int16_t, 0xabc,
+    endianess::LITTLE, signed_mode::OFFSET_BINARY,
+    0xbc, 0x8a>));
+  RUN_TEST((storage_write_and_inspect_raw_data<
+    int16_t, -0xabc,
+    endianess::LITTLE, signed_mode::OFFSET_BINARY,
+    0x44, 0x75>));
+  RUN_TEST((storage_write_and_inspect_raw_data<
+    int16_t, 0xabc,
+    endianess::BIG, signed_mode::OFFSET_BINARY,
+    0x8a, 0xbc>));
+  RUN_TEST((storage_write_and_inspect_raw_data<
+    int16_t, -0xabc,
+    endianess::BIG, signed_mode::OFFSET_BINARY,
+    0x75, 0x44>));
+
   RUN_TEST((storage_write_and_interpret<uint16_t, 0xabc>));
   RUN_TEST((storage_write_and_interpret<int16_t, 0xabc>));
   RUN_TEST((storage_write_and_interpret<int16_t, -0xabc>));

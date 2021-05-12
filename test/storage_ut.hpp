@@ -21,7 +21,8 @@ inline void storage_write_and_interpret() {
   constexpr upd::signed_mode signed_modes[] = {
     upd::signed_mode::SIGNED_MAGNITUDE,
     upd::signed_mode::ONE_COMPLEMENT,
-    upd::signed_mode::TWO_COMPLEMENT
+    upd::signed_mode::TWO_COMPLEMENT,
+    upd::signed_mode::OFFSET_BINARY
   };
 
   const char error_format[] = "endianess = %i, signed mode = %i";
@@ -44,7 +45,8 @@ inline void storage_set_and_get() {
   constexpr upd::signed_mode signed_modes[] = {
     upd::signed_mode::SIGNED_MAGNITUDE,
     upd::signed_mode::ONE_COMPLEMENT,
-    upd::signed_mode::TWO_COMPLEMENT
+    upd::signed_mode::TWO_COMPLEMENT,
+    upd::signed_mode::OFFSET_BINARY
   };
 
   const char error_format[] = "endianess = %i, signed mode = %i";
