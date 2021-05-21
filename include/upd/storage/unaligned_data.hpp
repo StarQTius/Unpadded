@@ -124,7 +124,7 @@ public:
       case signed_mode::ONE_COMPLEMENT: return detail::interpret_from_one_complement<T>(tmp);
       case signed_mode::TWO_COMPLEMENT: return detail::interpret_from_two_complement<T>(tmp);
       case signed_mode::OFFSET_BINARY: return detail::interpret_from_offset_binary<T>(tmp);
-      default: return 0; // other representation not yet supported
+      default: return 0; // Fail-safe to shut down potential compiler warnings
     }
   }
 #endif
@@ -203,8 +203,6 @@ public:
       case signed_mode::OFFSET_BINARY:
         tmp = detail::interpret_to_offset_binary(x);
         break;
-      default:
-        return; // not yet implemented
     }
 
     write_with_endianess(tmp, offset, sizeof(x));
