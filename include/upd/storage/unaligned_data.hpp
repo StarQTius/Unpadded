@@ -5,6 +5,7 @@
 #include "upd/format.hpp"
 #include "upd/type.hpp"
 
+#include "detail/endianess.hpp"
 #include "detail/signed_representation.hpp"
 
 #include "array_wrapper.hpp"
@@ -96,7 +97,9 @@ public:
 #else
   template<typename T>
   concept::require_unsigned_integer<T, T>
-  interpret_as(size_t offset) const { return interpret_with_endianess<T>(offset, sizeof(T)); }
+  interpret_as(size_t offset) const {
+    return detail::interpret_with_endianess<T, Endianess>(m_raw_data, offset, sizeof(T));
+  }
 #endif
 
   /*!
@@ -114,7 +117,10 @@ public:
   template<typename T>
   concept::require_signed_integer<T, T>
   interpret_as(size_t offset) const {
-    auto tmp = interpret_with_endianess<unsigned long long>(offset, sizeof(T));
+    auto tmp = detail::interpret_with_endianess<unsigned long long, Endianess>(
+      m_raw_data,
+      offset,
+      sizeof(T));
 
     switch(Signed_Mode) {
       case signed_mode::SIGNED_MAGNITUDE: return detail::interpret_from_signed_magnitude<T>(tmp);
@@ -167,7 +173,9 @@ public:
 #else
   template<typename T>
   concept::require_unsigned_integer<T>
-  write(const T& x, size_t offset) { write_with_endianess(x, offset, sizeof(x)); }
+  write(const T& x, size_t offset) {
+    detail::write_with_endianess<Endianess>(m_raw_data, x, offset, sizeof(x));
+  }
 #endif
 
   /*!
@@ -202,7 +210,7 @@ public:
         break;
     }
 
-    write_with_endianess(tmp, offset, sizeof(x));
+    detail::write_with_endianess<Endianess>(m_raw_data, tmp, offset, sizeof(x));
   }
 #endif
 
@@ -228,39 +236,6 @@ public:
 #endif
 
 private:
-  template<typename T>
-  T interpret_with_endianess(size_t offset, size_t n) const {
-    T retval = 0;
-    size_t shift = 0;
-
-    switch(Endianess) {
-      case endianess::LITTLE:
-        for (size_t i = 0; i < n; i++, shift += 8)
-          retval |= static_cast<T>(m_raw_data[offset + i]) << shift;
-        break;
-      case endianess::BIG:
-        for (size_t i = 0; i < n; i++, shift += 8)
-          retval |= static_cast<T>(m_raw_data[offset + (n - i - 1)]) << shift;
-        break;
-    }
-
-    return retval;
-  }
-
-  template<typename T>
-  void write_with_endianess(T x, size_t offset, size_t n) {
-    switch(Endianess) {
-      case endianess::LITTLE:
-        for (size_t i = 0; i < n; i++, x >>= 8)
-          m_raw_data[offset + i] = x & 0xff;
-        break;
-      case endianess::BIG:
-        for (size_t i = 0; i < n; i++, x >>= 8)
-          m_raw_data[offset + (n - i - 1)] = x & 0xff;
-        break;
-    }
-  }
-
   byte_t m_raw_data[N];
 
 };
