@@ -122,13 +122,7 @@ public:
       offset,
       sizeof(T));
 
-    switch(Signed_Mode) {
-      case signed_mode::SIGNED_MAGNITUDE: return detail::interpret_from_signed_magnitude<T>(tmp);
-      case signed_mode::ONE_COMPLEMENT: return detail::interpret_from_one_complement<T>(tmp);
-      case signed_mode::TWO_COMPLEMENT: return detail::interpret_from_two_complement<T>(tmp);
-      case signed_mode::OFFSET_BINARY: return detail::interpret_from_offset_binary<T>(tmp);
-      default: return 0; // Fail-safe to shut down potential compiler warnings
-    }
+    return detail::interpret_from<T, Signed_Mode>(tmp);
   }
 #endif
 
@@ -193,22 +187,7 @@ public:
   template<typename T>
   concept::require_signed_integer<T>
   write(const T& x, size_t offset) {
-    auto tmp = 0ull;
-
-    switch(Signed_Mode) {
-      case signed_mode::SIGNED_MAGNITUDE:
-        tmp = detail::interpret_to_signed_magnitude(x);
-        break;
-      case signed_mode::ONE_COMPLEMENT:
-        tmp = detail::interpret_to_one_complement(x);
-        break;
-      case signed_mode::TWO_COMPLEMENT:
-        tmp = detail::interpret_to_two_complement(x);
-        break;
-      case signed_mode::OFFSET_BINARY:
-        tmp = detail::interpret_to_offset_binary(x);
-        break;
-    }
+    auto tmp = detail::interpret_to<Signed_Mode>(x);
 
     detail::write_with_endianess<Endianess>(m_raw_data, tmp, offset, sizeof(x));
   }

@@ -11,13 +11,16 @@
     representation.
 */
 
+#include "upd/storage/concept.hpp"
+
 namespace upd {
 namespace detail {
 
 /*!
 */
-template<typename T>
-T interpret_from_signed_magnitude(unsigned long long value) {
+template<typename T, signed_mode Signed_Mode>
+concept::enable_t<Signed_Mode == signed_mode::SIGNED_MAGNITUDE, T>
+interpret_from(unsigned long long value) {
   constexpr auto sign_mask = 0b10000000ull << 8 * (sizeof(T) - 1);
   constexpr auto magnitude_mask = (~0ull >> 8 * (sizeof(value) - sizeof(T))) ^ sign_mask;
   return value & sign_mask ? -static_cast<T>(value & magnitude_mask) : static_cast<T>(value);
@@ -25,8 +28,9 @@ T interpret_from_signed_magnitude(unsigned long long value) {
 
 /*!
 */
-template<typename T>
-unsigned long long interpret_to_signed_magnitude(T value) {
+template<signed_mode Signed_Mode, typename T>
+concept::enable_t<Signed_Mode == signed_mode::SIGNED_MAGNITUDE, unsigned long long>
+interpret_to(T value) {
   constexpr auto sign_mask = 0b10000000ull << 8 * (sizeof(T) - 1);
   return value >= 0 ? static_cast<unsigned long long>(value) : static_cast<unsigned long long>(-value) | sign_mask;
 }
@@ -36,8 +40,9 @@ unsigned long long interpret_to_signed_magnitude(T value) {
   \param value The unsigned integer to interpret
   \return A signed integer which is represented by value in one's complement
 */
-template<typename T>
-T interpret_from_one_complement(unsigned long long value) {
+template<typename T, signed_mode Signed_Mode>
+concept::enable_t<Signed_Mode == signed_mode::ONE_COMPLEMENT, T>
+interpret_from(unsigned long long value) {
   constexpr auto sign_mask = 0b10000000ull << 8 * (sizeof(T) - 1);
   return value & sign_mask ? -static_cast<T>(~value) : static_cast<T>(value);
 }
@@ -47,8 +52,9 @@ T interpret_from_one_complement(unsigned long long value) {
   \param value The signed integer to interpret
   \return A unsigned integer representing value in one's complement
 */
-template<typename T>
-unsigned long long interpret_to_one_complement(T value) {
+template<signed_mode Signed_Mode, typename T>
+concept::enable_t<Signed_Mode == signed_mode::ONE_COMPLEMENT, unsigned long long>
+interpret_to(T value) {
   return value >= 0 ? static_cast<unsigned long long>(value) : ~static_cast<unsigned long long>(-value);
 }
 
@@ -57,8 +63,9 @@ unsigned long long interpret_to_one_complement(T value) {
   \param value The unsigned integer to interpret
   \return A signed integer which is represented by value in two's complement
 */
-template<typename T>
-T interpret_from_two_complement(unsigned long long value) {
+template<typename T, signed_mode Signed_Mode>
+concept::enable_t<Signed_Mode == signed_mode::TWO_COMPLEMENT, T>
+interpret_from(unsigned long long value) {
   constexpr auto sign_mask = 0b10000000ull << 8 * (sizeof(T) - 1);
   return value & sign_mask ? -static_cast<T>(~value + 1) : static_cast<T>(value);
 }
@@ -68,23 +75,26 @@ T interpret_from_two_complement(unsigned long long value) {
   \param value The unsigned integer to interpret
   \return A signed integer which is represented by value in two's complement
 */
-template<typename T>
-unsigned long long interpret_to_two_complement(T value) {
+template<signed_mode Signed_Mode, typename T>
+concept::enable_t<Signed_Mode == signed_mode::TWO_COMPLEMENT, unsigned long long>
+interpret_to(T value) {
   return value >= 0 ? static_cast<unsigned long long>(value) : static_cast<unsigned long long>(~(-value - 1));
 }
 
 /*!
 */
-template<typename T>
-T interpret_from_offset_binary(unsigned long long value) {
+template<typename T, signed_mode Signed_Mode>
+concept::enable_t<Signed_Mode == signed_mode::OFFSET_BINARY, T>
+interpret_from(unsigned long long value) {
   constexpr auto offset = 0b10000000ull << 8 *(sizeof(T) - 1);
   return static_cast<T>(value - offset);
 }
 
 /*!
 */
-template<typename T>
-unsigned long long interpret_to_offset_binary(T value) {
+template<signed_mode Signed_Mode, typename T>
+concept::enable_t<Signed_Mode == signed_mode::OFFSET_BINARY, unsigned long long>
+interpret_to(T value) {
   constexpr auto offset = 0b10000000ull << 8 *(sizeof(T) - 1);
   return static_cast<unsigned long long>(value + offset);
 }
