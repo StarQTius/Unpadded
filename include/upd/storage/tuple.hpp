@@ -20,9 +20,11 @@ namespace upd {
   \details
     The object holds values of provided type in an unaligned maners (ie, there is no padding between two consecutive
     values).
+  \tparam Endianess endianess of the stored data
+  \tparam Signed_Mode signed mode of the stored data
   \tparam Ts... Types of the serialized values
 */
-template<typename... Ts>
+template<endianess Endianess, signed_mode Signed_Mode, typename... Ts>
 class tuple {
   using typelist = boost::mp11::mp_list<Ts...>;
   using type_sizes = boost::mp11::mp_list<boost::mp11::mp_size_t<sizeof(Ts)>...>;
@@ -36,27 +38,19 @@ public:
   //! \brief Storage size in byte
   constexpr static auto size = boost::mp11::mp_fold<type_sizes, boost::mp11::mp_size_t<0>, boost::mp11::mp_plus>::value;
 
-  /*!
-    \brief Default initialize the object content
-    \param endianess Target endianess for serialization
-  */
-  explicit tuple(endianess data_endianess, signed_mode data_signed_mode) :
-    m_storage{data_endianess, data_signed_mode} {}
+  //! \brief Equals the endianess given as template parameter
+  constexpr static auto storage_endianess = Endianess;
+
+  //! \brief Equals the signed mode given as template parameter
+  constexpr static auto storage_signed_mode = Signed_Mode;
 
   /*!
     \brief Serialize the provided values
-    \tparam Args... Serialized values' types
-    \param data_endianess Target endianess for serialization
-    \param data_signed_mode Target signed representation for serialization
+    \tparam Args... Serialized values types
     \param args... Values to be serialized
   */
   template<typename... Args, typename = concept::enable_t<sizeof...(Args) == sizeof...(Ts)>>
-  explicit tuple(
-    endianess data_endianess,
-    signed_mode data_signed_mode,
-    const Args&... args) :
-    m_storage{data_endianess, data_signed_mode}
-  {
+  explicit tuple(const Args&... args) {
     using boost::mp11::index_sequence_for;
     lay(index_sequence_for<Ts...>{}, args...);
   }
@@ -87,7 +81,7 @@ public:
   template<size_t I> auto get() const;
 #else
   template<size_t I>
-  decltype(boost::declval<unaligned_data<size>>().template interpret_as<arg_t<I>>(0))
+  decltype(boost::declval<unaligned_data<size, Endianess, Signed_Mode>>().template interpret_as<arg_t<I>>(0))
   get() const {
     using namespace boost::mp11;
     constexpr auto offset = mp_fold<mp_take_c<type_sizes, I>, mp_size_t<0>, mp_plus>::value;
@@ -116,25 +110,21 @@ private:
      discard {0, (set<Is>(args), 0)...};
   }
 
-  unaligned_data<size> m_storage;
+  unaligned_data<size, Endianess, Signed_Mode> m_storage;
 
 };
 
 /*!
   \brief Construct a tuple object provided constant lvalue to values
+  \tparam Endianess Target endianess for serialization
+  \tparam Signed_Mode Target signed representation for serialization
   \tparam Args... Deduced types of the provided values.
-  \param data_endianess Target endianess for serialization
-  \param data_signed_mode Target signed representation for serialization
   \param args... Values to be serialized into the return value
   \return tuple object holding a serialized copy of the provided values.
 */
-template<typename... Args>
-tuple<Args...> make_tuple(
-  endianess data_endianess,
-  signed_mode data_signed_mode,
-  const Args&... args)
-{
-  return tuple<Args...>{data_endianess, data_signed_mode, args...};
+template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Args>
+tuple<Endianess, Signed_Mode, Args...> make_tuple(const Args&... args) {
+  return tuple<Endianess, Signed_Mode, Args...>{args...};
 }
 
 } // namespace upd

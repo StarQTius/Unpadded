@@ -73,23 +73,11 @@ void setup() {
     endianess::BIG, signed_mode::OFFSET_BINARY,
     0x75, 0x44>));
 
-  RUN_TEST((storage_write_and_interpret<uint16_t, 0xabc>));
-  RUN_TEST((storage_write_and_interpret<int16_t, 0xabc>));
-  RUN_TEST((storage_write_and_interpret<int16_t, -0xabc>));
-  RUN_TEST((storage_write_and_interpret<uint64_t, 0xabc>));
-  RUN_TEST((storage_write_and_interpret<int64_t, 0xabc>));
-  RUN_TEST((storage_write_and_interpret<int64_t, -0xabc>));
-
-  RUN_TEST((storage_set_and_get<2, 0xabc, char, int, unsigned short, long, unsigned long, bool>));
-  RUN_TEST((storage_set_and_get<1, 0xabc, char, int, unsigned short, long, unsigned long, bool>));
-  RUN_TEST((storage_set_and_get<1, -0xabc, char, int, unsigned short, long, unsigned long, bool>));
-  RUN_TEST((storage_set_and_get<4, 0xabc, char, int, unsigned short, long, unsigned long, bool>));
-  RUN_TEST((storage_set_and_get<3, 0xabc, char, int, unsigned short, long, unsigned long, bool>));
-  RUN_TEST((storage_set_and_get<3, -0xabc, char, int, unsigned short, long, unsigned long, bool>));
-
-  RUN_TEST(storage_iterate_unaligned_data);
-  RUN_TEST(storage_iterate_tuple);
-  RUN_TEST(storage_access_raw_data);
+  storage_write_and_interpret_multiopt(every_options);
+  storage_set_and_get_multiopt(every_options);
+  storage_iterate_unaligned_data_multiopt(every_options);
+  storage_iterate_unaligned_data_multiopt(every_options);
+  storage_iterate_unaligned_data_multiopt(every_options);
 
   UNITY_END();
 }

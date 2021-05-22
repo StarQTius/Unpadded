@@ -27,8 +27,10 @@ namespace upd {
     The user shall provide the target endianess so that the unsigned integer are serialized without depending on the
     platform endianess.
   \tparam N Size of the content in bytes
+  \tparam Endianess endianess of the stored data
+  \tparam Signed_Mode signed mode of the stored data
 */
-template<size_t N>
+template<size_t N, endianess Endianess, signed_mode Signed_Mode>
 class unaligned_data {
 public:
   /*!
@@ -36,28 +38,23 @@ public:
   */
   constexpr static auto size = N;
 
+  //! \brief Equals the endianess given as template parameter
+  constexpr static auto storage_endianess = Endianess;
+
+  //! \brief Equals the signed mode given as template parameter
+  constexpr static auto storage_signed_mode = Signed_Mode;
+
   /*!
-    \brief Default initialize the object content
-    \param endianess Target endianess for serialization
+    \brief Default initialize the underlying storage
   */
-  explicit unaligned_data(endianess data_endianess, signed_mode data_signed_mode) :
-    m_endianess{data_endianess},
-    m_signed_mode{data_signed_mode}
-  {};
+  unaligned_data() = default;
 
   /*!
     \brief Initialize the object content of the object by copying from a buffer
     \details The Nth first bytes of the buffer are copied.
     \param raw_data Pointer to the buffer
-    \param endianess Target endianess for serialization
   */
-  explicit unaligned_data(
-    const byte_t* raw_data,
-    endianess data_endianess,
-    signed_mode data_signed_mode) :
-    m_endianess{data_endianess},
-    m_signed_mode{data_signed_mode}
-  {
+  explicit unaligned_data(const byte_t* raw_data) {
     memcpy(m_raw_data, raw_data, N);
   }
 
@@ -119,7 +116,7 @@ public:
   interpret_as(size_t offset) const {
     auto tmp = interpret_with_endianess<unsigned long long>(offset, sizeof(T));
 
-    switch(m_signed_mode) {
+    switch(Signed_Mode) {
       case signed_mode::SIGNED_MAGNITUDE: return detail::interpret_from_signed_magnitude<T>(tmp);
       case signed_mode::ONE_COMPLEMENT: return detail::interpret_from_one_complement<T>(tmp);
       case signed_mode::TWO_COMPLEMENT: return detail::interpret_from_two_complement<T>(tmp);
@@ -190,7 +187,7 @@ public:
   write(const T& x, size_t offset) {
     auto tmp = 0ull;
 
-    switch(m_signed_mode) {
+    switch(Signed_Mode) {
       case signed_mode::SIGNED_MAGNITUDE:
         tmp = detail::interpret_to_signed_magnitude(x);
         break;
@@ -236,7 +233,7 @@ private:
     T retval = 0;
     size_t shift = 0;
 
-    switch(m_endianess) {
+    switch(Endianess) {
       case endianess::LITTLE:
         for (size_t i = 0; i < n; i++, shift += 8)
           retval |= static_cast<T>(m_raw_data[offset + i]) << shift;
@@ -252,7 +249,7 @@ private:
 
   template<typename T>
   void write_with_endianess(T x, size_t offset, size_t n) {
-    switch(m_endianess) {
+    switch(Endianess) {
       case endianess::LITTLE:
         for (size_t i = 0; i < n; i++, x >>= 8)
           m_raw_data[offset + i] = x & 0xff;
@@ -265,21 +262,20 @@ private:
   }
 
   byte_t m_raw_data[N];
-  endianess m_endianess;
-  signed_mode m_signed_mode;
 
 };
 
 /*!
   \brief Construct an unaligned_data object provided a lvalue to a bounded array
   \tparam N Size of the bounded array
+  \tparam Endianess Target endianess for serialization
+  \tparam Signed_Mode Target signed mode for serialization
   \param raw_data Array used to initiliaze the return value
-  \param endianess Target endianess for serialization
   \return A unaligned_data object which content is equal to raw_data
 */
-template<size_t N>
-unaligned_data<N> make_unaligned_data(const byte_t (&raw_data)[N], endianess data_endianess) {
-  return unaligned_data<N>{raw_data, data_endianess};
+template<size_t N, endianess Endianess, signed_mode Signed_Mode>
+unaligned_data<N, Endianess, Signed_Mode> make_unaligned_data(const byte_t (&raw_data)[N]) {
+  return unaligned_data<N, Endianess, Signed_Mode>{};
 }
 
 } // namespace upd

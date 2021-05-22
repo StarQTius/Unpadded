@@ -2,9 +2,13 @@ name: C/C++ CI
 
 on:
   push:
-    branches: [ master ]
+    branches:
+        - master
+        - template_optimization
   pull_request:
-    branches: [ master ]
+    branches:
+      - master
+      - template_optimization
 
 jobs:
   build:
