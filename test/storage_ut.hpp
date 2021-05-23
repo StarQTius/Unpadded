@@ -141,5 +141,4 @@ storage_access_raw_data() {
   TEST_ASSERT_EQUAL_HEX8(raw_data[3], tuple.begin()[3]);
 }
 
-
 MAKE_MULTIOPT(storage_access_raw_data)

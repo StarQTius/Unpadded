@@ -3,6 +3,17 @@
 void setup() {
   using namespace upd;
 
+  // Template instantiation
+  {
+    byte_t raw_data[16] {};
+
+    unaligned_data<16, endianess::LITTLE, signed_mode::TWO_COMPLEMENT>{};
+    tuple<endianess::LITTLE, signed_mode::TWO_COMPLEMENT, int, char, bool>{0, 0, 0};
+
+    make_unaligned_data<endianess::LITTLE, signed_mode::TWO_COMPLEMENT>(raw_data);
+    make_tuple<endianess::LITTLE, signed_mode::TWO_COMPLEMENT>(int{}, char{}, bool{});
+  }
+
   UNITY_BEGIN();
 
   RUN_TEST((storage_write_and_inspect_raw_data<

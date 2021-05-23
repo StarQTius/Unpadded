@@ -227,9 +227,9 @@ private:
   \param raw_data Array used to initiliaze the return value
   \return A unaligned_data object which content is equal to raw_data
 */
-template<size_t N, endianess Endianess, signed_mode Signed_Mode>
+template<endianess Endianess, signed_mode Signed_Mode, size_t N>
 unaligned_data<N, Endianess, Signed_Mode> make_unaligned_data(const byte_t (&raw_data)[N]) {
-  return unaligned_data<N, Endianess, Signed_Mode>{};
+  return unaligned_data<N, Endianess, Signed_Mode>{raw_data};
 }
 
 } // namespace upd
