@@ -1,6 +1,6 @@
 .pio
 obj
-run_ut
+run_ut*
 *.ini
 html
 gcov
