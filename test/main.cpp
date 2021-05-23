@@ -76,8 +76,8 @@ void setup() {
   storage_write_and_interpret_multiopt(every_options);
   storage_set_and_get_multiopt(every_options);
   storage_iterate_unaligned_data_multiopt(every_options);
-  storage_iterate_unaligned_data_multiopt(every_options);
-  storage_iterate_unaligned_data_multiopt(every_options);
+  storage_iterate_tuple_multiopt(every_options);
+  storage_access_raw_data_multiopt(every_options);
 
   UNITY_END();
 }

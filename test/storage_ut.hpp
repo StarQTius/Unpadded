@@ -78,11 +78,27 @@ void storage_iterate_unaligned_data() {
 MAKE_MULTIOPT(storage_iterate_unaligned_data)
 
 template<upd::endianess Endianess, upd::signed_mode Signed_Mode>
-void storage_iterate_tuple() {
+upd::concept::enable_t<Endianess == upd::endianess::LITTLE>
+storage_iterate_tuple() {
   using namespace upd;
 
   uint8_t raw_data[] {0xaa, 0xcc, 0xbb, 0x00, 0xff, 0xee, 0xdd};
-  tuple<Endianess, Signed_Mode, unsigned char, unsigned short, unsigned long> tuple{
+  tuple<Endianess, Signed_Mode, uint8_t, uint16_t, uint32_t> tuple{
+    0xaa,
+    0xbbcc,
+    0xddeeff00};
+  TEST_ASSERT_TRUE(tuple.begin() != tuple.end());
+  size_t i = 0;
+  for (auto byte : tuple) TEST_ASSERT_EQUAL_HEX16(raw_data[i++], byte);
+}
+
+template<upd::endianess Endianess, upd::signed_mode Signed_Mode>
+upd::concept::enable_t<Endianess == upd::endianess::BIG>
+storage_iterate_tuple() {
+  using namespace upd;
+
+  uint8_t raw_data[] {0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x00};
+  tuple<Endianess, Signed_Mode, uint8_t, uint16_t, uint32_t> tuple{
     0xaa,
     0xbbcc,
     0xddeeff00};
@@ -94,7 +110,24 @@ void storage_iterate_tuple() {
 MAKE_MULTIOPT(storage_iterate_tuple)
 
 template<upd::endianess Endianess, upd::signed_mode Signed_Mode>
-void storage_access_raw_data() {
+upd::concept::enable_t<Endianess == upd::endianess::LITTLE>
+storage_access_raw_data() {
+  using namespace upd;
+
+  uint8_t raw_data[] {0xaa, 0xbb, 0xdd, 0xcc};
+  auto tuple = make_tuple<Endianess, Signed_Mode>(
+    (unsigned char){0xaa},
+    (unsigned char){0xbb},
+    (unsigned short){0xccdd});
+  TEST_ASSERT_EQUAL_HEX8(raw_data[0], tuple.begin()[0]);
+  TEST_ASSERT_EQUAL_HEX8(raw_data[1], tuple.begin()[1]);
+  TEST_ASSERT_EQUAL_HEX8(raw_data[2], tuple.begin()[2]);
+  TEST_ASSERT_EQUAL_HEX8(raw_data[3], tuple.begin()[3]);
+}
+
+template<upd::endianess Endianess, upd::signed_mode Signed_Mode>
+upd::concept::enable_t<Endianess == upd::endianess::BIG>
+storage_access_raw_data() {
   using namespace upd;
 
   uint8_t raw_data[] {0xaa, 0xbb, 0xcc, 0xdd};
@@ -107,5 +140,6 @@ void storage_access_raw_data() {
   TEST_ASSERT_EQUAL_HEX8(raw_data[2], tuple.begin()[2]);
   TEST_ASSERT_EQUAL_HEX8(raw_data[3], tuple.begin()[3]);
 }
+
 
 MAKE_MULTIOPT(storage_access_raw_data)
