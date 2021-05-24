@@ -28,6 +28,7 @@ constexpr auto every_options = boost::mp11::mp_product<
     endianess_h<upd::endianess::LITTLE>,
     endianess_h<upd::endianess::BIG>>,
   boost::mp11::mp_list<
+    signed_mode_h<upd::signed_mode::BUILTIN>,
     signed_mode_h<upd::signed_mode::SIGNED_MAGNITUDE>,
     signed_mode_h<upd::signed_mode::ONE_COMPLEMENT>,
     signed_mode_h<upd::signed_mode::TWO_COMPLEMENT>,

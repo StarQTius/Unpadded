@@ -19,6 +19,28 @@ namespace detail {
 /*!
 */
 template<typename T, signed_mode Signed_Mode>
+concept::enable_t<Signed_Mode == signed_mode::BUILTIN, T>
+interpret_from(unsigned long long value) {
+  T retval;
+  memcpy(&retval, &value, sizeof(retval));
+
+  return retval;
+}
+
+/*!
+*/
+template<signed_mode Signed_Mode, typename T>
+concept::enable_t<Signed_Mode == signed_mode::BUILTIN, unsigned long long>
+interpret_to(T value) {
+  unsigned long long retval;
+  memcpy(&retval, &value, sizeof(retval));
+
+  return retval;
+}
+
+/*!
+*/
+template<typename T, signed_mode Signed_Mode>
 concept::enable_t<Signed_Mode == signed_mode::SIGNED_MAGNITUDE, T>
 interpret_from(unsigned long long value) {
   constexpr auto sign_mask = 0b10000000ull << 8 * (sizeof(T) - 1);
