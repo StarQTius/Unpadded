@@ -24,6 +24,7 @@ extern "C" void tearDown() {}
 constexpr auto every_options = boost::mp11::mp_product<
   options_h,
   boost::mp11::mp_list<
+    endianess_h<upd::endianess::BUILTIN>,
     endianess_h<upd::endianess::LITTLE>,
     endianess_h<upd::endianess::BIG>>,
   boost::mp11::mp_list<

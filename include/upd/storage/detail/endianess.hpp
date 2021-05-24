@@ -16,6 +16,25 @@ namespace detail {
 /*!
 */
 template<typename T, endianess Endianess>
+concept::enable_t<Endianess == endianess::BUILTIN, T>
+interpret_with_endianess(const byte_t* raw_data, size_t offset, size_t n) {
+  T retval;
+  memcpy(&retval, raw_data + offset, n);
+
+  return retval;
+}
+
+/*!
+*/
+template<endianess Endianess, typename T>
+concept::enable_t<Endianess == endianess::BUILTIN>
+write_with_endianess(byte_t* raw_data, const T& x, size_t offset, size_t n) {
+  memcpy(raw_data + offset, &x, n);
+}
+
+/*!
+*/
+template<typename T, endianess Endianess>
 concept::enable_t<Endianess == endianess::LITTLE, T>
 interpret_with_endianess(const byte_t* raw_data, size_t offset, size_t n) {
   T retval = 0;

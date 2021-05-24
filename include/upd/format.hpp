@@ -12,7 +12,7 @@ namespace upd {
 /*!
   \brief Used to specify endianess
 */
-enum class endianess { LITTLE, BIG };
+enum class endianess { BUILTIN, LITTLE, BIG };
 
 /*!
   \brief Used to specify signed integer representation
