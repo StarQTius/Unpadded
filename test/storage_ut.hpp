@@ -78,7 +78,7 @@ void storage_iterate_unaligned_data() {
 MAKE_MULTIOPT(storage_iterate_unaligned_data)
 
 template<upd::endianess Endianess, upd::signed_mode Signed_Mode>
-upd::concept::enable_t<Endianess == upd::endianess::BUILTIN>
+upd::sfinae::enable_t<Endianess == upd::endianess::BUILTIN>
 storage_iterate_tuple() {
   using namespace upd;
 
@@ -99,7 +99,7 @@ storage_iterate_tuple() {
 }
 
 template<upd::endianess Endianess, upd::signed_mode Signed_Mode>
-upd::concept::enable_t<Endianess == upd::endianess::LITTLE>
+upd::sfinae::enable_t<Endianess == upd::endianess::LITTLE>
 storage_iterate_tuple() {
   using namespace upd;
 
@@ -114,7 +114,7 @@ storage_iterate_tuple() {
 }
 
 template<upd::endianess Endianess, upd::signed_mode Signed_Mode>
-upd::concept::enable_t<Endianess == upd::endianess::BIG>
+upd::sfinae::enable_t<Endianess == upd::endianess::BIG>
 storage_iterate_tuple() {
   using namespace upd;
 
@@ -131,7 +131,7 @@ storage_iterate_tuple() {
 MAKE_MULTIOPT(storage_iterate_tuple)
 
 template<upd::endianess Endianess, upd::signed_mode Signed_Mode>
-upd::concept::enable_t<Endianess == upd::endianess::BUILTIN>
+upd::sfinae::enable_t<Endianess == upd::endianess::BUILTIN>
 storage_access_raw_data() {
   using namespace upd;
 
@@ -153,7 +153,7 @@ storage_access_raw_data() {
 }
 
 template<upd::endianess Endianess, upd::signed_mode Signed_Mode>
-upd::concept::enable_t<Endianess == upd::endianess::LITTLE>
+upd::sfinae::enable_t<Endianess == upd::endianess::LITTLE>
 storage_access_raw_data() {
   using namespace upd;
 
@@ -169,7 +169,7 @@ storage_access_raw_data() {
 }
 
 template<upd::endianess Endianess, upd::signed_mode Signed_Mode>
-upd::concept::enable_t<Endianess == upd::endianess::BIG>
+upd::sfinae::enable_t<Endianess == upd::endianess::BIG>
 storage_access_raw_data() {
   using namespace upd;
 

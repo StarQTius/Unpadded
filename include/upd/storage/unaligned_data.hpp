@@ -3,13 +3,13 @@
 #include <cstring>
 
 #include "upd/format.hpp"
+#include "upd/sfinae.hpp"
 #include "upd/type.hpp"
 
 #include "detail/endianess.hpp"
 #include "detail/signed_representation.hpp"
 
 #include "array_wrapper.hpp"
-#include "concept.hpp"
 
 /*!
   \file
@@ -96,7 +96,7 @@ public:
   template<typename T> T interpret_as(size_t offset) const;
 #else
   template<typename T>
-  concept::require_unsigned_integer<T, T>
+  sfinae::require_unsigned_integer<T, T>
   interpret_as(size_t offset) const {
     return detail::interpret_with_endianess<T, Endianess>(m_raw_data, offset, sizeof(T));
   }
@@ -115,7 +115,7 @@ public:
   template<typename T> T interpret_as(size_t offset) const;
 #else
   template<typename T>
-  concept::require_signed_integer<T, T>
+  sfinae::require_signed_integer<T, T>
   interpret_as(size_t offset) const {
     auto tmp = detail::interpret_with_endianess<unsigned long long, Endianess>(
       m_raw_data,
@@ -139,7 +139,7 @@ public:
   template<typename T> array_wrapper<T> interpret_as(size_t offset) const;
 #else
   template<typename T>
-  concept::require_bounded_array<T, array_wrapper<T>>
+  sfinae::require_bounded_array<T, array_wrapper<T>>
   interpret_as(size_t offset) const {
     array_wrapper<T> retval;
 
@@ -166,7 +166,7 @@ public:
   template<typename T> void write(const T& x, size_t offset);
 #else
   template<typename T>
-  concept::require_unsigned_integer<T>
+  sfinae::require_unsigned_integer<T>
   write(const T& x, size_t offset) {
     detail::write_with_endianess<Endianess>(m_raw_data, x, offset, sizeof(x));
   }
@@ -185,7 +185,7 @@ public:
   template<typename T> void write(const T& x, size_t offset);
 #else
   template<typename T>
-  concept::require_signed_integer<T>
+  sfinae::require_signed_integer<T>
   write(const T& x, size_t offset) {
     auto tmp = detail::interpret_to<Signed_Mode>(x);
 
@@ -206,7 +206,7 @@ public:
   template<typename T> void write(const T& array, size_t offset)
 #else
   template<typename T>
-  concept::require_bounded_array<T>
+  sfinae::require_bounded_array<T>
   write(const T& array, size_t offset) {
     using element_t = decltype(*array);
     constexpr auto array_size = sizeof(array) / sizeof(*array);

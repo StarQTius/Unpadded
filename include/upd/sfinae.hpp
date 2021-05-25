@@ -5,11 +5,11 @@
 
 /*!
   \file
-  \brief Concept utility header for storage classes
+  \brief SFINAE utility header for storage classes
 */
 
 namespace upd {
-namespace concept {
+namespace sfinae {
 
 //! \brief Alias for typename boost::enable_if_<T, U>::type;
 template<bool B, typename U = void>
@@ -33,5 +33,5 @@ using require_signed_integer = typename boost::enable_if_<boost::is_signed<T>::v
 template<typename T, typename U = void>
 using require_bounded_array = typename boost::enable_if_<boost::is_bounded_array<T>::value, U>::type;
 
-} // namespace concept
+} // namespace sfinae
 } // namespace upd
