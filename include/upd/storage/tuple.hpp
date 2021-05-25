@@ -24,7 +24,7 @@ namespace upd {
   \tparam Signed_Mode signed mode of the stored data
   \tparam Ts... Types of the serialized values
 */
-template<endianess Endianess, signed_mode Signed_Mode, typename... Ts>
+template<endianess Endianess = endianess::BUILTIN, signed_mode Signed_Mode = signed_mode::BUILTIN, typename... Ts>
 class tuple {
   using typelist = boost::mp11::mp_list<Ts...>;
   using type_sizes = boost::mp11::mp_list<boost::mp11::mp_size_t<sizeof(Ts)>...>;
@@ -49,8 +49,7 @@ public:
     \tparam Args... Serialized values types
     \param args... Values to be serialized
   */
-  template<typename... Args, typename = concept::enable_t<sizeof...(Args) == sizeof...(Ts)>>
-  explicit tuple(const Args&... args) {
+  explicit tuple(const Ts&... args) {
     using boost::mp11::index_sequence_for;
     lay(index_sequence_for<Ts...>{}, args...);
   }
@@ -122,7 +121,7 @@ private:
   \param args... Values to be serialized into the return value
   \return tuple object holding a serialized copy of the provided values.
 */
-template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Args>
+template<endianess Endianess = endianess::BUILTIN, signed_mode Signed_Mode = signed_mode::BUILTIN, typename... Args>
 tuple<Endianess, Signed_Mode, Args...> make_tuple(const Args&... args) {
   return tuple<Endianess, Signed_Mode, Args...>{args...};
 }

@@ -31,7 +31,7 @@ namespace upd {
   \tparam Endianess endianess of the stored data
   \tparam Signed_Mode signed mode of the stored data
 */
-template<size_t N, endianess Endianess, signed_mode Signed_Mode>
+template<size_t N, endianess Endianess = endianess::BUILTIN, signed_mode Signed_Mode = signed_mode::BUILTIN>
 class unaligned_data {
 public:
   /*!
@@ -227,7 +227,7 @@ private:
   \param raw_data Array used to initiliaze the return value
   \return A unaligned_data object which content is equal to raw_data
 */
-template<endianess Endianess, signed_mode Signed_Mode, size_t N>
+template<endianess Endianess = endianess::BUILTIN, signed_mode Signed_Mode = signed_mode::BUILTIN, size_t N>
 unaligned_data<N, Endianess, Signed_Mode> make_unaligned_data(const byte_t (&raw_data)[N]) {
   return unaligned_data<N, Endianess, Signed_Mode>{raw_data};
 }

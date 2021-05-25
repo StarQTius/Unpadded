@@ -8,10 +8,19 @@ void setup() {
     byte_t raw_data[16] {};
 
     unaligned_data<16, endianess::LITTLE, signed_mode::TWO_COMPLEMENT>{};
+    unaligned_data<16>{};
+
     tuple<endianess::LITTLE, signed_mode::TWO_COMPLEMENT, int, char, bool>{0, 0, 0};
 
     make_unaligned_data<endianess::LITTLE, signed_mode::TWO_COMPLEMENT>(raw_data);
+    make_unaligned_data(raw_data);
+
     make_tuple<endianess::LITTLE, signed_mode::TWO_COMPLEMENT>(int{}, char{}, bool{});
+    make_tuple(int{}, char{}, bool{});
+
+#if __cplusplus >= 201703L
+    tuple{int{}, char{}, bool{}};
+#endif
   }
 
   UNITY_BEGIN();
