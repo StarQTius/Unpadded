@@ -59,6 +59,13 @@ public:
     \details There is no bound check performed.
     \param i Index of the accessed byte
   */
+  byte_t& operator[](size_t i) { return m_storage[i]; }
+
+  /*!
+    \brief Access the object content
+    \details There is no bound check performed.
+    \param i Index of the accessed byte
+  */
   const byte_t& operator[](size_t i) const { return m_storage[i]; }
 
   /*!
@@ -66,6 +73,8 @@ public:
     @{
   */
 
+  byte_t* begin() const { return m_storage.begin(); }
+  byte_t* end() const { return m_storage.end(); }
   const byte_t* begin() const { return m_storage.begin(); }
   const byte_t* end() const { return m_storage.end(); }
 
