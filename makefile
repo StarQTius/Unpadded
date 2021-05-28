@@ -7,10 +7,6 @@ cpp_flags = \
 	-Wextra \
 	-Werror \
 	-Iinclude \
-	-Ilib/config/include \
-	-Ilib/mp11/include \
-	-Ilib/static_assert/include \
-	-Ilib/type_traits/include \
 	-Ilib/Unity/src \
 
 c_flags = \

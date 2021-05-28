@@ -1,3 +1,8 @@
 #!/bin/sh
 mkdir -p obj obj/lib obj/cpp11 obj/cpp14 obj/cpp17
-git submodule update --init --recursive
+git pull --recurse-submodules
+git submodule foreach '
+  if [ -d include ]; then
+    rsync --recursive include/ $toplevel/include/
+  fi
+'

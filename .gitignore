@@ -4,3 +4,5 @@ run_ut*
 *.ini
 html
 gcov
+include/*
+!include/upd
