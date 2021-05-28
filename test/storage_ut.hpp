@@ -185,3 +185,14 @@ storage_access_raw_data() {
 }
 
 MAKE_MULTIOPT(storage_access_raw_data)
+
+template<upd::endianess Endianess, upd::signed_mode Signed_Mode>
+void storage_invoke_with_tuple() {
+  using namespace upd;
+
+  auto terms = make_tuple<Endianess, Signed_Mode>(int{12}, int{34}, int{-56});
+
+  TEST_ASSERT_EQUAL_INT(12 + 34 - 56, terms.invoke(*(+[](int a, int b, int c) { return a + b + c; })));
+}
+
+MAKE_MULTIOPT(storage_invoke_with_tuple)

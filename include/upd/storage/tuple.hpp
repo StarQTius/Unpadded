@@ -4,6 +4,7 @@
 #include "boost/type_traits.hpp"
 
 #include "upd/format.hpp"
+#include "upd/fwd.hpp"
 #include "upd/type.hpp"
 
 #include "unaligned_data.hpp"
@@ -110,12 +111,31 @@ public:
     m_storage.write(value, offset);
   }
 
+  /*!
+    \brief Invoke a functor with the stored values
+    \param ftor Functor to be invoked
+    \return ftor(this->get<Is>()...) with Is = 0, 1, ..., sizeof...(Ts)
+  */
+#ifdef DOXYGEN
+  template<typename F> auto invoke(F&& ftor) const;
+#else
+  template<typename F>
+  typename boost::function_traits<F>::result_type
+  invoke(F&& ftor) const { return invoke_impl(FWD(ftor), boost::mp11::index_sequence_for<Ts...>{}); }
+#endif
+
 private:
   template<size_t... Is, typename... Args>
   void lay(boost::mp11::index_sequence<Is...>, const Args&... args) {
      // TODO : à changer pour quelque chose de plus propre
      using discard = int[];
      discard {0, (set<Is>(args), 0)...};
+  }
+
+  template<typename F, size_t... Is>
+  typename boost::function_traits<F>::result_type
+  invoke_impl(F&& ftor, boost::mp11::index_sequence<Is...>) const {
+    return ftor(get<Is>()...);
   }
 
   unaligned_data<size, Endianess, Signed_Mode> m_storage;

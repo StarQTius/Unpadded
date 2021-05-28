@@ -98,6 +98,7 @@ void setup() {
   storage_iterate_unaligned_data_multiopt(every_options);
   storage_iterate_tuple_multiopt(every_options);
   storage_access_raw_data_multiopt(every_options);
+  storage_invoke_with_tuple_multiopt(every_options);
 
   UNITY_END();
 }
