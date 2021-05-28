@@ -73,8 +73,8 @@ public:
     @{
   */
 
-  byte_t* begin() const { return m_storage.begin(); }
-  byte_t* end() const { return m_storage.end(); }
+  byte_t* begin() { return m_storage.begin(); }
+  byte_t* end() { return m_storage.end(); }
   const byte_t* begin() const { return m_storage.begin(); }
   const byte_t* end() const { return m_storage.end(); }
 
