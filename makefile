@@ -8,6 +8,10 @@ cpp_flags = \
 	-Werror \
 	-Iinclude \
 	-Ilib/Unity/src \
+	-Ilib/config/include \
+	-Ilib/mp11/include \
+	-Ilib/static_assert/include \
+	-Ilib/type_traits/include \
 
 c_flags = \
 	-std=c99 \
@@ -15,6 +19,15 @@ c_flags = \
 
 libs = \
 	-lstdc++
+
+install:
+	mv include/* $(DIR)
+
+install_dependencies:
+	git submodule init
+	git pull --recurse-submodules
+	git submodule foreach 'if [ $$name <> "Unity" ] && [ -d include ]; then rsync --recursive include/ $(DIR); fi'
+	git submodule deinit -f --all
 
 check11: obj/cpp11/main.o obj/lib/unity.o
 	gcc --coverage $^ $(libs) -o run_ut11
