@@ -1,0 +1,20 @@
+[submodule "lib/config"]
+	path = lib/config
+	url = https://github.com/boostorg/config
+	branch = master
+[submodule "lib/mp11"]
+	path = lib/mp11
+	url = https://github.com/boostorg/mp11
+	branch = master
+[submodule "lib/type_traits"]
+	path = lib/type_traits
+	url = https://github.com/boostorg/type_traits
+	branch = master
+[submodule "lib/static_assert"]
+	path = lib/static_assert
+	url = https://github.com/boostorg/static_assert
+	branch = master
+[submodule "lib/Unity"]
+	path = lib/Unity
+	url = https://github.com/ThrowTheSwitch/Unity
+	branch = master

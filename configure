@@ -1,4 +1,4 @@
 #!/bin/sh
 mkdir -p obj obj/lib obj/cpp11 obj/cpp14 obj/cpp17
 git submodule init
-git pull --recurse-submodules
+git submodule update --remote
