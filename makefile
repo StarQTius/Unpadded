@@ -26,8 +26,7 @@ install:
 
 install_dependencies:
 	[ -d $(DIR) ] || (echo "$(DIR) is not a valid absolute path"; exit 1)
-	git submodule init
-	git submodule update --remote
+	./configure
 	git submodule foreach 'if [ $$name <> "Unity" ] && [ -d include ]; then rsync --recursive include/ $(DIR); fi'
 	git submodule deinit --all
 
