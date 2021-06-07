@@ -1,5 +1,10 @@
 #!/bin/sh
 mkdir -p obj obj/lib obj/cpp11 obj/cpp14 obj/cpp17
-git submodule init
+git submodule init \
+  lib/config \
+  lib/mp11 \
+  lib/static_assert \
+  lib/type_traits
+[ "$1" = "dev" ] && git submodule init lib/Unity
 git submodule update
 git submodule foreach 'git branch -u origin/master master; git checkout master; git pull'
