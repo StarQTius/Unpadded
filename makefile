@@ -55,6 +55,8 @@ gcov: check
 
 clean:
 	rm -vf obj/cpp?(11|14|17|20)/*.?(o|gcda|gcno)
+
+mrproper: clean
 	git submodule deinit --all
 
 obj/cpp11/main.o: test/main.cpp
