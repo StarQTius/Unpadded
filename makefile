@@ -54,7 +54,8 @@ gcov: check
 	cd gcov && gcov ../test/main.cpp -m -o ../obj
 
 clean:
-	rm -v obj/cpp?(11|14|17|20)/*.?(o|gcda|gcno)
+	rm -vf obj/cpp?(11|14|17|20)/*.?(o|gcda|gcno)
+	git submodule deinit --all
 
 obj/cpp11/main.o: test/main.cpp
 	gcc -std=c++11 $(cpp_flags) -DUT_ONLY -c $^ -o obj/cpp11/main.o
