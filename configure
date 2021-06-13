@@ -6,5 +6,4 @@ git submodule init \
   lib/static_assert \
   lib/type_traits
 [ "$1" = "dev" ] && git submodule init lib/Unity
-git submodule update
-git submodule foreach 'git branch -u origin/master master; git checkout master; git pull'
+git submodule update --remote
