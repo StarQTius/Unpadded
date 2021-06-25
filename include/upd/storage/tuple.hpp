@@ -7,6 +7,8 @@
 #include "upd/fwd.hpp"
 #include "upd/type.hpp"
 
+#include "upd/detail/signature.hpp"
+
 #include "unaligned_data.hpp"
 
 /*!
@@ -120,8 +122,9 @@ public:
   template<typename F> auto invoke(F&& ftor) const;
 #else
   template<typename F>
-  typename boost::function_traits<F>::result_type
-  invoke(F&& ftor) const { return invoke_impl(FWD(ftor), boost::mp11::index_sequence_for<Ts...>{}); }
+  detail::return_t<F> invoke(F&& ftor) const {
+    return invoke_impl(FWD(ftor), boost::mp11::index_sequence_for<Ts...>{});
+  }
 #endif
 
 private:
@@ -133,8 +136,7 @@ private:
   }
 
   template<typename F, size_t... Is>
-  typename boost::function_traits<F>::result_type
-  invoke_impl(F&& ftor, boost::mp11::index_sequence<Is...>) const {
+  detail::return_t<F> invoke_impl(F&& ftor, boost::mp11::index_sequence<Is...>) const {
     return ftor(get<Is>()...);
   }
 
