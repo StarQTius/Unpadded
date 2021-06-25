@@ -4,6 +4,6 @@ git submodule init \
   lib/config \
   lib/mp11 \
   lib/static_assert \
-  lib/type_traits
-[ "$1" = "dev" ] && git submodule init lib/Unity
+  lib/type_traits \
+  lib/Unity
 git submodule update --remote

@@ -20,16 +20,11 @@ c_flags = \
 libs = \
 	-lstdc++
 
-.SILENT: install install_dependencies clean
+.SILENT: install clean
 
 install:
 	([[ "$(DIR)" = /* ]] && [ -d $(DIR) ]) || (echo "$(DIR) is not a valid absolute path"; exit 1)
 	cp -v -r include/* $(DIR)
-
-install_dependencies:
-	([[ "$(DIR)" = /* ]] && [ -d $(DIR) ]) || (echo "$(DIR) is not a valid absolute path"; exit 1)
-	./configure
-	git submodule foreach 'if [ $$name != "Unity" ] && [ -d include ]; then rsync --recursive include/ $(DIR); fi'
 
 check11: obj/cpp11/main.o obj/lib/unity.o
 	gcc --coverage $^ $(libs) -o run_ut11
