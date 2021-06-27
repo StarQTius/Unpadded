@@ -48,6 +48,11 @@ public:
   constexpr static auto storage_signed_mode = Signed_Mode;
 
   /*!
+    \brief Initialize the underlying array with null bytes
+  */
+  explicit tuple() = default;
+
+  /*!
     \brief Serialize the provided values
     \tparam Args... Serialized values types
     \param args... Values to be serialized
