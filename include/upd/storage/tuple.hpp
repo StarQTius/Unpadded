@@ -137,7 +137,7 @@ private:
 
   template<typename F, size_t... Is>
   detail::return_t<F> invoke_impl(F&& ftor, boost::mp11::index_sequence<Is...>) const {
-    return ftor(get<Is>()...);
+    return FWD(ftor)(get<Is>()...);
   }
 
   unaligned_data<size, Endianess, Signed_Mode> m_storage;

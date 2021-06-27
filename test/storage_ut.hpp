@@ -190,6 +190,41 @@ template<upd::endianess Endianess, upd::signed_mode Signed_Mode>
 void storage_invoke_with_tuple() {
   using namespace upd;
 
+  // Compile-time
+  {
+    struct { void operator()(int) {} } f;
+    struct { void operator()(int) const {} } cf;
+    struct { void operator()(int) volatile {} } vf;
+    struct { void operator()(int) const volatile {} } cvf;
+
+    struct { void operator()(int) & {} } lf;
+    struct { void operator()(int) const & {} } clf;
+    struct { void operator()(int) volatile & {} } vlf;
+    struct { void operator()(int) const volatile & {} } cvlf;
+
+    struct rf_t { void operator()(int) && {} };
+    struct crf_t { void operator()(int) const && {} };
+    struct vrf_t { void operator()(int) volatile && {} };
+    struct cvrf_t { void operator()(int) const volatile && {} };
+
+    auto args = make_tuple(0);
+
+    args.invoke(f);
+    args.invoke(cf);
+    args.invoke(vf);
+    args.invoke(cvf);
+
+    args.invoke(lf);
+    args.invoke(clf);
+    args.invoke(vlf);
+    args.invoke(cvlf);
+
+    args.invoke(rf_t{});
+    args.invoke(crf_t{});
+    args.invoke(vrf_t{});
+    args.invoke(cvrf_t{});
+  }
+
   auto terms = make_tuple<Endianess, Signed_Mode>(int{12}, int{34}, int{-56});
 
   TEST_ASSERT_EQUAL_INT(12 + 34 - 56, terms.invoke(*(+[](int a, int b, int c) { return a + b + c; })));

@@ -68,7 +68,19 @@ struct examine_functor_impl<R(C::*)(Args...) const volatile> : signature<R(Args.
 template<typename R, typename C, typename... Args>
 struct examine_functor_impl<R(C::*)(Args...) &> : signature<R(Args...)> {};
 template<typename R, typename C, typename... Args>
+struct examine_functor_impl<R(C::*)(Args...) const &> : signature<R(Args...)> {};
+template<typename R, typename C, typename... Args>
+struct examine_functor_impl<R(C::*)(Args...) volatile &> : signature<R(Args...)> {};
+template<typename R, typename C, typename... Args>
+struct examine_functor_impl<R(C::*)(Args...) const volatile &> : signature<R(Args...)> {};
+template<typename R, typename C, typename... Args>
 struct examine_functor_impl<R(C::*)(Args...) &&> : signature<R(Args...)> {};
+template<typename R, typename C, typename... Args>
+struct examine_functor_impl<R(C::*)(Args...) const &&> : signature<R(Args...)> {};
+template<typename R, typename C, typename... Args>
+struct examine_functor_impl<R(C::*)(Args...) volatile &&> : signature<R(Args...)> {};
+template<typename R, typename C, typename... Args>
+struct examine_functor_impl<R(C::*)(Args...) const volatile &&> : signature<R(Args...)> {};
 #endif
 
 //! \brief  Alias for 'typename examine_functor_impl<boost::decay_t<F>>'
