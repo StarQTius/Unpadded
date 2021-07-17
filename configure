@@ -1,0 +1,10 @@
+#!/bin/sh
+mkdir -p obj obj/lib obj/cpp11 obj/cpp14 obj/cpp17
+git submodule init \
+  lib/config \
+  lib/mp11 \
+  lib/static_assert \
+  lib/type_traits \
+  lib/unpadded \
+  lib/Unity
+git submodule update --remote
