@@ -1,0 +1,27 @@
+name: C/C++ CI
+
+on:
+  push:
+    branches:
+        - master
+        - template_optimization
+  pull_request:
+    branches:
+      - master
+      - template_optimization
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: ./configure dev
+      run: ./configure dev
+    - name: make check11
+      run: make check11
+    - name: make check14
+      run: make check14
+    - name: make check17
+      run: make check17
