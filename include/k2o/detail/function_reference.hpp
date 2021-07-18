@@ -31,7 +31,7 @@ public:
   function_reference_base(F &ftor) : m_ftor{ftor} {}
 
   //!
-  R operator()(Args &&... args) final { return m_ftor(static_cast<Args>(args)...); }
+  R operator()(boost::remove_reference_t<Args> &... args) final { return m_ftor(static_cast<Args>(args)...); }
 
 private:
   F &m_ftor;

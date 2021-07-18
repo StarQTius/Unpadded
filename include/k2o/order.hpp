@@ -90,7 +90,7 @@ status call(src_t &fetch_byte, dest_t &insert_byte, F &&ftor) {
   for (auto &byte : input_args)
     byte = fetch_byte();
 
-  return insert(insert_byte, input_args.invoke(FWD(ftor)));
+  return insert<Tuple::storage_endianess, Tuple::storage_signed_mode>(insert_byte, input_args.invoke(FWD(ftor)));
 }
 
 //!
