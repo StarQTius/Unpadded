@@ -42,11 +42,12 @@ public:
 };
 
 template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename T, sfinae::require_not_tuple<T> = 0>
-status insert(dest_t& insert_byte, const T &value) {
+status insert(dest_t &insert_byte, const T &value) {
   using namespace upd;
 
   auto output = make_tuple<Endianess, Signed_Mode>(value);
-  for (byte_t byte : output) insert_byte(byte);
+  for (byte_t byte : output)
+    insert_byte(byte);
 
   return status::OK;
 }
@@ -54,7 +55,8 @@ template<upd::endianess, upd::signed_mode, typename T, sfinae::require_is_tuple<
 status insert(dest_t &insert_byte, const T &tuple) {
   using namespace upd;
 
-  for (byte_t byte : tuple) insert_byte(byte);
+  for (byte_t byte : tuple)
+    insert_byte(byte);
 
   return status::OK;
 }
@@ -63,7 +65,8 @@ status insert(dest_t &insert_byte, const T &tuple) {
 template<typename Tuple, typename F>
 status call(src_t &fetch_byte, F &&ftor) {
   Tuple input_args;
-  for (auto &byte : input_args) byte = fetch_byte();
+  for (auto &byte : input_args)
+    byte = fetch_byte();
   input_args.invoke(FWD(ftor));
 
   return status::OK;
@@ -73,7 +76,8 @@ status call(src_t &fetch_byte, F &&ftor) {
 template<typename Tuple, typename F, sfinae::require_is_void<detail::return_t<F>> = 0>
 status call(src_t &fetch_byte, dest_t &, F &&ftor) {
   Tuple input_args;
-  for (auto &byte : input_args) byte = fetch_byte();
+  for (auto &byte : input_args)
+    byte = fetch_byte();
   input_args.invoke(FWD(ftor));
 
   return status::OK;
@@ -83,7 +87,8 @@ status call(src_t &fetch_byte, dest_t &, F &&ftor) {
 template<typename Tuple, typename F, sfinae::require_not_void<detail::return_t<F>> = 0>
 status call(src_t &fetch_byte, dest_t &insert_byte, F &&ftor) {
   Tuple input_args;
-  for (auto &byte : input_args) byte = fetch_byte();
+  for (auto &byte : input_args)
+    byte = fetch_byte();
 
   return insert(insert_byte, input_args.invoke(FWD(ftor)));
 }
@@ -115,9 +120,7 @@ public:
   explicit order_model(F &&ftor) : m_impl{FWD(ftor)} {}
 
   //!
-  status operator()(src_t &&fetch_byte) final {
-    return detail::call<tuple_t>(fetch_byte, FWD(m_impl.ftor));
-  }
+  status operator()(src_t &&fetch_byte) final { return detail::call<tuple_t>(fetch_byte, FWD(m_impl.ftor)); }
 
   //!
   status operator()(src_t &&fetch_byte, dest_t &&insert_byte) final {
@@ -148,9 +151,7 @@ public:
   //!
   template<typename Src_F, typename Dest_F>
   status operator()(Src_F &&fetch_byte, Dest_F &&insert_byte) {
-    return (*m_concept_uptr)(
-      detail::make_function_reference(fetch_byte),
-      detail::make_function_reference(insert_byte));
+    return (*m_concept_uptr)(detail::make_function_reference(fetch_byte), detail::make_function_reference(insert_byte));
   }
 
 private:

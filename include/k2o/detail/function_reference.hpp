@@ -31,9 +31,7 @@ public:
   function_reference_base(F &ftor) : m_ftor{ftor} {}
 
   //!
-  R operator()(Args &&... args) final {
-    return m_ftor(static_cast<Args>(args)...);
-  }
+  R operator()(Args &&... args) final { return m_ftor(static_cast<Args>(args)...); }
 
 private:
   F &m_ftor;
@@ -48,7 +46,9 @@ public:
 
 //!
 template<typename F>
-function_reference<F> make_function_reference(F& ftor) { return function_reference<F>(ftor); }
+function_reference<F> make_function_reference(F &ftor) {
+  return function_reference<F>(ftor);
+}
 
 } // namespace detail
 } // namespace k2o
