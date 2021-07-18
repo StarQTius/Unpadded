@@ -14,5 +14,5 @@ jobs:
     - name: clang-format compliance check
       uses: jidicula/clang-format-action@v3.4.0
       with:
-        clang-format-version: '11'
+        clang-format-version: '10'
         check-path: '${{ matrix.path }}'
