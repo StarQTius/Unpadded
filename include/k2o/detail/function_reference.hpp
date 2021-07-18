@@ -19,7 +19,7 @@ struct abstract_function;
 template<typename R, typename... Args>
 struct abstract_function<R(Args...)> {
   virtual ~abstract_function() = default;
-  virtual R operator()(boost::remove_reference_t<Args> &...) = 0;
+  virtual R operator()(Args...) = 0;
 };
 
 template<typename...>
@@ -39,7 +39,7 @@ class function_reference_impl<F, R(Args...)> : public abstract_function<R(Args..
 public:
   function_reference_impl(F &ftor) : m_ftor{ftor} {}
 
-  R operator()(boost::remove_reference_t<Args> &... args) final { return m_ftor(static_cast<Args>(args)...); }
+  R operator()(Args... args) final { return m_ftor(static_cast<Args &&>(args)...); }
 
 private:
   F &m_ftor;
