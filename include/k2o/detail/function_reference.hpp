@@ -37,7 +37,7 @@ class function_reference_impl;
 template<typename F, typename R, typename... Args>
 class function_reference_impl<F, R(Args...)> : public abstract_function<R(Args...)> {
 public:
-  function_reference_impl(F &ftor) : m_ftor{ftor} {}
+  explicit function_reference_impl(F &ftor) : m_ftor{ftor} {}
 
   R operator()(Args... args) final { return m_ftor(static_cast<Args &&>(args)...); }
 
