@@ -143,7 +143,7 @@ public:
   interpret_as(size_t offset) const {
     array_wrapper<T> retval;
 
-    using element_t = decltype(*retval);
+    using element_t = boost::remove_reference_t<decltype(*retval)>;
     constexpr auto size = retval.size;
 
     for (size_t i = 0; i < size; i++)

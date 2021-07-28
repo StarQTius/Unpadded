@@ -65,6 +65,23 @@ void storage_set_and_get() {
 MAKE_MULTIOPT(storage_set_and_get)
 
 template<upd::endianess Endianess, upd::signed_mode Signed_Mode>
+void storage_set_and_get_array() {
+  const char error_format[] = "endianess = %i, signed mode = %i";
+  char error_msg[sizeof(error_format)];
+
+  int array[] = {
+    0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
+    0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff };
+  upd::tuple<Endianess, Signed_Mode, decltype(array)> tuple;
+  tuple.template set<0>(array);
+
+  snprintf(error_msg, sizeof(error_msg), error_format, static_cast<int>(Endianess), static_cast<int>(Signed_Mode));
+  TEST_ASSERT_EQUAL_INT_ARRAY_MESSAGE(array, tuple.template get<0>().content, sizeof array / sizeof(int), error_msg);
+}
+
+MAKE_MULTIOPT(storage_set_and_get_array)
+
+template<upd::endianess Endianess, upd::signed_mode Signed_Mode>
 void storage_iterate_unaligned_data() {
   using namespace upd;
 

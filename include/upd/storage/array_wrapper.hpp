@@ -34,7 +34,7 @@ struct array_wrapper<T[N]> {
   /*!
     \brief Initialize the object's content of the object
   */
-  array_wrapper() = default;
+  array_wrapper() : content{} {}
 
   /*!
     \brief Copy from a buffer to the object's content of the object
