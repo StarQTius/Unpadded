@@ -32,16 +32,12 @@ class tuple {
   using typelist = boost::mp11::mp_list<Ts...>;
   using type_sizes = boost::mp11::mp_list<boost::mp11::mp_size_t<sizeof(Ts)>...>;
 
-  void template_check() {
-    using namespace boost;
-
-    static_assert(conjunction<
-      integral_constant<bool,(
-        !is_const<Ts>::value &&
-        !is_volatile<Ts>::value &&
-        !is_reference<Ts>::value)>...>::value,
-      "Type parameters cannot be cv-qualified or ref-qualified.");
-  }
+  static_assert(boost::conjunction<
+    boost::integral_constant<bool,(
+      !boost::is_const<Ts>::value &&
+      !boost::is_volatile<Ts>::value &&
+      !boost::is_reference<Ts>::value)>...>::value,
+    "Type parameters cannot be cv-qualified or ref-qualified.");
 
 public:
   //! \brief Type of one of the serialized values
