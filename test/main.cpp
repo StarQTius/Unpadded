@@ -100,6 +100,7 @@ void setup() {
   storage_iterate_tuple_multiopt(every_options);
   storage_access_raw_data_multiopt(every_options);
   storage_invoke_with_tuple_multiopt(every_options);
+  storage_make_empty_tuple_multiopt(every_options);
 
   RUN_TEST(storage_implicitly_convert_array_wrapper_to_array);
 

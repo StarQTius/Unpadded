@@ -18,17 +18,12 @@
 
 namespace upd {
 
-/*!
-  \brief Unaligned storage with fixed target types
-  \details
-    The object holds values of provided type in an unaligned maners (ie, there is no padding between two consecutive
-    values).
-  \tparam Endianess endianess of the stored data
-  \tparam Signed_Mode signed mode of the stored data
-  \tparam Ts... Types of the serialized values
-*/
-template<endianess Endianess = endianess::BUILTIN, signed_mode Signed_Mode = signed_mode::BUILTIN, typename... Ts>
-class tuple {
+//! \brief Defines base members for 'tuple'
+//! \tparam Endianess endianess of the stored data
+//! \tparam Signed_Mode signed mode of the stored data
+//! \tparam Ts... Types of the serialized values
+template<endianess Endianess, signed_mode Signed_Mode, typename... Ts>
+class tuple_base {
   using typelist = boost::mp11::mp_list<Ts...>;
   using type_sizes = boost::mp11::mp_list<boost::mp11::mp_size_t<sizeof(Ts)>...>;
 
@@ -53,21 +48,6 @@ public:
 
   //! \brief Equals the signed mode given as template parameter
   constexpr static auto storage_signed_mode = Signed_Mode;
-
-  /*!
-    \brief Initialize the underlying array with null bytes
-  */
-  explicit tuple() = default;
-
-  /*!
-    \brief Serialize the provided values
-    \tparam Args... Serialized values types
-    \param args... Values to be serialized
-  */
-  explicit tuple(const Ts&... args) {
-    using boost::mp11::index_sequence_for;
-    lay(index_sequence_for<Ts...>{}, args...);
-  }
 
   /*!
     \brief Access the object content
@@ -139,7 +119,7 @@ public:
   }
 #endif
 
-private:
+protected:
   template<size_t... Is, typename... Args>
   void lay(boost::mp11::index_sequence<Is...>, const Args&... args) {
      // TODO : à changer pour quelque chose de plus propre
@@ -147,6 +127,7 @@ private:
      discard {0, (set<Is>(args), 0)...};
   }
 
+private:
   template<typename F, size_t... Is>
   detail::return_t<F> invoke_impl(F&& ftor, boost::mp11::index_sequence<Is...>) const {
     return FWD(ftor)(get<Is>()...);
@@ -155,6 +136,40 @@ private:
   unaligned_data<size, Endianess, Signed_Mode> m_storage;
 
 };
+
+/*!
+  \brief Unaligned storage with fixed target types
+  \details
+    The object holds values of provided type in an unaligned maners (ie, there is no padding between two consecutive
+    values).
+  \tparam Endianess endianess of the stored data
+  \tparam Signed_Mode signed mode of the stored data
+  \tparam Ts... Types of the serialized values
+*/
+template<endianess Endianess = endianess::BUILTIN, signed_mode Signed_Mode = signed_mode::BUILTIN, typename... Ts>
+class tuple : public tuple_base<Endianess, Signed_Mode, Ts...> {
+public:
+  /*!
+    \brief Initialize the content with default constructed value
+  */
+  explicit tuple() : tuple(Ts{}...) {}
+
+  /*!
+    \brief Serialize the provided values
+    \tparam Args... Serialized values types
+    \param args... Values to be serialized
+  */
+  explicit tuple(const Ts&... args) {
+    using boost::mp11::index_sequence_for;
+    tuple_base<Endianess, Signed_Mode, Ts...>::lay(index_sequence_for<Ts...>{}, args...);
+  }
+};
+
+//! \brief Enables to instantiate the class template with no type parameters
+//! \tparam Endianess endianess of the stored data
+//! \tparam Signed_Mode signed mode of the stored data
+template<endianess Endianess, signed_mode Signed_Mode>
+class tuple<Endianess, Signed_Mode> : public tuple_base<Endianess, Signed_Mode> {};
 
 /*!
   \brief Construct a tuple object provided constant lvalue to values

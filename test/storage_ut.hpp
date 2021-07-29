@@ -249,6 +249,22 @@ void storage_invoke_with_tuple() {
 
 MAKE_MULTIOPT(storage_invoke_with_tuple)
 
+template<upd::endianess Endianess, upd::signed_mode Signed_Mode>
+void storage_make_empty_tuple() {
+  using namespace upd;
+
+  const char error_format[] = "endianess = %i, signed mode = %i";
+  char error_msg[sizeof(error_format)];
+  snprintf(error_msg, sizeof(error_msg), error_format, static_cast<int>(Endianess), static_cast<int>(Signed_Mode));
+
+  auto empty_tuple = make_tuple<Endianess, Signed_Mode>();
+
+
+  TEST_ASSERT_EQUAL_INT_MESSAGE(0, empty_tuple.size, error_msg);
+}
+
+MAKE_MULTIOPT(storage_make_empty_tuple)
+
 inline void storage_implicitly_convert_array_wrapper_to_array() {
   using namespace upd;
 

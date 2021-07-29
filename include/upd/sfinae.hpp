@@ -33,5 +33,10 @@ using require_signed_integer = typename boost::enable_if_<boost::is_signed<T>::v
 template<typename T, typename U = void>
 using require_bounded_array = typename boost::enable_if_<boost::is_bounded_array<T>::value, U>::type;
 
+/*!
+*/
+template<typename... Ts>
+using require_not_empty_pack = typename boost::enable_if_<sizeof...(Ts), int>::type;
+
 } // namespace sfinae
 } // namespace upd
