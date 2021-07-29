@@ -248,3 +248,14 @@ void storage_invoke_with_tuple() {
 }
 
 MAKE_MULTIOPT(storage_invoke_with_tuple)
+
+inline void storage_implicitly_convert_array_wrapper_to_array() {
+  using namespace upd;
+
+  {
+    array_wrapper<int[16]> awrapper;
+    int (&a)[16] = awrapper;
+
+    TEST_ASSERT_EQUAL_INT_ARRAY(awrapper.content, a, sizeof a / sizeof *a);
+  }
+}

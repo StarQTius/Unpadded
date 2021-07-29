@@ -27,6 +27,7 @@ template<typename T, size_t N>
 struct array_wrapper<T[N]> {
   //! \brief Type of the contained elements
   using type = T;
+  using array_t = T[N];
 
   //! \brief Size of the container
   constexpr static auto size = N;
@@ -58,6 +59,9 @@ struct array_wrapper<T[N]> {
 
   T* operator+(size_t n) { return content + n; }
   const T* operator+(size_t n) const { return content + n; }
+
+  operator array_t &() { return content; }
+  operator const array_t &() const { return content; }
 
   //! @}
 
