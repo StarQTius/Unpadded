@@ -21,7 +21,7 @@ struct input_tuple_impl;
 
 template<typename R, typename... Args, upd::endianess Endianess, upd::signed_mode Signed_Mode>
 struct input_tuple_impl<R(Args...), Endianess, Signed_Mode> {
-  using type = upd::tuple<Endianess, Signed_Mode, Args...>;
+  using type = upd::tuple<Endianess, Signed_Mode, boost::remove_cv_ref_t<Args>...>;
 };
 
 //! \brief Template instance of 'upd::tuple' suitable for holding the parameters of a functor of type 'F'
