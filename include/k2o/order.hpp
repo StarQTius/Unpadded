@@ -28,6 +28,34 @@ struct input_tuple_impl<R(Args...), Endianess, Signed_Mode> {
 template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename F>
 using input_tuple = typename input_tuple_impl<signature_t<F>, Endianess, Signed_Mode>::type;
 
+template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Ts>
+struct normalize_to_tuple {
+  using type = upd::tuple<Endianess, Signed_Mode, Ts...>;
+};
+
+template<upd::endianess Endianess,
+         upd::signed_mode Signed_Mode,
+         upd::endianess Endianess_Tuple,
+         upd::signed_mode Signed_Mode_Tuple,
+         typename... Ts>
+struct normalize_to_tuple<Endianess, Signed_Mode, upd::tuple<Endianess_Tuple, Signed_Mode_Tuple, Ts...>> {
+  using type = upd::tuple<Endianess_Tuple, Signed_Mode_Tuple, Ts...>;
+};
+
+template<upd::endianess Endianess, upd::signed_mode Signed_Mode>
+struct normalize_to_tuple<Endianess, Signed_Mode, void> {
+  using type = upd::tuple<Endianess, Signed_Mode>;
+};
+
+//! \brief Normalize a type to tuple if needed
+//! \detail
+//!   If 'Ts' expands into a single type, and that type can be expressed as 'upd::tuple<...>', then
+//!   'normalize_to_tuple_t' is an alias of 'Ts...'. If 'Ts...' expands into 'void', then 'normalize_to_tuple_t' is an
+//!   alias of upd::tuple<Endianess, Signed_Mode>. Otherwise, type 'normalize_to_tuple_t' is an alias of
+//!   'upd::tuple<Endianess, Signed_Mode, Ts...>'.
+template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Ts>
+using normalize_to_tuple_t = typename normalize_to_tuple<Endianess, Signed_Mode, Ts...>::type;
+
 //! \brief Type alias used when a functor acting as a input byte stream is needed
 using src_t = abstract_function<byte_t()>;
 
@@ -37,11 +65,13 @@ using dest_t = abstract_function<void(byte_t)>;
 //! \brief Abstract class used for setting up type erasure in the 'order' class
 //! \detail
 //!   This class is base of 'order_model' as a the "Concept" class in the type erasure pattern.
-class order_concept {
-public:
+struct order_concept {
   virtual ~order_concept() = default;
   virtual status operator()(src_t &&) = 0;
   virtual status operator()(src_t &&, dest_t &&) = 0;
+
+  size_t input_size;
+  size_t output_size;
 };
 
 //! \brief Serialize a single integer value as a sequence of byte then map a functor over this sequence
@@ -155,7 +185,10 @@ class order_model : public order_concept {
   using tuple_t = typename impl_t::tuple_t;
 
 public:
-  explicit order_model(F &&ftor) : m_impl{FWD(ftor)} {}
+  explicit order_model(F &&ftor) : m_impl{FWD(ftor)} {
+    order_model::input_size = tuple_t::size;
+    order_model::output_size = normalize_to_tuple_t<Endianess, Signed_Mode, return_t<F>>::size;
+  }
 
   status operator()(src_t &&fetch_byte) final { return detail::call<tuple_t>(fetch_byte, FWD(m_impl.ftor)); }
   status operator()(src_t &&fetch_byte, dest_t &&insert_byte) final {
@@ -210,6 +243,14 @@ public:
   status operator()(Src_F &&fetch_byte, Dest_F &&insert_byte) {
     return (*m_concept_uptr)(detail::make_function_reference(fetch_byte), detail::make_function_reference(insert_byte));
   }
+
+  //! \brief Get the size in bytes of the payload needed to call the wrapped functor
+  //! \return The size of the payload in bytes
+  size_t input_size() const { return m_concept_uptr->input_size; }
+
+  //! \brief Get the size in bytes of the payload representing the returned value from a call to the wrapped functor
+  //! \return The size of the payload in bytes
+  size_t output_size() const { return m_concept_uptr->output_size; }
 
 private:
   detail::unique_ptr<detail::order_concept> m_concept_uptr;

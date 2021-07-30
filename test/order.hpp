@@ -50,3 +50,48 @@ inline void order_DO_give_then_return_array_from_order_EXPECT_unaltered_value() 
   TEST_ASSERT_EQUAL_UINT(status::OK, error);
   TEST_ASSERT_EQUAL_INT_ARRAY(argument, serialized_return_value.get<0>().content, argument_size);
 }
+
+inline void order_DO_instantiate_order_with_functor_taking_arguments_EXPECT_input_and_output_sizes_correct() {
+  using namespace k2o;
+
+  order f([](int, int(&)[16], char) -> int { return 0; });
+
+  TEST_ASSERT_EQUAL_INT(sizeof(int) + 16 * sizeof(int) + sizeof(char), f.input_size());
+  TEST_ASSERT_EQUAL_INT(sizeof(int), f.output_size());
+}
+
+inline void order_DO_instantiate_order_with_functor_taking_no_arguments_EXPECT_input_and_output_sizes_correct() {
+  using namespace k2o;
+
+  order f([]() -> int { return 0; });
+
+  TEST_ASSERT_EQUAL_INT(0, f.input_size());
+  TEST_ASSERT_EQUAL_INT(sizeof(int), f.output_size());
+}
+
+inline void order_DO_instantiate_order_with_functor_returning_non_tuple_EXPECT_input_and_output_sizes_correct() {
+  using namespace k2o;
+
+  order f([](int) -> int { return 0; });
+
+  TEST_ASSERT_EQUAL_INT(sizeof(int), f.input_size());
+  TEST_ASSERT_EQUAL_INT(sizeof(int), f.output_size());
+}
+
+inline void order_DO_instantiate_order_with_functor_returning_tuple_EXPECT_input_and_output_sizes_correct() {
+  using namespace k2o;
+
+  order f([](int) { return upd::tuple<upd::endianess::BUILTIN, upd::signed_mode::BUILTIN, int, int[16], char>{}; });
+
+  TEST_ASSERT_EQUAL_INT(sizeof(int), f.input_size());
+  TEST_ASSERT_EQUAL_INT(sizeof(int) + 16 * sizeof(int) + sizeof(char), f.output_size());
+}
+
+inline void order_DO_instantiate_order_with_functor_non_returning_EXPECT_input_and_output_sizes_correct() {
+  using namespace k2o;
+
+  order f([](int) {});
+
+  TEST_ASSERT_EQUAL_INT(sizeof(int), f.input_size());
+  TEST_ASSERT_EQUAL_INT(0, f.output_size());
+}
