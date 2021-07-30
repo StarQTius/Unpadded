@@ -1,1 +1,1 @@
-#define FWD(x) static_cast<decltype(x)&&>(x)
+#define UPD_FWD(x) static_cast<decltype(x)&&>(x)

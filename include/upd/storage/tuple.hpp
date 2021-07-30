@@ -115,7 +115,7 @@ public:
 #else
   template<typename F>
   detail::return_t<F> invoke(F&& ftor) const {
-    return invoke_impl(FWD(ftor), boost::mp11::index_sequence_for<Ts...>{});
+    return invoke_impl(UPD_FWD(ftor), boost::mp11::index_sequence_for<Ts...>{});
   }
 #endif
 
@@ -130,7 +130,7 @@ protected:
 private:
   template<typename F, size_t... Is>
   detail::return_t<F> invoke_impl(F&& ftor, boost::mp11::index_sequence<Is...>) const {
-    return FWD(ftor)(get<Is>()...);
+    return UPD_FWD(ftor)(get<Is>()...);
   }
 
   unaligned_data<size, Endianess, Signed_Mode> m_storage;
