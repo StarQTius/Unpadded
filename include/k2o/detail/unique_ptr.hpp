@@ -1,12 +1,8 @@
-//! \file
-//! \brief unique_ptr class
-
 #pragma once
 
 namespace k2o {
 namespace detail {
 
-//! \brief Classic implementation of a unique_ptr
 template<typename T>
 class unique_ptr {
 public:
@@ -43,9 +39,6 @@ private:
   T *m_ptr;
 };
 
-//! \brief Make a 'unique_ptr' object managing a pointer
-//! \param ptr the pointer to be managed
-//! \return a 'unique_ptr' object managing 'ptr'
 template<typename T>
 unique_ptr<T> make_unique(T *ptr) {
   return unique_ptr<T>{ptr};

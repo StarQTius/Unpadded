@@ -1,5 +1,5 @@
 //! \file
-//! \brief Basic type aliases
+//! \brief Basic type aliasing
 
 #pragma once
 

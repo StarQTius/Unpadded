@@ -1,11 +1,14 @@
 //! \file
-//! \brief order class
+//! \brief Order execution at receiver side
 
 #pragma once
 
 #include <upd/storage.hpp>
 
 #include <k2o/detail/function_reference.hpp>
+#include <k2o/detail/fwd.hpp>
+#include <k2o/detail/input_tuple.hpp>
+#include <k2o/detail/normalize_to_tuple.hpp>
 #include <k2o/detail/sfinae.hpp>
 #include <k2o/detail/signature.hpp>
 #include <k2o/detail/unique_ptr.hpp>
@@ -16,63 +19,11 @@
 namespace k2o {
 namespace detail {
 
-template<typename, upd::endianess, upd::signed_mode>
-struct input_tuple_impl;
-
-template<typename R, typename... Args, upd::endianess Endianess, upd::signed_mode Signed_Mode>
-struct input_tuple_impl<R(Args...), Endianess, Signed_Mode> {
-  using type = upd::tuple<Endianess, Signed_Mode, boost::remove_cv_ref_t<Args>...>;
-};
-
-//! \brief Template instance of 'upd::tuple' suitable for holding the parameters of a functor of type 'F'
-template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename F>
-using input_tuple = typename input_tuple_impl<signature_t<F>, Endianess, Signed_Mode>::type;
-
-template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Ts>
-struct normalize_to_tuple {
-  using type = upd::tuple<Endianess, Signed_Mode, Ts...>;
-};
-
-template<upd::endianess Endianess,
-         upd::signed_mode Signed_Mode,
-         upd::endianess Endianess_Tuple,
-         upd::signed_mode Signed_Mode_Tuple,
-         typename... Ts>
-struct normalize_to_tuple<Endianess, Signed_Mode, upd::tuple<Endianess_Tuple, Signed_Mode_Tuple, Ts...>> {
-  using type = upd::tuple<Endianess_Tuple, Signed_Mode_Tuple, Ts...>;
-};
-
-template<upd::endianess Endianess, upd::signed_mode Signed_Mode>
-struct normalize_to_tuple<Endianess, Signed_Mode, void> {
-  using type = upd::tuple<Endianess, Signed_Mode>;
-};
-
-//! \brief Normalize a type to tuple if needed
-//! \detail
-//!   If 'Ts' expands into a single type, and that type can be expressed as 'upd::tuple<...>', then
-//!   'normalize_to_tuple_t' is an alias of 'Ts...'. If 'Ts...' expands into 'void', then 'normalize_to_tuple_t' is an
-//!   alias of upd::tuple<Endianess, Signed_Mode>. Otherwise, type 'normalize_to_tuple_t' is an alias of
-//!   'upd::tuple<Endianess, Signed_Mode, Ts...>'.
-template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Ts>
-using normalize_to_tuple_t = typename normalize_to_tuple<Endianess, Signed_Mode, Ts...>::type;
-
 //! \brief Type alias used when a functor acting as a input byte stream is needed
 using src_t = abstract_function<byte_t()>;
 
 //! \brief Type alias used when a functor acting as a output byte stream is needed
 using dest_t = abstract_function<void(byte_t)>;
-
-//! \brief Abstract class used for setting up type erasure in the 'order' class
-//! \detail
-//!   This class is base of 'order_model' as a the "Concept" class in the type erasure pattern.
-struct order_concept {
-  virtual ~order_concept() = default;
-  virtual status operator()(src_t &&) = 0;
-  virtual status operator()(src_t &&, dest_t &&) = 0;
-
-  size_t input_size;
-  size_t output_size;
-};
 
 //! \brief Serialize a single integer value as a sequence of byte then map a functor over this sequence
 //! \tparam Endianess considered endianess when serializing the value
@@ -120,7 +71,7 @@ status call(src_t &fetch_byte, F &&ftor) {
   Tuple input_args;
   for (auto &byte : input_args)
     byte = fetch_byte();
-  input_args.invoke(FWD(ftor));
+  input_args.invoke(K2O_FWD(ftor));
 
   return status::OK;
 }
@@ -140,7 +91,7 @@ status call(src_t &fetch_byte, dest_t &, F &&ftor) {
   Tuple input_args;
   for (auto &byte : input_args)
     byte = fetch_byte();
-  input_args.invoke(FWD(ftor));
+  input_args.invoke(K2O_FWD(ftor));
 
   return status::OK;
 }
@@ -151,7 +102,7 @@ status call(src_t &fetch_byte, dest_t &insert_byte, F &&ftor) {
   for (auto &byte : input_args)
     byte = fetch_byte();
 
-  return insert<Tuple::storage_endianess, Tuple::storage_signed_mode>(insert_byte, input_args.invoke(FWD(ftor)));
+  return insert<Tuple::storage_endianess, Tuple::storage_signed_mode>(insert_byte, input_args.invoke(K2O_FWD(ftor)));
 }
 
 //! \brief Implementation of the 'order' class behaviour
@@ -171,6 +122,18 @@ struct order_model_impl {
   F ftor;
 };
 
+//! \brief Abstract class used for setting up type erasure in the 'order' class
+//! \detail
+//!   This class is base of 'order_model' as a the "Concept" class in the type erasure pattern.
+struct order_concept {
+  virtual ~order_concept() = default;
+  virtual status operator()(src_t &&) = 0;
+  virtual status operator()(src_t &&, dest_t &&) = 0;
+
+  size_t input_size;
+  size_t output_size;
+};
+
 //! \brief Derived class used for setting up type erasure in the 'order' class
 //! \detail
 //!   This class is derived from the 'order_concept' as a the "Model" class in the type erasure pattern.
@@ -185,14 +148,14 @@ class order_model : public order_concept {
   using tuple_t = typename impl_t::tuple_t;
 
 public:
-  explicit order_model(F &&ftor) : m_impl{FWD(ftor)} {
+  explicit order_model(F &&ftor) : m_impl{K2O_FWD(ftor)} {
     order_model::input_size = tuple_t::size;
     order_model::output_size = normalize_to_tuple_t<Endianess, Signed_Mode, return_t<F>>::size;
   }
 
-  status operator()(src_t &&fetch_byte) final { return detail::call<tuple_t>(fetch_byte, FWD(m_impl.ftor)); }
+  status operator()(src_t &&fetch_byte) final { return detail::call<tuple_t>(fetch_byte, K2O_FWD(m_impl.ftor)); }
   status operator()(src_t &&fetch_byte, dest_t &&insert_byte) final {
-    return detail::call<tuple_t>(fetch_byte, insert_byte, FWD(m_impl.ftor));
+    return detail::call<tuple_t>(fetch_byte, insert_byte, K2O_FWD(m_impl.ftor));
   }
 
 private:
@@ -216,7 +179,7 @@ public:
   template<upd::endianess Endianess = upd::endianess::BUILTIN,
            upd::signed_mode Signed_Mode = upd::signed_mode::BUILTIN,
            typename F>
-  explicit order(F &&ftor) : m_concept_uptr{new detail::order_model<F, Endianess, Signed_Mode>{FWD(ftor)}} {}
+  explicit order(F &&ftor) : m_concept_uptr{new detail::order_model<F, Endianess, Signed_Mode>{K2O_FWD(ftor)}} {}
 
   //! \brief Call the held functor with the serialized argument delivered by the provided input byte stream
   //! \detail

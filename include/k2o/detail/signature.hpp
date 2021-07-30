@@ -1,7 +1,7 @@
 #pragma once
 
 //! \file
-//! \brief Functor introspection helper classes
+//! \brief Functor introspection
 
 #include "boost/type_traits.hpp"
 

@@ -1,5 +1,5 @@
 //! \file
-//! \brief status enumeration
+//! \brief Error handling
 
 #pragma once
 

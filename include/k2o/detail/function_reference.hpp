@@ -1,5 +1,5 @@
 //! \file
-//! \brief function_reference class
+//! \brief Functor reference wrapping
 
 #pragma once
 

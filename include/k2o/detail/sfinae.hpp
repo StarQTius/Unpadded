@@ -1,5 +1,5 @@
 //! \file
-//! \brief SFINAE helper classes
+//! \brief Template overloaded function disambiguation
 
 #pragma once
 
