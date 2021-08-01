@@ -152,7 +152,7 @@ public:
   /*!
     \brief Initialize the content with default constructed value
   */
-  explicit tuple() : tuple(Ts{}...) {}
+  tuple() : tuple(Ts{}...) {}
 
   /*!
     \brief Serialize the provided values
@@ -163,6 +163,15 @@ public:
     using boost::mp11::index_sequence_for;
     tuple_base<Endianess, Signed_Mode, Ts...>::lay(index_sequence_for<Ts...>{}, args...);
   }
+
+#if __cplusplus >= 201703L
+  //! \brief (C++17) Serialize the provided values
+  //! \detail
+  //!   Endianess and signed integer representation is provided throught the two first parameters.
+  //! \param values... Values to be serialized
+  //! \see format.hpp
+  explicit tuple(value_h<Endianess>, value_h<Signed_Mode>, const Ts&... values) : tuple(values...) {}
+#endif // __cplusplus >= 201703L
 };
 
 //! \brief Enables to instantiate the class template with no type parameters

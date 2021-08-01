@@ -275,3 +275,15 @@ inline void storage_implicitly_convert_array_wrapper_to_array() {
     TEST_ASSERT_EQUAL_INT_ARRAY(awrapper.content, a, sizeof a / sizeof *a);
   }
 }
+
+inline void storage_construct_tuple_with_parameters_cpp17() {
+#if __cplusplus >= 201703L
+  using namespace upd;
+
+  tuple t1{little_endian, two_complement, int{64}, short{16}, char{8}};
+  tuple t2{int{64}, short{16}, char{8}};
+  TEST_ASSERT_EQUAL_INT(t1.get<0>(), t2.get<0>());
+  TEST_ASSERT_EQUAL_INT(t1.get<1>(), t2.get<1>());
+  TEST_ASSERT_EQUAL_INT(t1.get<2>(), t2.get<2>());
+#endif // __cplusplus >= 201703L
+}

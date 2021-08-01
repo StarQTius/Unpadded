@@ -103,6 +103,7 @@ void setup() {
   storage_make_empty_tuple_multiopt(every_options);
 
   RUN_TEST(storage_implicitly_convert_array_wrapper_to_array);
+  RUN_TEST(storage_construct_tuple_with_parameters_cpp17);
 
   UNITY_END();
 }
