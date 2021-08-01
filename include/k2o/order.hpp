@@ -42,24 +42,6 @@ status insert(dest_t &insert_byte, const T &value) {
   return status::OK;
 }
 
-//! \brief Serialize several integer values as a sequence of byte then map a functor over this sequence
-//! \detail
-//!   The values will be serialized in the same order they are stored in 'tuple'.
-//! \tparam Endianess considered endianess when serializing the value
-//! \tparam Signed_Mode considered signed representation when serializing the value
-//! \param insert_byte functor to be mapped over the byte sequence
-//! \param tuple 'upd::tuple' object containing the values
-//! \return A status code
-template<upd::endianess, upd::signed_mode, typename T, sfinae::require_is_tuple<T> = 0>
-status insert(dest_t &insert_byte, const T &tuple) {
-  using namespace upd;
-
-  for (byte_t byte : tuple)
-    insert_byte(byte);
-
-  return status::OK;
-}
-
 //! \brief Call a functor with arguments serialized as a byte sequence
 //! \detail
 //! \tparam Tuple instance of 'upd::tuple' class template which will be used to hold the byte sequence
