@@ -282,8 +282,24 @@ inline void storage_construct_tuple_with_parameters_cpp17() {
 
   tuple t1{little_endian, two_complement, int{64}, short{16}, char{8}};
   tuple t2{int{64}, short{16}, char{8}};
+
   TEST_ASSERT_EQUAL_INT(t1.get<0>(), t2.get<0>());
   TEST_ASSERT_EQUAL_INT(t1.get<1>(), t2.get<1>());
   TEST_ASSERT_EQUAL_INT(t1.get<2>(), t2.get<2>());
+#endif // __cplusplus >= 201703L
+}
+
+inline void storage_bind_names_to_tuple_element_cpp17() {
+#if __cplusplus >= 201703L
+  using namespace upd;
+
+  int array[] { 0x00, 0x11, 0x22, 0x33 };
+  tuple t{int{64}, array, short{16}, char{8}};
+
+  auto [a, b, c, d] = t;
+  TEST_ASSERT_EQUAL_INT(64, a);
+  TEST_ASSERT_EQUAL_INT_ARRAY(array, b, sizeof array / sizeof *array);
+  TEST_ASSERT_EQUAL_INT(16, c);
+  TEST_ASSERT_EQUAL_INT(8, d);
 #endif // __cplusplus >= 201703L
 }

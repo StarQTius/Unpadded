@@ -138,9 +138,8 @@ public:
 #ifdef DOXYGEN
   template<typename T> array_wrapper<T> interpret_as(size_t offset) const;
 #else
-  template<typename T>
-  sfinae::require_bounded_array<T, array_wrapper<T>>
-  interpret_as(size_t offset) const {
+  template<typename T, sfinae::require_bounded_array<T> = 0>
+  array_wrapper<T> interpret_as(size_t offset) const {
     array_wrapper<T> retval;
 
     using element_t = boost::remove_reference_t<decltype(*retval)>;
@@ -205,9 +204,8 @@ public:
 #ifdef DOXYGEN
   template<typename T> void write(const T& array, size_t offset)
 #else
-  template<typename T>
-  sfinae::require_bounded_array<T>
-  write(const T& array, size_t offset) {
+  template<typename T, sfinae::require_bounded_array<T> = 0>
+  void write(const T& array, size_t offset) {
     using element_t = decltype(*array);
     constexpr auto array_size = sizeof(array) / sizeof(*array);
     for (size_t i = 0; i < array_size; i++) write(array[i], offset + i * sizeof(element_t));

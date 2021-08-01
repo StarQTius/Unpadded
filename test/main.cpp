@@ -104,6 +104,7 @@ void setup() {
 
   RUN_TEST(storage_implicitly_convert_array_wrapper_to_array);
   RUN_TEST(storage_construct_tuple_with_parameters_cpp17);
+  RUN_TEST(storage_bind_names_to_tuple_element_cpp17);
 
   UNITY_END();
 }

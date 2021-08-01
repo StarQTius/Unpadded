@@ -30,8 +30,12 @@ using require_signed_integer = typename boost::enable_if_<boost::is_signed<T>::v
 /*!
   \brief Utility class for SFINAE to check if a type is an array type
 */
-template<typename T, typename U = void>
+template<typename T, typename U = int>
 using require_bounded_array = typename boost::enable_if_<boost::is_bounded_array<T>::value, U>::type;
+
+//! \brief Require the provided type not to be an array type
+template<typename T, typename U = int>
+using require_not_bounded_array = typename boost::enable_if_<!boost::is_bounded_array<T>::value, U>::type;
 
 /*!
 */

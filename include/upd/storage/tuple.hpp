@@ -1,5 +1,7 @@
 #pragma once
 
+#include <tuple>
+
 #include "boost/mp11.hpp"
 #include "boost/type_traits.hpp"
 
@@ -194,3 +196,19 @@ tuple<Endianess, Signed_Mode, Args...> make_tuple(const Args&... args) {
 }
 
 } // namespace upd
+
+//! \brief Partial specialization of 'std::tuple_size' for 'upd::tuple'
+//! \detail
+//!   This specialization enables to use structured binding with 'upd::tuple'
+template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Ts>
+struct std::tuple_size<upd::tuple<Endianess, Signed_Mode, Ts...>> {
+  constexpr static auto value = sizeof...(Ts);
+};
+
+//! \brief Partial specialization of 'std::tuple_element' for 'upd::tuple'
+//! \detail
+//!   This specialization enables to use structured binding with 'upd::tuple'
+template<size_t I, upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Ts>
+struct std::tuple_element<I, upd::tuple<Endianess, Signed_Mode, Ts...>> {
+  using type = decltype(boost::declval<upd::tuple<Endianess, Signed_Mode, Ts...>>().template get<I>());
+};
