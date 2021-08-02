@@ -172,7 +172,8 @@ public:
   //!   Endianess and signed integer representation is provided throught the two first parameters.
   //! \param values... Values to be serialized
   //! \see format.hpp
-  explicit tuple(value_h<Endianess>, value_h<Signed_Mode>, const Ts&... values) : tuple(values...) {}
+  explicit tuple(value_h<endianess, Endianess>, value_h<signed_mode, Signed_Mode>, const Ts&... values) :
+    tuple(values...) {}
 #endif // __cplusplus >= 201703L
 };
 
