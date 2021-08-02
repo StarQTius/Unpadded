@@ -196,6 +196,22 @@ tuple<Endianess, Signed_Mode, Args...> make_tuple(const Args&... args) {
   return tuple<Endianess, Signed_Mode, Args...>{args...};
 }
 
+//! \brief Default construct a tuple object
+//! \tparam Args... deduced types of the provided values
+//! \tparam Endianess target endianess for serialization
+//! \tparam Signed_Mode target signed representation for serialization
+template<typename... Args, endianess Endianess, signed_mode Signed_Mode>
+tuple<Endianess, Signed_Mode, Args...> make_tuple(value_h<endianess, Endianess>, value_h<signed_mode, Signed_Mode>) {
+  return tuple<Endianess, Signed_Mode, Args...>{};
+}
+
+//! \brief Default construct a tuple object with native serialization parameters
+//! \tparam Args... deduced types of the provided values
+template<typename... Args>
+tuple<endianess::BUILTIN, signed_mode::BUILTIN, Args...> make_tuple() {
+  return tuple<endianess::BUILTIN, signed_mode::BUILTIN, Args...>{};
+}
+
 } // namespace upd
 
 //! \brief Partial specialization of 'std::tuple_size' for 'upd::tuple'
