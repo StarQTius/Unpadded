@@ -5,6 +5,8 @@
 #include <k2o/key.hpp>
 #include <k2o/type.hpp>
 
+int function(int);
+
 inline void key_DO_serialize_arguments_EXPECT_correct_byte_sequence() {
   using namespace k2o;
 
@@ -57,4 +59,18 @@ inline void key_DO_unserialize_data_sequence_with_parameter_EXPECT_correct_value
   auto result = k[classic_profile] << [&]() { return *(src_tuple.begin() + i++); };
 
   TEST_ASSERT_EQUAL_INT(src_tuple.get<0>(), result);
+}
+
+inline void key_DO_create_key_from_function_EXPECT_key_holding_function_signature_cpp17() {
+#if __cplusplus >= 201703L
+  using namespace k2o;
+
+  auto k = make_key<function>();
+  int i = 0, j = 0;
+  byte_t buf[sizeof i];
+  k(64) >> [&](byte_t byte) { buf[i++] = byte; };
+  auto result = k << [&]() { return buf[j++]; };
+
+  TEST_ASSERT_EQUAL_INT(64, result);
+#endif // __cplusplus >= 201703L
 }

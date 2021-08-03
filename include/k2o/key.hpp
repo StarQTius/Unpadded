@@ -116,4 +116,11 @@ public:
   }
 };
 
+#if __cplusplus >= 201703L
+template<auto Function>
+constexpr auto make_key() {
+  return key<boost::remove_cv_ref_t<decltype(*Function)>>{};
+}
+#endif // __cplusplus >= 201703L
+
 } // namespace k2o
