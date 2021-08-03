@@ -1,6 +1,6 @@
 #include "main.hpp"
 
-void setup() {
+int main() {
   UNITY_BEGIN();
 
   RUN_TEST(order_DO_serialize_argument_into_stream_EXPECT_order_getting_unaltered_argument);
@@ -16,7 +16,5 @@ void setup() {
   RUN_TEST(key_DO_unserialize_data_sequence_with_parameter_EXPECT_correct_value);
   RUN_TEST(key_DO_create_key_from_function_EXPECT_key_holding_function_signature_cpp17);
 
-  UNITY_END();
+  return UNITY_END();
 }
-
-void loop() {}
