@@ -1,6 +1,11 @@
+obj/
+xsrc/
+usr/
+run_*
+
+# platformio
 .pio
 *.ini
 
-obj/
-run_*
+# doxygen
 html/
