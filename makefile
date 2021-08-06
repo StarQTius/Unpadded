@@ -18,8 +18,6 @@ CPP_FLAGS = \
 	-Wall \
 	-Wextra \
 	-Werror \
-	-Wno-array-bounds \
-	-Wno-stringop-overread \
 
 C_FLAGS = \
 	-std=c99 \
