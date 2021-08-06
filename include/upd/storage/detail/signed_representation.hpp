@@ -33,7 +33,7 @@ template<signed_mode Signed_Mode, typename T>
 sfinae::enable_t<Signed_Mode == signed_mode::BUILTIN, unsigned long long>
 interpret_to(T value) {
   unsigned long long retval;
-  memcpy(&retval, &value, sizeof(retval));
+  memcpy(&retval, &value, sizeof value);
 
   return retval;
 }
