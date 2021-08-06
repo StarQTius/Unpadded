@@ -1,6 +1,7 @@
 # User inputs :
 # - CC : compiler
 # - CC_FLAGS : flags for compiler
+# - CPPSTD : version of the standard (-std=CPPSTD)
 # - LINKER_FLAGS : flags for the linker
 # - DEVICE : used to make folders
 # - OUTPUT : output file name
@@ -9,11 +10,16 @@ SHELL = /bin/bash -O extglob
 
 CC = gcc
 
+OPT_FLAGS = -O2
+
+DEBUG_FLAGS = -g
+
 CPP_FLAGS = \
-	-g \
 	-Wall \
 	-Wextra \
 	-Werror \
+	-Wno-array-bounds \
+	-Wno-stringop-overread \
 
 C_FLAGS = \
 	-std=c99 \
@@ -66,25 +72,25 @@ clean:
 	rm -f obj/cpp?(11|14|17|20)/*.?(o|gcda|gcno)
 
 obj/cpp11/main.o: test/main.cpp
-	$(CC) -std=c++11 $(CPP_FLAGS) $(INCS) -DUT_ONLY -c $^ -o obj/cpp11/main.o
+	$(CC) -std=c++11 $(DEBUG_FLAGS) $(CPP_FLAGS) $(INCS) -DUT_ONLY -c $^ -o obj/cpp11/main.o
 
 obj/cpp14/main.o: test/main.cpp
-	$(CC) -std=c++14 $(CPP_FLAGS) $(INCS) -DUT_ONLY -c $^ -o obj/cpp14/main.o
+	$(CC) -std=c++14 $(DEBUG_FLAGS) $(CPP_FLAGS) $(INCS) -DUT_ONLY -c $^ -o obj/cpp14/main.o
 
 obj/cpp17/main.o: test/main.cpp
-	$(CC) -std=c++17 $(CPP_FLAGS) $(INCS) -DUT_ONLY -c $^ -o obj/cpp17/main.o
+	$(CC) -std=c++17 $(DEBUG_FLAGS) $(CPP_FLAGS) $(INCS) -DUT_ONLY -c $^ -o obj/cpp17/main.o
 
 obj/cpp20/main.o: test/main.cpp
-	$(CC) -std=c++20 $(CPP_FLAGS) $(INCS) -DUT_ONLY -c $^ -o obj/cpp20/main.o
-	
+	$(CC) -std=c++20 $(DEBUG_FLAGS) $(CPP_FLAGS) $(INCS) -DUT_ONLY -c $^ -o obj/cpp20/main.o
+
 obj/lib/unity.o: lib/Unity/src/unity.c
-	$(CC) $(C_FLAGS) $(INCS) -c $^ -o $@
+	$(CC) $$(DEBUG_FLAGS) $(C_FLAGS) $(INCS) -c $^ -o $@
 
 obj/$(DEVICE)/main.o: test/main.cpp
-	$(CC) $(CC_FLAGS) $(CPP_FLAGS) $(INCS) -c $^ -o $@
+	$(CC) -std=$(CPPSTD) $(OPT_FLAGS) $(CC_FLAGS) $(CPP_FLAGS) $(INCS) -c $^ -o $@
 
 obj/$(DEVICE)/unity.o: lib/Unity/src/unity.c
-	$(CC) $(CC_FLAGS) $(C_FLAGS) $(INCS) -c $^ -o $@
+	$(CC) $(OPT_FLAGS) $(CC_FLAGS) $(C_FLAGS) $(INCS) -c $^ -o $@
 
 obj/$(DEVICE)/%.o: xsrc/$(DEVICE)/%.cpp
-	$(CC) $(CC_FLAGS) $(CPP_FLAGS) $(INCS) -c $^ -o $@
+	$(CC) -std=$(CPPSTD) $(OPT_FLAGS) $(CC_FLAGS) $(CPP_FLAGS) $(INCS) -c $^ -o $@
