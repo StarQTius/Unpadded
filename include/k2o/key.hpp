@@ -6,6 +6,7 @@
 #include <boost/type_traits.hpp>
 
 #include <k2o/detail/fwd.hpp>
+#include <k2o/detail/signature.hpp>
 
 #include <upd/storage/tuple.hpp>
 
@@ -74,7 +75,7 @@ template<upd::endianess Endianess, upd::signed_mode Signed_Mode>
 struct profile {};
 
 template<typename F>
-class key;
+class key : public key<detail::signature_t<F>> {};
 
 //! \brief Serializing / unserializing helper class according to a function signature
 //! \tparam R return type associated with the signature

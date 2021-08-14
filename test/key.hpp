@@ -61,6 +61,18 @@ inline void key_DO_unserialize_data_sequence_with_parameter_EXPECT_correct_value
   TEST_ASSERT_EQUAL_INT(src_tuple.get<0>(), result);
 }
 
+inline void key_DO_create_key_from_ftor_signature_EXPECT_key_holding_ftor_signature() {
+  auto ftor = [](int x) { return x; };
+  k2o::key<decltype(ftor)> key;
+
+  int i = 0, j = 0;
+  auto buf = upd::make_tuple<int>();
+  key(64) >> [&](k2o::byte_t byte) { buf[i++] = byte; };
+  auto result = key << [&]() { return buf[j++]; };
+
+  TEST_ASSERT_EQUAL_INT(64, result);
+}
+
 inline void key_DO_create_key_from_function_EXPECT_key_holding_function_signature_cpp17() {
 #if __cplusplus >= 201703L
   using namespace k2o;

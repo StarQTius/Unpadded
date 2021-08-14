@@ -14,6 +14,7 @@ int main() {
   RUN_TEST(key_DO_serialize_arguments_with_parameter_EXPECT_correct_byte_sequence);
   RUN_TEST(key_DO_unserialize_data_sequence_EXPECT_correct_value);
   RUN_TEST(key_DO_unserialize_data_sequence_with_parameter_EXPECT_correct_value);
+  RUN_TEST(key_DO_create_key_from_ftor_signature_EXPECT_key_holding_ftor_signature);
   RUN_TEST(key_DO_create_key_from_function_EXPECT_key_holding_function_signature_cpp17);
 
   return UNITY_END();
