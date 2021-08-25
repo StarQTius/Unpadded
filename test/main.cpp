@@ -17,5 +17,7 @@ int main() {
   RUN_TEST(key_DO_create_key_from_ftor_signature_EXPECT_key_holding_ftor_signature);
   RUN_TEST(key_DO_create_key_from_function_EXPECT_key_holding_function_signature_cpp17);
 
+  RUN_TEST(ikey_DO_serialize_argument_EXPECT_correct_id_and_result);
+
   return UNITY_END();
 }
