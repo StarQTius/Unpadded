@@ -20,6 +20,7 @@ int main() {
   RUN_TEST(ikey_DO_serialize_argument_EXPECT_correct_id_and_result);
 
   RUN_TEST(keyring_DO_get_an_ikey_EXPECT_correct_index_cpp17);
+  RUN_TEST(keyring_DO_get_an_ikey_by_variable_EXPECT_correct_index_cpp17);
 
   RUN_TEST(keyring11_DO_get_an_ikey_EXPECT_correct_index);
 
