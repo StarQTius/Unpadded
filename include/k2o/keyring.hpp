@@ -6,6 +6,8 @@
 #include "detail/find_in_typelist.hpp"
 #include "detail/value_h.hpp"
 
+#include "keyring11.hpp"
+
 namespace k2o {
 #if __cplusplus >= 201703L
 //! \brief (C++17) Functors identifier aggregator and indexer
@@ -21,10 +23,9 @@ namespace k2o {
 //!   functions that are only declared in the translation unit.
 //! \tparam Ftors... functors to be indexed
 template<auto &... Ftors>
-class keyring {
-  using search_list = boost::mp11::mp_list<detail::value_h<decltype(Ftors), Ftors>...>;
-
-  static_assert((detail::is_callable(Ftors) && ...), "keyring only accepts callable objects as template parameters");
+class keyring : public keyring11<detail::value_h<decltype(Ftors), Ftors>...> {
+  using base_t = keyring11<detail::value_h<decltype(Ftors), Ftors>...>;
+  using base_t::get;
 
 public:
   //! \brief Make an 'ikey' object whose template parameters are determined according to the provided function
@@ -32,9 +33,7 @@ public:
   //! \return 'k2o::ikey<I, S>', where 'I' is the position of 'Ftor' in 'Ftors' and 'S' its signature
   template<auto &Ftor>
   constexpr auto get() const {
-    using ftor_t = decltype(Ftor);
-    using value_t = detail::value_h<ftor_t, Ftor>;
-    return ikey<detail::find_in_typelist<value_t, search_list>(), detail::signature_t<ftor_t>>{};
+    return get<detail::value_h<decltype(Ftor), Ftor>>();
   }
 };
 #endif // __cplusplus >= 201703L

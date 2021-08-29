@@ -15,6 +15,9 @@ template<typename... Fs, Fs... Functions>
 class keyring11<detail::value_h<Fs, Functions>...> {
   using search_list = boost::mp11::mp_list<detail::value_h<Fs, Functions>...>;
 
+  static_assert(boost::conjunction<boost::integral_constant<bool, detail::is_callable(Functions)>...>::value,
+                "'keyring11' only accepts callable objects as template parameters");
+
 public:
   template<typename H>
   constexpr ikey<detail::find_in_typelist<H, search_list>(), detail::signature_t<decltype(H::value)>> get() const {
