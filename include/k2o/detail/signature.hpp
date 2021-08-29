@@ -86,5 +86,14 @@ using signature_t = typename examine_functor<F>::type;
 template<typename F>
 using return_t = typename examine_functor<F>::return_type;
 
+template<typename F, signature_t<F> * = nullptr>
+constexpr bool is_callable(F &&) {
+  return true;
+}
+template<typename>
+constexpr bool is_callable(...) {
+  return false;
+}
+
 } // namespace detail
 } // namespace k2o
