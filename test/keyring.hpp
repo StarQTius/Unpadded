@@ -7,6 +7,8 @@
 template<typename R, typename... Args>
 struct callable {
   R operator()(Args &&...) { return {}; }
+  // This line force the object not to be considered constexpr implicitely
+  int x = 0;
 };
 
 void function1(int);

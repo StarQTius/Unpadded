@@ -3,4 +3,4 @@
 
 #pragma once
 
-#define K2O_CTREF(VALUE) ::k2o::detail::value_h<decltype(VALUE) &, VALUE>
+#define K2O_CTREF(VALUE) ::k2o::detail::unevaluated_value_h<decltype(VALUE) &, VALUE>

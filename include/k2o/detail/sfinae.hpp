@@ -6,6 +6,9 @@
 #include <boost/type_traits/enable_if.hpp>
 #include <boost/type_traits/integral_constant.hpp>
 
+#include <upd/format.hpp>
+#include <upd/storage/tuple.hpp>
+
 namespace k2o {
 namespace sfinae {
 
@@ -30,6 +33,11 @@ using require_is_void = typename boost::enable_if_<boost::is_void<T>::value, U>:
 //! \brief Require the provided type not to be 'void'
 template<typename T, typename U = int>
 using require_not_void = typename boost::enable_if_<!boost::is_void<T>::value, U>::type;
+
+//! \brief Require the provided type to be a function type
+template<typename T, typename U = int>
+using require_is_function =
+    typename boost::enable_if_<boost::is_function<boost::remove_pointer_t<boost::decay_t<T>>>::value, U>::type;
 
 } // namespace sfinae
 } // namespace k2o

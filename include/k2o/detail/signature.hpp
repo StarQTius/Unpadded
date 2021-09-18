@@ -5,6 +5,8 @@
 
 #include "boost/type_traits.hpp"
 
+#include "sfinae.hpp"
+
 namespace k2o {
 namespace detail {
 
@@ -86,13 +88,27 @@ using signature_t = typename examine_functor<F>::type;
 template<typename F>
 using return_t = typename examine_functor<F>::return_type;
 
-template<typename F, signature_t<F> * = nullptr>
-constexpr bool is_callable(F &&) {
+template<typename F, sfinae::require_is_function<F> = 0>
+constexpr bool is_callable_impl(int) {
+  return true;
+}
+template<typename F, typename = decltype(&boost::decay_t<F>::operator())>
+constexpr bool is_callable_impl(int) {
   return true;
 }
 template<typename>
-constexpr bool is_callable(...) {
+constexpr bool is_callable_impl(...) {
   return false;
+}
+
+//! \brief Check if the provided object is callable
+template<typename F>
+constexpr bool is_callable(F &&) {
+  return is_callable_impl<F>(0);
+}
+template<typename F>
+constexpr bool is_callable() {
+  return is_callable_impl<F>(0);
 }
 
 } // namespace detail

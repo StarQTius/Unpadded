@@ -23,8 +23,8 @@ namespace k2o {
 //!   functions that are only declared in the translation unit.
 //! \tparam Ftors... functors to be indexed
 template<auto &... Ftors>
-class keyring : public keyring11<detail::value_h<decltype(Ftors), Ftors>...> {
-  using base_t = keyring11<detail::value_h<decltype(Ftors), Ftors>...>;
+class keyring : public keyring11<detail::unevaluated_value_h<decltype(Ftors), Ftors>...> {
+  using base_t = keyring11<detail::unevaluated_value_h<decltype(Ftors), Ftors>...>;
   using base_t::get;
 
 public:
@@ -33,7 +33,7 @@ public:
   //! \return 'k2o::ikey<I, S>', where 'I' is the position of 'Ftor' in 'Ftors' and 'S' its signature
   template<auto &Ftor>
   constexpr auto get() const {
-    return get<detail::value_h<decltype(Ftor), Ftor>>();
+    return get<detail::unevaluated_value_h<decltype(Ftor), Ftor>>();
   }
 };
 #endif // __cplusplus >= 201703L
