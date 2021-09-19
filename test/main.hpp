@@ -2,6 +2,7 @@
 
 #include "unity.h"
 
+#include "dispatcher.hpp"
 #include "ikey.hpp"
 #include "key.hpp"
 #include "keyring.hpp"

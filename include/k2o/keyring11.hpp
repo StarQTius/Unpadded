@@ -4,7 +4,10 @@
 #pragma once
 
 #include "detail/find_in_typelist.hpp"
+#include "detail/signature.hpp"
 #include "detail/value_h.hpp"
+
+#include "ikey.hpp"
 
 namespace k2o {
 

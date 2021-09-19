@@ -98,8 +98,7 @@ template<typename F, upd::endianess Endianess, upd::signed_mode Signed_Mode>
 struct order_model_impl {
   using tuple_t = input_tuple<Endianess, Signed_Mode, F>;
 
-  explicit order_model_impl(const F &ftor) : ftor{ftor} {}
-  explicit order_model_impl(F &&ftor) : ftor{static_cast<F &&>(ftor)} {}
+  explicit order_model_impl(F &&ftor) : ftor{K2O_FWD(ftor)} {}
 
   F ftor;
 };
