@@ -18,26 +18,29 @@ struct is_tuple : boost::false_type {};
 template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Ts>
 struct is_tuple<upd::tuple<Endianess, Signed_Mode, Ts...>> : boost::true_type {};
 
+//! \brief Require the provided expression to be true
+template<bool Expression, typename U = int>
+using require = typename boost::enable_if_<Expression, U>::type;
+
 //! \brief Require the provided type to be a template instance of 'upd::tuple'
 template<typename T, typename U = int>
-using require_is_tuple = typename boost::enable_if_<is_tuple<T>::value, U>::type;
+using require_is_tuple = require<is_tuple<T>::value, U>;
 
 //! \brief Require the provided type not to be a template instance of 'upd::tuple'
 template<typename T, typename U = int>
-using require_not_tuple = typename boost::enable_if_<!is_tuple<T>::value, U>::type;
+using require_not_tuple = require<!is_tuple<T>::value, U>;
 
 //! \brief Require the provided type to be 'void'
 template<typename T, typename U = int>
-using require_is_void = typename boost::enable_if_<boost::is_void<T>::value, U>::type;
+using require_is_void = require<boost::is_void<T>::value, U>;
 
 //! \brief Require the provided type not to be 'void'
 template<typename T, typename U = int>
-using require_not_void = typename boost::enable_if_<!boost::is_void<T>::value, U>::type;
+using require_not_void = require<!boost::is_void<T>::value, U>;
 
 //! \brief Require the provided type to be a function type
 template<typename T, typename U = int>
-using require_is_function =
-    typename boost::enable_if_<boost::is_function<boost::remove_pointer_t<boost::decay_t<T>>>::value, U>::type;
+using require_is_function = require<boost::is_function<boost::remove_pointer_t<boost::decay_t<T>>>::value, U>;
 
 } // namespace sfinae
 } // namespace k2o
