@@ -38,7 +38,7 @@ template<typename T, typename U = int>
 using require_not_bounded_array = typename boost::enable_if_<!boost::is_bounded_array<T>::value, U>::type;
 
 /*!
-*/
+ */
 template<typename... Ts>
 using require_not_empty_pack = typename boost::enable_if_<sizeof...(Ts), int>::type;
 

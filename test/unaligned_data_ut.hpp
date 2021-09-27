@@ -30,11 +30,12 @@ template<upd::endianess Endianess, upd::signed_mode Signed_Mode>
 void unaligned_data_DO_iterate_throught_content_EXPECT_correct_raw_data() {
   using namespace upd;
 
-  uint8_t raw_data[] {0xaa, 0xbb, 0xcc};
+  uint8_t raw_data[]{0xaa, 0xbb, 0xcc};
   unaligned_data<sizeof(raw_data), Endianess, Signed_Mode> unaligned_data{raw_data};
   TEST_ASSERT_TRUE(unaligned_data.begin() != unaligned_data.end());
   size_t i = 0;
-  for (auto byte : unaligned_data) TEST_ASSERT_EQUAL_HEX16(raw_data[i++], byte);
+  for (auto byte : unaligned_data)
+    TEST_ASSERT_EQUAL_HEX16(raw_data[i++], byte);
 }
 
 MAKE_MULTIOPT(unaligned_data_DO_serialize_data_EXPECT_correct_value_when_unserializing)
