@@ -9,8 +9,6 @@
 
 namespace upd {
 
-//! \brief Template class not meant to be instantiated
-//! \details It allows to introduce the partial specialization array_wrapper<T[N]>
 template<typename T>
 struct array_wrapper;
 

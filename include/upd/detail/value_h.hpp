@@ -4,6 +4,7 @@
 #pragma once
 
 namespace upd {
+namespace detail {
 
 //! \brief Holds a value
 //! \tparam T Type of the held value
@@ -13,4 +14,5 @@ struct value_h {
   constexpr static auto value = Value;
 };
 
+} // namespace detail
 } // namespace upd

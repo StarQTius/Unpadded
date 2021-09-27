@@ -15,27 +15,27 @@ enum class endianess { BUILTIN, LITTLE, BIG };
 enum class signed_mode { BUILTIN, SIGNED_MAGNITUDE, ONE_COMPLEMENT, TWO_COMPLEMENT, OFFSET_BINARY };
 
 //! \brief Token associated with 'endianess::BUILTIN'
-constexpr value_h<endianess, endianess::BUILTIN> builtin_endianess;
+constexpr detail::value_h<endianess, endianess::BUILTIN> builtin_endianess;
 
 //! \brief Token associated with 'endianess::LITTLE'
-constexpr value_h<endianess, endianess::LITTLE> little_endian;
+constexpr detail::value_h<endianess, endianess::LITTLE> little_endian;
 
 //! \brief Token associated with 'endianess::BIG'
-constexpr value_h<endianess, endianess::BIG> big_endian;
+constexpr detail::value_h<endianess, endianess::BIG> big_endian;
 
 //! \brief Token associated with 'signed_mode::BUILTIN'
-constexpr value_h<signed_mode, signed_mode::BUILTIN> builtin_signed_mode;
+constexpr detail::value_h<signed_mode, signed_mode::BUILTIN> builtin_signed_mode;
 
 //! \brief Token associated with 'signed_mode::SIGNED_MAGNITUDE'
-constexpr value_h<signed_mode, signed_mode::SIGNED_MAGNITUDE> signed_magnitude;
+constexpr detail::value_h<signed_mode, signed_mode::SIGNED_MAGNITUDE> signed_magnitude;
 
 //! \brief Token associated with 'signed_mode::ONE_COMPLEMENT'
-constexpr value_h<signed_mode, signed_mode::ONE_COMPLEMENT> one_complement;
+constexpr detail::value_h<signed_mode, signed_mode::ONE_COMPLEMENT> one_complement;
 
 //! \brief Token associated with 'signed_mode::TWO_COMPLEMENT'
-constexpr value_h<signed_mode, signed_mode::TWO_COMPLEMENT> two_complement;
+constexpr detail::value_h<signed_mode, signed_mode::TWO_COMPLEMENT> two_complement;
 
 //! \brief Token associated with 'signed_mode::OFFSET_BINARY'
-constexpr value_h<signed_mode, signed_mode::OFFSET_BINARY> offset_binary;
+constexpr detail::value_h<signed_mode, signed_mode::OFFSET_BINARY> offset_binary;
 
 } // namespace upd

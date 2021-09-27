@@ -15,6 +15,7 @@
 #include "unaligned_data.hpp"
 
 namespace upd {
+namespace detail {
 
 //! \brief Defines base members for 'tuple'
 //! \tparam Endianess endianess of the stored data
@@ -121,6 +122,8 @@ private:
   unaligned_data<size, Endianess, Signed_Mode> m_storage;
 };
 
+} // namespace detail
+
 //! \brief Unaligned storage with fixed target types
 //! \details
 //!   The object holds values of provided type in an unaligned maners (ie, there is no padding between two consecutive
@@ -129,7 +132,7 @@ private:
 //! \tparam Signed_Mode signed mode of the stored data
 //! \tparam Ts... Types of the serialized values
 template<endianess Endianess = endianess::BUILTIN, signed_mode Signed_Mode = signed_mode::BUILTIN, typename... Ts>
-class tuple : public tuple_base<Endianess, Signed_Mode, Ts...> {
+class tuple : public detail::tuple_base<Endianess, Signed_Mode, Ts...> {
 public:
   //! \brief Initialize the content with default constructed value
   tuple() : tuple(Ts{}...) {}
@@ -139,7 +142,7 @@ public:
   //! \param args... Values to be serialized
   explicit tuple(const Ts &... args) {
     using boost::mp11::index_sequence_for;
-    tuple_base<Endianess, Signed_Mode, Ts...>::lay(index_sequence_for<Ts...>{}, args...);
+    detail::tuple_base<Endianess, Signed_Mode, Ts...>::lay(index_sequence_for<Ts...>{}, args...);
   }
 
 #if __cplusplus >= 201703L
@@ -148,16 +151,12 @@ public:
   //!   Endianess and signed integer representation is provided throught the two first parameters.
   //! \param values... Values to be serialized
   //! \see format.hpp
-  explicit tuple(value_h<endianess, Endianess>, value_h<signed_mode, Signed_Mode>, const Ts &... values)
+  explicit tuple(detail::value_h<endianess, Endianess>, detail::value_h<signed_mode, Signed_Mode>, const Ts &... values)
       : tuple(values...) {}
 #endif // __cplusplus >= 201703L
 };
-
-//! \brief Enables to instantiate the class template with no type parameters
-//! \tparam Endianess endianess of the stored data
-//! \tparam Signed_Mode signed mode of the stored data
 template<endianess Endianess, signed_mode Signed_Mode>
-class tuple<Endianess, Signed_Mode> : public tuple_base<Endianess, Signed_Mode> {};
+class tuple<Endianess, Signed_Mode> : public detail::tuple_base<Endianess, Signed_Mode> {};
 
 //! \brief Construct a tuple object provided constant lvalue to values
 //! \tparam Endianess Target endianess for serialization
@@ -175,7 +174,8 @@ tuple<Endianess, Signed_Mode, Args...> make_tuple(const Args &... args) {
 //! \tparam Endianess target endianess for serialization
 //! \tparam Signed_Mode target signed representation for serialization
 template<typename... Args, endianess Endianess, signed_mode Signed_Mode>
-tuple<Endianess, Signed_Mode, Args...> make_tuple(value_h<endianess, Endianess>, value_h<signed_mode, Signed_Mode>) {
+tuple<Endianess, Signed_Mode, Args...> make_tuple(detail::value_h<endianess, Endianess>,
+                                                  detail::value_h<signed_mode, Signed_Mode>) {
   return tuple<Endianess, Signed_Mode, Args...>{};
 }
 
