@@ -2,7 +2,7 @@
 
 #include <cstring>
 
-#include "upd/type.hpp"
+#include "type.hpp"
 
 /*!
   \file
@@ -15,7 +15,8 @@ namespace upd {
   \brief Template class not meant to be instantiated
   \details It allows to introduce the partial specialization array_wrapper<T[N]>
 */
-template<typename T> struct array_wrapper;
+template<typename T>
+struct array_wrapper;
 
 /*!
   \brief Utility class wrapping an C-style array, analogously to std::array
@@ -41,24 +42,24 @@ struct array_wrapper<T[N]> {
     \brief Copy from a buffer to the object's content of the object
     \param ptr Pointer to the buffer
   */
-  explicit array_wrapper(const T* ptr) { memcpy(content, ptr, N); }
+  explicit array_wrapper(const T *ptr) { memcpy(content, ptr, N); }
 
   /*!
     \name Array-like operators
     @{
   */
 
-  T& operator[](size_t i) { return content[i]; }
-  const T& operator[](size_t i) const { return content[i]; }
+  T &operator[](size_t i) { return content[i]; }
+  const T &operator[](size_t i) const { return content[i]; }
 
-  T& operator*() { return *content; }
-  const T& operator*() const { return *content; }
+  T &operator*() { return *content; }
+  const T &operator*() const { return *content; }
 
-  T* operator->() { return content; }
-  const T* operator->() const { return content; }
+  T *operator->() { return content; }
+  const T *operator->() const { return content; }
 
-  T* operator+(size_t n) { return content + n; }
-  const T* operator+(size_t n) const { return content + n; }
+  T *operator+(size_t n) { return content + n; }
+  const T *operator+(size_t n) const { return content + n; }
 
   operator array_t &() { return content; }
   operator const array_t &() const { return content; }
@@ -70,10 +71,10 @@ struct array_wrapper<T[N]> {
     @{
   */
 
-  T* begin() { return content; }
-  T* end() { return content + N; }
-  const T* begin() const { return content; }
-  const T* end() const { return content + N; }
+  T *begin() { return content; }
+  T *end() { return content + N; }
+  const T *begin() const { return content; }
+  const T *end() const { return content + N; }
 
   //! @}
 

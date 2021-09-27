@@ -5,7 +5,7 @@
   \brief Definitions of functor introspection helper classes
 */
 
-#include "boost/type_traits.hpp"
+#include <boost/type_traits.hpp>
 
 namespace upd {
 namespace detail {
@@ -17,7 +17,8 @@ namespace detail {
     The type member 'return_type' is an alias for the return type of a function of the given signature.
   \tparam F Signature
 */
-template<typename F> struct signature;
+template<typename F>
+struct signature;
 #ifndef DOXYGEN
 template<typename R, typename... Args>
 struct signature<R(Args...)> {
@@ -44,7 +45,7 @@ struct examine_functor_impl : examine_functor_impl<decltype(&F::operator())> {};
   \tparam Args... Types of the arguments of the function type
 */
 template<typename R, typename... Args>
-struct examine_functor_impl<R(*)(Args...)> : signature<R(Args...)> {};
+struct examine_functor_impl<R (*)(Args...)> : signature<R(Args...)> {};
 
 /*!
   \brief Partial specialization dedicated to member function types
@@ -57,30 +58,30 @@ struct examine_functor_impl<R(*)(Args...)> : signature<R(Args...)> {};
   \tparam Args... Types of the arguments of the member function type
 */
 template<typename R, typename C, typename... Args>
-struct examine_functor_impl<R(C::*)(Args...)> : signature<R(Args...)> {};
+struct examine_functor_impl<R (C::*)(Args...)> : signature<R(Args...)> {};
 #ifndef DOXYGEN
 template<typename R, typename C, typename... Args>
-struct examine_functor_impl<R(C::*)(Args...) const> : signature<R(Args...)> {};
+struct examine_functor_impl<R (C::*)(Args...) const> : signature<R(Args...)> {};
 template<typename R, typename C, typename... Args>
-struct examine_functor_impl<R(C::*)(Args...) volatile> : signature<R(Args...)> {};
+struct examine_functor_impl<R (C::*)(Args...) volatile> : signature<R(Args...)> {};
 template<typename R, typename C, typename... Args>
-struct examine_functor_impl<R(C::*)(Args...) const volatile> : signature<R(Args...)> {};
+struct examine_functor_impl<R (C::*)(Args...) const volatile> : signature<R(Args...)> {};
 template<typename R, typename C, typename... Args>
-struct examine_functor_impl<R(C::*)(Args...) &> : signature<R(Args...)> {};
+struct examine_functor_impl<R (C::*)(Args...) &> : signature<R(Args...)> {};
 template<typename R, typename C, typename... Args>
-struct examine_functor_impl<R(C::*)(Args...) const &> : signature<R(Args...)> {};
+struct examine_functor_impl<R (C::*)(Args...) const &> : signature<R(Args...)> {};
 template<typename R, typename C, typename... Args>
-struct examine_functor_impl<R(C::*)(Args...) volatile &> : signature<R(Args...)> {};
+struct examine_functor_impl<R (C::*)(Args...) volatile &> : signature<R(Args...)> {};
 template<typename R, typename C, typename... Args>
-struct examine_functor_impl<R(C::*)(Args...) const volatile &> : signature<R(Args...)> {};
+struct examine_functor_impl<R (C::*)(Args...) const volatile &> : signature<R(Args...)> {};
 template<typename R, typename C, typename... Args>
-struct examine_functor_impl<R(C::*)(Args...) &&> : signature<R(Args...)> {};
+struct examine_functor_impl<R (C::*)(Args...) &&> : signature<R(Args...)> {};
 template<typename R, typename C, typename... Args>
-struct examine_functor_impl<R(C::*)(Args...) const &&> : signature<R(Args...)> {};
+struct examine_functor_impl<R (C::*)(Args...) const &&> : signature<R(Args...)> {};
 template<typename R, typename C, typename... Args>
-struct examine_functor_impl<R(C::*)(Args...) volatile &&> : signature<R(Args...)> {};
+struct examine_functor_impl<R (C::*)(Args...) volatile &&> : signature<R(Args...)> {};
 template<typename R, typename C, typename... Args>
-struct examine_functor_impl<R(C::*)(Args...) const volatile &&> : signature<R(Args...)> {};
+struct examine_functor_impl<R (C::*)(Args...) const volatile &&> : signature<R(Args...)> {};
 #endif
 
 //! \brief  Alias for 'typename examine_functor_impl<boost::decay_t<F>>'

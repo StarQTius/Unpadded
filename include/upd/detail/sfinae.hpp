@@ -1,7 +1,7 @@
 #pragma once
 
-#include "boost/type_traits.hpp"
-#include "boost/type_traits/is_bounded_array.hpp"
+#include <boost/type_traits.hpp>
+#include <boost/type_traits/is_bounded_array.hpp>
 
 /*!
   \file

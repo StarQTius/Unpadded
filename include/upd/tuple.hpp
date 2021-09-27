@@ -2,15 +2,13 @@
 
 #include <tuple>
 
-#include "boost/mp11.hpp"
-#include "boost/type_traits.hpp"
+#include <boost/mp11.hpp>
+#include <boost/type_traits.hpp>
 
-#include "upd/format.hpp"
-#include "upd/fwd.hpp"
-#include "upd/type.hpp"
-
-#include "upd/detail/signature.hpp"
-
+#include "detail/signature.hpp"
+#include "format.hpp"
+#include "fwd.hpp"
+#include "type.hpp"
 #include "unaligned_data.hpp"
 
 /*!
@@ -29,12 +27,11 @@ class tuple_base {
   using typelist = boost::mp11::mp_list<Ts...>;
   using type_sizes = boost::mp11::mp_list<boost::mp11::mp_size_t<sizeof(Ts)>...>;
 
-  static_assert(boost::conjunction<
-    boost::integral_constant<bool,(
-      !boost::is_const<Ts>::value &&
-      !boost::is_volatile<Ts>::value &&
-      !boost::is_reference<Ts>::value)>...>::value,
-    "Type parameters cannot be cv-qualified or ref-qualified.");
+  static_assert(
+      boost::conjunction<boost::integral_constant<bool,
+                                                  (!boost::is_const<Ts>::value && !boost::is_volatile<Ts>::value &&
+                                                   !boost::is_reference<Ts>::value)>...>::value,
+      "Type parameters cannot be cv-qualified or ref-qualified.");
 
 public:
   //! \brief Type of one of the serialized values
@@ -56,24 +53,24 @@ public:
     \details There is no bound check performed.
     \param i Index of the accessed byte
   */
-  byte_t& operator[](size_t i) { return m_storage[i]; }
+  byte_t &operator[](size_t i) { return m_storage[i]; }
 
   /*!
     \brief Access the object content
     \details There is no bound check performed.
     \param i Index of the accessed byte
   */
-  const byte_t& operator[](size_t i) const { return m_storage[i]; }
+  const byte_t &operator[](size_t i) const { return m_storage[i]; }
 
   /*!
     \name Iterability
     @{
   */
 
-  byte_t* begin() { return m_storage.begin(); }
-  byte_t* end() { return m_storage.end(); }
-  const byte_t* begin() const { return m_storage.begin(); }
-  const byte_t* end() const { return m_storage.end(); }
+  byte_t *begin() { return m_storage.begin(); }
+  byte_t *end() { return m_storage.end(); }
+  const byte_t *begin() const { return m_storage.begin(); }
+  const byte_t *end() const { return m_storage.end(); }
 
   //! @}
 
@@ -83,7 +80,8 @@ public:
     \return A copy of the serialized value or an array_wrapper if I designate an array type
   */
 #ifdef DOXYGEN
-  template<size_t I> auto get() const;
+  template<size_t I>
+  auto get() const;
 #else
   template<size_t I>
   decltype(boost::declval<unaligned_data<size, Endianess, Signed_Mode>>().template interpret_as<arg_t<I>>(0))
@@ -101,7 +99,7 @@ public:
     \param value Value to be copied from
   */
   template<size_t I>
-  void set(const arg_t<I>& value) {
+  void set(const arg_t<I> &value) {
     using namespace boost::mp11;
     constexpr auto offset = mp_fold<mp_take_c<type_sizes, I>, mp_size_t<0>, mp_plus>::value;
     m_storage.write(value, offset);
@@ -113,30 +111,30 @@ public:
     \return ftor(this->get<Is>()...) with Is = 0, 1, ..., sizeof...(Ts)
   */
 #ifdef DOXYGEN
-  template<typename F> auto invoke(F&& ftor) const;
+  template<typename F>
+  auto invoke(F &&ftor) const;
 #else
   template<typename F>
-  detail::return_t<F> invoke(F&& ftor) const {
+  detail::return_t<F> invoke(F &&ftor) const {
     return invoke_impl(UPD_FWD(ftor), boost::mp11::index_sequence_for<Ts...>{});
   }
 #endif
 
 protected:
   template<size_t... Is, typename... Args>
-  void lay(boost::mp11::index_sequence<Is...>, const Args&... args) {
-     // TODO : à changer pour quelque chose de plus propre
-     using discard = int[];
-     discard {0, (set<Is>(args), 0)...};
+  void lay(boost::mp11::index_sequence<Is...>, const Args &... args) {
+    // TODO : à changer pour quelque chose de plus propre
+    using discard = int[];
+    discard{0, (set<Is>(args), 0)...};
   }
 
 private:
   template<typename F, size_t... Is>
-  detail::return_t<F> invoke_impl(F&& ftor, boost::mp11::index_sequence<Is...>) const {
+  detail::return_t<F> invoke_impl(F &&ftor, boost::mp11::index_sequence<Is...>) const {
     return UPD_FWD(ftor)(get<Is>()...);
   }
 
   unaligned_data<size, Endianess, Signed_Mode> m_storage;
-
 };
 
 /*!
@@ -161,7 +159,7 @@ public:
     \tparam Args... Serialized values types
     \param args... Values to be serialized
   */
-  explicit tuple(const Ts&... args) {
+  explicit tuple(const Ts &... args) {
     using boost::mp11::index_sequence_for;
     tuple_base<Endianess, Signed_Mode, Ts...>::lay(index_sequence_for<Ts...>{}, args...);
   }
@@ -172,8 +170,8 @@ public:
   //!   Endianess and signed integer representation is provided throught the two first parameters.
   //! \param values... Values to be serialized
   //! \see format.hpp
-  explicit tuple(value_h<endianess, Endianess>, value_h<signed_mode, Signed_Mode>, const Ts&... values) :
-    tuple(values...) {}
+  explicit tuple(value_h<endianess, Endianess>, value_h<signed_mode, Signed_Mode>, const Ts &... values)
+      : tuple(values...) {}
 #endif // __cplusplus >= 201703L
 };
 
@@ -192,7 +190,7 @@ class tuple<Endianess, Signed_Mode> : public tuple_base<Endianess, Signed_Mode> 
   \return tuple object holding a serialized copy of the provided values.
 */
 template<endianess Endianess = endianess::BUILTIN, signed_mode Signed_Mode = signed_mode::BUILTIN, typename... Args>
-tuple<Endianess, Signed_Mode, Args...> make_tuple(const Args&... args) {
+tuple<Endianess, Signed_Mode, Args...> make_tuple(const Args &... args) {
   return tuple<Endianess, Signed_Mode, Args...>{args...};
 }
 
