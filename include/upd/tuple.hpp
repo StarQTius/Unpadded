@@ -1,3 +1,6 @@
+//! \file
+//! \brief Definition of the tuple class
+
 #pragma once
 
 #include <tuple>
@@ -10,11 +13,6 @@
 #include "fwd.hpp"
 #include "type.hpp"
 #include "unaligned_data.hpp"
-
-/*!
-  \file
-  \brief Definition of the tuple class
-*/
 
 namespace upd {
 
@@ -48,37 +46,27 @@ public:
   //! \brief Equals the signed mode given as template parameter
   constexpr static auto storage_signed_mode = Signed_Mode;
 
-  /*!
-    \brief Access the object content
-    \details There is no bound check performed.
-    \param i Index of the accessed byte
-  */
+  //! \brief Access the object content
+  //! \details There is no bound check performed.
+  //! \param i Index of the accessed byte
   byte_t &operator[](size_t i) { return m_storage[i]; }
 
-  /*!
-    \brief Access the object content
-    \details There is no bound check performed.
-    \param i Index of the accessed byte
-  */
+  //! \brief Access the object content
+  //! \details There is no bound check performed.
+  //! \param i Index of the accessed byte
   const byte_t &operator[](size_t i) const { return m_storage[i]; }
 
-  /*!
-    \name Iterability
-    @{
-  */
-
+  //! \name Iterability
+  //! @{
   byte_t *begin() { return m_storage.begin(); }
   byte_t *end() { return m_storage.end(); }
   const byte_t *begin() const { return m_storage.begin(); }
   const byte_t *end() const { return m_storage.end(); }
-
   //! @}
 
-  /*!
-    \brief Unserialize one of the value held by the object
-    \tparam I Index of the requested value
-    \return A copy of the serialized value or an array_wrapper if I designate an array type
-  */
+  //! \brief Unserialize one of the value held by the object
+  //! \tparam I Index of the requested value
+  //! \return A copy of the serialized value or an array_wrapper if I designate an array type
 #ifdef DOXYGEN
   template<size_t I>
   auto get() const;
@@ -93,11 +81,9 @@ public:
   }
 #endif
 
-  /*!
-    \brief Set one of the value held by the object
-    \tparam I Index of the value which will be set
-    \param value Value to be copied from
-  */
+  //! \brief Set one of the value held by the object
+  //! \tparam I Index of the value which will be set
+  //! \param value Value to be copied from
   template<size_t I>
   void set(const arg_t<I> &value) {
     using namespace boost::mp11;
@@ -105,11 +91,9 @@ public:
     m_storage.write(value, offset);
   }
 
-  /*!
-    \brief Invoke a functor with the stored values
-    \param ftor Functor to be invoked
-    \return ftor(this->get<Is>()...) with Is = 0, 1, ..., sizeof...(Ts)
-  */
+  //! \brief Invoke a functor with the stored values
+  //! \param ftor Functor to be invoked
+  //! \return ftor(this->get<Is>()...) with Is = 0, 1, ..., sizeof...(Ts)
 #ifdef DOXYGEN
   template<typename F>
   auto invoke(F &&ftor) const;
@@ -137,28 +121,22 @@ private:
   unaligned_data<size, Endianess, Signed_Mode> m_storage;
 };
 
-/*!
-  \brief Unaligned storage with fixed target types
-  \details
-    The object holds values of provided type in an unaligned maners (ie, there is no padding between two consecutive
-    values).
-  \tparam Endianess endianess of the stored data
-  \tparam Signed_Mode signed mode of the stored data
-  \tparam Ts... Types of the serialized values
-*/
+//! \brief Unaligned storage with fixed target types
+//! \details
+//!   The object holds values of provided type in an unaligned maners (ie, there is no padding between two consecutive
+//!   values).
+//! \tparam Endianess endianess of the stored data
+//! \tparam Signed_Mode signed mode of the stored data
+//! \tparam Ts... Types of the serialized values
 template<endianess Endianess = endianess::BUILTIN, signed_mode Signed_Mode = signed_mode::BUILTIN, typename... Ts>
 class tuple : public tuple_base<Endianess, Signed_Mode, Ts...> {
 public:
-  /*!
-    \brief Initialize the content with default constructed value
-  */
+  //! \brief Initialize the content with default constructed value
   tuple() : tuple(Ts{}...) {}
 
-  /*!
-    \brief Serialize the provided values
-    \tparam Args... Serialized values types
-    \param args... Values to be serialized
-  */
+  //! \brief Serialize the provided values
+  //! \tparam Args... Serialized values types
+  //! \param args... Values to be serialized
   explicit tuple(const Ts &... args) {
     using boost::mp11::index_sequence_for;
     tuple_base<Endianess, Signed_Mode, Ts...>::lay(index_sequence_for<Ts...>{}, args...);
@@ -181,14 +159,12 @@ public:
 template<endianess Endianess, signed_mode Signed_Mode>
 class tuple<Endianess, Signed_Mode> : public tuple_base<Endianess, Signed_Mode> {};
 
-/*!
-  \brief Construct a tuple object provided constant lvalue to values
-  \tparam Endianess Target endianess for serialization
-  \tparam Signed_Mode Target signed representation for serialization
-  \tparam Args... Deduced types of the provided values.
-  \param args... Values to be serialized into the return value
-  \return tuple object holding a serialized copy of the provided values.
-*/
+//! \brief Construct a tuple object provided constant lvalue to values
+//! \tparam Endianess Target endianess for serialization
+//! \tparam Signed_Mode Target signed representation for serialization
+//! \tparam Args... Deduced types of the provided values.
+//! \param args... Values to be serialized into the return value
+//! \return tuple object holding a serialized copy of the provided values.
 template<endianess Endianess = endianess::BUILTIN, signed_mode Signed_Mode = signed_mode::BUILTIN, typename... Args>
 tuple<Endianess, Signed_Mode, Args...> make_tuple(const Args &... args) {
   return tuple<Endianess, Signed_Mode, Args...>{args...};

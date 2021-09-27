@@ -1,3 +1,6 @@
+//! \file
+//! \brief Endianess portability support
+
 #pragma once
 
 #include <boost/type_traits.hpp>
@@ -6,15 +9,10 @@
 #include "../type.hpp"
 #include "sfinae.hpp"
 
-/*!
-  \file
-*/
-
 namespace upd {
 namespace detail {
 
-/*!
- */
+//! \brief Interpret a sequence of byte as an integer according to the provided endianess
 template<typename T, endianess Endianess>
 sfinae::enable_t<Endianess == endianess::BUILTIN, T>
 interpret_with_endianess(const byte_t *raw_data, size_t offset, size_t n) {
@@ -23,17 +21,6 @@ interpret_with_endianess(const byte_t *raw_data, size_t offset, size_t n) {
 
   return retval;
 }
-
-/*!
- */
-template<endianess Endianess, typename T>
-sfinae::enable_t<Endianess == endianess::BUILTIN>
-write_with_endianess(byte_t *raw_data, const T &x, size_t offset, size_t n) {
-  memcpy(raw_data + offset, &x, n);
-}
-
-/*!
- */
 template<typename T, endianess Endianess>
 sfinae::enable_t<Endianess == endianess::LITTLE, T>
 interpret_with_endianess(const byte_t *raw_data, size_t offset, size_t n) {
@@ -45,9 +32,6 @@ interpret_with_endianess(const byte_t *raw_data, size_t offset, size_t n) {
 
   return retval;
 }
-
-/*!
- */
 template<typename T, endianess Endianess>
 sfinae::enable_t<Endianess == endianess::BIG, T>
 interpret_with_endianess(const byte_t *raw_data, size_t offset, size_t n) {
@@ -60,16 +44,17 @@ interpret_with_endianess(const byte_t *raw_data, size_t offset, size_t n) {
   return retval;
 }
 
-/*!
- */
+//! \brief Serialize an integer into a sequence of byte according to the provided endianess
+template<endianess Endianess, typename T>
+sfinae::enable_t<Endianess == endianess::BUILTIN>
+write_with_endianess(byte_t *raw_data, const T &x, size_t offset, size_t n) {
+  memcpy(raw_data + offset, &x, n);
+}
 template<endianess Endianess, typename T>
 sfinae::enable_t<Endianess == endianess::LITTLE> write_with_endianess(byte_t *raw_data, T x, size_t offset, size_t n) {
   for (size_t i = 0; i < n; i++, x >>= 8)
     raw_data[offset + i] = x & 0xff;
 }
-
-/*!
- */
 template<endianess Endianess, typename T>
 sfinae::enable_t<Endianess == endianess::BIG> write_with_endianess(byte_t *raw_data, T x, size_t offset, size_t n) {
   for (size_t i = 0; i < n; i++, x >>= 8)
