@@ -1,5 +1,5 @@
 #!/bin/sh
-mkdir -p obj obj/lib obj/cpp11 obj/cpp14 obj/cpp17
+mkdir -p obj obj/lib obj/cpp11 obj/cpp17
 git submodule init \
   lib/config \
   lib/mp11 \

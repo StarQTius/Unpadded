@@ -2,7 +2,6 @@ SHELL = /bin/bash -O extglob
 
 cpp_flags = \
 	-g \
-	--coverage \
 	-Wall \
 	-Wextra \
 	-Werror \
@@ -18,38 +17,22 @@ c_flags = \
 	-Ilib/Unity/src \
 
 libs = \
-	-lstdc++
+	-lstdc++ \
 
-.SILENT: install clean
-
-install:
-	([[ "$(DIR)" = /* ]] && [ -d $(DIR) ]) || (echo "$(DIR) is not a valid absolute path"; exit 1)
-	cp -v -r include/* $(DIR)
+.SILENT: clean
 
 check11: obj/cpp11/main.o obj/cpp11/tuple.o obj/cpp11/unaligned_data.o obj/lib/unity.o
-	gcc --coverage $^ $(libs) -o run_ut11
+	gcc $^ $(libs) -o run_ut11
 	./run_ut11
 
-check14: obj/cpp14/main.o obj/cpp14/tuple.o obj/cpp14/unaligned_data.o obj/lib/unity.o
-	gcc --coverage $^ $(libs) -o run_ut14
-	./run_ut14
-
 check17: obj/cpp17/main.o obj/cpp17/tuple.o obj/cpp17/unaligned_data.o obj/lib/unity.o
-	gcc --coverage $^ $(libs) -o run_ut17
+	gcc $^ $(libs) -o run_ut17
 	./run_ut17
 
-check20: obj/cpp20/main.o obj/cpp20/tuple.o obj/cpp20/unaligned_data.o obj/lib/unity.o
-	gcc --coverage $^ $(libs) -o run_ut20
-	./run_ut20
-
-check: check11 check14 check17 check20
-
-gcov: check
-	mkdir -p gcov
-	cd gcov && gcov ../test/main.cpp -m -o ../obj
+check: check11 check17
 
 clean:
-	rm -vf obj/cpp?(11|14|17|20)/*.?(o|gcda|gcno)
+	rm -vf obj/cpp?(11|17)/*.o
 
 mrproper: clean
 	git submodule deinit -f --all
@@ -57,14 +40,8 @@ mrproper: clean
 obj/cpp11/%.o: test/%.cpp
 	gcc -std=c++11 $(cpp_flags) -DUT_ONLY -c $^ -o $@
 
-obj/cpp14/%.o: test/%.cpp
-	gcc -std=c++14 $(cpp_flags) -DUT_ONLY -c $^ -o $@
-
 obj/cpp17/%.o: test/%.cpp
 	gcc -std=c++17 $(cpp_flags) -DUT_ONLY -c $^ -o $@
 
-obj/cpp20/%.o: test/%.cpp
-	gcc -std=c++20 $(cpp_flags) -DUT_ONLY -c $^ -o $@
-
-obj/lib/unity.o:
-	gcc $(c_flags) -c lib/Unity/src/unity.c -o obj/lib/unity.o
+obj/lib/unity.o: lib/Unity/src/unity.c
+	gcc $(c_flags) -c $^ -o $@
