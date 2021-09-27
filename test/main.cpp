@@ -1,5 +1,10 @@
 #include "main.hpp"
 
+// Check if private macros have been properly undefined
+#ifdef FWD
+#error "Private macros have leaked"
+#endif
+
 int main() {
   UNITY_BEGIN();
 
