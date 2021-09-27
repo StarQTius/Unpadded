@@ -26,19 +26,19 @@ install:
 	([[ "$(DIR)" = /* ]] && [ -d $(DIR) ]) || (echo "$(DIR) is not a valid absolute path"; exit 1)
 	cp -v -r include/* $(DIR)
 
-check11: obj/cpp11/main.o obj/lib/unity.o
+check11: obj/cpp11/main.o obj/cpp11/tuple.o obj/cpp11/unaligned_data.o obj/lib/unity.o
 	gcc --coverage $^ $(libs) -o run_ut11
 	./run_ut11
 
-check14: obj/cpp14/main.o obj/lib/unity.o
+check14: obj/cpp14/main.o obj/cpp14/tuple.o obj/cpp14/unaligned_data.o obj/lib/unity.o
 	gcc --coverage $^ $(libs) -o run_ut14
 	./run_ut14
 
-check17: obj/cpp17/main.o obj/lib/unity.o
+check17: obj/cpp17/main.o obj/cpp17/tuple.o obj/cpp17/unaligned_data.o obj/lib/unity.o
 	gcc --coverage $^ $(libs) -o run_ut17
 	./run_ut17
 
-check20: obj/cpp20/main.o obj/lib/unity.o
+check20: obj/cpp20/main.o obj/cpp20/tuple.o obj/cpp20/unaligned_data.o obj/lib/unity.o
 	gcc --coverage $^ $(libs) -o run_ut20
 	./run_ut20
 
@@ -54,17 +54,17 @@ clean:
 mrproper: clean
 	git submodule deinit -f --all
 
-obj/cpp11/main.o: test/main.cpp
-	gcc -std=c++11 $(cpp_flags) -DUT_ONLY -c $^ -o obj/cpp11/main.o
+obj/cpp11/%.o: test/%.cpp
+	gcc -std=c++11 $(cpp_flags) -DUT_ONLY -c $^ -o $@
 
-obj/cpp14/main.o: test/main.cpp
-	gcc -std=c++14 $(cpp_flags) -DUT_ONLY -c $^ -o obj/cpp14/main.o
+obj/cpp14/%.o: test/%.cpp
+	gcc -std=c++14 $(cpp_flags) -DUT_ONLY -c $^ -o $@
 
-obj/cpp17/main.o: test/main.cpp
-	gcc -std=c++17 $(cpp_flags) -DUT_ONLY -c $^ -o obj/cpp17/main.o
+obj/cpp17/%.o: test/%.cpp
+	gcc -std=c++17 $(cpp_flags) -DUT_ONLY -c $^ -o $@
 
-obj/cpp20/main.o: test/main.cpp
-	gcc -std=c++20 $(cpp_flags) -DUT_ONLY -c $^ -o obj/cpp20/main.o
+obj/cpp20/%.o: test/%.cpp
+	gcc -std=c++20 $(cpp_flags) -DUT_ONLY -c $^ -o $@
 
 obj/lib/unity.o:
 	gcc $(c_flags) -c lib/Unity/src/unity.c -o obj/lib/unity.o
