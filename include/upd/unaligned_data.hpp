@@ -74,8 +74,8 @@ public:
   template<typename T>
   T interpret_as(size_t offset) const;
 #else
-  template<typename T>
-  sfinae::require_unsigned_integer<T, T> interpret_as(size_t offset) const {
+  template<typename T, sfinae::require_unsigned_integer<T> = 0>
+  T interpret_as(size_t offset) const {
     return detail::from_endianess<T, Endianess>(m_raw_data, offset, sizeof(T));
   }
 #endif
@@ -91,8 +91,8 @@ public:
   template<typename T>
   T interpret_as(size_t offset) const;
 #else
-  template<typename T>
-  sfinae::require_signed_integer<T, T> interpret_as(size_t offset) const {
+  template<typename T, sfinae::require_signed_integer<T> = 0>
+  T interpret_as(size_t offset) const {
     auto tmp = detail::from_endianess<unsigned long long, Endianess>(m_raw_data, offset, sizeof(T));
 
     return detail::interpret_from<T, Signed_Mode>(tmp);
