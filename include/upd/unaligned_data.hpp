@@ -76,7 +76,7 @@ public:
 #else
   template<typename T>
   sfinae::require_unsigned_integer<T, T> interpret_as(size_t offset) const {
-    return detail::interpret_with_endianess<T, Endianess>(m_raw_data, offset, sizeof(T));
+    return detail::from_endianess<T, Endianess>(m_raw_data, offset, sizeof(T));
   }
 #endif
 
@@ -93,7 +93,7 @@ public:
 #else
   template<typename T>
   sfinae::require_signed_integer<T, T> interpret_as(size_t offset) const {
-    auto tmp = detail::interpret_with_endianess<unsigned long long, Endianess>(m_raw_data, offset, sizeof(T));
+    auto tmp = detail::from_endianess<unsigned long long, Endianess>(m_raw_data, offset, sizeof(T));
 
     return detail::interpret_from<T, Signed_Mode>(tmp);
   }
@@ -135,9 +135,9 @@ public:
   template<typename T>
   void write(const T &x, size_t offset);
 #else
-  template<typename T>
-  sfinae::require_unsigned_integer<T> write(const T &x, size_t offset) {
-    detail::write_with_endianess<Endianess>(m_raw_data, x, offset, sizeof(x));
+  template<typename T, sfinae::require_unsigned_integer<T> = 0>
+  void write(const T &x, size_t offset) {
+    detail::to_endianess<Endianess>(m_raw_data, x, offset, sizeof(x));
   }
 #endif
 
@@ -152,11 +152,11 @@ public:
   template<typename T>
   void write(const T &x, size_t offset);
 #else
-  template<typename T>
-  sfinae::require_signed_integer<T> write(const T &x, size_t offset) {
+  template<typename T, sfinae::require_signed_integer<T> = 0>
+  void write(const T &x, size_t offset) {
     auto tmp = detail::interpret_to<Signed_Mode>(x);
 
-    detail::write_with_endianess<Endianess>(m_raw_data, tmp, offset, sizeof(x));
+    detail::to_endianess<Endianess>(m_raw_data, tmp, offset, sizeof(x));
   }
 #endif
 

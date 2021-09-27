@@ -29,9 +29,10 @@ void tuple_DO_set_array_EXPECT_same_value_with_get() {
   TEST_ASSERT_EQUAL_INT_ARRAY_MESSAGE(array, tuple.template get<0>().content, sizeof array / sizeof(int), error_msg);
 }
 
-template<upd::endianess Endianess, upd::signed_mode Signed_Mode>
-upd::sfinae::enable_t<Endianess == upd::endianess::BUILTIN>
-tuple_DO_iterate_throught_content_EXPECT_correct_raw_data() {
+template<upd::endianess Endianess,
+         upd::signed_mode Signed_Mode,
+         upd::sfinae::require<Endianess == upd::endianess::BUILTIN> = 0>
+void tuple_DO_iterate_throught_content_EXPECT_correct_raw_data() {
   using namespace upd;
 
   uint8_t raw_data[7]{};
@@ -48,8 +49,10 @@ tuple_DO_iterate_throught_content_EXPECT_correct_raw_data() {
     TEST_ASSERT_EQUAL_HEX16(raw_data[i++], byte);
 }
 
-template<upd::endianess Endianess, upd::signed_mode Signed_Mode>
-upd::sfinae::enable_t<Endianess == upd::endianess::LITTLE> tuple_DO_iterate_throught_content_EXPECT_correct_raw_data() {
+template<upd::endianess Endianess,
+         upd::signed_mode Signed_Mode,
+         upd::sfinae::require<Endianess == upd::endianess::LITTLE> = 0>
+void tuple_DO_iterate_throught_content_EXPECT_correct_raw_data() {
   using namespace upd;
 
   uint8_t raw_data[]{0xaa, 0xcc, 0xbb, 0x00, 0xff, 0xee, 0xdd};
@@ -60,8 +63,10 @@ upd::sfinae::enable_t<Endianess == upd::endianess::LITTLE> tuple_DO_iterate_thro
     TEST_ASSERT_EQUAL_HEX16(raw_data[i++], byte);
 }
 
-template<upd::endianess Endianess, upd::signed_mode Signed_Mode>
-upd::sfinae::enable_t<Endianess == upd::endianess::BIG> tuple_DO_iterate_throught_content_EXPECT_correct_raw_data() {
+template<upd::endianess Endianess,
+         upd::signed_mode Signed_Mode,
+         upd::sfinae::require<Endianess == upd::endianess::BIG> = 0>
+void tuple_DO_iterate_throught_content_EXPECT_correct_raw_data() {
   using namespace upd;
 
   uint8_t raw_data[]{0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x00};
@@ -72,8 +77,10 @@ upd::sfinae::enable_t<Endianess == upd::endianess::BIG> tuple_DO_iterate_through
     TEST_ASSERT_EQUAL_HEX16(raw_data[i++], byte);
 }
 
-template<upd::endianess Endianess, upd::signed_mode Signed_Mode>
-upd::sfinae::enable_t<Endianess == upd::endianess::BUILTIN> tuple_DO_access_like_array_EXPECT_correct_raw_values() {
+template<upd::endianess Endianess,
+         upd::signed_mode Signed_Mode,
+         upd::sfinae::require<Endianess == upd::endianess::BUILTIN> = 0>
+void tuple_DO_access_like_array_EXPECT_correct_raw_values() {
   using namespace upd;
 
   uint8_t raw_data[4]{};
@@ -91,8 +98,10 @@ upd::sfinae::enable_t<Endianess == upd::endianess::BUILTIN> tuple_DO_access_like
   TEST_ASSERT_EQUAL_HEX8(raw_data[3], tuple.begin()[3]);
 }
 
-template<upd::endianess Endianess, upd::signed_mode Signed_Mode>
-upd::sfinae::enable_t<Endianess == upd::endianess::LITTLE> tuple_DO_access_like_array_EXPECT_correct_raw_values() {
+template<upd::endianess Endianess,
+         upd::signed_mode Signed_Mode,
+         upd::sfinae::require<Endianess == upd::endianess::LITTLE> = 0>
+void tuple_DO_access_like_array_EXPECT_correct_raw_values() {
   using namespace upd;
 
   uint8_t raw_data[]{0xaa, 0xbb, 0xdd, 0xcc};
@@ -104,8 +113,10 @@ upd::sfinae::enable_t<Endianess == upd::endianess::LITTLE> tuple_DO_access_like_
   TEST_ASSERT_EQUAL_HEX8(raw_data[3], tuple.begin()[3]);
 }
 
-template<upd::endianess Endianess, upd::signed_mode Signed_Mode>
-upd::sfinae::enable_t<Endianess == upd::endianess::BIG> tuple_DO_access_like_array_EXPECT_correct_raw_values() {
+template<upd::endianess Endianess,
+         upd::signed_mode Signed_Mode,
+         upd::sfinae::require<Endianess == upd::endianess::BIG> = 0>
+void tuple_DO_access_like_array_EXPECT_correct_raw_values() {
   using namespace upd;
 
   uint8_t raw_data[]{0xaa, 0xbb, 0xcc, 0xdd};
