@@ -72,10 +72,10 @@ public:
   //! \return A copy of the value represented by the raw data at the given offset
 #ifdef DOXYGEN
   template<typename T>
-  T interpret_as(size_t offset) const;
+  T read_as(size_t offset) const;
 #else
   template<typename T, sfinae::require_unsigned_integer<T> = 0>
-  T interpret_as(size_t offset) const {
+  T read_as(size_t offset) const {
     return detail::from_endianess<T, Endianess>(m_raw_data, offset, sizeof(T));
   }
 #endif
@@ -89,10 +89,10 @@ public:
   //! \return A copy of the value represented by the raw data at the given offset
 #ifdef DOXYGEN
   template<typename T>
-  T interpret_as(size_t offset) const;
+  T read_as(size_t offset) const;
 #else
   template<typename T, sfinae::require_signed_integer<T> = 0>
-  T interpret_as(size_t offset) const {
+  T read_as(size_t offset) const {
     auto tmp = detail::from_endianess<unsigned long long, Endianess>(m_raw_data, offset, sizeof(T));
 
     return detail::interpret_from<T, Signed_Mode>(tmp);
@@ -108,17 +108,17 @@ public:
   //! \return An array_wrapper object containing a copy of the requested array
 #ifdef DOXYGEN
   template<typename T>
-  array_wrapper<T> interpret_as(size_t offset) const;
+  array_wrapper<T> read_as(size_t offset) const;
 #else
   template<typename T, sfinae::require_bounded_array<T> = 0>
-  array_wrapper<T> interpret_as(size_t offset) const {
+  array_wrapper<T> read_as(size_t offset) const {
     array_wrapper<T> retval;
 
     using element_t = boost::remove_reference_t<decltype(*retval)>;
     constexpr auto size = retval.size;
 
     for (size_t i = 0; i < size; i++)
-      retval[i] = interpret_as<element_t>(offset + i * sizeof(element_t));
+      retval[i] = read_as<element_t>(offset + i * sizeof(element_t));
 
     return retval;
   }
@@ -133,10 +133,10 @@ public:
   //! \param offset Offset where the value will be serialized
 #ifdef DOXYGEN
   template<typename T>
-  void write(const T &x, size_t offset);
+  void write_as(const T &x, size_t offset);
 #else
   template<typename T, sfinae::require_unsigned_integer<T> = 0>
-  void write(const T &x, size_t offset) {
+  void write_as(const T &x, size_t offset) {
     detail::to_endianess<Endianess>(m_raw_data, x, offset, sizeof(x));
   }
 #endif
@@ -150,10 +150,10 @@ public:
   //! \param offset Offset where the value will be serialized
 #ifdef DOXYGEN
   template<typename T>
-  void write(const T &x, size_t offset);
+  void write_as(const T &x, size_t offset);
 #else
   template<typename T, sfinae::require_signed_integer<T> = 0>
-  void write(const T &x, size_t offset) {
+  void write_as(const T &x, size_t offset) {
     auto tmp = detail::interpret_to<Signed_Mode>(x);
 
     detail::to_endianess<Endianess>(m_raw_data, tmp, offset, sizeof(x));
@@ -169,14 +169,14 @@ public:
   //! \param offset Offset where the value will be serialized
 #ifdef DOXYGEN
   template<typename T>
-  void write(const T &array, size_t offset)
+  void write_as(const T &array, size_t offset)
 #else
   template<typename T, sfinae::require_bounded_array<T> = 0>
-  void write(const T &array, size_t offset) {
+  void write_as(const T &array, size_t offset) {
     using element_t = decltype(*array);
     constexpr auto array_size = sizeof(array) / sizeof(*array);
     for (size_t i = 0; i < array_size; i++)
-      write(array[i], offset + i * sizeof(element_t));
+      write_as(array[i], offset + i * sizeof(element_t));
   }
 #endif
 

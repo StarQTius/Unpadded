@@ -73,12 +73,11 @@ public:
   auto get() const;
 #else
   template<size_t I>
-  decltype(boost::declval<unaligned_data<size, Endianess, Signed_Mode>>().template interpret_as<arg_t<I>>(0))
-  get() const {
+  decltype(boost::declval<unaligned_data<size, Endianess, Signed_Mode>>().template read_as<arg_t<I>>(0)) get() const {
     using namespace boost::mp11;
     constexpr auto offset = mp_fold<mp_take_c<type_sizes, I>, mp_size_t<0>, mp_plus>::value;
 
-    return m_storage.template interpret_as<arg_t<I>>(offset);
+    return m_storage.template read_as<arg_t<I>>(offset);
   }
 #endif
 
@@ -89,7 +88,7 @@ public:
   void set(const arg_t<I> &value) {
     using namespace boost::mp11;
     constexpr auto offset = mp_fold<mp_take_c<type_sizes, I>, mp_size_t<0>, mp_plus>::value;
-    m_storage.write(value, offset);
+    m_storage.write_as(value, offset);
   }
 
   //! \brief Invoke a functor with the stored values
