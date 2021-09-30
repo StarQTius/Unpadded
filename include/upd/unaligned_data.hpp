@@ -95,7 +95,7 @@ public:
   T read_as(size_t offset) const {
     auto tmp = detail::from_endianess<unsigned long long, Endianess>(m_raw_data, offset, sizeof(T));
 
-    return detail::interpret_from<T, Signed_Mode>(tmp);
+    return detail::from_signed_mode<T, Signed_Mode>(tmp);
   }
 #endif
 
@@ -154,7 +154,7 @@ public:
 #else
   template<typename T, sfinae::require_signed_integer<T> = 0>
   void write_as(const T &x, size_t offset) {
-    auto tmp = detail::interpret_to<Signed_Mode>(x);
+    auto tmp = detail::to_signed_mode<Signed_Mode>(x);
 
     detail::to_endianess<Endianess>(m_raw_data, tmp, offset, sizeof(x));
   }
