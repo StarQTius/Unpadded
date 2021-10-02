@@ -8,8 +8,10 @@
 #include "array_wrapper.hpp"
 #include "detail/endianess.hpp"
 #include "detail/sfinae.hpp"
+#include "detail/signature.hpp"
 #include "detail/signed_representation.hpp"
 #include "format.hpp"
+#include "serialization.hpp"
 #include "type.hpp"
 
 namespace upd {
@@ -63,124 +65,30 @@ public:
   //! \param i Index of the accessed byte
   const byte_t &operator[](size_t i) const { return m_raw_data[i]; }
 
-  //! \brief Interpret a part of the object content as the given type
+  //! \brief Interpret a part of a object content as a value of the given type
   //! \details
   //!   There is no bound check performed.
-  //!   This overload kicks in when T is an unsigned integer type.
   //! \tparam T Requested type
-  //! \param offset Offset of the object content to be interpreted
-  //! \return A copy of the value represented by the raw data at the given offset
-#ifdef DOXYGEN
+  //! \param offset Start of the part of the content to be interpreted
+  //! \return A copy of the value represented by the content at the given offset
   template<typename T>
-  T read_as(size_t offset) const;
-#else
-  template<typename T, sfinae::require_unsigned_integer<T> = 0>
-  T read_as(size_t offset) const {
-    return detail::from_endianess<T, Endianess>(m_raw_data, offset, sizeof(T));
+  detail::return_t<decltype(read_as<T, Endianess, Signed_Mode>)> read_as(size_t offset) const {
+    return upd::read_as<T, Endianess, Signed_Mode>(m_raw_data + offset);
   }
-#endif
 
-  //! \brief Interpret a part of the object content as the given type
+  //! \brief Serialize a value into the object content
   //! \details
   //!   There is no bound check performed.
-  //!   This overload kicks in when T is an signed integer type.
-  //! \tparam T Requested type
-  //! \param offset Offset of the object content to be interpreted
-  //! \return A copy of the value represented by the raw data at the given offset
-#ifdef DOXYGEN
-  template<typename T>
-  T read_as(size_t offset) const;
-#else
-  template<typename T, sfinae::require_signed_integer<T> = 0>
-  T read_as(size_t offset) const {
-    auto tmp = detail::from_endianess<unsigned long long, Endianess>(m_raw_data, offset, sizeof(T));
-
-    return detail::from_signed_mode<T, Signed_Mode>(tmp);
-  }
-#endif
-
-  //! \brief Interpret a part of the object content as the given type
-  //! \details
-  //!   There is no bound check performed.
-  //!   This overload kicks in when T is an array type.
-  //! \tparam T Requested type
-  //! \param offset Offset of the object content to be interpreted
-  //! \return An array_wrapper object containing a copy of the requested array
-#ifdef DOXYGEN
-  template<typename T>
-  array_wrapper<T> read_as(size_t offset) const;
-#else
-  template<typename T, sfinae::require_bounded_array<T> = 0>
-  array_wrapper<T> read_as(size_t offset) const {
-    array_wrapper<T> retval;
-
-    using element_t = boost::remove_reference_t<decltype(*retval)>;
-    constexpr auto size = retval.size;
-
-    for (size_t i = 0; i < size; i++)
-      retval[i] = read_as<element_t>(offset + i * sizeof(element_t));
-
-    return retval;
-  }
-#endif
-
-  //! \brief Serialize a value into the object's content
-  //! \details
-  //!   There is no bound check performed.
-  //!   This overload kicks in when T is an unsigned integer type.
   //! \tparam T Serilized value's type
-  //! \param x Value to be serialized
-  //! \param offset Offset where the value will be serialized
-#ifdef DOXYGEN
+  //! \param value Value to be serialized
+  //! \param offset Start of the part of the content to be written
   template<typename T>
-  void write_as(const T &x, size_t offset);
-#else
-  template<typename T, sfinae::require_unsigned_integer<T> = 0>
-  void write_as(const T &x, size_t offset) {
-    detail::to_endianess<Endianess>(m_raw_data, x, offset, sizeof(x));
+  void write_as(const T &value, size_t offset) {
+    upd::write_as<Endianess, Signed_Mode>(value, m_raw_data + offset);
   }
-#endif
 
-  //! \brief Serialize a value into the object's content
-  //! \details
-  //!   There is no bound check performed.
-  //!   This overload kicks in when T is an unsigned integer type.
-  //! \tparam T Serilized value's type
-  //! \param x Value to be serialized
-  //! \param offset Offset where the value will be serialized
-#ifdef DOXYGEN
-  template<typename T>
-  void write_as(const T &x, size_t offset);
-#else
-  template<typename T, sfinae::require_signed_integer<T> = 0>
-  void write_as(const T &x, size_t offset) {
-    auto tmp = detail::to_signed_mode<Signed_Mode>(x);
-
-    detail::to_endianess<Endianess>(m_raw_data, tmp, offset, sizeof(x));
-  }
-#endif
-
-  //! \brief Serialize a value into the object's content
-  //! \details
-  //!   There is no bound check performed.
-  //!   This overload kicks in when T is an array type.
-  //! \tparam T Serilized value's type
-  //! \param x Value to be serialized
-  //! \param offset Offset where the value will be serialized
-#ifdef DOXYGEN
-  template<typename T>
-  void write_as(const T &array, size_t offset)
-#else
-  template<typename T, sfinae::require_bounded_array<T> = 0>
-  void write_as(const T &array, size_t offset) {
-    using element_t = decltype(*array);
-    constexpr auto array_size = sizeof(array) / sizeof(*array);
-    for (size_t i = 0; i < array_size; i++)
-      write_as(array[i], offset + i * sizeof(element_t));
-  }
-#endif
-
-      private : byte_t m_raw_data[N];
+private:
+  byte_t m_raw_data[N];
 };
 
 //! \brief Construct an unaligned_data object provided a lvalue to a bounded array
@@ -192,6 +100,31 @@ public:
 template<endianess Endianess = endianess::BUILTIN, signed_mode Signed_Mode = signed_mode::BUILTIN, size_t N>
 unaligned_data<N, Endianess, Signed_Mode> make_unaligned_data(const byte_t (&raw_data)[N]) {
   return unaligned_data<N, Endianess, Signed_Mode>{raw_data};
+}
+
+//! \brief Interpret a part of the provided 'unaligned_data' object content as a value of the given type
+//! \details
+//!   There is no bound check performed.
+//! \tparam T Requested type
+//! \param input_unaligned_data 'unaligned_data' object to read from
+//! \param offset Start of the part of the content to be interpreted
+//! \return A copy of the value represented by the content at the given offset
+template<typename T, size_t N, endianess Endianess, signed_mode Signed_Mode>
+detail::return_t<decltype(read_as<T, Endianess, Signed_Mode>)>
+read_as(const unaligned_data<N, Endianess, Signed_Mode> &input_unaligned_data, size_t offset) {
+  return input_unaligned_data.template read_as<T>(offset);
+}
+
+//! \brief Serialize a value into the provided 'unaligned_data' object content
+//! \details
+//!   There is no bound check performed.
+//! \tparam T Serilized value's type
+//! \param value Value to be serialized
+//! \param input_unaligned_data 'unaligned_data' object to write into
+//! \param offset Start of the part of the content to be written
+template<typename T, size_t N, endianess Endianess, signed_mode Signed_Mode>
+void write_as(const T &value, unaligned_data<N, Endianess, Signed_Mode> &input_unaligned_data, size_t offset) {
+  return input_unaligned_data.template write_as(value, input_unaligned_data, offset);
 }
 
 } // namespace upd

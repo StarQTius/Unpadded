@@ -5,6 +5,7 @@ cpp_flags = \
 	-Wall \
 	-Wextra \
 	-Werror \
+  -fmax-errors=50 \
 	-Iinclude \
 	-Ilib/Unity/src \
 	-Ilib/config/include \
