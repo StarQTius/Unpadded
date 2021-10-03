@@ -2,7 +2,7 @@
 
 #include <unity.h>
 
-#include <upd/storage/tuple.hpp>
+#include <upd/tuple.hpp>
 
 #include <k2o/cpp11.hpp>
 #include <k2o/dispatcher.hpp>

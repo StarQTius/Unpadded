@@ -8,7 +8,7 @@
 #include <k2o/detail/fwd.hpp>
 #include <k2o/detail/signature.hpp>
 
-#include <upd/storage/tuple.hpp>
+#include <upd/tuple.hpp>
 
 namespace k2o {
 namespace detail {

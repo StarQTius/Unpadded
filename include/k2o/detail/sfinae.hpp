@@ -7,7 +7,7 @@
 #include <boost/type_traits/integral_constant.hpp>
 
 #include <upd/format.hpp>
-#include <upd/storage/tuple.hpp>
+#include <upd/tuple.hpp>
 
 #include "value_h.hpp"
 
