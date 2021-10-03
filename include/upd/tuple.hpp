@@ -105,13 +105,14 @@ public:
 #endif
 
 protected:
+  //! \brief Serialize values into the object content
   template<size_t... Is, typename... Args>
   void lay(boost::mp11::index_sequence<Is...>, const Args &... args) {
-    // TODO : à changer pour quelque chose de plus propre
     using discard = int[];
     discard{0, (set<Is>(args), 0)...};
   }
 
+  //! \brief Unserialize the tuple content and forward it as parameters to the provided functor
 private:
   template<typename F, size_t... Is>
   detail::return_t<F> invoke_impl(F &&ftor, boost::mp11::index_sequence<Is...>) const {
