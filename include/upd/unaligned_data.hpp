@@ -72,7 +72,7 @@ public:
   //! \param offset Start of the part of the content to be interpreted
   //! \return A copy of the value represented by the content at the given offset
   template<typename T>
-  detail::return_t<decltype(read_as<T, Endianess, Signed_Mode>)> read_as(size_t offset) const {
+  auto read_as(size_t offset) const -> decltype(upd::read_as<T, Endianess, Signed_Mode>(boost::declval<byte_t *>())) {
     return upd::read_as<T, Endianess, Signed_Mode>(m_raw_data + offset);
   }
 

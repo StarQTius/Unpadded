@@ -49,7 +49,7 @@ array_wrapper<T> read_as(const byte_t *sequence) {
 //! \return A copy of the value represented by the byte sequence
 template<typename T, endianess Endianess, signed_mode Signed_Mode>
 auto read_as(const byte_t *sequence, size_t offset) -> decltype(read_as<T, Endianess, Signed_Mode>(sequence)) {
-  return read_as(sequence + offset);
+  return read_as<Endianess, Signed_Mode>(sequence + offset);
 }
 
 //! \brief Serialize a value into a byte sequence
@@ -90,7 +90,7 @@ void write_as(const T &array, byte_t *sequence) {
 //! \param sequence Byte sequence to write into
 template<endianess Endianess, signed_mode Signed_Mode, typename T>
 void write_as(const T &value, byte_t *sequence, size_t offset) {
-  write_as<Endianess, Signed>(value, sequence + offset);
+  write_as<Endianess, Signed_Mode>(value, sequence + offset);
 }
 
 } // namespace upd
