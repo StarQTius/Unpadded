@@ -19,9 +19,5 @@ jobs:
     - uses: actions/checkout@v2
     - name: ./configure dev
       run: ./configure dev
-    - name: make check11
-      run: make check11
-    - name: make check14
-      run: make check14
-    - name: make check17
-      run: make check17
+    - name: make check
+      run: make check
