@@ -17,17 +17,24 @@ c_flags = \
 	-std=c99 \
 	-Ilib/Unity/src \
 
+srcs = $(wildcard test/*.cpp)
+unity_srcs = lib/Unity/src/unity.c
+
+lib_objs = $(unity_srcs:lib/Unity/src/%.c=obj/lib/%.o)
+cpp11_objs = $(srcs:test/%.cpp=obj/cpp11/%.o) $(lib_objs)
+cpp17_objs = $(srcs:test/%.cpp=obj/cpp17/%.o) $(lib_objs)
+
 libs = \
 	-lstdc++ \
 
 .SILENT: clean
 
-check11: obj/cpp11/main.o obj/cpp11/tuple.o obj/cpp11/unaligned_data.o obj/lib/unity.o
-	gcc $^ $(libs) -o run_ut11
+check11: $(cpp11_objs)
+	gcc $(cpp_flags) $^ $(libs) -o run_ut11
 	./run_ut11
 
-check17: obj/cpp17/main.o obj/cpp17/tuple.o obj/cpp17/unaligned_data.o obj/lib/unity.o
-	gcc $^ $(libs) -o run_ut17
+check17: $(cpp17_objs)
+	gcc $(cpp_flags) $^ $(libs) -o run_ut17
 	./run_ut17
 
 check: check11 check17
