@@ -9,6 +9,8 @@
 
 #include "ikey.hpp"
 
+#include "detail/def.hpp"
+
 namespace k2o {
 
 template<typename... Hs>
@@ -18,7 +20,7 @@ template<typename... Fs, Fs... Functions>
 class keyring11<detail::unevaluated_value_h<Fs, Functions>...> {
   using search_list = boost::mp11::mp_list<detail::unevaluated_value_h<Fs, Functions>...>;
 
-  static_assert(boost::conjunction<boost::integral_constant<bool, detail::is_callable<Fs>()>...>::value,
+  STATIC_ASSERT((boost::conjunction<boost::integral_constant<bool, detail::is_callable<Fs>()>...>::value),
                 "'keyring11' only accepts callable objects as template parameters");
 
 public:
@@ -29,3 +31,5 @@ public:
 };
 
 } // namespace k2o
+
+#include "detail/undef.hpp"

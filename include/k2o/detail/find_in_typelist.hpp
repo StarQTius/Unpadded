@@ -8,6 +8,8 @@
 
 #include "value_h.hpp"
 
+#include "def.hpp"
+
 namespace k2o {
 namespace detail {
 
@@ -49,7 +51,7 @@ constexpr size_t find_in_typelist() {
   using singleton_t = mp11::mp_list<T>;
   using finder_t = find_in_typelist_impl<Typelist, mp11::make_index_sequence<typelist_size>>;
 
-  static_assert(!is_void<decltype(finder_t::get_index(singleton_t{}))>::value,
+  STATIC_ASSERT((!is_void<decltype(finder_t::get_index(singleton_t{}))>::value),
                 "The provided type does not belong to this typelist");
 
   return finder_t::get_index(singleton_t{});
@@ -57,7 +59,7 @@ constexpr size_t find_in_typelist() {
 #else  // __cplusplus >= 201703L
 template<typename T, typename Typelist>
 constexpr size_t find_in_typelist() {
-  static_assert(boost::mp11::mp_find<Typelist, T>::value != boost::mp11::mp_size<Typelist>::value,
+  STATIC_ASSERT((boost::mp11::mp_find<Typelist, T>::value != boost::mp11::mp_size<Typelist>::value),
                 "The provided type does not belong to this typelist");
   return boost::mp11::mp_find<Typelist, T>::value;
 };
@@ -66,3 +68,5 @@ constexpr size_t find_in_typelist() {
 
 } // namespace detail
 } // namespace k2o
+
+#include "undef.hpp"
