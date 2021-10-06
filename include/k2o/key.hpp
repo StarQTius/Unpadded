@@ -5,10 +5,11 @@
 
 #include <boost/type_traits.hpp>
 
-#include <k2o/detail/fwd.hpp>
-#include <k2o/detail/signature.hpp>
-
 #include <upd/tuple.hpp>
+
+#include "detail/signature.hpp"
+
+#include "detail/def.hpp"
 
 namespace k2o {
 namespace detail {
@@ -33,7 +34,7 @@ struct serialized_message {
   template<typename Dest_F>
   void operator>>(Dest_F &&insert_byte) const {
     for (auto byte : content)
-      K2O_FWD(insert_byte)(byte);
+      FWD(insert_byte)(byte);
   }
 
   upd::tuple<Endianess, Signed_Mode, Ts...> content;
@@ -54,7 +55,7 @@ struct serialized_message_maker {
   R operator<<(Src_F &&fetch_byte) const {
     upd::tuple<Endianess, Signed_Mode, R> retval;
     for (auto &byte : retval)
-      byte = K2O_FWD(fetch_byte)();
+      byte = FWD(fetch_byte)();
 
     return retval.template get<0>();
   }
@@ -114,7 +115,7 @@ public:
   R operator<<(Src_F &&fetch_byte) const {
     upd::tuple<upd::endianess::BUILTIN, upd::signed_mode::BUILTIN, R> retval;
     for (auto &byte : retval)
-      byte = K2O_FWD(fetch_byte)();
+      byte = FWD(fetch_byte)();
 
     return retval.template get<0>();
   }
@@ -133,3 +134,5 @@ constexpr auto make_key() {
 #endif // __cplusplus >= 201703L
 
 } // namespace k2o
+
+#include "detail/undef.hpp"

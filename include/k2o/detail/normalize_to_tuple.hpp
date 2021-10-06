@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <upd/tuple.hpp>
+
 namespace k2o {
 namespace detail {
 

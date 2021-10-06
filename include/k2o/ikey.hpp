@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include <k2o/detail/signature.hpp>
-#include <k2o/key.hpp>
+#include "detail/signature.hpp"
+#include "key.hpp"
 
 namespace k2o {
 namespace detail {

@@ -14,7 +14,7 @@ void dispatcher_DO_call_order_EXPECT_calling_correct_order() {
   auto output = upd::make_tuple<int>();
 
   size_t i = 0, j = 0;
-  dispatcher([&]() { return function16_index[i++]; }, [&](k2o::byte_t byte) { output[j++] = byte; });
+  dispatcher([&]() { return function16_index[i++]; }, [&](upd::byte_t byte) { output[j++] = byte; });
 
   TEST_ASSERT_EQUAL_UINT(16, output.get<0>());
 }

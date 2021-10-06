@@ -4,10 +4,11 @@
 #pragma once
 
 #include "detail/sfinae.hpp"
-
 #include "keyring11.hpp"
 #include "order.hpp"
 #include "status.hpp"
+
+#include "detail/def.hpp"
 
 namespace k2o {
 namespace detail {
@@ -27,9 +28,9 @@ struct dispatcher_impl {
 
     tuple<endianess::BUILTIN, signed_mode::BUILTIN, uint16_t> order_index;
     for (auto &byte : order_index)
-      byte = K2O_FWD(fetch_byte)();
+      byte = FWD(fetch_byte)();
 
-    return orders[order_index.get<0>()](K2O_FWD(fetch_byte), K2O_FWD(insert_byte));
+    return orders[order_index.get<0>()](FWD(fetch_byte), FWD(insert_byte));
   }
 
   order orders[N];
@@ -62,7 +63,7 @@ public:
   //! \return the status code obtained from the underlying order call
   template<typename Src_F, typename Dest_F>
   status operator()(Src_F &&fetch_byte, Dest_F &&insert_byte) {
-    return m_impl(K2O_FWD(fetch_byte), K2O_FWD(insert_byte));
+    return m_impl(FWD(fetch_byte), FWD(insert_byte));
   }
 
 private:
@@ -83,3 +84,5 @@ dispatcher<sizeof...(Fs)> make_dispatcher(keyring11<detail::unevaluated_value_h<
 }
 
 } // namespace k2o
+
+#include "detail/undef.hpp"

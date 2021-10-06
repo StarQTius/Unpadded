@@ -5,7 +5,6 @@
 
 #include "detail/find_in_typelist.hpp"
 #include "detail/value_h.hpp"
-
 #include "keyring11.hpp"
 
 namespace k2o {

@@ -4,26 +4,26 @@
 #pragma once
 
 #include <upd/tuple.hpp>
+#include <upd/type.hpp>
 
-#include <k2o/detail/function_reference.hpp>
-#include <k2o/detail/fwd.hpp>
-#include <k2o/detail/input_tuple.hpp>
-#include <k2o/detail/normalize_to_tuple.hpp>
-#include <k2o/detail/sfinae.hpp>
-#include <k2o/detail/signature.hpp>
-#include <k2o/detail/unique_ptr.hpp>
-
+#include "detail/function_reference.hpp"
+#include "detail/input_tuple.hpp"
+#include "detail/normalize_to_tuple.hpp"
+#include "detail/sfinae.hpp"
+#include "detail/signature.hpp"
+#include "detail/unique_ptr.hpp"
 #include "status.hpp"
-#include "type.hpp"
+
+#include "detail/def.hpp"
 
 namespace k2o {
 namespace detail {
 
 //! \brief Type alias used when a functor acting as a input byte stream is needed
-using src_t = abstract_function<byte_t()>;
+using src_t = abstract_function<upd::byte_t()>;
 
 //! \brief Type alias used when a functor acting as a output byte stream is needed
-using dest_t = abstract_function<void(byte_t)>;
+using dest_t = abstract_function<void(upd::byte_t)>;
 
 //! \brief Serialize a single integer value as a sequence of byte then map a functor over this sequence
 //! \tparam Endianess considered endianess when serializing the value
@@ -36,7 +36,7 @@ status insert(dest_t &insert_byte, const T &value) {
   using namespace upd;
 
   auto output = make_tuple<Endianess, Signed_Mode>(value);
-  for (byte_t byte : output)
+  for (upd::byte_t byte : output)
     insert_byte(byte);
 
   return status::OK;
@@ -53,7 +53,7 @@ status call(src_t &fetch_byte, F &&ftor) {
   Tuple input_args;
   for (auto &byte : input_args)
     byte = fetch_byte();
-  input_args.invoke(K2O_FWD(ftor));
+  input_args.invoke(FWD(ftor));
 
   return status::OK;
 }
@@ -73,7 +73,7 @@ status call(src_t &fetch_byte, dest_t &, F &&ftor) {
   Tuple input_args;
   for (auto &byte : input_args)
     byte = fetch_byte();
-  input_args.invoke(K2O_FWD(ftor));
+  input_args.invoke(FWD(ftor));
 
   return status::OK;
 }
@@ -84,7 +84,7 @@ status call(src_t &fetch_byte, dest_t &insert_byte, F &&ftor) {
   for (auto &byte : input_args)
     byte = fetch_byte();
 
-  return insert<Tuple::storage_endianess, Tuple::storage_signed_mode>(insert_byte, input_args.invoke(K2O_FWD(ftor)));
+  return insert<Tuple::storage_endianess, Tuple::storage_signed_mode>(insert_byte, input_args.invoke(FWD(ftor)));
 }
 
 //! \brief Implementation of the 'order' class behaviour
@@ -98,7 +98,7 @@ template<typename F, upd::endianess Endianess, upd::signed_mode Signed_Mode>
 struct order_model_impl {
   using tuple_t = input_tuple<Endianess, Signed_Mode, F>;
 
-  explicit order_model_impl(F &&ftor) : ftor{K2O_FWD(ftor)} {}
+  explicit order_model_impl(F &&ftor) : ftor{FWD(ftor)} {}
 
   F ftor;
 };
@@ -129,14 +129,14 @@ class order_model : public order_concept {
   using tuple_t = typename impl_t::tuple_t;
 
 public:
-  explicit order_model(F &&ftor) : m_impl{K2O_FWD(ftor)} {
+  explicit order_model(F &&ftor) : m_impl{FWD(ftor)} {
     order_model::input_size = tuple_t::size;
     order_model::output_size = normalize_to_tuple_t<Endianess, Signed_Mode, return_t<F>>::size;
   }
 
-  status operator()(src_t &&fetch_byte) final { return detail::call<tuple_t>(fetch_byte, K2O_FWD(m_impl.ftor)); }
+  status operator()(src_t &&fetch_byte) final { return detail::call<tuple_t>(fetch_byte, FWD(m_impl.ftor)); }
   status operator()(src_t &&fetch_byte, dest_t &&insert_byte) final {
-    return detail::call<tuple_t>(fetch_byte, insert_byte, K2O_FWD(m_impl.ftor));
+    return detail::call<tuple_t>(fetch_byte, insert_byte, FWD(m_impl.ftor));
   }
 
 private:
@@ -160,13 +160,14 @@ public:
   template<upd::endianess Endianess = upd::endianess::BUILTIN,
            upd::signed_mode Signed_Mode = upd::signed_mode::BUILTIN,
            typename F>
-  explicit order(F &&ftor) : m_concept_uptr{new detail::order_model<F, Endianess, Signed_Mode>{K2O_FWD(ftor)}} {}
+  explicit order(F &&ftor) : m_concept_uptr{new detail::order_model<F, Endianess, Signed_Mode>{FWD(ftor)}} {}
 
   //! \brief Call the held functor with the serialized argument delivered by the provided input byte stream
   //! \detail
   //!   The input byte stream is provided through the functor passed as parameter. When called with no parameters, it
-  //!   must return a 'byte_t' value. The necessary arguments for the held functor call are unserialized from the byte
-  //!   sequence obtained from the input byte stream. If any, the return value resulting from the call is discarded.
+  //!   must return a 'upd::byte_t' value. The necessary arguments for the held functor call are unserialized from the
+  //!   byte sequence obtained from the input byte stream. If any, the return value resulting from the call is
+  //!   discarded.
   //! \param fetch_byte Functor acting as a input byte stream
   template<typename Src_F>
   status operator()(Src_F &&fetch_byte) {
@@ -177,10 +178,10 @@ public:
   //! \detail
   //!   This function must be provided an input byte stream and an output byte stream. The input byte stream is
   //!   provided through the functor passed as first parameter. When called with no parameters, it must return a
-  //!   'byte_t' value. The output byte stream is provided through the functor passed as second parameter. It should be
-  //!   callable with a 'byte_t' value. The necessary arguments for the held functor call are unserialized from the
-  //!   byte sequence obtained from the input byte stream. If any, the return value resulting from the call is
-  //!   serialized then inserted into the output byte stream.
+  //!   'upd::byte_t' value. The output byte stream is provided through the functor passed as second parameter. It
+  //!   should be callable with a 'upd::byte_t' value. The necessary arguments for the held functor call are
+  //!   unserialized from the byte sequence obtained from the input byte stream. If any, the return value resulting from
+  //!   the call is serialized then inserted into the output byte stream.
   //! \param fetch_byte Functor acting as a input byte stream
   //! \param fetch_byte Functor acting as a input byte stream
   template<typename Src_F, typename Dest_F>
@@ -201,3 +202,5 @@ private:
 };
 
 } // namespace k2o
+
+#include "detail/undef.hpp"
