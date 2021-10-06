@@ -25,7 +25,6 @@ int main() {
   RUN_TEST(keyring11_DO_get_an_ikey_EXPECT_correct_index);
 
   RUN_TEST(dispatcher_DO_call_order_EXPECT_calling_correct_order);
-  RUN_TEST(dispatcher_DO_call_order_EXPECT_calling_correct_order_cpp17);
 
   return UNITY_END();
 }
