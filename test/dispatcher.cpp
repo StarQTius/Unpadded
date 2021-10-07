@@ -8,7 +8,13 @@ int identity(int x) { return x; }
 void dispatcher_DO_call_order_EXPECT_calling_correct_order() {
   using namespace k2o;
 
-  keyring11<K2O_CTREF(get_8), K2O_CTREF(get_16), K2O_CTREF(get_32), K2O_CTREF(identity)> kring;
+  keyring11<upd::endianess::BUILTIN,
+            upd::signed_mode::BUILTIN,
+            K2O_CTREF(get_8),
+            K2O_CTREF(get_16),
+            K2O_CTREF(get_32),
+            K2O_CTREF(identity)>
+      kring;
   auto dispatcher = make_dispatcher(kring);
   auto function16_index = upd::make_tuple(uint16_t{1});
   auto output = upd::make_tuple<int>();

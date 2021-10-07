@@ -21,12 +21,11 @@ void key_DO_serialize_arguments_EXPECT_correct_byte_sequence() {
 void key_DO_serialize_arguments_with_parameter_EXPECT_correct_byte_sequence() {
   using namespace k2o;
 
-  key<int(int, short, char)> k;
+  key<int(int, short, char), upd::endianess::LITTLE, upd::signed_mode::TWO_COMPLEMENT> k;
   auto dest_tuple = upd::make_tuple<int, short, char>(upd::little_endian, upd::two_complement);
-  profile<upd::endianess::LITTLE, upd::signed_mode::TWO_COMPLEMENT> classic_profile;
 
   int i = 0;
-  k[classic_profile](64, 32, 16) >> [&](byte_t byte) { *(dest_tuple.begin() + i++) = byte; };
+  k(64, 32, 16) >> [&](byte_t byte) { *(dest_tuple.begin() + i++) = byte; };
 
   TEST_ASSERT_EQUAL_INT(64, dest_tuple.get<0>());
   TEST_ASSERT_EQUAL_INT(32, dest_tuple.get<1>());
@@ -48,12 +47,11 @@ void key_DO_unserialize_data_sequence_EXPECT_correct_value() {
 void key_DO_unserialize_data_sequence_with_parameter_EXPECT_correct_value() {
   using namespace k2o;
 
-  key<int(int, short, char)> k;
+  key<int(int, short, char), upd::endianess::LITTLE, upd::signed_mode::TWO_COMPLEMENT> k;
   auto src_tuple = upd::make_tuple<upd::endianess::LITTLE, upd::signed_mode::TWO_COMPLEMENT>(int{64});
-  profile<upd::endianess::LITTLE, upd::signed_mode::TWO_COMPLEMENT> classic_profile;
 
   int i = 0;
-  auto result = k[classic_profile] << [&]() { return *(src_tuple.begin() + i++); };
+  auto result = k << [&]() { return *(src_tuple.begin() + i++); };
 
   TEST_ASSERT_EQUAL_INT(src_tuple.get<0>(), result);
 }
@@ -76,7 +74,7 @@ void key_DO_create_key_from_function_EXPECT_key_holding_function_signature_cpp17
 #if __cplusplus >= 201703L
   using namespace k2o;
 
-  auto k = make_key<function>();
+  auto k = make_key<function>(upd::builtin_endianess, upd::builtin_signed_mode);
   int i = 0, j = 0;
   byte_t buf[sizeof i];
   k(64) >> [&](byte_t byte) { buf[i++] = byte; };

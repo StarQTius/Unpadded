@@ -160,7 +160,8 @@ public:
   template<upd::endianess Endianess = upd::endianess::BUILTIN,
            upd::signed_mode Signed_Mode = upd::signed_mode::BUILTIN,
            typename F>
-  explicit order(F &&ftor) : m_concept_uptr{new detail::order_model<F, Endianess, Signed_Mode>{FWD(ftor)}} {}
+  explicit order(F &&ftor, upd::endianess_h<Endianess> = {}, upd::signed_mode_h<Signed_Mode> = {})
+      : m_concept_uptr{new detail::order_model<F, Endianess, Signed_Mode>{FWD(ftor)}} {}
 
   //! \brief Call the held functor with the serialized argument delivered by the provided input byte stream
   //! \detail

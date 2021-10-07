@@ -20,10 +20,12 @@ namespace k2o {
 //!   Note that the provided template parameter can be any kind of functor, and that they do not have to be defined in
 //!   the same translation unit as the 'keyring' object. This allows to provide externally linked variables or
 //!   functions that are only declared in the translation unit.
+//! \tparam Endianess Endianess of the created 'ikey' objects
+//! \tparam Signed_Mode signed integer representation of the created 'ikey' objects
 //! \tparam Ftors... functors to be indexed
-template<auto &... Ftors>
-class keyring : public keyring11<detail::unevaluated_value_h<decltype(Ftors), Ftors>...> {
-  using base_t = keyring11<detail::unevaluated_value_h<decltype(Ftors), Ftors>...>;
+template<upd::endianess Endianess, upd::signed_mode Signed_Mode, auto &... Ftors>
+class keyring : public keyring11<Endianess, Signed_Mode, detail::unevaluated_value_h<decltype(Ftors), Ftors>...> {
+  using base_t = keyring11<Endianess, Signed_Mode, detail::unevaluated_value_h<decltype(Ftors), Ftors>...>;
   using base_t::get;
 
 public:

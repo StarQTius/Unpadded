@@ -13,19 +13,23 @@
 
 namespace k2o {
 
-template<typename... Hs>
+template<upd::endianess, upd::signed_mode, typename... Hs>
 class keyring11;
 
-template<typename... Fs, Fs... Functions>
-class keyring11<detail::unevaluated_value_h<Fs, Functions>...> {
+template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Fs, Fs... Functions>
+class keyring11<Endianess, Signed_Mode, detail::unevaluated_value_h<Fs, Functions>...> {
   using search_list = boost::mp11::mp_list<detail::unevaluated_value_h<Fs, Functions>...>;
+
+  template<typename H>
+  using key_t =
+      ikey<detail::find_in_typelist<H, search_list>(), detail::signature_t<typename H::type>, Endianess, Signed_Mode>;
 
   STATIC_ASSERT((boost::conjunction<boost::integral_constant<bool, detail::is_callable<Fs>()>...>::value),
                 "'keyring11' only accepts callable objects as template parameters");
 
 public:
   template<typename H>
-  constexpr ikey<detail::find_in_typelist<H, search_list>(), detail::signature_t<typename H::type>> get() const {
+  constexpr key_t<H> get() const {
     return {};
   }
 };

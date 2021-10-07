@@ -14,14 +14,15 @@
 namespace k2o {
 
 // Forward declaration
-template<typename...>
+template<upd::endianess, upd::signed_mode, typename...>
 class keyring11;
 
 namespace sfinae {
 namespace detail {
 
-template<typename... Fs, Fs... Ftors>
-constexpr boost::true_type is_deriving_from_keyring11_impl(keyring11<k2o::detail::unevaluated_value_h<Fs, Ftors>...>);
+template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Fs, Fs... Ftors>
+constexpr boost::true_type
+    is_deriving_from_keyring11_impl(keyring11<Endianess, Signed_Mode, k2o::detail::unevaluated_value_h<Fs, Ftors>...>);
 constexpr boost::false_type is_deriving_from_keyring11_impl(...);
 
 } // namespace detail

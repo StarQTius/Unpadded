@@ -16,24 +16,39 @@ namespace detail {
 //! \brief 'dispatcher' object implementation
 //! \note The reason for putting the implementation apart is a GCC compiler bug in C++17 with deduction guide.
 template<size_t N>
-struct dispatcher_impl {
-  //! \brief Initialize 'orders' with the functors held by the provided 'keyring11' object
-  template<typename... Fs, Fs &... Ftors>
-  explicit dispatcher_impl(keyring11<detail::unevaluated_value_h<Fs, Ftors>...>) : orders{order{Ftors}...} {}
+class dispatcher_impl {
+public:
+  //! \brief Integer type large enougth to store the order indices
+  using index_t = uint16_t;
+
+  //! \brief Function type to unserialize the order indices
+  using index_reader_t = index_t(const upd::byte_t *);
+
+  //! \brief Get the functors held by the provided 'keyring11' object
+  //! \tparam Endianess Endianess used to serialize the values
+  //! \tparam Signed_Mode Signed integer representation used to serialize the values
+  //! \tparam Ftors... Functors held by the keyring
+  template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Fs, Fs &... Ftors>
+  explicit dispatcher_impl(keyring11<Endianess, Signed_Mode, detail::unevaluated_value_h<Fs, Ftors>...>)
+      : orders{order{Ftors, upd::endianess_h<Endianess>{}, upd::signed_mode_h<Signed_Mode>{}}...},
+        read_index{static_cast<index_reader_t &>(upd::read_as<index_t, Endianess, Signed_Mode>)} {}
 
   //! \brief Get the index and arguments from an input byte stream and put the return value into an output byte stream
+  //! \param fetch_byte Functor acting as an input byte stream
+  //! \param insert_byte Functor acting as an output byte stream
+  //! \return The status code returned by the underlying order call
   template<typename Src_F, typename Dest_F>
   status operator()(Src_F &&fetch_byte, Dest_F &&insert_byte) {
-    using namespace upd;
-
-    tuple<endianess::BUILTIN, signed_mode::BUILTIN, uint16_t> order_index;
-    for (auto &byte : order_index)
+    upd::byte_t index_buf[sizeof(index_t)];
+    for (auto &byte : index_buf)
       byte = FWD(fetch_byte)();
 
-    return orders[order_index.get<0>()](FWD(fetch_byte), FWD(insert_byte));
+    return orders[read_index(index_buf)](FWD(fetch_byte), FWD(insert_byte));
   }
 
+private:
   order orders[N];
+  index_reader_t &read_index;
 };
 
 } // namespace detail
@@ -71,15 +86,16 @@ private:
 };
 
 #if __cplusplus >= 201703L
-template<typename... Fs, Fs... Ftors>
-dispatcher(keyring11<detail::unevaluated_value_h<Fs, Ftors>...>) -> dispatcher<sizeof...(Fs)>;
+template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Fs, Fs... Ftors>
+dispatcher(keyring11<Endianess, Signed_Mode, detail::unevaluated_value_h<Fs, Ftors>...>) -> dispatcher<sizeof...(Fs)>;
 #endif // __cplusplus >= 201703L
 
 //! \brief Make a 'dispatcher' object
-//! \param input_keyring 'keyring11' object whose held functors will be called by the returned 'dispatcher' object
+//! \param input_keyring 'keyring11' object forwarded to the 'dispatcher' constructor
 //! \return a 'dispatcher' object whose orders calls the functors held by 'input_keyring'
-template<typename... Fs, Fs... Ftors>
-dispatcher<sizeof...(Fs)> make_dispatcher(keyring11<detail::unevaluated_value_h<Fs, Ftors>...> input_keyring) {
+template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Fs, Fs... Ftors>
+dispatcher<sizeof...(Fs)>
+make_dispatcher(keyring11<Endianess, Signed_Mode, detail::unevaluated_value_h<Fs, Ftors>...> input_keyring) {
   return dispatcher<sizeof...(Fs)>{input_keyring};
 }
 
