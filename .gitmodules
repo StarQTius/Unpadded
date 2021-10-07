@@ -22,3 +22,7 @@
 	path = lib/type_traits
 	url = https://github.com/boostorg/type_traits
 	branch = master
+[submodule "lib/doxygen-awesome-css"]
+	path = lib/doxygen-awesome-css
+	url = https://github.com/jothepro/doxygen-awesome-css
+	branch = main
