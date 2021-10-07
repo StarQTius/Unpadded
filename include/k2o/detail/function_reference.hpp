@@ -26,7 +26,7 @@ template<typename...>
 class function_reference_impl;
 
 //! \brief Implementation of 'function_reference'
-//! \detail
+//! \details
 //!   This class is base of 'function_reference'. It could be used as it is, though it would impraticable as the
 //!   functor type, its return and parameter types must be provided explicitely. The 'function_reference' is just here
 //!   to deduce the return and parameter types from the functor type and derive from the according template instance of
@@ -46,7 +46,7 @@ private:
 };
 
 //! \brief Wrap a reference to a functor and allow calling it through the interface defined by 'abstract_function'
-//! \detail
+//! \details
 //!   This class allow type erasure without dynamic allocation. However, the wrapped functor is held by reference and
 //!   is not copied (as it would be with 'std::function').
 //! \tparam F type of the functor wrapped by reference

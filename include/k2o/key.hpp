@@ -15,7 +15,7 @@ namespace k2o {
 namespace detail {
 
 //! \brief Simple wrapper around 'upd::tuple' whose content can be forwarded to a functor as a byte sequence
-//! \detail
+//! \details
 //!   The content can be forwarded with the 'operator>>' function member. 'detail::serialized_message' object
 //!   cannot be copied from to avoid unintentional copy.
 template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Ts>
@@ -53,7 +53,7 @@ template<typename R, typename... Args, upd::endianess Endianess, upd::signed_mod
 class key<R(Args...), Endianess, Signed_Mode> {
 public:
   //! \brief Serialize arguments and prepare them for sending
-  //! \detail
+  //! \details
   //!   This allows the following syntax : 'key(x1, x2, x3, ...) >> dest_f' (with 'dest_f' being a functor of signature
   //!   'void(byte_t)'). 'dest_f' is called with every byte representing the data passed as parameter.
   //! \param args... arguments to be serialized
@@ -68,7 +68,7 @@ public:
 #endif
 
   //! \brief Unserialize a value from an input byte stream
-  //! \detail
+  //! \details
   //!   The input byte stream is provided through the functor passed as parameter. When called with no parameters, it
   //!   must return a 'byte_t' value.
   //! \param fetch_byte Functor acting as a input byte stream
@@ -85,7 +85,7 @@ public:
 
 #if __cplusplus >= 201703L
 //! \brief (C++17) Create a 'key' object
-//! \detail
+//! \details
 //!   This function use C++17 placeholder auto with template non-type parameter to allow nicer syntax.
 //! \tparam Function function whose signature will be passed to the returned object
 //! \return 'key<boost::remove_cv_ref_t<decltype(*Function)>>{}'

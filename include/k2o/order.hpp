@@ -43,7 +43,7 @@ status insert(dest_t &insert_byte, const T &value) {
 }
 
 //! \brief Call a functor with arguments serialized as a byte sequence
-//! \detail
+//! \details
 //! \tparam Tuple instance of 'upd::tuple' class template which will be used to hold the byte sequence
 //! \param fetch_byte functor which will enumerate the byte sequence
 //! \param ftor functor which will be called with the arguments
@@ -88,7 +88,7 @@ status call(src_t &fetch_byte, dest_t &insert_byte, F &&ftor) {
 }
 
 //! \brief Implementation of the 'order' class behaviour
-//! \detail
+//! \details
 //!   This class holds the functor passed to the 'order' constructor and is used to deduce the appropriate 'upd::tuple'
 //!   template instance for holding the functor parameters.
 //! \tparam F type of the held functor
@@ -104,7 +104,7 @@ struct order_model_impl {
 };
 
 //! \brief Abstract class used for setting up type erasure in the 'order' class
-//! \detail
+//! \details
 //!   This class is base of 'order_model' as a the "Concept" class in the type erasure pattern.
 struct order_concept {
   virtual ~order_concept() = default;
@@ -116,7 +116,7 @@ struct order_concept {
 };
 
 //! \brief Derived class used for setting up type erasure in the 'order' class
-//! \detail
+//! \details
 //!   This class is derived from the 'order_concept' as a the "Model" class in the type erasure pattern.
 //!   This implementation of 'order_concept' uses the 'src_t' and 'dest_t' functors to fetch the arguments for calling
 //!   the functor as a byte sequence and serialize the expression resulting from that call.
@@ -146,7 +146,7 @@ private:
 } // namespace detail
 
 //! \brief Functor wrapper working as a arguments and return values serializer / unserializer
-//! \detail
+//! \details
 //!   This class holds a functor member variable. It acts as a functor itself when provided one or two functors. Those
 //!   provided functor must act as input / output byte stream. The resultings byte sequences represents the arguments or
 //!   return values associated with the calls of the held functor. The values may only be of integer type (signed or
@@ -164,7 +164,7 @@ public:
       : m_concept_uptr{new detail::order_model<F, Endianess, Signed_Mode>{FWD(ftor)}} {}
 
   //! \brief Call the held functor with the serialized argument delivered by the provided input byte stream
-  //! \detail
+  //! \details
   //!   The input byte stream is provided through the functor passed as parameter. When called with no parameters, it
   //!   must return a 'upd::byte_t' value. The necessary arguments for the held functor call are unserialized from the
   //!   byte sequence obtained from the input byte stream. If any, the return value resulting from the call is
@@ -176,7 +176,7 @@ public:
   }
 
   //! \brief Call the held functor and serialize / unserialize necessary value with the provided byte stream
-  //! \detail
+  //! \details
   //!   This function must be provided an input byte stream and an output byte stream. The input byte stream is
   //!   provided through the functor passed as first parameter. When called with no parameters, it must return a
   //!   'upd::byte_t' value. The output byte stream is provided through the functor passed as second parameter. It

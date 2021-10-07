@@ -28,7 +28,7 @@ struct normalize_to_tuple<Endianess, Signed_Mode, void> {
 };
 
 //! \brief Normalize a type to tuple if needed
-//! \detail
+//! \details
 //!   If 'Ts' expands into a single type, and that type can be expressed as 'upd::tuple<...>', then
 //!   'normalize_to_tuple_t' is an alias of 'Ts...'. If 'Ts...' expands into 'void', then 'normalize_to_tuple_t' is an
 //!   alias of upd::tuple<Endianess, Signed_Mode>. Otherwise, type 'normalize_to_tuple_t' is an alias of

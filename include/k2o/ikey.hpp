@@ -15,7 +15,7 @@ template<size_t Index,
 class ikey : ikey<Index, detail::signature_t<F>, Endianess, Signed_Mode> {};
 
 //! \brief Serializing / unserializing and indexing helper class according to a function signature
-//! \detail
+//! \details
 //!   When serializing, an index is appended at the beginning of the payload. It can be used by the slave to determine
 //!   which order to execute. However, no check are performed when unserializing as 'ikey' objects do not expect an
 //!   index to be appended.
