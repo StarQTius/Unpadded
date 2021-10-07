@@ -151,8 +151,7 @@ public:
   //!   Endianess and signed integer representation is provided throught the two first parameters.
   //! \param values... Values to be serialized
   //! \see format.hpp
-  explicit tuple(detail::value_h<endianess, Endianess>, detail::value_h<signed_mode, Signed_Mode>, const Ts &... values)
-      : tuple(values...) {}
+  explicit tuple(endianess_h<Endianess>, signed_mode_h<Signed_Mode>, const Ts &... values) : tuple(values...) {}
 #endif // __cplusplus >= 201703L
 };
 template<endianess Endianess, signed_mode Signed_Mode>
@@ -174,8 +173,7 @@ tuple<Endianess, Signed_Mode, Args...> make_tuple(const Args &... args) {
 //! \tparam Endianess target endianess for serialization
 //! \tparam Signed_Mode target signed representation for serialization
 template<typename... Args, endianess Endianess, signed_mode Signed_Mode>
-tuple<Endianess, Signed_Mode, Args...> make_tuple(detail::value_h<endianess, Endianess>,
-                                                  detail::value_h<signed_mode, Signed_Mode>) {
+tuple<Endianess, Signed_Mode, Args...> make_tuple(endianess_h<Endianess>, signed_mode_h<Signed_Mode>) {
   return tuple<Endianess, Signed_Mode, Args...>{};
 }
 
