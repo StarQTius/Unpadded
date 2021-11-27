@@ -40,18 +40,6 @@ array_wrapper<T> read_as(const byte_t *sequence) {
 }
 #endif
 
-//! \brief Interpret a part of a byte sequence as a value of the given type
-//! \tparam T Requested type
-//! \tparam Endianess Endianess of the value representation in the byte sequence
-//! \tparam Signed_Mode Signed number representation of the value representation in the byte sequence
-//! \param sequence Byte sequence to interpret from
-//! \param offset Start of the part of the content to be written
-//! \return A copy of the value represented by the byte sequence
-template<typename T, endianess Endianess, signed_mode Signed_Mode>
-auto read_as(const byte_t *sequence, size_t offset) -> decltype(read_as<T, Endianess, Signed_Mode>(sequence)) {
-  return read_as<Endianess, Signed_Mode>(sequence + offset);
-}
-
 //! \brief Serialize a value into a byte sequence
 //! \tparam Endianess Endianess of the value representation in the byte sequence
 //! \tparam Signed_Mode Signed number representation of the value representation in the byte sequence
@@ -80,17 +68,5 @@ void write_as(const T &array, byte_t *sequence) {
     write_as<Endianess, Signed_Mode>(array[i], sequence + i * sizeof(element_t));
 }
 #endif
-
-//! \brief Serialize a value into a byte sequence
-//! \tparam Endianess Endianess of the value representation in the byte sequence
-//! \tparam Signed_Mode Signed number representation of the value representation in the byte sequence
-//! \tparam T Serilized value's type
-//! \param value Value to be serialized
-//! \param offset Start of the part of the content to be written
-//! \param sequence Byte sequence to write into
-template<endianess Endianess, signed_mode Signed_Mode, typename T>
-void write_as(const T &value, byte_t *sequence, size_t offset) {
-  write_as<Endianess, Signed_Mode>(value, sequence + offset);
-}
 
 } // namespace upd
