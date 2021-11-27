@@ -90,8 +90,11 @@ void tuple_DO_access_like_array_EXPECT_correct_raw_values() {
   memcpy(raw_data + 1, data + 1, 1);
   memcpy(raw_data + 2, data + 2, 2);
 
-  auto tuple =
-      make_tuple<Endianess, Signed_Mode>((unsigned char){0xaa}, (unsigned char){0xbb}, (unsigned short){0xccdd});
+  auto tuple = make_tuple(endianess_h<Endianess>{},
+                          signed_mode_h<Signed_Mode>{},
+                          (unsigned char){0xaa},
+                          (unsigned char){0xbb},
+                          (unsigned short){0xccdd});
   TEST_ASSERT_EQUAL_HEX8(raw_data[0], tuple.begin()[0]);
   TEST_ASSERT_EQUAL_HEX8(raw_data[1], tuple.begin()[1]);
   TEST_ASSERT_EQUAL_HEX8(raw_data[2], tuple.begin()[2]);
@@ -105,8 +108,11 @@ void tuple_DO_access_like_array_EXPECT_correct_raw_values() {
   using namespace upd;
 
   uint8_t raw_data[]{0xaa, 0xbb, 0xdd, 0xcc};
-  auto tuple =
-      make_tuple<Endianess, Signed_Mode>((unsigned char){0xaa}, (unsigned char){0xbb}, (unsigned short){0xccdd});
+  auto tuple = make_tuple(endianess_h<Endianess>{},
+                          signed_mode_h<Signed_Mode>{},
+                          (unsigned char){0xaa},
+                          (unsigned char){0xbb},
+                          (unsigned short){0xccdd});
   TEST_ASSERT_EQUAL_HEX8(raw_data[0], tuple.begin()[0]);
   TEST_ASSERT_EQUAL_HEX8(raw_data[1], tuple.begin()[1]);
   TEST_ASSERT_EQUAL_HEX8(raw_data[2], tuple.begin()[2]);
@@ -120,8 +126,11 @@ void tuple_DO_access_like_array_EXPECT_correct_raw_values() {
   using namespace upd;
 
   uint8_t raw_data[]{0xaa, 0xbb, 0xcc, 0xdd};
-  auto tuple =
-      make_tuple<Endianess, Signed_Mode>((unsigned char){0xaa}, (unsigned char){0xbb}, (unsigned short){0xccdd});
+  auto tuple = make_tuple(endianess_h<Endianess>{},
+                          signed_mode_h<Signed_Mode>{},
+                          (unsigned char){0xaa},
+                          (unsigned char){0xbb},
+                          (unsigned short){0xccdd});
   TEST_ASSERT_EQUAL_HEX8(raw_data[0], tuple.begin()[0]);
   TEST_ASSERT_EQUAL_HEX8(raw_data[1], tuple.begin()[1]);
   TEST_ASSERT_EQUAL_HEX8(raw_data[2], tuple.begin()[2]);
@@ -191,7 +200,7 @@ void tuple_DO_invoke_function_EXPECT_correct_behavior() {
     args.invoke(cvrf_t{});
   }
 
-  auto terms = make_tuple<Endianess, Signed_Mode>(int{12}, int{34}, int{-56});
+  auto terms = make_tuple(endianess_h<Endianess>{}, signed_mode_h<Signed_Mode>{}, int{12}, int{34}, int{-56});
 
   TEST_ASSERT_EQUAL_INT(12 + 34 - 56, terms.invoke(*(+[](int a, int b, int c) { return a + b + c; })));
 }
@@ -204,7 +213,7 @@ void tuple_DO_make_empty_tuple_EXPECT_valid_object() {
   char error_msg[sizeof(error_format)];
   snprintf(error_msg, sizeof(error_msg), error_format, static_cast<int>(Endianess), static_cast<int>(Signed_Mode));
 
-  auto empty_tuple = make_tuple<Endianess, Signed_Mode>();
+  auto empty_tuple = make_tuple(endianess_h<Endianess>{}, signed_mode_h<Signed_Mode>{});
 
   TEST_ASSERT_EQUAL_INT_MESSAGE(0, empty_tuple.size, error_msg);
 }

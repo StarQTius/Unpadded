@@ -7,7 +7,7 @@ void run_tuple_ut() {
   {
     tuple<endianess::LITTLE, signed_mode::TWO_COMPLEMENT, int, char, bool>{0, 0, 0};
 
-    make_tuple<endianess::LITTLE, signed_mode::TWO_COMPLEMENT>(int{}, char{}, bool{});
+    make_tuple(little_endian, two_complement, int{}, char{}, bool{});
     make_tuple(int{}, char{}, bool{});
 
 #if __cplusplus >= 201703L

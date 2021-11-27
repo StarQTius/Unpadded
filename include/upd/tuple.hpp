@@ -163,9 +163,18 @@ class tuple<Endianess, Signed_Mode> : public detail::tuple_base<Endianess, Signe
 //! \tparam Args... Deduced types of the provided values.
 //! \param args... Values to be serialized into the return value
 //! \return tuple object holding a serialized copy of the provided values.
-template<endianess Endianess = endianess::BUILTIN, signed_mode Signed_Mode = signed_mode::BUILTIN, typename... Args>
-tuple<Endianess, Signed_Mode, Args...> make_tuple(const Args &... args) {
+template<endianess Endianess, signed_mode Signed_Mode, typename... Args>
+tuple<Endianess, Signed_Mode, Args...>
+make_tuple(endianess_h<Endianess>, signed_mode_h<Signed_Mode>, const Args &... args) {
   return tuple<Endianess, Signed_Mode, Args...>{args...};
+}
+
+//! \brief Construct a tuple object provided constant lvalue to values using native data representation
+//! \param args... Values to be serialized into the return value
+//! \return a tuple object holding a serialized copy of the provided values.
+template<typename... Args>
+tuple<endianess::BUILTIN, signed_mode::BUILTIN, Args...> make_tuple(const Args &... args) {
+  return tuple<endianess::BUILTIN, signed_mode::BUILTIN, Args...>{args...};
 }
 
 //! \brief Default construct a tuple object
