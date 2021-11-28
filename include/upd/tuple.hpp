@@ -17,12 +17,16 @@
 namespace upd {
 namespace detail {
 
-//! \brief Defines base members for 'tuple'
+//! \brief Provides tuple features to the derived class throught CRTP
+//! \tparam D Type of the derived class
 //! \tparam Endianess endianess of the stored data
 //! \tparam Signed_Mode signed mode of the stored data
 //! \tparam Ts... Types of the serialized values
-template<endianess Endianess, signed_mode Signed_Mode, typename... Ts>
+template<typename D, endianess Endianess, signed_mode Signed_Mode, typename... Ts>
 class tuple_base {
+  D &derived() { return static_cast<D &>(*this); }
+  const D &derived() const { return static_cast<const D &>(*this); }
+
   using typelist = boost::mp11::mp_list<Ts...>;
   using type_sizes = boost::mp11::mp_list<boost::mp11::mp_size_t<sizeof(Ts)>...>;
 
@@ -47,24 +51,6 @@ public:
   //! \brief Equals the signed mode given as template parameter
   constexpr static auto storage_signed_mode = Signed_Mode;
 
-  //! \brief Access the object content
-  //! \details There is no bound check performed.
-  //! \param i Index of the accessed byte
-  byte_t &operator[](size_t i) { return m_storage[i]; }
-
-  //! \brief Access the object content
-  //! \details There is no bound check performed.
-  //! \param i Index of the accessed byte
-  const byte_t &operator[](size_t i) const { return m_storage[i]; }
-
-  //! \name Iterability
-  //! @{
-  byte_t *begin() { return m_storage.begin(); }
-  byte_t *end() { return m_storage.end(); }
-  const byte_t *begin() const { return m_storage.begin(); }
-  const byte_t *end() const { return m_storage.end(); }
-  //! @}
-
   //! \brief Unserialize one of the value held by the object
   //! \tparam I Index of the requested value
   //! \return A copy of the serialized value or an array_wrapper if I designate an array type
@@ -77,7 +63,7 @@ public:
     using namespace boost::mp11;
     constexpr auto offset = mp_fold<mp_take_c<type_sizes, I>, mp_size_t<0>, mp_plus>::value;
 
-    return m_storage.template read_as<arg_t<I>>(offset);
+    return read_as<arg_t<I>, Endianess, Signed_Mode>(derived().begin() + offset);
   }
 #endif
 
@@ -88,7 +74,7 @@ public:
   void set(const arg_t<I> &value) {
     using namespace boost::mp11;
     constexpr auto offset = mp_fold<mp_take_c<type_sizes, I>, mp_size_t<0>, mp_plus>::value;
-    m_storage.write_as(value, offset);
+    write_as<Endianess, Signed_Mode>(value, derived().begin() + offset);
   }
 
   //! \brief Invoke a functor with the stored values
@@ -118,8 +104,6 @@ private:
   detail::return_t<F> invoke_impl(F &&ftor, boost::mp11::index_sequence<Is...>) const {
     return FWD(ftor)(get<Is>()...);
   }
-
-  unaligned_data<size, Endianess, Signed_Mode> m_storage;
 };
 
 } // namespace detail
@@ -132,7 +116,9 @@ private:
 //! \tparam Signed_Mode signed mode of the stored data
 //! \tparam Ts... Types of the serialized values
 template<endianess Endianess = endianess::BUILTIN, signed_mode Signed_Mode = signed_mode::BUILTIN, typename... Ts>
-class tuple : public detail::tuple_base<Endianess, Signed_Mode, Ts...> {
+class tuple : public detail::tuple_base<tuple<Endianess, Signed_Mode, Ts...>, Endianess, Signed_Mode, Ts...> {
+  using base_t = detail::tuple_base<tuple<Endianess, Signed_Mode, Ts...>, Endianess, Signed_Mode, Ts...>;
+
 public:
   //! \brief Initialize the content with default constructed value
   tuple() : tuple(Ts{}...) {}
@@ -142,8 +128,26 @@ public:
   //! \param args... Values to be serialized
   explicit tuple(const Ts &... args) {
     using boost::mp11::index_sequence_for;
-    detail::tuple_base<Endianess, Signed_Mode, Ts...>::lay(index_sequence_for<Ts...>{}, args...);
+    base_t::lay(index_sequence_for<Ts...>{}, args...);
   }
+
+  //! \name Iterability
+  //! @{
+  byte_t *begin() { return m_storage.begin(); }
+  byte_t *end() { return m_storage.end(); }
+  const byte_t *begin() const { return m_storage.begin(); }
+  const byte_t *end() const { return m_storage.end(); }
+  //! @}
+
+  //! \brief Access the object content
+  //! \details There is no bound check performed.
+  //! \param i Index of the accessed byte
+  byte_t &operator[](size_t i) { return m_storage[i]; }
+
+  //! \brief Access the object content
+  //! \details There is no bound check performed.
+  //! \param i Index of the accessed byte
+  const byte_t &operator[](size_t i) const { return m_storage[i]; }
 
 #if __cplusplus >= 201703L
   //! \brief (C++17) Serialize the provided values
@@ -153,9 +157,19 @@ public:
   //! \see format.hpp
   explicit tuple(endianess_h<Endianess>, signed_mode_h<Signed_Mode>, const Ts &... values) : tuple(values...) {}
 #endif // __cplusplus >= 201703L
+
+private:
+  unaligned_data<base_t::size, Endianess, Signed_Mode> m_storage;
 };
 template<endianess Endianess, signed_mode Signed_Mode>
-class tuple<Endianess, Signed_Mode> : public detail::tuple_base<Endianess, Signed_Mode> {};
+class tuple<Endianess, Signed_Mode> : public detail::tuple_base<tuple<Endianess, Signed_Mode>, Endianess, Signed_Mode> {
+public:
+  //! \name Iterability
+  //! @{
+  constexpr byte_t *begin() const { return nullptr; }
+  constexpr byte_t *end() const { return nullptr; }
+  //! @}
+};
 
 //! \brief Construct a tuple object provided constant lvalue to values
 //! \tparam Endianess Target endianess for serialization
