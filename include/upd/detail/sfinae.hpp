@@ -29,6 +29,18 @@ using require_bounded_array = require<boost::is_bounded_array<T>::value, U>;
 template<typename T, typename U = int>
 using require_not_bounded_array = require<!boost::is_bounded_array<T>::value, U>;
 
+//! \brief Require the provided type not to be a pointer type
+template<typename T, typename U = int>
+using require_not_pointer = require<!boost::is_pointer<T>::value, U>;
+
+//! \brief Require the provided type instances to be summable with themselves
+template<typename T, typename U = int>
+using require_has_plus = require<boost::has_plus<T>::value, U>;
+
+//! \brief Require the provided type instances not to be summable with themselves
+template<typename T, typename U = int>
+using require_has_not_plus = require<!boost::has_plus<T>::value, U>;
+
 //! \brief Require the provided pack not to be empty
 template<typename... Ts>
 using require_not_empty_pack = require<sizeof...(Ts) != 0, int>;
