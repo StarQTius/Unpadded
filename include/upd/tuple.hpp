@@ -63,7 +63,7 @@ public:
     using namespace boost::mp11;
     constexpr auto offset = mp_fold<mp_take_c<type_sizes, I>, mp_size_t<0>, mp_plus>::value;
 
-    return read_as<arg_t<I>, Endianess, Signed_Mode>(derived().begin(), offset);
+    return read_as<arg_t<I>, Endianess, Signed_Mode>(derived().src(), offset);
   }
 #endif
 
@@ -74,7 +74,7 @@ public:
   void set(const arg_t<I> &value) {
     using namespace boost::mp11;
     constexpr auto offset = mp_fold<mp_take_c<type_sizes, I>, mp_size_t<0>, mp_plus>::value;
-    write_as<Endianess, Signed_Mode>(value, derived().begin(), offset);
+    write_as<Endianess, Signed_Mode>(value, derived().src(), offset);
   }
 
   //! \brief Invoke a functor with the stored values
@@ -158,6 +158,10 @@ public:
   explicit tuple(endianess_h<Endianess>, signed_mode_h<Signed_Mode>, const Ts &... values) : tuple(values...) {}
 #endif // __cplusplus >= 201703L
 
+  //! \brief Get the 'begin' iterator
+  byte_t *src() { return begin(); }
+  const byte_t *src() const { return begin(); }
+
 private:
   unaligned_data<base_t::size, Endianess, Signed_Mode> m_storage;
 };
@@ -169,6 +173,9 @@ public:
   constexpr byte_t *begin() const { return nullptr; }
   constexpr byte_t *end() const { return nullptr; }
   //! @}
+
+  //! \brief Get the 'begin' iterator
+  constexpr byte_t *src() const { return begin(); }
 };
 
 //! \brief Binds a byte sequence to a tuple view
@@ -189,7 +196,8 @@ public:
   //! \param src Iterator to the start of the byte sequence
   explicit tuple_view(const It &src) : m_src{src} {}
 
-  const It &begin() const { return m_src; }
+  //! \brief Get the iterator associated to the byte sequence
+  const It &src() const { return m_src; }
 
 private:
   It m_src;
