@@ -7,4 +7,4 @@ git submodule init \
   lib/type_traits \
   lib/unpadded \
   lib/Unity
-git submodule update --remote
+git submodule update --remote --merge

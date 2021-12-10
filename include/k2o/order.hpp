@@ -35,7 +35,7 @@ template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename T, sfi
 status insert(dest_t &insert_byte, const T &value) {
   using namespace upd;
 
-  auto output = make_tuple<Endianess, Signed_Mode>(value);
+  auto output = make_tuple(endianess_h<Endianess>{}, signed_mode_h<Signed_Mode>{}, value);
   for (upd::byte_t byte : output)
     insert_byte(byte);
 

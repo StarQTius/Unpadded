@@ -48,7 +48,7 @@ void key_DO_unserialize_data_sequence_with_parameter_EXPECT_correct_value() {
   using namespace k2o;
 
   key<int(int, short, char), upd::endianess::LITTLE, upd::signed_mode::TWO_COMPLEMENT> k;
-  auto src_tuple = upd::make_tuple<upd::endianess::LITTLE, upd::signed_mode::TWO_COMPLEMENT>(int{64});
+  auto src_tuple = upd::make_tuple<>(upd::little_endian, upd::two_complement, int{64});
 
   int i = 0;
   auto result = k << [&]() { return *(src_tuple.begin() + i++); };
