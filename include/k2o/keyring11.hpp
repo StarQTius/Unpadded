@@ -24,7 +24,7 @@ class keyring11<Endianess, Signed_Mode, detail::unevaluated_value_h<Fs, Function
   using key_t =
       ikey<detail::find_in_typelist<H, search_list>(), detail::signature_t<typename H::type>, Endianess, Signed_Mode>;
 
-  STATIC_ASSERT((boost::conjunction<boost::integral_constant<bool, detail::is_callable<Fs>()>...>::value),
+  static_assert((boost::conjunction<boost::integral_constant<bool, detail::is_callable<Fs>()>...>::value),
                 "'keyring11' only accepts callable objects as template parameters");
 
 public:
