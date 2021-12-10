@@ -53,11 +53,11 @@ private:
 
 } // namespace detail
 
-//! \brief Order containers able to unserialize byte sequence serialized by an 'ikey' object
+//! \brief Order containers able to unserialize byte sequence serialized by an 'key' object
 //! \details
 //!   A 'dispatcher' object is constructed from a 'keyring11' object and is able to unserialize a payload serialized by
-//!   an 'ikey' object created from the same 'keyring11' object. When it happens, the 'dispatcher' object calls the
-//!   function associated with the 'ikey' object, forwarding the arguments from the payload to the function. The
+//!   an 'key' object created from the same 'keyring11' object. When it happens, the 'dispatcher' object calls the
+//!   function associated with the 'key' object, forwarding the arguments from the payload to the function. The
 //!   functions are internally held as 'order' objects.
 //! \tparam N the number of functions held by the 'keyring11' object
 template<size_t N>

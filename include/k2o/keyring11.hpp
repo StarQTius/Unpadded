@@ -7,7 +7,7 @@
 #include "detail/signature.hpp"
 #include "detail/value_h.hpp"
 
-#include "ikey.hpp"
+#include "key.hpp"
 
 #include "detail/def.hpp"
 
@@ -22,7 +22,7 @@ class keyring11<Endianess, Signed_Mode, detail::unevaluated_value_h<Fs, Function
 
   template<typename H>
   using key_t =
-      ikey<detail::find_in_typelist<H, search_list>(), detail::signature_t<typename H::type>, Endianess, Signed_Mode>;
+      key<detail::find_in_typelist<H, search_list>(), detail::signature_t<typename H::type>, Endianess, Signed_Mode>;
 
   static_assert((boost::conjunction<boost::integral_constant<bool, detail::is_callable<Fs>()>...>::value),
                 "'keyring11' only accepts callable objects as template parameters");

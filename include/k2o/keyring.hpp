@@ -11,17 +11,17 @@ namespace k2o {
 #if __cplusplus >= 201703L
 //! \brief (C++17) Functors identifier aggregator and indexer
 //! \details
-//!   This class makes the generation of 'ikey' object far easier than indexing them manually. To do so :
+//!   This class makes the generation of 'key' object far easier than indexing them manually. To do so :
 //! \code
 //!   k2o::keyring<f1, f2, f3, f4, ..., fn> keyring;
-//!   auto ikey = keyring.get<fk>();
+//!   auto key = keyring.get<fk>();
 //! \endcode
-//!   In that case, 'ikey' will be of type 'k2o::ikey<k, decltype(fk)>'.
+//!   In that case, 'key' will be of type 'k2o::key<k, decltype(fk)>'.
 //!   Note that the provided template parameter can be any kind of functor, and that they do not have to be defined in
 //!   the same translation unit as the 'keyring' object. This allows to provide externally linked variables or
 //!   functions that are only declared in the translation unit.
-//! \tparam Endianess Endianess of the created 'ikey' objects
-//! \tparam Signed_Mode signed integer representation of the created 'ikey' objects
+//! \tparam Endianess Endianess of the created 'key' objects
+//! \tparam Signed_Mode signed integer representation of the created 'key' objects
 //! \tparam Ftors... functors to be indexed
 template<upd::endianess Endianess, upd::signed_mode Signed_Mode, auto &... Ftors>
 class keyring : public keyring11<Endianess, Signed_Mode, detail::unevaluated_value_h<decltype(Ftors), Ftors>...> {
@@ -29,9 +29,9 @@ class keyring : public keyring11<Endianess, Signed_Mode, detail::unevaluated_val
   using base_t::get;
 
 public:
-  //! \brief Make an 'ikey' object whose template parameters are determined according to the provided function
-  //! \tparam Ftor functor used to make the 'ikey' object
-  //! \return 'k2o::ikey<I, S>', where 'I' is the position of 'Ftor' in 'Ftors' and 'S' its signature
+  //! \brief Make an 'key' object whose template parameters are determined according to the provided function
+  //! \tparam Ftor functor used to make the 'key' object
+  //! \return 'k2o::key<I, S>', where 'I' is the position of 'Ftor' in 'Ftors' and 'S' its signature
   template<auto &Ftor>
   constexpr auto get() const {
     return get<detail::unevaluated_value_h<decltype(Ftor), Ftor>>();
