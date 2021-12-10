@@ -19,10 +19,10 @@ int main() {
 
   RUN_TEST(key_DO_serialize_argument_EXPECT_correct_id_and_result);
 
+  RUN_TEST(keyring_DO_get_an_ikey_EXPECT_correct_index);
+  RUN_TEST(keyring_DO_use_make_keyring_EXPECT_correct_behavior);
   RUN_TEST(keyring_DO_get_an_ikey_EXPECT_correct_index_cpp17);
   RUN_TEST(keyring_DO_get_an_ikey_by_variable_EXPECT_correct_index_cpp17);
-
-  RUN_TEST(keyring11_DO_get_an_ikey_EXPECT_correct_index);
 
   RUN_TEST(dispatcher_DO_call_order_EXPECT_calling_correct_order);
 

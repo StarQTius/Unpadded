@@ -1,34 +1,59 @@
 //! \file
-//! \brief Functor aggregates indexing
+//! \brief Function aggregates indexing for C++11
 
 #pragma once
 
 #include "detail/find_in_typelist.hpp"
+#include "detail/signature.hpp"
 #include "detail/value_h.hpp"
-#include "keyring11.hpp"
+
+#include "key.hpp"
+
+#include "detail/def.hpp"
 
 namespace k2o {
+
+template<typename...>
+struct flist11_t;
+
+template<typename... Fs, Fs... Functions>
+struct flist11_t<detail::unevaluated_value_h<Fs, Functions>...> {};
+
 #if __cplusplus >= 201703L
-//! \brief (C++17) Functors identifier aggregator and indexer
-//! \details
-//!   This class makes the generation of 'key' object far easier than indexing them manually. To do so :
-//! \code
-//!   k2o::keyring<f1, f2, f3, f4, ..., fn> keyring;
-//!   auto key = keyring.get<fk>();
-//! \endcode
-//!   In that case, 'key' will be of type 'k2o::key<k, decltype(fk)>'.
-//!   Note that the provided template parameter can be any kind of functor, and that they do not have to be defined in
-//!   the same translation unit as the 'keyring' object. This allows to provide externally linked variables or
-//!   functions that are only declared in the translation unit.
-//! \tparam Endianess Endianess of the created 'key' objects
-//! \tparam Signed_Mode signed integer representation of the created 'key' objects
-//! \tparam Ftors... functors to be indexed
-template<upd::endianess Endianess, upd::signed_mode Signed_Mode, auto &... Ftors>
-class keyring : public keyring11<Endianess, Signed_Mode, detail::unevaluated_value_h<decltype(Ftors), Ftors>...> {
-  using base_t = keyring11<Endianess, Signed_Mode, detail::unevaluated_value_h<decltype(Ftors), Ftors>...>;
-  using base_t::get;
+template<auto &... Functions>
+struct flist_t : flist11_t<detail::unevaluated_value_h<decltype(Functions), Functions>...> {};
+
+template<auto &... Functions>
+flist_t<Functions...> flist;
+#endif
+
+template<upd::endianess, upd::signed_mode, typename... Hs>
+class keyring;
+
+template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Fs, Fs... Functions>
+class keyring<Endianess, Signed_Mode, detail::unevaluated_value_h<Fs, Functions>...> {
+  using search_list = boost::mp11::mp_list<detail::unevaluated_value_h<Fs, Functions>...>;
+
+  template<typename H>
+  using key_t =
+      key<detail::find_in_typelist<H, search_list>(), detail::signature_t<typename H::type>, Endianess, Signed_Mode>;
+
+  static_assert((boost::conjunction<boost::integral_constant<bool, detail::is_callable<Fs>()>...>::value),
+                "'keyring' only accepts callable objects as template parameters");
 
 public:
+  keyring() = default;
+  keyring(flist11_t<detail::unevaluated_value_h<Fs, Functions>...>){};
+  keyring(flist11_t<detail::unevaluated_value_h<Fs, Functions>...>,
+          upd::endianess_h<Endianess>,
+          upd::signed_mode_h<Signed_Mode>){};
+
+  template<typename H>
+  constexpr key_t<H> get() const {
+    return {};
+  }
+
+#if __cplusplus >= 201703L
   //! \brief Make an 'key' object whose template parameters are determined according to the provided function
   //! \tparam Ftor functor used to make the 'key' object
   //! \return 'k2o::key<I, S>', where 'I' is the position of 'Ftor' in 'Ftors' and 'S' its signature
@@ -36,7 +61,25 @@ public:
   constexpr auto get() const {
     return get<detail::unevaluated_value_h<decltype(Ftor), Ftor>>();
   }
+#endif // __cplusplus >= 201703L
 };
+
+#if __cplusplus >= 201703L
+template<typename... Hs>
+keyring(flist11_t<Hs...>) -> keyring<upd::endianess::BUILTIN, upd::signed_mode::BUILTIN, Hs...>;
 #endif // __cplusplus >= 201703L
 
+template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Hs>
+constexpr keyring<Endianess, Signed_Mode, Hs...>
+make_keyring(flist11_t<Hs...>, upd::endianess_h<Endianess>, upd::signed_mode_h<Signed_Mode>) {
+  return {};
+}
+
+template<typename... Hs>
+constexpr keyring<upd::endianess::BUILTIN, upd::signed_mode::BUILTIN, Hs...> make_keyring(flist11_t<Hs...>) {
+  return {};
+}
+
 } // namespace k2o
+
+#include "detail/undef.hpp"

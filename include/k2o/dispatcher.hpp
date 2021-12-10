@@ -4,7 +4,7 @@
 #pragma once
 
 #include "detail/sfinae.hpp"
-#include "keyring11.hpp"
+#include "keyring.hpp"
 #include "order.hpp"
 #include "status.hpp"
 
@@ -24,12 +24,12 @@ public:
   //! \brief Function type to unserialize the order indices
   using index_reader_t = index_t(const upd::byte_t *);
 
-  //! \brief Get the functors held by the provided 'keyring11' object
+  //! \brief Get the functors held by the provided 'keyring' object
   //! \tparam Endianess Endianess used to serialize the values
   //! \tparam Signed_Mode Signed integer representation used to serialize the values
   //! \tparam Ftors... Functors held by the keyring
   template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Fs, Fs &... Ftors>
-  explicit dispatcher_impl(keyring11<Endianess, Signed_Mode, detail::unevaluated_value_h<Fs, Ftors>...>)
+  explicit dispatcher_impl(keyring<Endianess, Signed_Mode, detail::unevaluated_value_h<Fs, Ftors>...>)
       : orders{order{Ftors, upd::endianess_h<Endianess>{}, upd::signed_mode_h<Signed_Mode>{}}...},
         read_index{static_cast<index_reader_t &>(upd::read_as<index_t, Endianess, Signed_Mode>)} {}
 
@@ -55,21 +55,21 @@ private:
 
 //! \brief Order containers able to unserialize byte sequence serialized by an 'key' object
 //! \details
-//!   A 'dispatcher' object is constructed from a 'keyring11' object and is able to unserialize a payload serialized by
-//!   an 'key' object created from the same 'keyring11' object. When it happens, the 'dispatcher' object calls the
+//!   A 'dispatcher' object is constructed from a 'keyring' object and is able to unserialize a payload serialized by
+//!   an 'key' object created from the same 'keyring' object. When it happens, the 'dispatcher' object calls the
 //!   function associated with the 'key' object, forwarding the arguments from the payload to the function. The
 //!   functions are internally held as 'order' objects.
-//! \tparam N the number of functions held by the 'keyring11' object
+//! \tparam N the number of functions held by the 'keyring' object
 template<size_t N>
 class dispatcher {
 public:
-  //! \brief Construct the object from the provided 'keyring11' object
+  //! \brief Construct the object from the provided 'keyring' object
   //! \details
-  //!   The 'N' template parameter can be deduced from the number of functions held by the 'keyring11' object.
-  //! \param input_keyring 'keyring11' object
+  //!   The 'N' template parameter can be deduced from the number of functions held by the 'keyring' object.
+  //! \param input_keyring 'keyring' object
   //! \note
   //!   The strange structure of this function is due to a GCC compiler bug with deduction guide in C++17.
-  template<typename T, sfinae::require_is_deriving_from_keyring11<T> = 0>
+  template<typename T, sfinae::require_is_deriving_from_keyring<T> = 0>
   explicit dispatcher(T input_keyring) : m_impl{input_keyring} {}
 
   //! \brief Call the function according to the index and arguments obtained from a payload
@@ -87,15 +87,15 @@ private:
 
 #if __cplusplus >= 201703L
 template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Fs, Fs... Ftors>
-dispatcher(keyring11<Endianess, Signed_Mode, detail::unevaluated_value_h<Fs, Ftors>...>) -> dispatcher<sizeof...(Fs)>;
+dispatcher(keyring<Endianess, Signed_Mode, detail::unevaluated_value_h<Fs, Ftors>...>) -> dispatcher<sizeof...(Fs)>;
 #endif // __cplusplus >= 201703L
 
 //! \brief Make a 'dispatcher' object
-//! \param input_keyring 'keyring11' object forwarded to the 'dispatcher' constructor
+//! \param input_keyring 'keyring' object forwarded to the 'dispatcher' constructor
 //! \return a 'dispatcher' object whose orders calls the functors held by 'input_keyring'
 template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Fs, Fs... Ftors>
 dispatcher<sizeof...(Fs)>
-make_dispatcher(keyring11<Endianess, Signed_Mode, detail::unevaluated_value_h<Fs, Ftors>...> input_keyring) {
+make_dispatcher(keyring<Endianess, Signed_Mode, detail::unevaluated_value_h<Fs, Ftors>...> input_keyring) {
   return dispatcher<sizeof...(Fs)>{input_keyring};
 }
 
