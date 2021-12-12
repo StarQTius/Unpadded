@@ -33,17 +33,24 @@ public:
       : orders{order{Ftors, upd::endianess_h<Endianess>{}, upd::signed_mode_h<Signed_Mode>{}}...},
         read_index{static_cast<index_reader_t &>(upd::read_as<index_t, Endianess, Signed_Mode>)} {}
 
-  //! \brief Get the index and arguments from an input byte stream and put the return value into an output byte stream
+  //! \brief Get the index and arguments from an input byte stream and call the matching order
+  //! \details
+  //!   The return value is inserted into the output byte stream. If the index is out of bound, no call are performed.
   //! \param fetch_byte Functor acting as an input byte stream
   //! \param insert_byte Functor acting as an output byte stream
-  //! \return The status code returned by the underlying order call
+  //! \return The index got from the input byte stream
   template<typename Src_F, typename Dest_F>
-  status operator()(Src_F &&fetch_byte, Dest_F &&insert_byte) {
+  index_t operator()(Src_F &&fetch_byte, Dest_F &&insert_byte) {
     upd::byte_t index_buf[sizeof(index_t)];
     for (auto &byte : index_buf)
       byte = FWD(fetch_byte)();
 
-    return orders[read_index(index_buf)](FWD(fetch_byte), FWD(insert_byte));
+    auto index = read_index(index_buf);
+    if (index < N) {
+      orders[index](FWD(fetch_byte), FWD(insert_byte));
+    }
+
+    return index;
   }
 
 private:
@@ -77,7 +84,7 @@ public:
   //! \param insert_byte functor behaving as an output byte stream, in which the function call return value will be put
   //! \return the status code obtained from the underlying order call
   template<typename Src_F, typename Dest_F>
-  status operator()(Src_F &&fetch_byte, Dest_F &&insert_byte) {
+  typename detail::dispatcher_impl<N>::index_t operator()(Src_F &&fetch_byte, Dest_F &&insert_byte) {
     return m_impl(FWD(fetch_byte), FWD(insert_byte));
   }
 
