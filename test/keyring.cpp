@@ -51,7 +51,7 @@ void keyring_DO_get_an_ikey_EXPECT_correct_index_cpp17() {
   using namespace k2o;
 
   constexpr auto ftor_list = flist<function1, ftor1, function2, ftor2, ftor3, function3>;
-  keyring kring{ftor_list};
+  keyring kring{ftor_list, upd::little_endian, upd::two_complement};
   auto k = kring.get<function2>();
 
   TEST_ASSERT_EQUAL_UINT(2, k.index);

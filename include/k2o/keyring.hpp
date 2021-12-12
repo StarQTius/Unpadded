@@ -42,11 +42,11 @@ class keyring<Endianess, Signed_Mode, detail::unevaluated_value_h<Fs, Functions>
                 "'keyring' only accepts callable objects as template parameters");
 
 public:
-  keyring() = default;
-  keyring(flist11_t<detail::unevaluated_value_h<Fs, Functions>...>){};
-  keyring(flist11_t<detail::unevaluated_value_h<Fs, Functions>...>,
-          upd::endianess_h<Endianess>,
-          upd::signed_mode_h<Signed_Mode>){};
+  constexpr keyring() = default;
+  constexpr keyring(flist11_t<detail::unevaluated_value_h<Fs, Functions>...>) {}
+  constexpr keyring(flist11_t<detail::unevaluated_value_h<Fs, Functions>...>,
+                    upd::endianess_h<Endianess>,
+                    upd::signed_mode_h<Signed_Mode>) {}
 
   template<typename H>
   constexpr key_t<H> get() const {
@@ -67,6 +67,10 @@ public:
 #if __cplusplus >= 201703L
 template<typename... Hs>
 keyring(flist11_t<Hs...>) -> keyring<upd::endianess::BUILTIN, upd::signed_mode::BUILTIN, Hs...>;
+
+template<typename... Hs, upd::endianess Endianess, upd::signed_mode Signed_Mode>
+keyring(flist11_t<Hs...>, upd::endianess_h<Endianess>, upd::signed_mode_h<Signed_Mode>)
+    -> keyring<Endianess, Signed_Mode, Hs...>;
 #endif // __cplusplus >= 201703L
 
 template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Hs>
