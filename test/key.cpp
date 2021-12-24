@@ -7,7 +7,7 @@ void key_DO_serialize_argument_EXPECT_correct_id_and_result() {
 
   key<16, int(int)> k;
 
-  auto buf = upd::make_tuple(size_t{0}, int{0});
+  auto buf = upd::make_tuple(uint16_t{0}, int{0});
   size_t i = 0;
   k(64) >> [&](byte_t byte) { buf[i++] = byte; };
 
