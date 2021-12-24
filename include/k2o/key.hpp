@@ -8,7 +8,7 @@
 
 namespace k2o {
 
-template<size_t Index,
+template<uint16_t Index,
          typename F,
          upd::endianess Endianess = upd::endianess::BUILTIN,
          upd::signed_mode Signed_Mode = upd::signed_mode::BUILTIN>
@@ -24,12 +24,12 @@ class key : key<Index, detail::signature_t<F>, Endianess, Signed_Mode> {};
 //! \tparam Args... argument types associated with the signature
 //! \tparam Endianess considered endianess when serializing/unserializing arguments
 //! \tparam Signed_Mode considered signed integer representation when serializing/unserializing arguments
-template<size_t Index, typename R, typename... Args, upd::endianess Endianess, upd::signed_mode Signed_Mode>
+template<uint16_t Index, typename R, typename... Args, upd::endianess Endianess, upd::signed_mode Signed_Mode>
 class key<Index, R(Args...), Endianess, Signed_Mode> : key_base<R(Args...), Endianess, Signed_Mode> {
 public:
   constexpr static auto index = Index;
   detail::
-      serialized_message<upd::endianess::BUILTIN, upd::signed_mode::BUILTIN, size_t, boost::remove_cv_ref_t<Args>...>
+      serialized_message<upd::endianess::BUILTIN, upd::signed_mode::BUILTIN, uint16_t, boost::remove_cv_ref_t<Args>...>
       operator()(const Args &... args) const {
     return {Index, args...};
   }
