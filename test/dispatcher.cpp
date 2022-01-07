@@ -20,3 +20,23 @@ void dispatcher_DO_call_order_EXPECT_calling_correct_order() {
 
   TEST_ASSERT_EQUAL_UINT(16, output.get<0>());
 }
+
+void dispatcher_DO_get_order_EXPECT_correct_index() {
+  using namespace k2o;
+
+  constexpr auto kring = make_keyring(ftor_list);
+  auto function16_index = upd::make_tuple(uint16_t{1});
+  auto output = upd::make_tuple<int>();
+
+  size_t i = 0, j = 0;
+  auto input_f = [&]() { return function16_index[i++]; };
+  auto output_f = [&](upd::byte_t byte) { output[j++] = byte; };
+
+  make_dispatcher(kring)
+      .get_order(input_f)
+      .map([&](order &o) {
+        o(input_f, output_f);
+        TEST_ASSERT_EQUAL_UINT(16, output.get<0>());
+      })
+      .map_error([](size_t) { TEST_FAIL(); });
+}

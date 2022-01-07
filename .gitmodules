@@ -26,3 +26,6 @@
 	path = lib/doxygen-awesome-css
 	url = https://github.com/jothepro/doxygen-awesome-css
 	branch = main
+[submodule "lib/expected"]
+	path = lib/expected
+	url = https://github.com/TartanLlama/expected

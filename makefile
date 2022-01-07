@@ -13,6 +13,7 @@ cpp_flags = \
 	-Ilib/mp11/include \
 	-Ilib/static_assert/include \
 	-Ilib/type_traits/include \
+	-Ilib/expected/include
 
 c_flags = \
 	-std=c99 \

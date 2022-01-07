@@ -3,6 +3,10 @@
 
 #pragma once
 
+#include <functional>
+
+#include <tl/expected.hpp>
+
 #include "detail/sfinae.hpp"
 #include "keyring.hpp"
 #include "order.hpp"
@@ -11,7 +15,18 @@
 #include "detail/def.hpp"
 
 namespace k2o {
+
 namespace detail {
+
+//! \brief Extract the index from a byte sequence
+template<typename Src_F, typename Index>
+Index get_index(Src_F &&fetch_byte, Index (&read_index)(const upd::byte_t *)) {
+  upd::byte_t index_buf[sizeof(Index)];
+  for (auto &byte : index_buf)
+    byte = FWD(fetch_byte)();
+
+  return read_index(index_buf);
+}
 
 //! \brief 'dispatcher' object implementation
 //! \note The reason for putting the implementation apart is a GCC compiler bug in C++17 with deduction guide.
@@ -41,16 +56,21 @@ public:
   //! \return The index got from the input byte stream
   template<typename Src_F, typename Dest_F>
   index_t operator()(Src_F &&fetch_byte, Dest_F &&insert_byte) {
-    upd::byte_t index_buf[sizeof(index_t)];
-    for (auto &byte : index_buf)
-      byte = FWD(fetch_byte)();
+    auto index = get_index(FWD(fetch_byte), read_index);
 
-    auto index = read_index(index_buf);
-    if (index < N) {
+    if (index < N)
       orders[index](FWD(fetch_byte), FWD(insert_byte));
-    }
 
     return index;
+  }
+
+  //! \brief Get the order indicated by the byte sequence
+  template<typename Src_F>
+  tl::expected<std::reference_wrapper<order>, index_t> get_order(Src_F &&fetch_byte) {
+    using return_t = tl::expected<std::reference_wrapper<order>, index_t>;
+
+    auto index = detail::get_index(FWD(fetch_byte), read_index);
+    return index < N ? return_t{orders[index]} : tl::make_unexpected(index);
   }
 
 private:
@@ -86,6 +106,15 @@ public:
   template<typename Src_F, typename Dest_F>
   typename detail::dispatcher_impl<N>::index_t operator()(Src_F &&fetch_byte, Dest_F &&insert_byte) {
     return m_impl(FWD(fetch_byte), FWD(insert_byte));
+  }
+
+  //! \brief Get the order indicated by the byte sequence
+  //! \param fetch_byte Functor acting as an input byte stream
+  //! \return Either a reference to the order if it exists or the index that obtained from the byte sequence
+  template<typename Src_F>
+  tl::expected<std::reference_wrapper<order>, typename detail::dispatcher_impl<N>::index_t>
+  get_order(Src_F &&fetch_byte) {
+    return m_impl.get_order(FWD(fetch_byte));
   }
 
 private:
