@@ -73,5 +73,9 @@ using require_not_empty_pack = require<sizeof...(Ts) != 0, int>;
 template<typename T, typename U = int>
 using require_is_user_serializable = require<is_user_serializable<T>::value, U>;
 
+//! \brief Always fail
+template<typename T, typename U = int>
+using fail = require<boost::integral_constant<decltype((T *)nullptr, bool{}), false>::value, U>;
+
 } // namespace sfinae
 } // namespace upd

@@ -14,6 +14,12 @@
 #include "type.hpp"
 #include "unaligned_data.hpp"
 
+template<size_t I, typename T, upd::sfinae::fail<T> = 0>
+void get(T &&);
+
+template<size_t I, typename T, typename U, upd::sfinae::fail<T> = 0>
+void set(T &&, U &&);
+
 namespace upd {
 namespace detail {
 
@@ -33,6 +39,18 @@ template<typename T>
 struct serialization_size {
   constexpr static auto value = serialization_size_impl<T>(0);
 };
+
+//! \brief Used to disambiguate the function and the member function 'get'
+template<size_t I, typename T>
+auto call_getter(T &&t) -> decltype(get<I>(FWD(t))) {
+  return get<I>(FWD(t));
+}
+
+//! \brief Used to disambiguate the function and the member function 'set'
+template<size_t I, typename T, typename U>
+auto call_setter(T &&t, U &&value) -> decltype(get<I>(FWD(t), FWD(value))) {
+  return set<I>(FWD(t), FWD(value));
+}
 
 //! \brief Provides tuple features to the derived class throught CRTP
 //! \tparam D Type of the derived class
@@ -75,11 +93,11 @@ public:
   //! \brief Copy each element of a tuple-like object into the content
   //! \param t Tuple-like object to copy from
   template<typename T>
-  tuple_base &operator=(T &&t) {
+  D &operator=(T &&t) {
     using boost::mp11::index_sequence_for;
 
     lay_tuple(index_sequence_for<Ts...>{}, FWD(t));
-    return *this;
+    return derived();
   }
 
   //! \brief Unserialize one of the value held by the object
@@ -132,7 +150,7 @@ protected:
   //! \brief Lay the element of a tuple-like object into the content
   template<size_t... Is, typename T>
   void lay_tuple(boost::mp11::index_sequence<Is...> is, T &&t) {
-    lay(is, get<Is>(FWD(t))...);
+    lay(is, call_getter<Is>(FWD(t))...);
   }
 
   //! \brief Unserialize the tuple content and forward it as parameters to the provided functor
@@ -175,6 +193,8 @@ class tuple : public detail::tuple_base<tuple<Endianess, Signed_Mode, Ts...>, En
   using base_t = detail::tuple_base<tuple<Endianess, Signed_Mode, Ts...>, Endianess, Signed_Mode, Ts...>;
 
 public:
+  using base_t::operator=;
+
   //! \brief Initialize the content with default constructed value
   tuple() : tuple(Ts{}...) {}
 
@@ -249,6 +269,8 @@ class tuple_view
   using base_t = detail::tuple_base<tuple_view<It, Endianess, Signed_Mode, Ts...>, Endianess, Signed_Mode, Ts...>;
 
 public:
+  using base_t::operator=;
+
   //! \brief Bind the view to a byte sequence throught an iterator
   //! \param src Iterator to the start of the byte sequence
   explicit tuple_view(const It &src) : m_src{src} {}
@@ -304,7 +326,7 @@ tuple<endianess::BUILTIN, signed_mode::BUILTIN, Args...> make_tuple() {
 //! \return a 'tuple_view' object bound to the byte sequence
 template<typename... Ts, typename It, endianess Endianess, signed_mode Signed_Mode>
 tuple_view<It, Endianess, Signed_Mode, Ts...>
-make_tuple_view(endianess_h<Endianess>, signed_mode_h<Signed_Mode>, const It &src) {
+make_view(endianess_h<Endianess>, signed_mode_h<Signed_Mode>, const It &src) {
   return tuple_view<It, Endianess, Signed_Mode, Ts...>{src};
 }
 
@@ -313,7 +335,7 @@ make_tuple_view(endianess_h<Endianess>, signed_mode_h<Signed_Mode>, const It &sr
 //! \param src start of the byte sequence
 //! \return a 'tuple_view' object bound to the byte sequence
 template<typename... Ts, typename It>
-tuple_view<It, endianess::BUILTIN, signed_mode::BUILTIN, Ts...> make_tuple_view(const It &src) {
+tuple_view<It, endianess::BUILTIN, signed_mode::BUILTIN, Ts...> make_view(const It &src) {
   return tuple_view<It, endianess::BUILTIN, signed_mode::BUILTIN, Ts...>{src};
 }
 
