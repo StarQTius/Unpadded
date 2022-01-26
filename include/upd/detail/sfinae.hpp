@@ -6,8 +6,32 @@
 #include <boost/type_traits.hpp>
 #include <boost/type_traits/is_bounded_array.hpp>
 
+#include "../array_wrapper.hpp"
+#include "../format.hpp"
+
 namespace upd {
+
+template<endianess Endianess, signed_mode Signed_Mode, typename... Ts>
+struct tuple;
+
 namespace sfinae {
+namespace detail {
+
+//! \brief Indicate if the expression 'upd_extension((T*) nullptr)' is well-formed
+template<typename>
+constexpr bool is_user_serializable_impl(...) {
+  return false;
+}
+template<typename T, typename = decltype(upd_extension((T *)nullptr))>
+constexpr bool is_user_serializable_impl(int) {
+  return true;
+}
+
+} // namespace detail
+
+//! \brief Indicate if the provided type has an user-defined extension
+template<typename T>
+struct is_user_serializable : boost::integral_constant<bool, detail::is_user_serializable_impl<T>(0)> {};
 
 //! \brief Require the provided expression to be true
 template<bool Expression, typename U = int>
@@ -44,6 +68,10 @@ using require_has_not_plus = require<!boost::has_plus<T>::value, U>;
 //! \brief Require the provided pack not to be empty
 template<typename... Ts>
 using require_not_empty_pack = require<sizeof...(Ts) != 0, int>;
+
+//! \brief Require the provided type to have an user-defined extension
+template<typename T, typename U = int>
+using require_is_user_serializable = require<is_user_serializable<T>::value, U>;
 
 } // namespace sfinae
 } // namespace upd

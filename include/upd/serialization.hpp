@@ -6,6 +6,19 @@
 
 namespace upd {
 
+template<typename It, endianess Endianess, signed_mode Signed_Mode, typename... Args>
+class tuple_view;
+
+namespace detail {
+
+//! \brief Make a tuple view suitable for functors of the provided signature to invoke on
+template<endianess Endianess, signed_mode Signed_Mode, typename It, typename... Args, typename R>
+tuple_view<It, Endianess, Signed_Mode, Args...> make_view_for(const It &it, signature<R(Args...)>) {
+  return tuple_view<It, Endianess, Signed_Mode, Args...>{it};
+}
+
+} // namespace detail
+
 //! \brief Interpret a part of a byte sequence as a value of the given type
 //! \tparam T Requested type
 //! \tparam Endianess Endianess of the value representation in the byte sequence
@@ -37,6 +50,12 @@ array_wrapper<T> read_as(const byte_t *sequence) {
     retval[i] = read_as<element_t, Endianess, Signed_Mode>(sequence + i * sizeof(element_t));
 
   return retval;
+}
+template<typename T, endianess Endianess, signed_mode Signed_Mode, sfinae::require_is_user_serializable<T> = 0>
+T read_as(const byte_t *sequence) {
+  auto view = detail::make_view_for<Endianess, Signed_Mode>(
+      sequence, detail::examine_functor<decltype(upd_extension(static_cast<T *>(nullptr)).unserialize)>{});
+  return view.invoke(upd_extension(static_cast<T *>(nullptr)).unserialize);
 }
 template<typename T, endianess Endianess, signed_mode Signed_Mode, typename It, sfinae::require_not_pointer<It> = 0>
 decltype(read_as<T, Endianess, Signed_Mode>(boost::declval<byte_t *>())) read_as(It it) {
@@ -97,6 +116,12 @@ void write_as(const T &array, byte_t *sequence) {
   for (size_t i = 0; i < array_size; i++)
     write_as<Endianess, Signed_Mode>(array[i], sequence + i * sizeof(element_t));
 }
+template<endianess Endianess, signed_mode Signed_Mode, typename T, sfinae::require_is_user_serializable<T> = 0>
+void write_as(const T &x, byte_t *sequence) {
+  auto view = detail::make_view_for<Endianess, Signed_Mode>(
+      sequence, detail::examine_functor<decltype(upd_extension(static_cast<T *>(nullptr)).unserialize)>{});
+  upd_extension(static_cast<T *>(nullptr)).serialize(x, view);
+}
 template<endianess Endianess, signed_mode Signed_Mode, typename T, typename It, sfinae::require_not_pointer<It> = 0>
 void write_as(const T &value, It it) {
   byte_t buf[sizeof(T)];
@@ -131,4 +156,30 @@ void write_as(const T &value, It it, size_t offset) {
 }
 #endif
 
+namespace sfinae {
+namespace detail {
+
+//! \brief Indicate if 'read_as' and 'write_as' can be called the instances of the provided types
+template<typename>
+constexpr bool is_serializable_impl(...) {
+  return false;
+}
+template<typename T,
+         typename = decltype(write_as<endianess::BUILTIN, signed_mode::BUILTIN>(boost::declval<T>(), nullptr),
+                             read_as<T, endianess::BUILTIN, signed_mode::BUILTIN>(nullptr))>
+constexpr bool is_serializable_impl(int) {
+  return true;
+}
+
+} // namespace detail
+
+//! \brief Indicate if the provided type is serializable
+template<typename T>
+struct is_serializable : boost::integral_constant<bool, detail::is_serializable_impl<T>(0)> {};
+
+//! \brief Require the provided type to be serializable
+template<typename T, typename U = int>
+using require_is_serializable = require<is_serializable<T>::value, U>;
+
+} // namespace sfinae
 } // namespace upd

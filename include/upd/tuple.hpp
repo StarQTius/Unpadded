@@ -17,6 +17,23 @@
 namespace upd {
 namespace detail {
 
+//! \brief Return the size in bytes occupied by the serialization of instances of the provided type (if serializable)
+template<typename T, sfinae::require_is_serializable<T> = 0>
+constexpr size_t serialization_size_impl(...) {
+  return sizeof(T);
+}
+template<typename T, sfinae::require_is_user_serializable<T> = 0>
+constexpr size_t serialization_size_impl(int) {
+  return decltype(make_view_for<endianess::BUILTIN, signed_mode::BUILTIN>(
+      nullptr, examine_functor<decltype(upd_extension(static_cast<T *>(nullptr)).unserialize)>{}))::size;
+}
+
+//! \brief Return the size in bytes occupied by the serialization of instances of the provided type (if serializable)
+template<typename T>
+struct serialization_size {
+  constexpr static auto value = serialization_size_impl<T>(0);
+};
+
 //! \brief Provides tuple features to the derived class throught CRTP
 //! \tparam D Type of the derived class
 //! \tparam Endianess endianess of the stored data
@@ -28,13 +45,17 @@ class tuple_base {
   const D &derived() const { return static_cast<const D &>(*this); }
 
   using typelist = boost::mp11::mp_list<Ts...>;
-  using type_sizes = boost::mp11::mp_list<boost::mp11::mp_size_t<sizeof(Ts)>...>;
+  using type_sizes = boost::mp11::mp_list<boost::mp11::mp_size_t<serialization_size<Ts>::value>...>;
 
   static_assert(
       boost::conjunction<boost::integral_constant<bool,
                                                   (!boost::is_const<Ts>::value && !boost::is_volatile<Ts>::value &&
                                                    !boost::is_reference<Ts>::value)>...>::value,
       "Type parameters cannot be cv-qualified or ref-qualified.");
+
+  static_assert(boost::conjunction<sfinae::is_serializable<Ts>...>::value,
+                "Some of the provided types are not serializable (serializable types are integer types, types with "
+                "user-defined extension and array types of any of these)");
 
 public:
   //! \brief Type of one of the serialized values
@@ -51,6 +72,16 @@ public:
   //! \brief Equals the signed mode given as template parameter
   constexpr static auto storage_signed_mode = Signed_Mode;
 
+  //! \brief Copy each element of a tuple-like object into the content
+  //! \param t Tuple-like object to copy from
+  template<typename T>
+  tuple_base &operator=(T &&t) {
+    using boost::mp11::index_sequence_for;
+
+    lay_tuple(index_sequence_for<Ts...>{}, FWD(t));
+    return *this;
+  }
+
   //! \brief Unserialize one of the value held by the object
   //! \tparam I Index of the requested value
   //! \return A copy of the serialized value or an array_wrapper if I designate an array type
@@ -59,7 +90,7 @@ public:
   auto get() const;
 #else
   template<size_t I>
-  decltype(boost::declval<unaligned_data<size, Endianess, Signed_Mode>>().template read_as<arg_t<I>>(0)) get() const {
+  decltype(read_as<arg_t<I>, Endianess, Signed_Mode>(nullptr)) get() const {
     using namespace boost::mp11;
     constexpr auto offset = mp_fold<mp_take_c<type_sizes, I>, mp_size_t<0>, mp_plus>::value;
 
@@ -98,6 +129,12 @@ protected:
     discard{0, (set<Is>(args), 0)...};
   }
 
+  //! \brief Lay the element of a tuple-like object into the content
+  template<size_t... Is, typename T>
+  void lay_tuple(boost::mp11::index_sequence<Is...> is, T &&t) {
+    lay(is, get<Is>(FWD(t))...);
+  }
+
   //! \brief Unserialize the tuple content and forward it as parameters to the provided functor
 private:
   template<typename F, size_t... Is>
@@ -107,6 +144,24 @@ private:
 };
 
 } // namespace detail
+
+//! \brief Call the member function 'tuple_base::get'
+//! \details This function create a coherent interface 'std::tuple' for the sake of genericity
+//! \param t Tuple to get a value from
+template<size_t I, typename D, endianess Endianess, signed_mode Signed_Mode, typename... Ts>
+decltype(boost::declval<detail::tuple_base<D, Endianess, Signed_Mode, Ts...>>().template get<I>())
+get(const detail::tuple_base<D, Endianess, Signed_Mode, Ts...> &t) {
+  return t.template get<I>();
+}
+
+//! \brief Call the member function 'tuple_base::set'
+//! \details This function create a coherent interface 'std::tuple' for the sake of genericity
+//! \param t Tuple to set a value in
+//! \param value Value to set
+template<size_t I, typename D, endianess Endianess, signed_mode Signed_Mode, typename... Ts, typename U>
+void set(detail::tuple_base<D, Endianess, Signed_Mode, Ts...> &t, U &&value) {
+  return t.template set<I>(FWD(value));
+}
 
 //! \brief Unaligned storage with fixed target types
 //! \details
@@ -191,6 +246,8 @@ public:
 template<typename It, endianess Endianess, signed_mode Signed_Mode, typename... Ts>
 class tuple_view
     : public detail::tuple_base<tuple_view<It, Endianess, Signed_Mode, Ts...>, Endianess, Signed_Mode, Ts...> {
+  using base_t = detail::tuple_base<tuple_view<It, Endianess, Signed_Mode, Ts...>, Endianess, Signed_Mode, Ts...>;
+
 public:
   //! \brief Bind the view to a byte sequence throught an iterator
   //! \param src Iterator to the start of the byte sequence
