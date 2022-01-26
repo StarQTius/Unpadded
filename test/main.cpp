@@ -16,6 +16,7 @@ int main() {
   RUN_TEST(key_base_DO_unserialize_data_sequence_with_parameter_EXPECT_correct_value);
   RUN_TEST(key_base_DO_create_key_from_ftor_signature_EXPECT_key_holding_ftor_signature);
   RUN_TEST(key_base_DO_create_key_from_function_EXPECT_key_holding_function_signature_cpp17);
+  RUN_TEST(key_base_DO_create_key_from_function_using_user_extended_type_EXPECT_correct_behaviour);
 
   RUN_TEST(key_DO_serialize_argument_EXPECT_correct_id_and_result);
 

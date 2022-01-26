@@ -4,6 +4,21 @@ using byte_t = uint8_t;
 
 int function(int);
 
+struct object_t {
+  uint8_t a;
+  uint16_t b, c;
+};
+
+struct object_extension_t {
+  template<typename View_T>
+  static void serialize(const object_t &o, View_T &view) {
+    view = upd::make_tuple(o.a, o.b, o.c);
+  }
+
+  static object_t unserialize(uint8_t a, uint16_t b, uint16_t c) { return {a, b, c}; }
+};
+object_extension_t upd_extension(object_t *) { return {}; }
+
 void key_base_DO_serialize_arguments_EXPECT_correct_byte_sequence() {
   using namespace k2o;
 
@@ -82,4 +97,20 @@ void key_base_DO_create_key_from_function_EXPECT_key_holding_function_signature_
 
   TEST_ASSERT_EQUAL_INT(64, result);
 #endif // __cplusplus >= 201703L
+}
+
+void key_base_DO_create_key_from_function_using_user_extended_type_EXPECT_correct_behaviour() {
+  using namespace k2o;
+
+  auto ftor = [](const object_t &x) { return x; };
+  auto buf = upd::make_tuple<object_t>();
+  key_base<decltype(ftor)> k;
+
+  int i = 0, j = 0;
+  k({0xa, 0xb, 0xc}) >> [&](byte_t byte) { buf[i++] = byte; };
+  auto result = k << [&]() { return buf[j++]; };
+
+  TEST_ASSERT_EQUAL_UINT8(result.a, 0xa);
+  TEST_ASSERT_EQUAL_UINT16(result.b, 0xb);
+  TEST_ASSERT_EQUAL_UINT16(result.c, 0xc);
 }
