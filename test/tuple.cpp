@@ -26,4 +26,5 @@ void run_tuple_ut() {
   RUN_TEST(tuple_DO_construct_tuple_with_ctad_EXPECT_tuple_holds_correct_values_cpp17);
   RUN_TEST(tuple_DO_bind_names_to_tuple_element_EXPECT_getting_same_values_cpp17);
   RUN_TEST(tuple_DO_serialize_user_provided_structure_EXCEPT_correct_behavior);
+  RUN_TEST(tuple_view_DO_iterate_subview_EXPECT_exact_subsequence);
 }

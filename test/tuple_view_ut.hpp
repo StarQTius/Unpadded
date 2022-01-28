@@ -41,17 +41,37 @@ inline void tuple_view_DO_bind_to_a_forward_list_EXPECT_correct_behavior() {
   };
 
   struct iterator {
+    using difference_type = size_t;
+    using value_type = node;
+    using pointer = node *;
+    using reference = node &;
+    using iterator_category = std::forward_iterator_tag;
+
     iterator(node *ptr) : ptr{ptr} {}
 
-    iterator operator++(int) {
-      auto it = *this;
+    iterator operator++() {
       ptr = ptr->next;
-      return it;
+      return *this;
     }
+
+    iterator operator++(int) {
+      auto cpy = *this;
+      ptr = ptr->next;
+      return cpy;
+    }
+
     byte_t &operator*() { return ptr->value; }
+    byte_t *operator->() { return &(ptr->value); }
 
     node *ptr;
   };
+
+  // GCC complains if local typedefs are not used
+  [[maybe_unused]] iterator::difference_type a;
+  [[maybe_unused]] iterator::value_type b;
+  [[maybe_unused]] iterator::pointer c;
+  [[maybe_unused]] iterator::reference d = b;
+  [[maybe_unused]] iterator::iterator_category e;
 
   node root{new node{new node{new node{new node{}}}}};
   iterator begin{&root};

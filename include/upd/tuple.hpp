@@ -21,6 +21,10 @@ template<size_t I, typename T, typename U, upd::sfinae::fail<T> = 0>
 void set(T &&, U &&);
 
 namespace upd {
+
+template<typename, endianess, signed_mode, typename...>
+class tuple_view;
+
 namespace detail {
 
 //! \brief Return the size in bytes occupied by the serialization of instances of the provided type (if serializable)
@@ -31,7 +35,7 @@ constexpr size_t serialization_size_impl(...) {
 template<typename T, sfinae::require_is_user_serializable<T> = 0>
 constexpr size_t serialization_size_impl(int) {
   return decltype(make_view_for<endianess::BUILTIN, signed_mode::BUILTIN>(
-      nullptr, examine_functor<decltype(upd_extension(static_cast<T *>(nullptr)).unserialize)>{}))::size;
+      (byte_t *)nullptr, examine_functor<decltype(upd_extension((T *)nullptr).unserialize)>{}))::size;
 }
 
 //! \brief Return the size in bytes occupied by the serialization of instances of the provided type (if serializable)
@@ -50,6 +54,13 @@ auto call_getter(T &&t) -> decltype(get<I>(FWD(t))) {
 template<size_t I, typename T, typename U>
 auto call_setter(T &&t, U &&value) -> decltype(get<I>(FWD(t), FWD(value))) {
   return set<I>(FWD(t), FWD(value));
+}
+
+//! \brief Make a tuple view according to a typelist
+template<endianess Endianess, signed_mode Signed_Mode, typename It, typename... Ts>
+auto make_view_from_typelist(const It &it, boost::mp11::mp_list<Ts...>)
+    -> decltype(tuple_view<It, Endianess, Signed_Mode, Ts...>{it}) {
+  return tuple_view<It, Endianess, Signed_Mode, Ts...>{it};
 }
 
 //! \brief Provides tuple features to the derived class throught CRTP
@@ -181,6 +192,62 @@ void set(detail::tuple_base<D, Endianess, Signed_Mode, Ts...> &t, U &&value) {
   return t.template set<I>(FWD(value));
 }
 
+//! \brief Binds a byte sequence to a tuple view
+//! \details
+//!   Once bound, the byte sequence content can be read and modified as it were the content of a 'tuple' object.
+//!   The byte sequence and the tuple view are bound throught an iterator. It must at least be a forward iterator, but
+//!   tuple views are faster with random access iterators. Best case would be a non-volatile plain pointer, as it can be
+//!   called with memcpy.
+//! \tparam It type of the iterators used for binding with the byte sequence
+//! \tparam Endianess endianess of the stored data
+//! \tparam Signed_Mode signed mode of the stored data
+//! \tparam Ts... types of the serialized values
+template<typename It, endianess Endianess, signed_mode Signed_Mode, typename... Ts>
+class tuple_view
+    : public detail::tuple_base<tuple_view<It, Endianess, Signed_Mode, Ts...>, Endianess, Signed_Mode, Ts...> {
+  using base_t = detail::tuple_base<tuple_view<It, Endianess, Signed_Mode, Ts...>, Endianess, Signed_Mode, Ts...>;
+
+public:
+  using base_t::operator=;
+
+  //! \brief Bind the view to a byte sequence throught an iterator
+  //! \param src Iterator to the start of the byte sequence
+  explicit tuple_view(const It &src) : m_begin{src}, m_end{src} { std::advance(m_end, base_t::size); }
+
+  //! \name Iterability
+  //! @{
+  const It &begin() const { return m_begin; }
+  const It &end() const { return m_end; }
+  //! @}
+
+  //! \brief Get the iterator associated to the byte sequence
+  const It &src() const { return m_begin; }
+
+private:
+  It m_begin, m_end;
+};
+
+//! \brief Bind a byte sequence to a tuple view
+//! \tparam Ts... types held by the tuple
+//! \tparam Endianess target endianess for serialization
+//! \tparam Signed_Mode target signed representation for serialization
+//! \param src start of the byte sequence
+//! \return a 'tuple_view' object bound to the byte sequence
+template<typename... Ts, typename It, endianess Endianess, signed_mode Signed_Mode>
+tuple_view<It, Endianess, Signed_Mode, Ts...>
+make_view(endianess_h<Endianess>, signed_mode_h<Signed_Mode>, const It &src) {
+  return tuple_view<It, Endianess, Signed_Mode, Ts...>{src};
+}
+
+//! \brief Bind a byte sequence to a tuple view with native serialization parameters
+//! \tparam Ts... types held by the tuple
+//! \param src start of the byte sequence
+//! \return a 'tuple_view' object bound to the byte sequence
+template<typename... Ts, typename It>
+tuple_view<It, endianess::BUILTIN, signed_mode::BUILTIN, Ts...> make_view(const It &src) {
+  return tuple_view<It, endianess::BUILTIN, signed_mode::BUILTIN, Ts...>{src};
+}
+
 //! \brief Unaligned storage with fixed target types
 //! \details
 //!   The object holds values of provided type in an unaligned maners (ie, there is no padding between two consecutive
@@ -191,6 +258,8 @@ void set(detail::tuple_base<D, Endianess, Signed_Mode, Ts...> &t, U &&value) {
 template<endianess Endianess = endianess::BUILTIN, signed_mode Signed_Mode = signed_mode::BUILTIN, typename... Ts>
 class tuple : public detail::tuple_base<tuple<Endianess, Signed_Mode, Ts...>, Endianess, Signed_Mode, Ts...> {
   using base_t = detail::tuple_base<tuple<Endianess, Signed_Mode, Ts...>, Endianess, Signed_Mode, Ts...>;
+  using typelist = boost::mp11::mp_list<Ts...>;
+  using type_sizes = boost::mp11::mp_list<boost::mp11::mp_size_t<detail::serialization_size<Ts>::value>...>;
 
 public:
   using base_t::operator=;
@@ -237,6 +306,29 @@ public:
   byte_t *src() { return begin(); }
   const byte_t *src() const { return begin(); }
 
+  //! \brief Make a view out of a subset of the tuple
+  //! \tparam I First element in the view
+  //! \tparam L Number of elements in the view
+  //! \return a tuple view including every elements in the given range
+  template<size_t I, size_t L>
+  decltype(detail::make_view_from_typelist<Endianess, Signed_Mode>(
+      (byte_t *)nullptr, boost::mp11::mp_take_c<boost::mp11::mp_drop_c<typelist, I>, L>{}))
+  view() {
+    using namespace boost::mp11;
+    constexpr auto offset = mp_fold<mp_take_c<type_sizes, I>, mp_size_t<0>, mp_plus>::value;
+    return detail::make_view_from_typelist<Endianess, Signed_Mode>(begin() + offset,
+                                                                   mp_take_c<mp_drop_c<typelist, I>, L>{});
+  }
+  template<size_t I, size_t L>
+  decltype(detail::make_view_from_typelist<Endianess, Signed_Mode>(
+      (const byte_t *)nullptr, boost::mp11::mp_take_c<boost::mp11::mp_drop_c<typelist, I>, L>{}))
+  view() const {
+    using namespace boost::mp11;
+    constexpr auto offset = mp_fold<mp_take_c<type_sizes, I>, mp_size_t<0>, mp_plus>::value;
+    return detail::make_view_from_typelist<Endianess, Signed_Mode>(begin() + offset,
+                                                                   mp_take_c<mp_drop_c<typelist, I>, L>{});
+  }
+
 private:
   unaligned_data<base_t::size, Endianess, Signed_Mode> m_storage;
 };
@@ -251,35 +343,6 @@ public:
 
   //! \brief Get the 'begin' iterator
   constexpr byte_t *src() const { return begin(); }
-};
-
-//! \brief Binds a byte sequence to a tuple view
-//! \details
-//!   Once bound, the byte sequence content can be read and modified as it were the content of a 'tuple' object.
-//!   The byte sequence and the tuple view are bound throught an iterator. It must at least be a forward iterator, but
-//!   tuple views are faster with random access iterators. Best case would be a non-volatile plain pointer, as it can be
-//!   called with memcpy.
-//! \tparam It type of the iterators used for binding with the byte sequence
-//! \tparam Endianess endianess of the stored data
-//! \tparam Signed_Mode signed mode of the stored data
-//! \tparam Ts... types of the serialized values
-template<typename It, endianess Endianess, signed_mode Signed_Mode, typename... Ts>
-class tuple_view
-    : public detail::tuple_base<tuple_view<It, Endianess, Signed_Mode, Ts...>, Endianess, Signed_Mode, Ts...> {
-  using base_t = detail::tuple_base<tuple_view<It, Endianess, Signed_Mode, Ts...>, Endianess, Signed_Mode, Ts...>;
-
-public:
-  using base_t::operator=;
-
-  //! \brief Bind the view to a byte sequence throught an iterator
-  //! \param src Iterator to the start of the byte sequence
-  explicit tuple_view(const It &src) : m_src{src} {}
-
-  //! \brief Get the iterator associated to the byte sequence
-  const It &src() const { return m_src; }
-
-private:
-  It m_src;
 };
 
 //! \brief Construct a tuple object provided constant lvalue to values
@@ -316,27 +379,6 @@ tuple<Endianess, Signed_Mode, Args...> make_tuple(endianess_h<Endianess>, signed
 template<typename... Args>
 tuple<endianess::BUILTIN, signed_mode::BUILTIN, Args...> make_tuple() {
   return tuple<endianess::BUILTIN, signed_mode::BUILTIN, Args...>{};
-}
-
-//! \brief Bind a byte sequence to a tuple view
-//! \tparam Ts... types held by the tuple
-//! \tparam Endianess target endianess for serialization
-//! \tparam Signed_Mode target signed representation for serialization
-//! \param src start of the byte sequence
-//! \return a 'tuple_view' object bound to the byte sequence
-template<typename... Ts, typename It, endianess Endianess, signed_mode Signed_Mode>
-tuple_view<It, Endianess, Signed_Mode, Ts...>
-make_view(endianess_h<Endianess>, signed_mode_h<Signed_Mode>, const It &src) {
-  return tuple_view<It, Endianess, Signed_Mode, Ts...>{src};
-}
-
-//! \brief Bind a byte sequence to a tuple view with native serialization parameters
-//! \tparam Ts... types held by the tuple
-//! \param src start of the byte sequence
-//! \return a 'tuple_view' object bound to the byte sequence
-template<typename... Ts, typename It>
-tuple_view<It, endianess::BUILTIN, signed_mode::BUILTIN, Ts...> make_view(const It &src) {
-  return tuple_view<It, endianess::BUILTIN, signed_mode::BUILTIN, Ts...>{src};
 }
 
 } // namespace upd

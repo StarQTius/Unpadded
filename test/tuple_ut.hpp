@@ -313,6 +313,19 @@ inline void tuple_DO_serialize_user_provided_structure_EXCEPT_correct_behavior()
   TEST_ASSERT_EQUAL_INT16(t.size, 4 + 5 + 2);
 }
 
+inline void tuple_view_DO_iterate_subview_EXPECT_exact_subsequence() {
+  using namespace upd;
+
+  auto t = make_tuple(int{64}, char{16}, int{32}, bool{true});
+  byte_t *s_seq = t.begin(), *m_seq = t.begin() + sizeof(int), *e_seq = t.begin() + sizeof(int) + sizeof(char);
+  for (auto byte : t.view<0, 2>())
+    TEST_ASSERT_EQUAL_UINT8(*s_seq++, byte);
+  for (auto byte : t.view<1, 2>())
+    TEST_ASSERT_EQUAL_UINT8(*m_seq++, byte);
+  for (auto byte : t.view<2, 2>())
+    TEST_ASSERT_EQUAL_UINT8(*e_seq++, byte);
+}
+
 MAKE_MULTIOPT(tuple_DO_set_value_EXPECT_same_value_with_get)
 MAKE_MULTIOPT(tuple_DO_set_array_EXPECT_same_value_with_get)
 MAKE_MULTIOPT(tuple_DO_iterate_throught_content_EXPECT_correct_raw_data)

@@ -83,8 +83,7 @@ decltype(read_as<T, Endianess, Signed_Mode>(boost::declval<byte_t *>())) read_as
 }
 template<typename T, endianess Endianess, signed_mode Signed_Mode, typename It, sfinae::require_has_not_plus<It> = 0>
 decltype(read_as<T, Endianess, Signed_Mode>(boost::declval<byte_t *>())) read_as(It it, size_t offset) {
-  for (; offset > 0; offset--)
-    it++;
+  std::advance(it, offset);
   return read_as<T, Endianess, Signed_Mode>(it);
 }
 #endif
@@ -150,8 +149,7 @@ void write_as(const T &value, const It &begin, size_t offset) {
 }
 template<endianess Endianess, signed_mode Signed_Mode, typename T, typename It, sfinae::require_has_not_plus<It> = 0>
 void write_as(const T &value, It it, size_t offset) {
-  for (; offset > 0; offset--)
-    it++;
+  std::advance(it, offset);
   write_as<Endianess, Signed_Mode>(value, it);
 }
 #endif
