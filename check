@@ -1,0 +1,5 @@
+#!/bin/sh
+
+mkdir -p build
+cd build && cmake .. -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug && cmake --build . \
+  && cd .. && bin/run_ut11 && bin/run_ut17

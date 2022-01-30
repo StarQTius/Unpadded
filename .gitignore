@@ -1,8 +1,3 @@
-.pio
-obj
-run_ut*
-*.ini
+build
+bin
 html
-gcov
-include/*
-!include/upd
