@@ -19,22 +19,22 @@ template<typename T, signed_mode Signed_Mode, sfinae::require<Signed_Mode == sig
 T from_signed_mode(unsigned long long value) {
   constexpr auto sign_mask = 0b10000000ull << 8 * (sizeof(T) - 1);
   constexpr auto magnitude_mask = (~0ull >> 8 * (sizeof(value) - sizeof(T))) ^ sign_mask;
-  return value & sign_mask ? -static_cast<T>(value & magnitude_mask) : static_cast<T>(value);
+  return value & sign_mask ? T(-T(value & magnitude_mask)) : T(value);
 }
 template<typename T, signed_mode Signed_Mode, sfinae::require<Signed_Mode == signed_mode::ONE_COMPLEMENT> = 0>
 T from_signed_mode(unsigned long long value) {
   constexpr auto sign_mask = 0b10000000ull << 8 * (sizeof(T) - 1);
-  return value & sign_mask ? -static_cast<T>(~value) : static_cast<T>(value);
+  return value & sign_mask ? T(-T(~value)) : T(value);
 }
 template<typename T, signed_mode Signed_Mode, sfinae::require<Signed_Mode == signed_mode::TWO_COMPLEMENT> = 0>
 T from_signed_mode(unsigned long long value) {
   constexpr auto sign_mask = 0b10000000ull << 8 * (sizeof(T) - 1);
-  return value & sign_mask ? -static_cast<T>(~value + 1) : static_cast<T>(value);
+  return value & sign_mask ? T(-T(~value + 1)) : T(value);
 }
 template<typename T, signed_mode Signed_Mode, sfinae::require<Signed_Mode == signed_mode::OFFSET_BINARY> = 0>
 T from_signed_mode(unsigned long long value) {
   constexpr auto offset = 0b10000000ull << 8 * (sizeof(T) - 1);
-  return static_cast<T>(value - offset);
+  return T(value - offset);
 }
 
 //! \brief Serialize an integer using the provided signed number representation

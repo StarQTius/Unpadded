@@ -124,7 +124,7 @@ read_as(const unaligned_data<N, Endianess, Signed_Mode> &input_unaligned_data, s
 //! \param offset Start of the part of the content to be written
 template<typename T, size_t N, endianess Endianess, signed_mode Signed_Mode>
 void write_as(const T &value, unaligned_data<N, Endianess, Signed_Mode> &input_unaligned_data, size_t offset) {
-  return input_unaligned_data.template write_as(value, input_unaligned_data, offset);
+  return input_unaligned_data.template write_as(value, offset);
 }
 
 } // namespace upd

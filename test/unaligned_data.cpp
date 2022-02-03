@@ -114,4 +114,6 @@ void run_unaligned_data_ut() {
 
   unaligned_data_DO_serialize_data_EXPECT_correct_value_when_unserializing_multiopt(every_options);
   unaligned_data_DO_iterate_throught_content_EXPECT_correct_raw_data_multiopt(every_options);
+  unaligned_data_DO_serialize_signed_enum_EXPECT_behave_like_operating_on_underlying_type_multiopt(every_options);
+  unaligned_data_DO_serialize_unsigned_enum_EXPECT_behave_like_operating_on_underlying_type_multiopt(every_options);
 }
