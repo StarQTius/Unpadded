@@ -248,6 +248,24 @@ tuple_view<It, endianess::BUILTIN, signed_mode::BUILTIN, Ts...> make_view(const 
   return tuple_view<It, endianess::BUILTIN, signed_mode::BUILTIN, Ts...>{src};
 }
 
+//! \upd_doc{MakeView_Tuple}
+//! \brief Bind a view to a tuple
+//! \tparam I First element in the view
+//! \tparam L Number of elements in the view
+//! \param tuple tuple to bind the view to
+//! \return a tuple view including every elements in the given range
+
+//! \copydoc MakeView_Tuple
+template<size_t I, size_t L, endianess Endianess, signed_mode Signed_Mode, typename... Ts>
+auto make_view(tuple<Endianess, Signed_Mode, Ts...> &tuple) -> decltype(tuple.template view<I, L>()) {
+  return tuple.template view<I, L>();
+}
+//! \copydoc MakeView_Tuple
+template<size_t I, size_t L, endianess Endianess, signed_mode Signed_Mode, typename... Ts>
+auto make_view(const tuple<Endianess, Signed_Mode, Ts...> &tuple) -> decltype(tuple.template view<I, L>()) {
+  return tuple.template view<I, L>();
+}
+
 //! \brief Unaligned storage with fixed target types
 //! \details
 //!   The object holds values of provided type in an unaligned maners (ie, there is no padding between two consecutive
