@@ -1,13 +1,23 @@
 #pragma once
 
+#include <iterator> // IWYU pragma: keep
+
+#include <boost/type_traits/declval.hpp>
+#include <boost/type_traits/integral_constant.hpp>
+#include <boost/type_traits/remove_reference.hpp>
+
+#include "array_wrapper.hpp"
 #include "detail/endianess.hpp"
 #include "detail/sfinae.hpp"
+#include "detail/signature.hpp"
 #include "detail/signed_representation.hpp"
+#include "format.hpp"
+#include "type.hpp"
 
 namespace upd {
 
 template<typename It, endianess Endianess, signed_mode Signed_Mode, typename... Args>
-class tuple_view;
+class tuple_view; // IWYU pragma: keep
 
 namespace detail {
 

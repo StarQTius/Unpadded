@@ -1,6 +1,10 @@
 #pragma once
 
+#include <unity.h>
+
 #include <upd/tuple.hpp>
+
+#include <boost/type_traits/is_same.hpp>
 
 inline void tuple_view_DO_bind_to_buffer_EXPECT_reading_correct_value() {
   using namespace upd;

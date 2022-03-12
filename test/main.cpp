@@ -1,4 +1,7 @@
 #include "main.hpp"
+#include "tuple.hpp"
+#include "tuple_view.hpp"
+#include "unaligned_data.hpp"
 
 // Check if private macros have been properly undefined
 #ifdef FWD

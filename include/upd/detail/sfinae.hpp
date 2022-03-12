@@ -3,16 +3,20 @@
 
 #pragma once
 
-#include <boost/type_traits.hpp>
+#include <boost/type_traits/enable_if.hpp>
+#include <boost/type_traits/has_plus.hpp>
+#include <boost/type_traits/integral_constant.hpp>
 #include <boost/type_traits/is_bounded_array.hpp>
+#include <boost/type_traits/is_pointer.hpp>
+#include <boost/type_traits/is_signed.hpp>
+#include <boost/type_traits/is_unsigned.hpp>
 
-#include "../array_wrapper.hpp"
 #include "../format.hpp"
 
 namespace upd {
 
 template<endianess Endianess, signed_mode Signed_Mode, typename... Ts>
-struct tuple;
+struct tuple; // IWYU pragma: keep
 
 namespace sfinae {
 namespace detail {

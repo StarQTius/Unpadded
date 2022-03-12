@@ -5,11 +5,9 @@
 
 #include <cstring>
 
-#include "array_wrapper.hpp"
-#include "detail/endianess.hpp"
-#include "detail/sfinae.hpp"
+#include <boost/type_traits/declval.hpp>
+
 #include "detail/signature.hpp"
-#include "detail/signed_representation.hpp"
 #include "format.hpp"
 #include "serialization.hpp"
 #include "type.hpp"

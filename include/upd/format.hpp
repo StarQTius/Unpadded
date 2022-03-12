@@ -4,7 +4,6 @@
 #pragma once
 
 #include "detail/value_h.hpp"
-#include "type.hpp"
 
 namespace upd {
 

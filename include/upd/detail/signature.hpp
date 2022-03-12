@@ -2,10 +2,7 @@
 //! \brief Functor introspection
 
 #pragma once
-
-#include "boost/type_traits.hpp"
-
-#include "sfinae.hpp"
+#include <boost/type_traits/decay.hpp>
 
 namespace upd {
 namespace detail {

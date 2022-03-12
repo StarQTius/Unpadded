@@ -3,14 +3,27 @@
 
 #pragma once
 
-#include <tuple>
+#include <array>
+#include <cstddef>
+#include <type_traits>
 
-#include <boost/mp11.hpp>
-#include <boost/type_traits.hpp>
+#include <boost/mp11/algorithm.hpp>
+#include <boost/mp11/detail/mp_fold.hpp>
+#include <boost/mp11/detail/mp_list.hpp>
+#include <boost/mp11/detail/mp_plus.hpp>
+#include <boost/mp11/integer_sequence.hpp>
+#include <boost/mp11/integral.hpp>
+#include <boost/type_traits/conjunction.hpp>
+#include <boost/type_traits/declval.hpp>
+#include <boost/type_traits/is_const.hpp>
+#include <boost/type_traits/is_reference.hpp>
+#include <boost/type_traits/is_volatile.hpp>
 
 #include "detail/def.hpp"
+#include "detail/sfinae.hpp"
 #include "detail/signature.hpp"
 #include "format.hpp"
+#include "serialization.hpp"
 #include "type.hpp"
 #include "unaligned_data.hpp"
 
@@ -77,9 +90,9 @@ class tuple_base {
   using type_sizes = boost::mp11::mp_list<boost::mp11::mp_size_t<serialization_size<Ts>::value>...>;
 
   static_assert(
-      boost::conjunction<boost::integral_constant<bool,
-                                                  (!boost::is_const<Ts>::value && !boost::is_volatile<Ts>::value &&
-                                                   !boost::is_reference<Ts>::value)>...>::value,
+      boost::conjunction<std::integral_constant<bool,
+                                                (!boost::is_const<Ts>::value && !boost::is_volatile<Ts>::value &&
+                                                 !boost::is_reference<Ts>::value)>...>::value,
       "Type parameters cannot be cv-qualified or ref-qualified.");
 
   static_assert(boost::conjunction<sfinae::is_serializable<Ts>...>::value,
@@ -153,7 +166,7 @@ public:
 protected:
   //! \brief Serialize values into the object content
   template<size_t... Is, typename... Args>
-  void lay(boost::mp11::index_sequence<Is...>, const Args &... args) {
+  void lay(boost::mp11::index_sequence<Is...>, const Args &...args) {
     using discard = int[];
     discard{0, (set<Is>(args), 0)...};
   }
@@ -288,7 +301,7 @@ public:
   //! \brief Serialize the provided values
   //! \tparam Args... Serialized values types
   //! \param args... Values to be serialized
-  explicit tuple(const Ts &... args) {
+  explicit tuple(const Ts &...args) {
     using boost::mp11::index_sequence_for;
     base_t::lay(index_sequence_for<Ts...>{}, args...);
   }
@@ -317,7 +330,7 @@ public:
   //!   Endianess and signed integer representation is provided throught the two first parameters.
   //! \param values... Values to be serialized
   //! \see format.hpp
-  explicit tuple(endianess_h<Endianess>, signed_mode_h<Signed_Mode>, const Ts &... values) : tuple(values...) {}
+  explicit tuple(endianess_h<Endianess>, signed_mode_h<Signed_Mode>, const Ts &...values) : tuple(values...) {}
 #endif // __cplusplus >= 201703L
 
   //! \brief Get the 'begin' iterator
@@ -371,7 +384,7 @@ public:
 //! \return tuple object holding a serialized copy of the provided values.
 template<endianess Endianess, signed_mode Signed_Mode, typename... Args>
 tuple<Endianess, Signed_Mode, Args...>
-make_tuple(endianess_h<Endianess>, signed_mode_h<Signed_Mode>, const Args &... args) {
+make_tuple(endianess_h<Endianess>, signed_mode_h<Signed_Mode>, const Args &...args) {
   return tuple<Endianess, Signed_Mode, Args...>{args...};
 }
 
@@ -379,7 +392,7 @@ make_tuple(endianess_h<Endianess>, signed_mode_h<Signed_Mode>, const Args &... a
 //! \param args... Values to be serialized into the return value
 //! \return a tuple object holding a serialized copy of the provided values.
 template<typename... Args>
-tuple<endianess::BUILTIN, signed_mode::BUILTIN, Args...> make_tuple(const Args &... args) {
+tuple<endianess::BUILTIN, signed_mode::BUILTIN, Args...> make_tuple(const Args &...args) {
   return tuple<endianess::BUILTIN, signed_mode::BUILTIN, Args...>{args...};
 }
 
@@ -417,4 +430,4 @@ struct std::tuple_element<I, upd::tuple<Endianess, Signed_Mode, Ts...>> {
   using type = decltype(boost::declval<upd::tuple<Endianess, Signed_Mode, Ts...>>().template get<I>());
 };
 
-#include "detail/undef.hpp"
+#include "detail/undef.hpp" // IWYU pragma: keep

@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <boost/type_traits.hpp>
+#include <cstring>
 
 #include "../format.hpp"
 #include "../type.hpp"

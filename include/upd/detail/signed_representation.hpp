@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "../format.hpp"
 #include "sfinae.hpp"
 
 namespace upd {

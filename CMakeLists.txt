@@ -4,6 +4,7 @@ project(
   Unpadded
   VERSION 0.0
   LANGUAGES CXX)
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/tool)
 
 include(FetchContent)
 
