@@ -1,5 +1,7 @@
 #pragma once
 
+#include <unity.h>
+
 #include <boost/mp11.hpp>
 
 // To ensure that every tested header is self sufficient, upd/format.hpp is not included here.
@@ -34,3 +36,6 @@ constexpr auto every_options =
     using discard = int[];                                                                                             \
     discard{(RUN_TEST((FUNCTION_NAME<Endianesses, Signed_Modes>)), 0)...};                                             \
   }
+
+extern "C" void setUp() {}
+extern "C" void tearDown() {}

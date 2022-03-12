@@ -1,9 +1,6 @@
-#include <unity.h>
-
 #include "unaligned_data.hpp"
-#include "unaligned_data_ut.hpp"
 
-void run_unaligned_data_ut() {
+int main() {
   using namespace upd;
 
   // Template instantiation check
@@ -18,6 +15,7 @@ void run_unaligned_data_ut() {
   }
 
   // Check every combination of endianess and signed representation
+  UNITY_BEGIN();
   RUN_TEST((unaligned_data_DO_serialize_data_EXPECT_correct_raw_data<int16_t,
                                                                      0xabc,
                                                                      endianess::LITTLE,
@@ -119,4 +117,5 @@ void run_unaligned_data_ut() {
   unaligned_data_DO_iterate_throught_content_EXPECT_correct_raw_data_multiopt(every_options);
   unaligned_data_DO_serialize_signed_enum_EXPECT_behave_like_operating_on_underlying_type_multiopt(every_options);
   unaligned_data_DO_serialize_unsigned_enum_EXPECT_behave_like_operating_on_underlying_type_multiopt(every_options);
+  return UNITY_END();
 }

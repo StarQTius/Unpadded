@@ -1,7 +1,5 @@
 FetchContent_MakeAvailable(Unity)
 
-set(UNPADDED_TEST_SOURCES main.cpp tuple_view.cpp tuple.cpp unaligned_data.cpp)
-
 add_library(unpadded_ut INTERFACE)
 target_compile_options(
   unpadded_ut
@@ -12,12 +10,32 @@ target_compile_options(
     -Werror>)
 target_link_libraries(unpadded_ut INTERFACE unity::framework Unpadded)
 
-add_executable(run_ut11 ${UNPADDED_TEST_SOURCES})
-target_compile_features(unpadded_ut INTERFACE cxx_std_11)
-target_link_libraries(run_ut11 unpadded_ut)
-add_test(NAME ut11 COMMAND run_ut11)
+add_executable(run_tuple_cpp11 tuple.cpp)
+target_compile_features(run_tuple_cpp11 INTERFACE cxx_std_11)
+target_link_libraries(run_tuple_cpp11 unpadded_ut)
+add_test(NAME tuple_cpp11 COMMAND run_tuple_cpp11)
 
-add_executable(run_ut17 ${UNPADDED_TEST_SOURCES})
-target_compile_features(unpadded_ut INTERFACE cxx_std_17)
-target_link_libraries(run_ut17 unpadded_ut)
-add_test(NAME ut17 COMMAND run_ut17)
+add_executable(run_tuple_view_cpp11 tuple_view.cpp)
+target_compile_features(run_tuple_view_cpp11 INTERFACE cxx_std_11)
+target_link_libraries(run_tuple_view_cpp11 unpadded_ut)
+add_test(NAME tuple_view_cpp11 COMMAND run_tuple_view_cpp11)
+
+add_executable(run_unaligned_data_cpp11 unaligned_data.cpp)
+target_compile_features(run_unaligned_data_cpp11 INTERFACE cxx_std_11)
+target_link_libraries(run_unaligned_data_cpp11 unpadded_ut)
+add_test(NAME unaligned_data_cpp11 COMMAND run_unaligned_data_cpp11)
+
+add_executable(run_tuple_cpp17 tuple.cpp)
+target_compile_features(run_tuple_cpp17 INTERFACE cxx_std_17)
+target_link_libraries(run_tuple_cpp17 unpadded_ut)
+add_test(NAME tuple_cpp17 COMMAND run_tuple_cpp17)
+
+add_executable(run_tuple_view_cpp17 tuple_view.cpp)
+target_compile_features(run_tuple_view_cpp17 INTERFACE cxx_std_17)
+target_link_libraries(run_tuple_view_cpp17 unpadded_ut)
+add_test(NAME tuple_view_cpp17 COMMAND run_tuple_view_cpp17)
+
+add_executable(run_unaligned_data_cpp17 unaligned_data.cpp)
+target_compile_features(run_unaligned_data_cpp17 INTERFACE cxx_std_17)
+target_link_libraries(run_unaligned_data_cpp17 unpadded_ut)
+add_test(NAME unaligned_data_cpp17 COMMAND run_unaligned_data_cpp17)

@@ -1,9 +1,8 @@
 #include <unity.h>
 
 #include "tuple_view.hpp"
-#include "tuple_view_ut.hpp"
 
-void run_tuple_view_ut() {
+int main() {
   using namespace upd;
 
   // Template instantiation check
@@ -18,8 +17,10 @@ void run_tuple_view_ut() {
     make_view<int, char, bool>((byte_t *)buf);
   }
 
+  UNITY_BEGIN();
   RUN_TEST(tuple_view_DO_bind_to_buffer_EXPECT_reading_correct_value);
   RUN_TEST(tuple_view_DO_set_value_EXPECT_reading_same_value);
   RUN_TEST(tuple_view_DO_bind_to_a_forward_list_EXPECT_correct_behavior);
   RUN_TEST(tuple_view_DO_assign_to_a_tuple_EXPECT_correct_behavior);
+  return UNITY_END();
 }
