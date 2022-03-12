@@ -1,9 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(
-  Unpadded
-  VERSION 0.0
-  LANGUAGES CXX)
+project(Unpadded LANGUAGES CXX)
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/tool)
 
 include(FetchContent)
