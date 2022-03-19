@@ -3,6 +3,9 @@
 
 #pragma once
 
+#include <cstddef>
+
+#include <upd/format.hpp>
 #include <upd/tuple.hpp>
 #include <upd/type.hpp>
 
@@ -15,6 +18,8 @@
 #include "status.hpp"
 
 #include "detail/def.hpp"
+
+// IWYU pragma: no_include "upd/detail/value_h.hpp"
 
 namespace k2o {
 namespace detail {
@@ -204,4 +209,4 @@ private:
 
 } // namespace k2o
 
-#include "detail/undef.hpp"
+#include "detail/undef.hpp" // IWYU pragma: keep

@@ -1,4 +1,7 @@
-#include "dispatcher.hpp"
+#include <k2o/cpp11.hpp>
+#include <k2o/dispatcher.hpp>
+
+#include "utility.hpp"
 
 int get_8() { return 8; }
 int get_16() { return 16; }
@@ -7,7 +10,7 @@ int identity(int x) { return x; }
 
 constexpr k2o::flist11_t<K2O_CTREF(get_8), K2O_CTREF(get_16), K2O_CTREF(get_32), K2O_CTREF(identity)> ftor_list;
 
-void dispatcher_DO_call_order_EXPECT_calling_correct_order() {
+static void dispatcher_DO_call_order_EXPECT_calling_correct_order() {
   using namespace k2o;
 
   constexpr auto kring = make_keyring(ftor_list);
@@ -21,7 +24,7 @@ void dispatcher_DO_call_order_EXPECT_calling_correct_order() {
   TEST_ASSERT_EQUAL_UINT(16, output.get<0>());
 }
 
-void dispatcher_DO_get_order_EXPECT_correct_index() {
+static void dispatcher_DO_get_order_EXPECT_correct_index() {
   using namespace k2o;
 
   constexpr auto kring = make_keyring(ftor_list);
@@ -39,4 +42,11 @@ void dispatcher_DO_get_order_EXPECT_correct_index() {
         TEST_ASSERT_EQUAL_UINT(16, output.get<0>());
       })
       .map_error([](size_t) { TEST_FAIL(); });
+}
+
+int main() {
+  UNITY_BEGIN();
+  RUN_TEST(dispatcher_DO_call_order_EXPECT_calling_correct_order);
+  RUN_TEST(dispatcher_DO_get_order_EXPECT_correct_index);
+  return UNITY_END();
 }

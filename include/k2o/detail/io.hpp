@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <upd/type.hpp>
+
 #include "sfinae.hpp"
 
 #include "def.hpp"
@@ -226,4 +228,4 @@ public:
 } // namespace detail
 } // namespace k2o
 
-#include "undef.hpp"
+#include "undef.hpp" // IWYU pragma: keep

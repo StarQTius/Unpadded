@@ -1,4 +1,7 @@
-#include "keyring.hpp"
+#include <k2o/cpp11.hpp>
+#include <k2o/keyring.hpp>
+
+#include "utility.hpp"
 
 template<typename R, typename... Args>
 struct callable {
@@ -23,7 +26,7 @@ constexpr k2o::flist11_t<K2O_CTREF(ftor3),
                          K2O_CTREF(ftor2)>
     ftor_list;
 
-void keyring_DO_get_an_ikey_EXPECT_correct_index() {
+static void keyring_DO_get_an_ikey_EXPECT_correct_index() {
   using namespace k2o;
 
   constexpr keyring<upd::endianess::BUILTIN,
@@ -37,7 +40,7 @@ void keyring_DO_get_an_ikey_EXPECT_correct_index() {
   TEST_ASSERT_EQUAL_UINT(1, k.index);
 }
 
-void keyring_DO_use_make_keyring_EXPECT_correct_behavior() {
+static void keyring_DO_use_make_keyring_EXPECT_correct_behavior() {
   using namespace k2o;
 
   constexpr auto kring = make_keyring(ftor_list);
@@ -46,7 +49,7 @@ void keyring_DO_use_make_keyring_EXPECT_correct_behavior() {
   TEST_ASSERT_EQUAL_UINT(2, k.index);
 }
 
-void keyring_DO_get_an_ikey_EXPECT_correct_index_cpp17() {
+static void keyring_DO_get_an_ikey_EXPECT_correct_index_cpp17() {
 #if __cplusplus >= 201703L
   using namespace k2o;
 
@@ -58,7 +61,7 @@ void keyring_DO_get_an_ikey_EXPECT_correct_index_cpp17() {
 #endif // __cplusplus >= 201703L
 }
 
-void keyring_DO_get_an_ikey_by_variable_EXPECT_correct_index_cpp17() {
+static void keyring_DO_get_an_ikey_by_variable_EXPECT_correct_index_cpp17() {
 #if __cplusplus >= 201703L
   using namespace k2o;
 
@@ -68,4 +71,13 @@ void keyring_DO_get_an_ikey_by_variable_EXPECT_correct_index_cpp17() {
 
   TEST_ASSERT_EQUAL_UINT(4, k.index);
 #endif // __cplusplus >= 201703L
+}
+
+int main() {
+  UNITY_BEGIN();
+  RUN_TEST(keyring_DO_get_an_ikey_EXPECT_correct_index);
+  RUN_TEST(keyring_DO_use_make_keyring_EXPECT_correct_behavior);
+  RUN_TEST(keyring_DO_get_an_ikey_EXPECT_correct_index_cpp17);
+  RUN_TEST(keyring_DO_get_an_ikey_by_variable_EXPECT_correct_index_cpp17);
+  return UNITY_END();
 }

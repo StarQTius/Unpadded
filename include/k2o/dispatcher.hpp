@@ -3,19 +3,24 @@
 
 #pragma once
 
+#include <cstddef>
+#include <cstdint>
 #include <functional>
 
 #include <tl/expected.hpp>
+#include <upd/format.hpp>
+#include <upd/type.hpp>
 
 #include "detail/sfinae.hpp"
+#include "detail/value_h.hpp" // IWYU pragma: keep
 #include "keyring.hpp"
 #include "order.hpp"
-#include "status.hpp"
 
 #include "detail/def.hpp"
 
-namespace k2o {
+// IWYU pragma: no_forward_declare unevaluated_value_h
 
+namespace k2o {
 namespace detail {
 
 //! \brief Extract the index from a byte sequence
@@ -43,7 +48,7 @@ public:
   //! \tparam Endianess Endianess used to serialize the values
   //! \tparam Signed_Mode Signed integer representation used to serialize the values
   //! \tparam Ftors... Functors held by the keyring
-  template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Fs, Fs &... Ftors>
+  template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Fs, Fs &...Ftors>
   explicit dispatcher_impl(keyring<Endianess, Signed_Mode, detail::unevaluated_value_h<Fs, Ftors>...>)
       : orders{order{Ftors, upd::endianess_h<Endianess>{}, upd::signed_mode_h<Signed_Mode>{}}...},
         read_index{static_cast<index_reader_t &>(upd::read_as<index_t, Endianess, Signed_Mode>)} {}
@@ -137,4 +142,4 @@ make_dispatcher(keyring<Endianess, Signed_Mode, detail::unevaluated_value_h<Fs, 
 
 } // namespace k2o
 
-#include "detail/undef.hpp"
+#include "detail/undef.hpp" // IWYU pragma: keep

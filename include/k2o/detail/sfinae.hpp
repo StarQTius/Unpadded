@@ -3,17 +3,25 @@
 
 #pragma once
 
-#include <utility>
+#include <type_traits>
 
+#include <boost/type_traits/decay.hpp>
+#include <boost/type_traits/declval.hpp>
 #include <boost/type_traits/enable_if.hpp>
 #include <boost/type_traits/integral_constant.hpp>
+#include <boost/type_traits/is_void.hpp>
+#include <boost/type_traits/remove_pointer.hpp>
 
 #include <upd/format.hpp>
 #include <upd/tuple.hpp>
+#include <upd/type.hpp>
 
-#include "value_h.hpp"
+#include "value_h.hpp" // IWYU pragma: keep
 
 #include "def.hpp"
+
+// IWYU pragma: no_include "boost/type_traits/detail/is_function_cxx_11.hpp"
+// IWYU pragma: no_forward_declare unevaluated_value_h
 
 namespace k2o {
 
@@ -109,4 +117,4 @@ using require_iterator = require_t<typename T::iterator_category, U>;
 } // namespace sfinae
 } // namespace k2o
 
-#include "undef.hpp"
+#include "undef.hpp" // IWYU pragma: keep

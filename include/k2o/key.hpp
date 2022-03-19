@@ -3,6 +3,11 @@
 
 #pragma once
 
+#include <cstdint>
+
+#include <boost/type_traits/remove_cv_ref.hpp>
+#include <upd/format.hpp>
+
 #include "detail/signature.hpp"
 #include "key_base.hpp"
 
@@ -30,7 +35,7 @@ public:
   constexpr static auto index = Index;
   detail::
       serialized_message<upd::endianess::BUILTIN, upd::signed_mode::BUILTIN, uint16_t, boost::remove_cv_ref_t<Args>...>
-      operator()(const Args &... args) const {
+      operator()(const Args &...args) const {
     return {Index, args...};
   }
 };

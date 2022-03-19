@@ -1,4 +1,6 @@
-#include "key_base.hpp"
+#include <k2o/key_base.hpp>
+
+#include "utility.hpp"
 
 using byte_t = uint8_t;
 
@@ -19,7 +21,7 @@ struct object_extension_t {
 };
 object_extension_t upd_extension(object_t *) { return {}; }
 
-void key_base_DO_serialize_arguments_EXPECT_correct_byte_sequence() {
+static void key_base_DO_serialize_arguments_EXPECT_correct_byte_sequence() {
   using namespace k2o;
 
   key_base<int(int, const int(&)[8], char)> k;
@@ -33,7 +35,7 @@ void key_base_DO_serialize_arguments_EXPECT_correct_byte_sequence() {
   TEST_ASSERT_EQUAL_UINT8_ARRAY(t.begin(), dest_buf, t.size);
 }
 
-void key_base_DO_serialize_arguments_with_parameter_EXPECT_correct_byte_sequence() {
+static void key_base_DO_serialize_arguments_with_parameter_EXPECT_correct_byte_sequence() {
   using namespace k2o;
 
   key_base<int(int, short, char), upd::endianess::LITTLE, upd::signed_mode::TWO_COMPLEMENT> k;
@@ -47,7 +49,7 @@ void key_base_DO_serialize_arguments_with_parameter_EXPECT_correct_byte_sequence
   TEST_ASSERT_EQUAL_INT(16, dest_tuple.get<2>());
 }
 
-void key_base_DO_unserialize_data_sequence_EXPECT_correct_value() {
+static void key_base_DO_unserialize_data_sequence_EXPECT_correct_value() {
   using namespace k2o;
 
   key_base<int()> k;
@@ -59,7 +61,7 @@ void key_base_DO_unserialize_data_sequence_EXPECT_correct_value() {
   TEST_ASSERT_EQUAL_INT(t.get<0>(), value);
 }
 
-void key_base_DO_unserialize_data_sequence_with_parameter_EXPECT_correct_value() {
+static void key_base_DO_unserialize_data_sequence_with_parameter_EXPECT_correct_value() {
   using namespace k2o;
 
   key_base<int(int, short, char), upd::endianess::LITTLE, upd::signed_mode::TWO_COMPLEMENT> k;
@@ -71,7 +73,7 @@ void key_base_DO_unserialize_data_sequence_with_parameter_EXPECT_correct_value()
   TEST_ASSERT_EQUAL_INT(src_tuple.get<0>(), result);
 }
 
-void key_base_DO_create_key_from_ftor_signature_EXPECT_key_holding_ftor_signature() {
+static void key_base_DO_create_key_from_ftor_signature_EXPECT_key_holding_ftor_signature() {
   using namespace k2o;
 
   auto ftor = [](int x) { return x; };
@@ -85,7 +87,7 @@ void key_base_DO_create_key_from_ftor_signature_EXPECT_key_holding_ftor_signatur
   TEST_ASSERT_EQUAL_INT(64, result);
 }
 
-void key_base_DO_create_key_from_function_EXPECT_key_holding_function_signature_cpp17() {
+static void key_base_DO_create_key_from_function_EXPECT_key_holding_function_signature_cpp17() {
 #if __cplusplus >= 201703L
   using namespace k2o;
 
@@ -99,7 +101,7 @@ void key_base_DO_create_key_from_function_EXPECT_key_holding_function_signature_
 #endif // __cplusplus >= 201703L
 }
 
-void key_base_DO_create_key_from_function_using_user_extended_type_EXPECT_correct_behaviour() {
+static void key_base_DO_create_key_from_function_using_user_extended_type_EXPECT_correct_behaviour() {
   using namespace k2o;
 
   auto ftor = [](const object_t &x) { return x; };
@@ -115,7 +117,7 @@ void key_base_DO_create_key_from_function_using_user_extended_type_EXPECT_correc
   TEST_ASSERT_EQUAL_UINT16(result.c, 0xc);
 }
 
-void key_base_DO_hook_a_callback_EXPECT_callback_receiving_correct_argument() {
+static void key_base_DO_hook_a_callback_EXPECT_callback_receiving_correct_argument() {
   using namespace k2o;
 
   key_base<int()> k;
@@ -123,4 +125,17 @@ void key_base_DO_hook_a_callback_EXPECT_callback_receiving_correct_argument() {
 
   int i = 0;
   k.with_hook([](int value) { TEST_ASSERT_EQUAL_INT(64, value); })([&]() { return t[i++]; });
+}
+
+int main() {
+  UNITY_BEGIN();
+  RUN_TEST(key_base_DO_serialize_arguments_EXPECT_correct_byte_sequence);
+  RUN_TEST(key_base_DO_serialize_arguments_with_parameter_EXPECT_correct_byte_sequence);
+  RUN_TEST(key_base_DO_unserialize_data_sequence_EXPECT_correct_value);
+  RUN_TEST(key_base_DO_unserialize_data_sequence_with_parameter_EXPECT_correct_value);
+  RUN_TEST(key_base_DO_create_key_from_ftor_signature_EXPECT_key_holding_ftor_signature);
+  RUN_TEST(key_base_DO_create_key_from_function_EXPECT_key_holding_function_signature_cpp17);
+  RUN_TEST(key_base_DO_create_key_from_function_using_user_extended_type_EXPECT_correct_behaviour);
+  RUN_TEST(key_base_DO_hook_a_callback_EXPECT_callback_receiving_correct_argument);
+  return UNITY_END();
 }

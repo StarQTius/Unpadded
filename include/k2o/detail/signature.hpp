@@ -3,7 +3,7 @@
 //! \file
 //! \brief Functor introspection
 
-#include <boost/type_traits.hpp>
+#include <boost/type_traits/decay.hpp>
 
 #include "sfinae.hpp"
 

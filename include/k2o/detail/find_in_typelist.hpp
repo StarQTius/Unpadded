@@ -3,12 +3,11 @@
 
 #pragma once
 
-#include <boost/mp11.hpp>
-#include <boost/type_traits.hpp>
+#include <cstddef>
 
-#include "value_h.hpp"
-
-#include "def.hpp"
+#include <boost/mp11/algorithm.hpp>
+#include <boost/mp11/list.hpp>
+#include <boost/type_traits/remove_cv_ref.hpp> // IWYU pragma: keep
 
 namespace k2o {
 namespace detail {
@@ -68,5 +67,3 @@ constexpr size_t find_in_typelist() {
 
 } // namespace detail
 } // namespace k2o
-
-#include "undef.hpp"

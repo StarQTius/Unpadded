@@ -1,8 +1,10 @@
-#include "key.hpp"
+#include <k2o/key.hpp>
+
+#include "utility.hpp"
 
 using byte_t = uint8_t;
 
-void key_DO_serialize_argument_EXPECT_correct_id_and_result() {
+static void key_DO_serialize_argument_EXPECT_correct_id_and_result() {
   using namespace k2o;
 
   key<16, int(int)> k;
@@ -13,4 +15,10 @@ void key_DO_serialize_argument_EXPECT_correct_id_and_result() {
 
   TEST_ASSERT_EQUAL_INT(16, buf.get<0>());
   TEST_ASSERT_EQUAL_INT(64, buf.get<1>());
+}
+
+int main() {
+  UNITY_BEGIN();
+  RUN_TEST(key_DO_serialize_argument_EXPECT_correct_id_and_result);
+  return UNITY_END();
 }

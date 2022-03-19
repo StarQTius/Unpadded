@@ -1,11 +1,2 @@
-obj/
-xsrc/
-usr/
-run_*
-
-# platformio
-.pio
-*.ini
-
-# doxygen
+build/
 html/

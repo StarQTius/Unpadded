@@ -3,13 +3,18 @@
 
 #pragma once
 
+#include <boost/mp11/detail/mp_list.hpp>
+#include <boost/type_traits/conjunction.hpp>
+#include <boost/type_traits/integral_constant.hpp>
+#include <upd/format.hpp>
+
 #include "detail/find_in_typelist.hpp"
 #include "detail/signature.hpp"
-#include "detail/value_h.hpp"
-
+#include "detail/value_h.hpp" // IWYU pragma: keep
 #include "key.hpp"
 
-#include "detail/def.hpp"
+// IWYU pragma: no_forward_declare boost::integral_constant
+// IWYU pragma: no_forward_declare unevaluated_value_h
 
 namespace k2o {
 
@@ -20,10 +25,10 @@ template<typename... Fs, Fs... Functions>
 struct flist11_t<detail::unevaluated_value_h<Fs, Functions>...> {};
 
 #if __cplusplus >= 201703L
-template<auto &... Functions>
+template<auto &...Functions>
 struct flist_t : flist11_t<detail::unevaluated_value_h<decltype(Functions), Functions>...> {};
 
-template<auto &... Functions>
+template<auto &...Functions>
 flist_t<Functions...> flist;
 #endif
 
@@ -85,5 +90,3 @@ constexpr keyring<upd::endianess::BUILTIN, upd::signed_mode::BUILTIN, Hs...> mak
 }
 
 } // namespace k2o
-
-#include "detail/undef.hpp"

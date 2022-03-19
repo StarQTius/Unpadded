@@ -3,8 +3,9 @@
 
 #pragma once
 
-#include <boost/type_traits.hpp>
-
+#include <boost/type_traits/remove_cv_ref.hpp>
+#include <k2o/detail/function_reference.hpp>
+#include <upd/format.hpp>
 #include <upd/tuple.hpp>
 
 #include "detail/any_function.hpp"
@@ -148,4 +149,4 @@ constexpr auto make_key(upd::endianess_h<Endianess> = {}, upd::signed_mode_h<Sig
 
 } // namespace k2o
 
-#include "detail/undef.hpp"
+#include "detail/undef.hpp" // IWYU pragma: keep
