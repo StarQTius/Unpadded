@@ -50,7 +50,7 @@ constexpr size_t find_in_typelist() {
   using singleton_t = mp11::mp_list<T>;
   using finder_t = find_in_typelist_impl<Typelist, mp11::make_index_sequence<typelist_size>>;
 
-  static_assert((!is_void<decltype(finder_t::get_index(singleton_t{}))>::value),
+  static_assert((!std::is_void<decltype(finder_t::get_index(singleton_t{}))>::value),
                 "The provided type does not belong to this typelist");
 
   return finder_t::get_index(singleton_t{});
