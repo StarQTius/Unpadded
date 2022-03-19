@@ -114,3 +114,13 @@ void key_base_DO_create_key_from_function_using_user_extended_type_EXPECT_correc
   TEST_ASSERT_EQUAL_UINT16(result.b, 0xb);
   TEST_ASSERT_EQUAL_UINT16(result.c, 0xc);
 }
+
+void key_base_DO_hook_a_callback_EXPECT_callback_receiving_correct_argument() {
+  using namespace k2o;
+
+  key_base<int()> k;
+  auto t = upd::make_tuple(int{64});
+
+  int i = 0;
+  k.with_hook([](int value) { TEST_ASSERT_EQUAL_INT(64, value); })([&]() { return t[i++]; });
+}

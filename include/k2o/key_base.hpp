@@ -7,7 +7,9 @@
 
 #include <upd/tuple.hpp>
 
+#include "detail/any_function.hpp"
 #include "detail/io.hpp"
+#include "detail/sfinae.hpp"
 #include "detail/signature.hpp"
 
 #include "detail/def.hpp"
@@ -39,6 +41,43 @@ struct serialized_message : detail::immediate_writer<serialized_message<Endianes
 };
 
 } // namespace detail
+
+//! \brief Stores a callback to be called on the response from a device
+//! \details This class is non-templated, therefore it is suitable for storage.
+class key_with_hook {
+  template<typename, upd::endianess, upd::signed_mode>
+  friend class key_base;
+
+public:
+  //! \brief Call the stored callback on the provided parameters
+  //! \param input_ftor Input functor the parameters will be extracted from
+  template<typename F, sfinae::require_input_ftor<F> = 0>
+  void operator()(F &&input_ftor) const {
+    m_restorer(m_callback_ptr, detail::make_function_reference<F>(input_ftor));
+  }
+
+  //! \copybrief operator()
+  //! \param it Start of the range the parameters will be extracted from
+  //! \return The error code resulting from the call to 'read_headerless_packet'
+  template<typename It, sfinae::require_iterator<It> = 0>
+  void operator()(It it) const {
+    operator()([&]() { return *it++; });
+  }
+
+private:
+  //! \brief Store a functor convertible to function pointer
+  template<typename F, typename Key>
+  explicit key_with_hook(F &&ftor, Key) : key_with_hook{+ftor, Key{}} {}
+
+  //! \brief Store a function pointer as callback and its restorer
+  template<typename R, typename... Args, typename Key>
+  explicit key_with_hook(R (*f_ptr)(Args...), Key)
+      : m_callback_ptr{reinterpret_cast<detail::any_function_t *>(f_ptr)},
+        m_restorer{detail::restore_and_call<R(Args...), Key>} {}
+
+  detail::any_function_t *m_callback_ptr;
+  detail::restorer_t *m_restorer;
+};
 
 template<typename F,
          upd::endianess Endianess = upd::endianess::BUILTIN,
@@ -82,6 +121,14 @@ public:
       byte = FWD(fetch_byte)();
 
     return retval.template get<0>();
+  }
+
+  //! \brief Hook a callback to the key to be invoked when the order is done
+  //! \param hook Callback to hook
+  //! \return a 'key_with_hook' instance holding the provided hook
+  template<typename F>
+  key_with_hook with_hook(F &&hook) {
+    return key_with_hook{FWD(hook), *this};
   }
 };
 
