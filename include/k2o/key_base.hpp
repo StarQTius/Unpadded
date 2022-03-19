@@ -7,6 +7,7 @@
 
 #include <upd/tuple.hpp>
 
+#include "detail/io.hpp"
 #include "detail/signature.hpp"
 
 #include "detail/def.hpp"
@@ -19,8 +20,8 @@ namespace detail {
 //!   The content can be forwarded with the 'operator>>' function member. 'detail::serialized_message' object
 //!   cannot be copied from to avoid unintentional copy.
 template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Ts>
-struct serialized_message {
-  serialized_message(const Ts &... values) : content{values...} {}
+struct serialized_message : detail::immediate_writer<serialized_message<Endianess, Signed_Mode, Ts...>> {
+  serialized_message(const Ts &...values) : content{values...} {}
 
   serialized_message(const serialized_message &) = delete;
   serialized_message(serialized_message &&) = default;
@@ -29,9 +30,9 @@ struct serialized_message {
   serialized_message &operator=(serialized_message &&) = default;
 
   template<typename Dest_F>
-  void operator>>(Dest_F &&insert_byte) const {
+  void write_all(Dest_F &&insert_byte) const {
     for (auto byte : content)
-      FWD(insert_byte)(byte);
+      insert_byte(byte);
   }
 
   upd::tuple<Endianess, Signed_Mode, Ts...> content;
@@ -50,7 +51,8 @@ class key_base : public key_base<detail::signature_t<F>, Endianess, Signed_Mode>
 //! \tparam Endianess considered endianess when serializing/unserializing arguments
 //! \tparam Signed_Mode considered signed integer representation when serializing/unserializing arguments
 template<typename R, typename... Args, upd::endianess Endianess, upd::signed_mode Signed_Mode>
-class key_base<R(Args...), Endianess, Signed_Mode> {
+class key_base<R(Args...), Endianess, Signed_Mode>
+    : public detail::immediate_reader<key_base<R(Args...), Endianess, Signed_Mode>, R> {
 public:
   //! \brief Serialize arguments and prepare them for sending
   //! \details
@@ -59,10 +61,10 @@ public:
   //! \param args... arguments to be serialized
   //! \return A temporary object allowing the syntax mentioned above
 #ifdef DOXYGEN
-  auto operator()(const Args &... args) const;
+  auto operator()(const Args &...args) const;
 #else
   detail::serialized_message<Endianess, Signed_Mode, boost::remove_cv_ref_t<Args>...>
-  operator()(const Args &... args) const {
+  operator()(const Args &...args) const {
     return {args...};
   }
 #endif
@@ -74,7 +76,7 @@ public:
   //! \param fetch_byte Functor acting as a input byte stream
   //! \return the unserialized value
   template<typename Src_F>
-  R operator<<(Src_F &&fetch_byte) const {
+  R read_all(Src_F &&fetch_byte) const {
     upd::tuple<Endianess, Signed_Mode, R> retval;
     for (auto &byte : retval)
       byte = FWD(fetch_byte)();
