@@ -24,6 +24,7 @@ namespace detail {
 //!   cannot be copied from to avoid unintentional copy.
 template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Ts>
 struct serialized_message : detail::immediate_writer<serialized_message<Endianess, Signed_Mode, Ts...>> {
+  //! \brief Store the payload
   serialized_message(const Ts &...values) : content{values...} {}
 
   serialized_message(const serialized_message &) = delete;
@@ -32,7 +33,10 @@ struct serialized_message : detail::immediate_writer<serialized_message<Endianes
   serialized_message &operator=(const serialized_message &) = delete;
   serialized_message &operator=(serialized_message &&) = default;
 
-  template<typename Dest_F>
+  using detail::immediate_writer<serialized_message<Endianess, Signed_Mode, Ts...>>::write_all;
+
+  //! \brief Completely output the payload represented by the key
+  template<typename Dest_F, sfinae::require_output_ftor<Dest_F> = 0>
   void write_all(Dest_F &&insert_byte) const {
     for (auto byte : content)
       insert_byte(byte);

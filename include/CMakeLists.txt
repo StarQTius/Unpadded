@@ -1,6 +1,7 @@
 FetchContent_MakeAvailable(expected Unpadded)
 
 set(K2O_HEADERS
+    buffered_dispatcher.hpp
     cpp11.hpp
     dispatcher.hpp
     key_base.hpp

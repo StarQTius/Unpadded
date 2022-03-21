@@ -1,5 +1,5 @@
 //! \file
-//! \brief Reception of order execution request
+//! \brief Order request immediate processing
 
 #pragma once
 
@@ -36,13 +36,15 @@ Index get_index(Src_F &&fetch_byte, Index (&read_index)(const upd::byte_t *)) {
 //! \brief 'dispatcher' object implementation
 //! \note The reason for putting the implementation apart is a GCC compiler bug in C++17 with deduction guide.
 template<size_t N>
-class dispatcher_impl {
-public:
+struct dispatcher_impl {
   //! \brief Integer type large enougth to store the order indices
   using index_t = uint16_t;
 
   //! \brief Function type to unserialize the order indices
   using index_reader_t = index_t(const upd::byte_t *);
+
+  order orders[N];
+  index_reader_t &read_index;
 
   //! \brief Get the functors held by the provided 'keyring' object
   //! \tparam Endianess Endianess used to serialize the values
@@ -61,10 +63,10 @@ public:
   //! \return The index got from the input byte stream
   template<typename Src_F, typename Dest_F>
   index_t operator()(Src_F &&fetch_byte, Dest_F &&insert_byte) {
-    auto index = get_index(FWD(fetch_byte), read_index);
+    auto index = get_index(fetch_byte);
 
     if (index < N)
-      orders[index](FWD(fetch_byte), FWD(insert_byte));
+      orders[index](fetch_byte, insert_byte);
 
     return index;
   }
@@ -74,13 +76,14 @@ public:
   tl::expected<std::reference_wrapper<order>, index_t> get_order(Src_F &&fetch_byte) {
     using return_t = tl::expected<std::reference_wrapper<order>, index_t>;
 
-    auto index = detail::get_index(FWD(fetch_byte), read_index);
+    auto index = get_index(FWD(fetch_byte));
     return index < N ? return_t{orders[index]} : tl::make_unexpected(index);
   }
 
-private:
-  order orders[N];
-  index_reader_t &read_index;
+  template<typename Src_F>
+  index_t get_index(Src_F &&fetch_byte) const {
+    return detail::get_index(FWD(fetch_byte), read_index);
+  }
 };
 
 } // namespace detail
@@ -93,8 +96,10 @@ private:
 //!   functions are internally held as 'order' objects.
 //! \tparam N the number of functions held by the 'keyring' object
 template<size_t N>
-class dispatcher {
-public:
+struct dispatcher {
+  using index_t = typename detail::dispatcher_impl<N>::index_t;
+  constexpr static auto size = N;
+
   //! \brief Construct the object from the provided 'keyring' object
   //! \details
   //!   The 'N' template parameter can be deduced from the number of functions held by the 'keyring' object.
@@ -117,10 +122,25 @@ public:
   //! \param fetch_byte Functor acting as an input byte stream
   //! \return Either a reference to the order if it exists or the index that obtained from the byte sequence
   template<typename Src_F>
-  tl::expected<std::reference_wrapper<order>, typename detail::dispatcher_impl<N>::index_t>
-  get_order(Src_F &&fetch_byte) {
+  tl::expected<std::reference_wrapper<order>, index_t> get_order(Src_F &&fetch_byte) {
     return m_impl.get_order(FWD(fetch_byte));
   }
+
+  //! \copydoc dispatcher_impl::get_index
+  //! \param fetch_byte Input functor to a byte sequence
+  template<typename Src_F>
+  index_t get_index(Src_F &&fetch_byte) const {
+    return m_impl.get_index(FWD(fetch_byte));
+  }
+
+  //! \brief Get one of the stored orders
+  //! \param index Index of an order
+  //! \return the order associated with that index
+  //! \warning There are no bound check performed.
+  order &operator[](index_t index) { return m_impl.orders[index]; }
+
+  //! \copydoc operator[]
+  const order &operator[](index_t index) const { return m_impl.orders[index]; }
 
 private:
   detail::dispatcher_impl<N> m_impl;

@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <iterator>
 #include <type_traits>
 
 #include <boost/type_traits/decay.hpp>
@@ -76,7 +77,7 @@ using require = typename boost::enable_if_<Expression, U>::type;
 
 //! \brief Require the provided type to be well-formed
 template<typename T, typename U = int>
-using require_t = decltype(std::declval<T>(), std::declval<U>());
+using require_t = typename std::remove_reference<decltype(std::declval<T>(), std::declval<U>())>::type;
 
 //! \brief Require the provided type to be a template instance of 'upd::tuple'
 template<typename T, typename U = int>
@@ -112,7 +113,7 @@ using require_output_ftor = require<has_signature<F, void(upd::byte_t)>::value, 
 
 //! \brief Require the given type to be an iterator type to a byte sequence
 template<typename T, typename U = int>
-using require_iterator = require_t<typename T::iterator_category, U>;
+using require_iterator = require_t<typename std::iterator_traits<T>::iterator_category, U>;
 
 } // namespace sfinae
 } // namespace k2o
