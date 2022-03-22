@@ -8,8 +8,8 @@
 #include <boost/type_traits/integral_constant.hpp>
 #include <upd/format.hpp>
 
-#include "detail/find_in_typelist.hpp"
 #include "detail/signature.hpp"
+#include "detail/typelist.hpp"
 #include "detail/value_h.hpp" // IWYU pragma: keep
 #include "key.hpp"
 
@@ -40,8 +40,7 @@ class keyring<Endianess, Signed_Mode, detail::unevaluated_value_h<Fs, Functions>
   using search_list = boost::mp11::mp_list<detail::unevaluated_value_h<Fs, Functions>...>;
 
   template<typename H>
-  using key_t =
-      key<detail::find_in_typelist<H, search_list>(), detail::signature_t<typename H::type>, Endianess, Signed_Mode>;
+  using key_t = key<detail::find<search_list, H>::value, detail::signature_t<typename H::type>, Endianess, Signed_Mode>;
 
   static_assert((boost::conjunction<boost::integral_constant<bool, detail::is_callable<Fs>()>...>::value),
                 "'keyring' only accepts callable objects as template parameters");

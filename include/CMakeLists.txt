@@ -11,12 +11,12 @@ set(K2O_HEADERS
     status.hpp
     detail/any_function.hpp
     detail/def.hpp
-    detail/find_in_typelist.hpp
     detail/input_tuple.hpp
     detail/io.hpp
     detail/normalize_to_tuple.hpp
     detail/sfinae.hpp
     detail/signature.hpp
+    detail/typelist.hpp
     detail/undef.hpp
     detail/unique_ptr.hpp
     detail/value_h.hpp)
