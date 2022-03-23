@@ -128,6 +128,27 @@ static void key_base_DO_hook_a_callback_EXPECT_callback_receiving_correct_argume
 }
 
 int main() {
+  using namespace k2o;
+
+#define KEY_BASE DECLVAL(key_base<int(int), upd::endianess::BUILTIN, upd::signed_mode::BUILTIN>)
+#define KEY_WITH_HOOK DECLVAL(key_with_hook)
+#define BYTE_PTR DECLVAL(upd::byte_t *)
+#define READABLE DECLVAL(upd::byte_t (&)())
+#define REGISTRY DECLVAL(const volatile upd::byte_t &)
+#define INTEGER DECLVAL(int &)
+#define WRITABLE DECLVAL(void (&)(upd::byte_t))
+
+  DETECT(INTEGER = KEY_BASE.read_all(BYTE_PTR),
+         INTEGER = KEY_BASE.read_all(READABLE),
+         INTEGER = KEY_BASE << BYTE_PTR,
+         INTEGER = KEY_BASE << READABLE,
+         KEY_BASE(0).write_all(BYTE_PTR),
+         KEY_BASE(0).write_all(WRITABLE),
+         KEY_BASE(0) >> BYTE_PTR,
+         KEY_BASE(0) >> WRITABLE,
+         KEY_WITH_HOOK(BYTE_PTR),
+         KEY_WITH_HOOK(READABLE));
+
   UNITY_BEGIN();
   RUN_TEST(key_base_DO_serialize_arguments_EXPECT_correct_byte_sequence);
   RUN_TEST(key_base_DO_serialize_arguments_with_parameter_EXPECT_correct_byte_sequence);

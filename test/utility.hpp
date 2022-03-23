@@ -8,3 +8,8 @@
 
 extern "C" void setUp() {}
 extern "C" void tearDown() {}
+
+#define PACK(...) __VA_ARGS__
+#define DECLVAL(...) std::declval<PACK(__VA_ARGS__)>()
+#define DETECT(...) decltype(__VA_ARGS__, DECLVAL(int)){};
+//

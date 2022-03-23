@@ -18,6 +18,26 @@ static void key_DO_serialize_argument_EXPECT_correct_id_and_result() {
 }
 
 int main() {
+  using namespace k2o;
+
+#define KEY DECLVAL(key<0, int(int), upd::endianess::BUILTIN, upd::signed_mode::BUILTIN>)
+#define KEY_WITH_HOOK DECLVAL(key_with_hook)
+#define BYTE_PTR DECLVAL(upd::byte_t *)
+#define READABLE DECLVAL(upd::byte_t (&)())
+#define INTEGER DECLVAL(int &)
+#define WRITABLE DECLVAL(void (&)(upd::byte_t))
+
+  DETECT(INTEGER = KEY.read_all(BYTE_PTR),
+         INTEGER = KEY.read_all(READABLE),
+         INTEGER = KEY << BYTE_PTR,
+         INTEGER = KEY << READABLE,
+         KEY(0).write_all(BYTE_PTR),
+         KEY(0).write_all(WRITABLE),
+         KEY(0) >> BYTE_PTR,
+         KEY(0) >> WRITABLE,
+         KEY_WITH_HOOK(BYTE_PTR),
+         KEY_WITH_HOOK(READABLE));
+
   UNITY_BEGIN();
   RUN_TEST(key_DO_serialize_argument_EXPECT_correct_id_and_result);
   return UNITY_END();

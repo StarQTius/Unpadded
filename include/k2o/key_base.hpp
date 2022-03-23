@@ -64,7 +64,7 @@ public:
   //! \copybrief operator()
   //! \param it Start of the range the parameters will be extracted from
   //! \return The error code resulting from the call to 'read_headerless_packet'
-  template<typename It, sfinae::require_iterator<It> = 0>
+  template<typename It, sfinae::require_byte_iterator<It> = 0>
   void operator()(It it) const {
     operator()([&]() { return *it++; });
   }

@@ -44,27 +44,27 @@ public:
   //! \param src Input iterator to the byte sequence to read
 
   //! \copydoc ReadAll_Iterator
-  template<typename It, sfinae::require_iterator<It> = 0>
-  void read_all(It it) {
-    derived().read_all([&]() { return *it++; });
+  template<typename It, sfinae::require_byte_iterator<It> = 0>
+  R read_all(It it) {
+    return derived().read_all([&]() { return *it++; });
   }
 
   //! \copydoc ReadAll_Iterator
-  template<typename It, sfinae::require_iterator<It> = 0>
-  void read_all(It it) const {
-    derived().read_all([&]() { return *it++; });
+  template<typename It, sfinae::require_byte_iterator<It> = 0>
+  R read_all(It it) const {
+    return derived().read_all([&]() { return *it++; });
   }
 
   //! \copydoc ReadAll_Iterator
-  template<typename It, sfinae::require_iterator<It> = 0>
-  void operator<<(It src) {
-    read_all(src);
+  template<typename It, sfinae::require_byte_iterator<It> = 0>
+  R operator<<(It src) {
+    return read_all(src);
   }
 
   //! \copydoc ReadAll_Iterator
-  template<typename It, sfinae::require_iterator<It> = 0>
-  void operator<<(It src) const {
-    read_all(src);
+  template<typename It, sfinae::require_byte_iterator<It> = 0>
+  R operator<<(It src) const {
+    return read_all(src);
   }
 };
 
@@ -99,25 +99,25 @@ public:
   //! \param src Output iterator used to write the byte sequence
 
   //! \copydoc WriteAll_Iterator
-  template<typename It, sfinae::require_iterator<It> = 0>
+  template<typename It, sfinae::require_byte_iterator<It> = 0>
   void write_all(It it) {
     derived().write_all([&](upd::byte_t byte) { *it++ = byte; });
   }
 
   //! \copydoc WriteAll_Iterator
-  template<typename It, sfinae::require_iterator<It> = 0>
+  template<typename It, sfinae::require_byte_iterator<It> = 0>
   void write_all(It it) const {
     derived().write_all([&](upd::byte_t byte) { *it++ = byte; });
   }
 
   //! \copydoc WriteAll_Iterator
-  template<typename It, sfinae::require_iterator<It> = 0>
+  template<typename It, sfinae::require_byte_iterator<It> = 0>
   void operator>>(It src) {
     write_all(src);
   }
 
   //! \copydoc WriteAll_Iterator
-  template<typename It, sfinae::require_iterator<It> = 0>
+  template<typename It, sfinae::require_byte_iterator<It> = 0>
   void operator>>(It src) const {
     write_all(src);
   }
@@ -147,6 +147,8 @@ public:
     derived().read([&]() { return reg; });
   }
 
+  using immediate_reader<D, R>::operator<<;
+
   //! \copydoc Read_Registry
   void operator<<(const volatile upd::byte_t &reg) {
     derived().read([&]() { return reg; });
@@ -162,13 +164,13 @@ public:
   //! \param it Input iterator to the byte to read
 
   //! \copydoc Read_Iterator
-  template<typename It, sfinae::require_iterator<It> = 0>
+  template<typename It, sfinae::require_byte_iterator<It> = 0>
   void read(It it) {
     derived().read([&]() { return *it; });
   }
 
   //! \copydoc Read_Iterator
-  template<typename It, sfinae::require_iterator<It> = 0>
+  template<typename It, sfinae::require_byte_iterator<It> = 0>
   void read(It it) const {
     derived().read([&]() { return *it; });
   }
@@ -198,6 +200,8 @@ public:
     derived().write([&]() { return reg; });
   }
 
+  using immediate_writer<D>::operator>>;
+
   //! \copydoc Write_Registry
   void operator>>(const volatile upd::byte_t &reg) {
     derived().write([&]() { return reg; });
@@ -213,14 +217,14 @@ public:
   //! \param it Output iterator used to write the byte
 
   //! \copydoc Write_Iterator
-  template<typename It, sfinae::require_iterator<It> = 0>
-  void read(It it) {
+  template<typename It, sfinae::require_byte_iterator<It> = 0>
+  void write(It it) {
     derived().write([&]() { return *it; });
   }
 
   //! \copydoc Write_Iterator
-  template<typename It, sfinae::require_iterator<It> = 0>
-  void read(It it) const {
+  template<typename It, sfinae::require_byte_iterator<It> = 0>
+  void write(It it) const {
     derived().write([&]() { return *it; });
   }
 };

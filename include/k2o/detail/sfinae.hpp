@@ -53,6 +53,9 @@ constexpr boost::true_type
     is_deriving_from_keyring_impl(keyring<Endianess, Signed_Mode, k2o::detail::unevaluated_value_h<Fs, Ftors>...>);
 constexpr boost::false_type is_deriving_from_keyring_impl(...);
 
+template<typename... Args>
+int require_pack(Args &&...);
+
 } // namespace detail
 
 //! \brief Indicates whether the instances of the provided types to be invocable like functions of the given signature
@@ -75,9 +78,9 @@ struct is_deriving_from_keyring : decltype(detail::is_deriving_from_keyring_impl
 template<bool Expression, typename U = int>
 using require = typename boost::enable_if_<Expression, U>::type;
 
-//! \brief Require the provided type to be well-formed
-template<typename T, typename U = int>
-using require_t = typename std::remove_reference<decltype(std::declval<T>(), std::declval<U>())>::type;
+//! \brief Require the provided types to be well-formed
+template<typename... Args>
+using require_t = typename std::remove_reference<decltype(detail::require_pack(std::declval<Args>()...))>::type;
 
 //! \brief Require the provided type to be a template instance of 'upd::tuple'
 template<typename T, typename U = int>
@@ -112,8 +115,10 @@ template<typename F, typename U = int>
 using require_output_ftor = require<has_signature<F, void(upd::byte_t)>::value, U>;
 
 //! \brief Require the given type to be an iterator type to a byte sequence
-template<typename T, typename U = int>
-using require_iterator = require_t<typename std::iterator_traits<T>::iterator_category, U>;
+template<typename T>
+using require_byte_iterator =
+    require_t<typename std::iterator_traits<T>::iterator_category,
+              require<std::is_convertible<typename std::iterator_traits<T>::value_type, upd::byte_t>::value>>;
 
 } // namespace sfinae
 } // namespace k2o

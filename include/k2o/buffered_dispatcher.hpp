@@ -34,7 +34,7 @@ namespace k2o {
 //! \tparam Output_Iterator Type of the iterator to the output buffer
 template<std::size_t N, typename Input_Iterator, typename Output_Iterator>
 class buffered_dispatcher : public detail::reader<buffered_dispatcher<N, Input_Iterator, Output_Iterator>, void>,
-                            detail::writer<buffered_dispatcher<N, Input_Iterator, Output_Iterator>> {
+                            public detail::writer<buffered_dispatcher<N, Input_Iterator, Output_Iterator>> {
   using this_t = buffered_dispatcher<N, Input_Iterator, Output_Iterator>;
 
 public:
@@ -128,6 +128,12 @@ private:
   Input_Iterator m_ibuf_begin, m_ibuf_next;
   Output_Iterator m_obuf_begin, m_obuf_next, m_obuf_bottom;
 };
+
+template<typename Input_Iterator, typename Output_Iterator, typename Keyring>
+buffered_dispatcher<Keyring::size, Input_Iterator, Output_Iterator>
+make_buffered_dispatcher(Keyring, Input_Iterator input_it, Output_Iterator output_it) {
+  return buffered_dispatcher<Keyring::size, Input_Iterator, Output_Iterator>(Keyring{}, input_it, output_it);
+}
 
 #if __cplusplus >= 201703L
 

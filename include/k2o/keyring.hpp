@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <cstddef>
+
 #include <boost/mp11/detail/mp_list.hpp>
 #include <boost/type_traits/conjunction.hpp>
 #include <boost/type_traits/integral_constant.hpp>
@@ -46,6 +48,8 @@ class keyring<Endianess, Signed_Mode, detail::unevaluated_value_h<Fs, Functions>
                 "'keyring' only accepts callable objects as template parameters");
 
 public:
+  constexpr static std::size_t size = sizeof...(Fs);
+
   constexpr keyring() = default;
   constexpr keyring(flist11_t<detail::unevaluated_value_h<Fs, Functions>...>) {}
   constexpr keyring(flist11_t<detail::unevaluated_value_h<Fs, Functions>...>,
