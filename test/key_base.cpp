@@ -127,16 +127,11 @@ static void key_base_DO_hook_a_callback_EXPECT_callback_receiving_correct_argume
   k.with_hook([](int value) { TEST_ASSERT_EQUAL_INT(64, value); })([&]() { return t[i++]; });
 }
 
-int main() {
-  using namespace k2o;
-
 #define KEY_BASE DECLVAL(key_base<int(int), upd::endianess::BUILTIN, upd::signed_mode::BUILTIN>)
 #define KEY_WITH_HOOK DECLVAL(key_with_hook)
-#define BYTE_PTR DECLVAL(upd::byte_t *)
-#define READABLE DECLVAL(upd::byte_t (&)())
-#define REGISTRY DECLVAL(const volatile upd::byte_t &)
-#define INTEGER DECLVAL(int &)
-#define WRITABLE DECLVAL(void (&)(upd::byte_t))
+
+int main() {
+  using namespace k2o;
 
   DETECT(INTEGER = KEY_BASE.read_all(BYTE_PTR),
          INTEGER = KEY_BASE.read_all(READABLE),

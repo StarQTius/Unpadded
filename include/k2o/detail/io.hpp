@@ -22,50 +22,43 @@ class immediate_reader {
   const D &derived() const { return reinterpret_cast<const D &>(*this); }
 
 public:
-  //! \k2o_doc{DoubleLeftArrow_Functor}
-  //! \brief Call the 'read_all' member function of derived class
-  //! \param src Input functor to the byte sequence to read
-  //! \return the resulting value of the 'read_all' call
+  //! \name Immediate reading functions
+  //! \brief Call the 'read_all' member function of the derived class
+  //! \details
+  //!   These functions may be invoked on hardware registers and input functors and iterators
+  //! @{
 
-  //! \copydoc DoubleLeftArrow_Functor
   template<typename Src_F, sfinae::require_input_ftor<Src_F> = 0>
   R operator<<(Src_F &&src) {
     return derived().read_all(FWD(src));
   }
 
-  //! \copydoc DoubleLeftArrow_Functor
   template<typename Src_F, sfinae::require_input_ftor<Src_F> = 0>
   R operator<<(Src_F &&src) const {
     return derived().read_all(FWD(src));
   }
 
-  //! \k2o_doc{ReadAll_Iterator}
-  //! \copybrief DoubleLeftArrow_Functor
-  //! \param src Input iterator to the byte sequence to read
-
-  //! \copydoc ReadAll_Iterator
   template<typename It, sfinae::require_byte_iterator<It> = 0>
   R read_all(It it) {
     return derived().read_all([&]() { return *it++; });
   }
 
-  //! \copydoc ReadAll_Iterator
   template<typename It, sfinae::require_byte_iterator<It> = 0>
   R read_all(It it) const {
     return derived().read_all([&]() { return *it++; });
   }
 
-  //! \copydoc ReadAll_Iterator
   template<typename It, sfinae::require_byte_iterator<It> = 0>
   R operator<<(It src) {
     return read_all(src);
   }
 
-  //! \copydoc ReadAll_Iterator
   template<typename It, sfinae::require_byte_iterator<It> = 0>
   R operator<<(It src) const {
     return read_all(src);
   }
+
+  //! @}
 };
 
 //! \brief CRTP base class used to define immediate writing members functions
@@ -78,49 +71,43 @@ class immediate_writer {
   const D &derived() const { return reinterpret_cast<const D &>(*this); }
 
 public:
-  //! \k2o_doc{DoubleRightArrow_Functor}
-  //! \brief Call the 'write_all' member function of derived class
-  //! \param src Output functor used to write the byte sequence
+  //! \name Immediate writing functions
+  //! \brief Call the 'write_all' member function of the derived class
+  //! \details
+  //!   These functions may be invoked on hardware registers and output functors and iterators
+  //! @{
 
-  //! \copydoc DoubleRightArrow_Functor
   template<typename Dest_F, sfinae::require_output_ftor<Dest_F> = 0>
   void operator>>(Dest_F &&dest) {
     derived().write_all(FWD(dest));
   }
 
-  //! \copydoc DoubleRightArrow_Functor
   template<typename Dest_F, sfinae::require_output_ftor<Dest_F> = 0>
   void operator>>(Dest_F &&dest) const {
     derived().write_all(FWD(dest));
   }
 
-  //! \k2o_doc{WriteAll_Iterator}
-  //! \copybrief DoubleRightArrow_Functor
-  //! \param src Output iterator used to write the byte sequence
-
-  //! \copydoc WriteAll_Iterator
   template<typename It, sfinae::require_byte_iterator<It> = 0>
   void write_all(It it) {
     derived().write_all([&](upd::byte_t byte) { *it++ = byte; });
   }
 
-  //! \copydoc WriteAll_Iterator
   template<typename It, sfinae::require_byte_iterator<It> = 0>
   void write_all(It it) const {
     derived().write_all([&](upd::byte_t byte) { *it++ = byte; });
   }
 
-  //! \copydoc WriteAll_Iterator
   template<typename It, sfinae::require_byte_iterator<It> = 0>
   void operator>>(It src) {
     write_all(src);
   }
 
-  //! \copydoc WriteAll_Iterator
   template<typename It, sfinae::require_byte_iterator<It> = 0>
   void operator>>(It src) const {
     write_all(src);
   }
+
+  //! @}
 };
 
 //! \brief CRTP base class used to define reading members functions
@@ -133,47 +120,41 @@ class reader : public immediate_reader<D, R> {
   const D &derived() const { return reinterpret_cast<const D &>(*this); }
 
 public:
-  //! \k2o_doc{Read_Registry}
-  //! \brief Call the 'read' member function of the derived class
-  //! \param reg Register to read a byte from
+  using immediate_reader<D, R>::operator<<;
 
-  //! \copydoc Read_Registry
+  //! \name Reading functions
+  //! \brief Call the 'read' member function of the derived class
+  //! \details
+  //!   These functions may be invoked on hardware registers and input iterators
+  //! @{
+
   void read(const volatile upd::byte_t &reg) {
     derived().read([&]() { return reg; });
   }
 
-  //! \copydoc Read_Registry
   void read(const volatile upd::byte_t &reg) const {
     derived().read([&]() { return reg; });
   }
 
-  using immediate_reader<D, R>::operator<<;
-
-  //! \copydoc Read_Registry
   void operator<<(const volatile upd::byte_t &reg) {
     derived().read([&]() { return reg; });
   }
 
-  //! \copydoc Read_Registry
   void operator<<(const volatile upd::byte_t &reg) const {
     derived().read([&]() { return reg; });
   }
 
-  //! \k2o_doc{Read_Iterator}
-  //! \copybrief Read_Registry
-  //! \param it Input iterator to the byte to read
-
-  //! \copydoc Read_Iterator
   template<typename It, sfinae::require_byte_iterator<It> = 0>
   void read(It it) {
     derived().read([&]() { return *it; });
   }
 
-  //! \copydoc Read_Iterator
   template<typename It, sfinae::require_byte_iterator<It> = 0>
   void read(It it) const {
     derived().read([&]() { return *it; });
   }
+
+  //! @}
 };
 
 //! \brief CRTP base class used to define writing members functions
@@ -186,46 +167,126 @@ class writer : public immediate_writer<D> {
   const D &derived() const { return reinterpret_cast<const D &>(*this); }
 
 public:
-  //! \k2o_doc{Write_Registry}
+  //! \name Writing functions
   //! \brief Call the 'write' member function of the derived class
-  //! \param reg Register to write a byte to
+  //! \details
+  //!   These functions may be invoked on hardware registers and output iterators
+  //! @{
 
-  //! \copydoc Write_Registry
   void write(const volatile upd::byte_t &reg) {
     derived().write([&]() { return reg; });
   }
 
-  //! \copydoc Write_Registry
   void write(const volatile upd::byte_t &reg) const {
     derived().write([&]() { return reg; });
   }
 
   using immediate_writer<D>::operator>>;
 
-  //! \copydoc Write_Registry
   void operator>>(const volatile upd::byte_t &reg) {
     derived().write([&]() { return reg; });
   }
 
-  //! \copydoc Write_Registry
   void operator>>(const volatile upd::byte_t &reg) const {
     derived().write([&]() { return reg; });
   }
 
-  //! \k2o_doc{Write_Iterator}
-  //! \copybrief Write_Registry
-  //! \param it Output iterator used to write the byte
-
-  //! \copydoc Write_Iterator
   template<typename It, sfinae::require_byte_iterator<It> = 0>
   void write(It it) {
     derived().write([&]() { return *it; });
   }
 
-  //! \copydoc Write_Iterator
   template<typename It, sfinae::require_byte_iterator<It> = 0>
   void write(It it) const {
     derived().write([&]() { return *it; });
+  }
+
+  // @}
+};
+
+//! \brief CRTP base class used to define class whose instances process input and yield output immediately
+//! \details
+//!   Immediate process can be invoked on a byte input and a byte output.
+//!   Derived classes must be invocable on an input functor an output functor.
+template<typename D, typename R>
+class immediate_process {
+  D &derived() { return reinterpret_cast<D &>(*this); }
+  const D &derived() const { return reinterpret_cast<const D &>(*this); }
+
+public:
+  //! \brief Normalize the parameters and invoke the derived instance on them
+  //! \param input Byte input to process
+  //! \param output Byte output to write to
+  //! \return the result of the invocation of the derived instance on the normalized parameters
+  template<typename Input,
+           typename Output,
+           sfinae::require<!sfinae::has_signature<Input, upd::byte_t()>::value ||
+                           !sfinae::has_signature<Output, void(upd::byte_t)>::value> = 0>
+  R operator()(Input &&input, Output &&output) {
+    return derived()(normalize(FWD(input), reader_tag_t{}), normalize(FWD(output), writer_tag_t{}));
+  }
+
+  //! \copydoc operator()
+  template<typename Input,
+           typename Output,
+           sfinae::require<!sfinae::has_signature<Input, upd::byte_t()>::value ||
+                           !sfinae::has_signature<Output, void(upd::byte_t)>::value> = 0>
+  R operator()(Input &&input, Output &&output) const {
+    return derived()(normalize(FWD(input), reader_tag_t{}), normalize(FWD(output), writer_tag_t{}));
+  }
+
+private:
+  struct reader_tag_t {};
+  struct writer_tag_t {};
+
+  //! \brief Iterator wrapper behaving like an input functor
+  template<typename It>
+  struct reader_iterator {
+    upd::byte_t operator()() { return *it++; }
+    It it;
+  };
+
+  //! \brief Iterator wrapper behaving like an output functor
+  template<typename It>
+  struct writer_iterator {
+    void operator()(upd::byte_t byte) { *it++ = byte; }
+    It it;
+  };
+
+  //! Behave as an identity function
+  template<typename F>
+  F &&normalize(F &&ftor, ...) {
+    return FWD(ftor);
+  }
+
+  //! Behave as an identity function
+  template<typename F>
+  F &&normalize(F &&ftor, ...) const {
+    return FWD(ftor);
+  }
+
+  //! Wrap the iterator to get an input functor
+  template<typename It, sfinae::require_byte_iterator<It> = 0>
+  reader_iterator<It> normalize(It it, reader_tag_t) {
+    return {it};
+  }
+
+  //! Wrap the iterator to get an input functor
+  template<typename It, sfinae::require_byte_iterator<It> = 0>
+  reader_iterator<It> normalize(It it, reader_tag_t) const {
+    return {it};
+  }
+
+  //! Wrap the iterator to get an output functor
+  template<typename It, sfinae::require_byte_iterator<It> = 0>
+  writer_iterator<It> normalize(It it, writer_tag_t) {
+    return {it};
+  }
+
+  //! Wrap the iterator to get an output functor
+  template<typename It, sfinae::require_byte_iterator<It> = 0>
+  writer_iterator<It> normalize(It it, writer_tag_t) const {
+    return {it};
   }
 };
 

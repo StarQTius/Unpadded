@@ -25,14 +25,10 @@ static void buffered_dispatcher_DO_load_an_order_EXPECT_correct_order_loaded_cpp
 #endif // __cplusplus >= 201703L
 }
 
+#define BUFFERED_DISPATCHER make_buffered_dispatcher(kring, BYTE_PTR, BYTE_PTR)
+
 int main() {
   using namespace k2o;
-
-#define BYTE_PTR DECLVAL(upd::byte_t *)
-#define BUFFERED_DISPATCHER make_buffered_dispatcher(kring, BYTE_PTR, BYTE_PTR)
-#define READABLE DECLVAL(upd::byte_t (&)())
-#define REGISTRY DECLVAL(const volatile upd::byte_t &)
-#define WRITABLE DECLVAL(void (&)(upd::byte_t))
 
   DETECT(BUFFERED_DISPATCHER.read_all(BYTE_PTR),
          BUFFERED_DISPATCHER.read_all(READABLE),

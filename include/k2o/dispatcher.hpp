@@ -11,6 +11,7 @@
 #include <upd/format.hpp>
 #include <upd/type.hpp>
 
+#include "detail/io.hpp"
 #include "detail/sfinae.hpp"
 #include "detail/value_h.hpp" // IWYU pragma: keep
 #include "keyring.hpp"
@@ -24,16 +25,16 @@ namespace k2o {
 namespace detail {
 
 //! \brief Extract the index from a byte sequence
-template<typename Src_F, typename Index>
-Index get_index(Src_F &&fetch_byte, Index (&read_index)(const upd::byte_t *)) {
+template<typename Src, typename Index>
+Index get_index(Src &&src, Index (&read_index)(const upd::byte_t *)) {
   upd::byte_t index_buf[sizeof(Index)];
   for (auto &byte : index_buf)
-    byte = FWD(fetch_byte)();
+    byte = FWD(src)();
 
   return read_index(index_buf);
 }
 
-//! \brief 'dispatcher' object implementation
+//! \brief Dispatcher implementation
 //! \note The reason for putting the implementation apart is a GCC compiler bug in C++17 with deduction guide.
 template<size_t N>
 struct dispatcher_impl {
@@ -46,7 +47,7 @@ struct dispatcher_impl {
   order orders[N];
   index_reader_t &read_index;
 
-  //! \brief Get the functors held by the provided 'keyring' object
+  //! \brief Get the functors held by the provided keyring
   //! \tparam Endianess Endianess used to serialize the values
   //! \tparam Signed_Mode Signed integer representation used to serialize the values
   //! \tparam Ftors... Functors held by the keyring
@@ -58,79 +59,82 @@ struct dispatcher_impl {
   //! \brief Get the index and arguments from an input byte stream and call the matching order
   //! \details
   //!   The return value is inserted into the output byte stream. If the index is out of bound, no call are performed.
-  //! \param fetch_byte Functor acting as an input byte stream
-  //! \param insert_byte Functor acting as an output byte stream
+  //! \param src Functor acting as an input byte stream
+  //! \param dest Functor acting as an output byte stream
   //! \return The index got from the input byte stream
-  template<typename Src_F, typename Dest_F>
-  index_t operator()(Src_F &&fetch_byte, Dest_F &&insert_byte) {
-    auto index = get_index(fetch_byte);
+  template<typename Src, typename Dest>
+  index_t operator()(Src &&src, Dest &&dest) {
+    auto index = get_index(src);
 
     if (index < N)
-      orders[index](fetch_byte, insert_byte);
+      orders[index](src, dest);
 
     return index;
   }
 
   //! \brief Get the order indicated by the byte sequence
-  template<typename Src_F>
-  tl::expected<std::reference_wrapper<order>, index_t> get_order(Src_F &&fetch_byte) {
+  template<typename Src>
+  tl::expected<std::reference_wrapper<order>, index_t> get_order(Src &&src) {
     using return_t = tl::expected<std::reference_wrapper<order>, index_t>;
 
-    auto index = get_index(FWD(fetch_byte));
+    auto index = get_index(FWD(src));
     return index < N ? return_t{orders[index]} : tl::make_unexpected(index);
   }
 
-  template<typename Src_F>
-  index_t get_index(Src_F &&fetch_byte) const {
-    return detail::get_index(FWD(fetch_byte), read_index);
+  template<typename Src>
+  index_t get_index(Src &&src) const {
+    return detail::get_index(FWD(src), read_index);
   }
 };
 
 } // namespace detail
 
-//! \brief Order containers able to unserialize byte sequence serialized by an 'key' object
+//! \brief Order containers able to unserialize byte sequence serialized by an key
 //! \details
-//!   A 'dispatcher' object is constructed from a 'keyring' object and is able to unserialize a payload serialized by
-//!   an 'key' object created from the same 'keyring' object. When it happens, the 'dispatcher' object calls the
-//!   function associated with the 'key' object, forwarding the arguments from the payload to the function. The
+//!   A dispatcher is constructed from a keyring and is able to unserialize a payload serialized by
+//!   an key created from the same keyring. When it happens, the dispatcher calls the
+//!   function associated with the key, forwarding the arguments from the payload to the function. The
 //!   functions are internally held as 'order' objects.
-//! \tparam N the number of functions held by the 'keyring' object
+//! \tparam N the number of functions held by the keyring
 template<size_t N>
-struct dispatcher {
+class dispatcher : public detail::immediate_process<dispatcher<N>, typename detail::dispatcher_impl<N>::index_t> {
+public:
   using index_t = typename detail::dispatcher_impl<N>::index_t;
   constexpr static auto size = N;
 
-  //! \brief Construct the object from the provided 'keyring' object
+  //! \brief Construct the object from the provided keyring
   //! \details
-  //!   The 'N' template parameter can be deduced from the number of functions held by the 'keyring' object.
-  //! \param input_keyring 'keyring' object
+  //!   'N' can be deduced from the number of functions held by the keyring.
+  //! \param kring Keyring containing the orders to dispatch to
   //! \note
   //!   The strange structure of this function is due to a GCC compiler bug with deduction guide in C++17.
-  template<typename T, sfinae::require_is_deriving_from_keyring<T> = 0>
-  explicit dispatcher(T input_keyring) : m_impl{input_keyring} {}
+  template<typename Keyring, sfinae::require_is_deriving_from_keyring<Keyring> = 0>
+  explicit dispatcher(Keyring kring) : m_impl{kring} {}
+
+  using detail::immediate_process<dispatcher<N>, index_t>::operator();
 
   //! \brief Call the function according to the index and arguments obtained from a payload
-  //! \param fetch_byte functor behaving as an input byte stream, from which the payload is fetched
-  //! \param insert_byte functor behaving as an output byte stream, in which the function call return value will be put
-  //! \return the status code obtained from the underlying order call
-  template<typename Src_F, typename Dest_F>
-  typename detail::dispatcher_impl<N>::index_t operator()(Src_F &&fetch_byte, Dest_F &&insert_byte) {
-    return m_impl(FWD(fetch_byte), FWD(insert_byte));
+  //! \param src functor behaving as an input byte stream, from which the payload is fetched
+  //! \param dest functor behaving as an output byte stream, in which the function call return value will be put
+  //! \return the index of the called order
+  template<typename Src, typename Dest, sfinae::require_input_ftor<Src> = 0, sfinae::require_output_ftor<Dest> = 0>
+  index_t operator()(Src &&src, Dest &&dest) {
+    return m_impl(FWD(src), FWD(dest));
   }
 
   //! \brief Get the order indicated by the byte sequence
-  //! \param fetch_byte Functor acting as an input byte stream
+  //! \param src Functor acting as an input byte stream
   //! \return Either a reference to the order if it exists or the index that obtained from the byte sequence
-  template<typename Src_F>
-  tl::expected<std::reference_wrapper<order>, index_t> get_order(Src_F &&fetch_byte) {
-    return m_impl.get_order(FWD(fetch_byte));
+  template<typename Src, sfinae::require_input_ftor<Src> = 0>
+  tl::expected<std::reference_wrapper<order>, index_t> get_order(Src &&src) {
+    return m_impl.get_order(FWD(src));
   }
 
   //! \copydoc dispatcher_impl::get_index
-  //! \param fetch_byte Input functor to a byte sequence
-  template<typename Src_F>
-  index_t get_index(Src_F &&fetch_byte) const {
-    return m_impl.get_index(FWD(fetch_byte));
+  //! \param src Input functor to a byte sequence
+  template<typename Src, sfinae::require_input_ftor<Src> = 0>
+  index_t get_index(Src &&src) const {
+    return m_impl.get_index(FWD(src));
   }
 
   //! \brief Get one of the stored orders
@@ -151,13 +155,13 @@ template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Fs,
 dispatcher(keyring<Endianess, Signed_Mode, detail::unevaluated_value_h<Fs, Ftors>...>) -> dispatcher<sizeof...(Fs)>;
 #endif // __cplusplus >= 201703L
 
-//! \brief Make a 'dispatcher' object
-//! \param input_keyring 'keyring' object forwarded to the 'dispatcher' constructor
-//! \return a 'dispatcher' object whose orders calls the functors held by 'input_keyring'
+//! \brief Make a dispatcher
+//! \param kring keyring forwarded to the dispatcher
+//! \return a dispatcher whose orders calls the functors held by the keyring
 template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Fs, Fs... Ftors>
 dispatcher<sizeof...(Fs)>
-make_dispatcher(keyring<Endianess, Signed_Mode, detail::unevaluated_value_h<Fs, Ftors>...> input_keyring) {
-  return dispatcher<sizeof...(Fs)>{input_keyring};
+make_dispatcher(keyring<Endianess, Signed_Mode, detail::unevaluated_value_h<Fs, Ftors>...> kring) {
+  return dispatcher<sizeof...(Fs)>{kring};
 }
 
 } // namespace k2o

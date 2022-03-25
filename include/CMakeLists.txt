@@ -8,7 +8,6 @@ set(K2O_HEADERS
     key.hpp
     keyring.hpp
     order.hpp
-    status.hpp
     detail/any_function.hpp
     detail/def.hpp
     detail/input_tuple.hpp

@@ -8,9 +8,8 @@ static void order_DO_serialize_argument_into_stream_EXPECT_order_getting_unalter
   uint8_t value;
   order assign_to_value{[&](uint8_t x) { value = x; }};
 
-  auto error = assign_to_value([]() -> upd::byte_t { return 0xaf; });
+  assign_to_value([]() -> upd::byte_t { return 0xaf; });
 
-  TEST_ASSERT_EQUAL_UINT(status::OK, error);
   TEST_ASSERT_EQUAL_INT(0xaf, value);
 }
 
@@ -23,10 +22,9 @@ static void order_DO_give_then_return_argument_from_order_EXPECT_unaltered_value
   order return_argument{[](int value) { return value; }};
 
   size_t i = 0, j = 0;
-  auto error = return_argument([&]() { return serialized_argument[i++]; },
-                               [&](upd::byte_t byte) { serialized_return_value[j++] = byte; });
+  return_argument([&]() { return serialized_argument[i++]; },
+                  [&](upd::byte_t byte) { serialized_return_value[j++] = byte; });
 
-  TEST_ASSERT_EQUAL_UINT(status::OK, error);
   TEST_ASSERT_EQUAL_INT(argument, serialized_return_value.get<0>());
 }
 
@@ -66,7 +64,13 @@ static void order_DO_instantiate_order_with_functor_non_returning_EXPECT_input_a
   TEST_ASSERT_EQUAL_INT(0, f.output_size());
 }
 
+#define ORDER DECLVAL(order)
+
 int main() {
+  using namespace k2o;
+
+  DETECT(ORDER(READABLE, WRITABLE), ORDER(READABLE, BYTE_PTR), ORDER(BYTE_PTR, WRITABLE), ORDER(BYTE_PTR, BYTE_PTR));
+
   UNITY_BEGIN();
   RUN_TEST(order_DO_serialize_argument_into_stream_EXPECT_order_getting_unaltered_argument);
   RUN_TEST(order_DO_give_then_return_argument_from_order_EXPECT_unaltered_value);

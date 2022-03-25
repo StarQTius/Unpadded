@@ -44,7 +44,16 @@ static void dispatcher_DO_get_order_EXPECT_correct_index() {
       .map_error([](size_t) { TEST_FAIL(); });
 }
 
+#define DISPATCHER make_dispatcher(make_keyring(ftor_list))
+
 int main() {
+  using namespace k2o;
+
+  DETECT(DISPATCHER(READABLE, WRITABLE),
+         DISPATCHER(READABLE, BYTE_PTR),
+         DISPATCHER(BYTE_PTR, WRITABLE),
+         DISPATCHER(BYTE_PTR, BYTE_PTR));
+
   UNITY_BEGIN();
   RUN_TEST(dispatcher_DO_call_order_EXPECT_calling_correct_order);
   RUN_TEST(dispatcher_DO_get_order_EXPECT_correct_index);
