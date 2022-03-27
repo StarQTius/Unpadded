@@ -49,6 +49,8 @@ class keyring<Endianess, Signed_Mode, detail::unevaluated_value_h<Fs, Functions>
 
 public:
   constexpr static std::size_t size = sizeof...(Fs);
+  constexpr static auto endianess = Endianess;
+  constexpr static auto signed_mode = Signed_Mode;
 
   constexpr keyring() = default;
   constexpr keyring(flist11_t<detail::unevaluated_value_h<Fs, Functions>...>) {}

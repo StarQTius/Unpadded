@@ -9,6 +9,8 @@
 extern "C" void setUp() {}
 extern "C" void tearDown() {}
 
+int undefined_function(int);
+
 #define PACK(...) __VA_ARGS__
 #define DECLVAL(...) std::declval<PACK(__VA_ARGS__)>()
 #define DETECT(...) decltype(__VA_ARGS__, DECLVAL(int)){};
@@ -20,3 +22,4 @@ extern "C" void tearDown() {}
 #define WRITABLE DECLVAL(void (&)(upd::byte_t))
 #define REGISTRY DECLVAL(const volatile upd::byte_t &)
 #define WRITABLE DECLVAL(void (&)(upd::byte_t))
+#define FUNCTOR undefined_function

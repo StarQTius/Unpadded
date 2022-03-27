@@ -9,7 +9,7 @@
 
 #include "detail/io.hpp"
 #include "detail/sfinae.hpp"
-#include "dispatcher.hpp"
+#include "dispatcher.hpp" // IWYU pragma: keep
 #include "policy.hpp"
 
 #include "detail/def.hpp"
@@ -30,24 +30,24 @@ namespace k2o {
 //!   \note Input buffer reset is soft, in other word, its content is not erased. As a result, it is possible to use a
 //!   single buffer as input and output as long as byte sequence reading and writting does not occur at the same time.
 //!   For that purpose, 'is_loaded' will indicate whether the output buffer is empty or not.
-//! \tparam N Number of stored orders
+//! \tparam Dispatcher Number of stored orders
 //! \tparam Input_Iterator Type of the iterator to the input buffer
 //! \tparam Output_Iterator Type of the iterator to the output buffer
-template<std::size_t N, typename Input_Iterator, typename Output_Iterator, order_features Order_Features>
+template<typename Dispatcher, typename Input_Iterator, typename Output_Iterator>
 class buffered_dispatcher
-    : public detail::reader<buffered_dispatcher<N, Input_Iterator, Output_Iterator, Order_Features>, void>,
-      public detail::writer<buffered_dispatcher<N, Input_Iterator, Output_Iterator, Order_Features>> {
-  using this_t = buffered_dispatcher<N, Input_Iterator, Output_Iterator, Order_Features>;
+    : public detail::reader<buffered_dispatcher<Dispatcher, Input_Iterator, Output_Iterator>, void>,
+      public detail::writer<buffered_dispatcher<Dispatcher, Input_Iterator, Output_Iterator>> {
+  using this_t = buffered_dispatcher<Dispatcher, Input_Iterator, Output_Iterator>;
 
 public:
   //! \copydoc dispatcher::index_t
-  using index_t = typename dispatcher<N, Order_Features>::index_t;
+  using index_t = typename Dispatcher::index_t;
 
   //! \brief Initialize the underlying plain dispatcher with a keyring and hold iterators to the buffers
   //! \tparam Keyring Type of the keyring
   //! \param input_it Start of the input buffer
   //! \param output_it Start of the output buffer
-  template<typename Keyring, sfinae::require_is_deriving_from_keyring<Keyring> = 0>
+  template<typename Keyring, sfinae::require_is_deriving_from_keyring<Keyring> = 0, order_features Order_Features>
   buffered_dispatcher(Keyring, Input_Iterator input_it, Output_Iterator output_it, order_features_h<Order_Features>)
       : m_dispatcher{Keyring{}, order_features_h<Order_Features>{}}, m_is_index_loaded{false},
         m_load_count{sizeof(index_t)}, m_ibuf_begin{input_it}, m_ibuf_next{input_it}, m_obuf_begin{output_it},
@@ -85,7 +85,7 @@ public:
         m_ibuf_next = m_ibuf_begin;
 
         auto index = get_index(get_index_byte);
-        if (index >= N)
+        if (index >= m_dispatcher.size)
           return;
         m_obuf_bottom = m_obuf_begin;
         m_obuf_next = m_obuf_begin;
@@ -118,6 +118,25 @@ public:
       FWD(dest_ftor)(*m_obuf_next++);
   }
 
+  //! \name replace
+  //!
+  //! Forward the arguments to \mgref{Dispatcher_Replace, dispatcher::replace}
+  //! @{
+
+  template<typename T>
+  void replace(index_t index, T &&x) {
+    m_dispatcher.replace(index, FWD(x));
+  }
+
+#if __cplusplus >= 201703L
+  template<auto &Ftor>
+  void replace(index_t index) {
+    m_dispatcher.replace<Ftor>(index);
+  }
+#endif // __cplusplus >= 201703L
+
+  //! @}
+
 private:
   //! \copydoc dispatcher::get_index
   template<typename Src_F>
@@ -125,25 +144,33 @@ private:
     return m_dispatcher.get_index(FWD(fetch_byte));
   }
 
-  dispatcher<N, Order_Features> m_dispatcher;
+  Dispatcher m_dispatcher;
   bool m_is_index_loaded;
   std::size_t m_load_count;
   Input_Iterator m_ibuf_begin, m_ibuf_next;
   Output_Iterator m_obuf_begin, m_obuf_next, m_obuf_bottom;
 };
 
-template<typename Input_Iterator, typename Output_Iterator, typename Keyring, order_features Order_Features>
-buffered_dispatcher<Keyring::size, Input_Iterator, Output_Iterator, Order_Features> make_buffered_dispatcher(
-    Keyring, Input_Iterator input_it, Output_Iterator output_it, order_features_h<Order_Features>) {
-  return buffered_dispatcher<Keyring::size, Input_Iterator, Output_Iterator, Order_Features>(
-      Keyring{}, input_it, output_it);
+template<typename Keyring, typename Input_Iterator, typename Output_Iterator, order_features Order_Features>
+buffered_dispatcher<dispatcher<Keyring::size, Keyring::endianess, Keyring::signed_mode, Order_Features>,
+                    Input_Iterator,
+                    Output_Iterator>
+make_buffered_dispatcher(Keyring,
+                         Input_Iterator input_it,
+                         Output_Iterator output_it,
+                         order_features_h<Order_Features>) {
+  return buffered_dispatcher<dispatcher<Keyring::size, Keyring::endianess, Keyring::signed_mode, Order_Features>,
+                             Input_Iterator,
+                             Output_Iterator>(Keyring{}, input_it, output_it);
 }
 
 #if __cplusplus >= 201703L
 
 template<typename Keyring, typename Input_Iterator, typename Output_Iterator, order_features Order_Features>
 buffered_dispatcher(Keyring, Input_Iterator, Output_Iterator, order_features_h<Order_Features>)
-    -> buffered_dispatcher<Keyring::size, Input_Iterator, Output_Iterator, Order_Features>;
+    -> buffered_dispatcher<dispatcher<Keyring::size, Keyring::endianess, Keyring::signed_mode, Order_Features>,
+                           Input_Iterator,
+                           Output_Iterator>;
 
 #endif // __cplusplus >= 201703L
 

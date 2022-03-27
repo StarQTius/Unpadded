@@ -3,3 +3,4 @@
 
 #undef FWD
 #undef PACK
+#undef REQUIRE_CLASS

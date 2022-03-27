@@ -135,8 +135,8 @@ struct dispatcher_impl {
 //!   function associated with the key, forwarding the arguments from the payload to the function. The
 //!   functions are internally held as 'order' objects.
 //! \tparam N the number of functions held by the keyring
-template<size_t N, order_features Order_Features>
-class dispatcher : public detail::immediate_process<dispatcher<N, Order_Features>,
+template<size_t N, upd::endianess Endianess, upd::signed_mode Signed_Mode, order_features Order_Features>
+class dispatcher : public detail::immediate_process<dispatcher<N, Endianess, Signed_Mode, Order_Features>,
                                                     typename detail::dispatcher_impl<N, Order_Features>::index_t> {
 public:
   using index_t = typename detail::dispatcher_impl<N, Order_Features>::index_t;
@@ -152,7 +152,7 @@ public:
   template<typename Keyring, sfinae::require_is_deriving_from_keyring<Keyring> = 0>
   explicit dispatcher(Keyring kring, order_features_h<Order_Features>) : m_impl{kring} {}
 
-  using detail::immediate_process<dispatcher<N, Order_Features>, index_t>::operator();
+  using detail::immediate_process<dispatcher<N, Endianess, Signed_Mode, Order_Features>, index_t>::operator();
 
   //! \brief Call the function according to the index and arguments obtained from a payload
   //! \param src functor behaving as an input byte stream, from which the payload is fetched
@@ -178,6 +178,37 @@ public:
     return m_impl.get_index(FWD(src));
   }
 
+  //! \name replace
+  //! \anchor Dispatcher_Replace
+  //!
+  //! Replace the functor invoked on order request
+  //!
+  //! \tparam Ftor Functor with static storage duration
+  //! \param index Index of the order associated with this new functor
+  //! \param ftor Functor of any kind
+  //! @{
+
+  //! \brief Replace with a functor with static storage duration
+  template<typename F, F &Ftor>
+  void replace(index_t index, detail::unevaluated_value_h<F &, Ftor>) {
+    m_impl.orders[index] = detail::make_order<Order_Features, F, Ftor, Endianess, Signed_Mode>();
+  }
+
+#if __cplusplus >= 201703L
+  //! \brief (C++17) Replace with a functor with static storage duration
+  template<auto &Ftor>
+  void replace(index_t index) {
+    replace(index, detail::unevaluated_value_h<decltype(Ftor) &, Ftor>{});
+  }
+#endif // __cplusplus >= 201703L
+
+  //! \brief Replace with a functor of any kind
+  template<typename F, REQUIRE_CLASS(Order_Features == order_features::ANY)>
+  void replace(index_t index, F &&ftor) {
+    m_impl.orders[index] = order{FWD(ftor), upd::endianess_h<Endianess>{}, upd::signed_mode_h<Signed_Mode>{}};
+  }
+  //! @}
+
   //! \brief Get one of the stored orders
   //! \param index Index of an order
   //! \return the order associated with that index
@@ -198,7 +229,7 @@ template<upd::endianess Endianess,
          typename... Fs,
          Fs... Ftors>
 dispatcher(keyring<Endianess, Signed_Mode, detail::unevaluated_value_h<Fs, Ftors>...>, order_features_h<Order_Features>)
-    -> dispatcher<sizeof...(Fs), Order_Features>;
+    -> dispatcher<sizeof...(Fs), Endianess, Signed_Mode, Order_Features>;
 #endif // __cplusplus >= 201703L
 
 //! \brief Make a dispatcher
@@ -209,10 +240,10 @@ template<upd::endianess Endianess,
          order_features Order_Features,
          typename... Fs,
          Fs... Ftors>
-dispatcher<sizeof...(Fs), Order_Features>
+dispatcher<sizeof...(Fs), Endianess, Signed_Mode, Order_Features>
 make_dispatcher(keyring<Endianess, Signed_Mode, detail::unevaluated_value_h<Fs, Ftors>...> kring,
                 order_features_h<Order_Features>) {
-  return dispatcher<sizeof...(Fs), Order_Features>{kring, {}};
+  return dispatcher<sizeof...(Fs), Endianess, Signed_Mode, Order_Features>{kring, {}};
 }
 
 } // namespace k2o
