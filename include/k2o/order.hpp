@@ -5,6 +5,7 @@
 
 #include <cstddef>
 
+#include <type_traits>
 #include <upd/format.hpp>
 #include <upd/tuple.hpp>
 #include <upd/type.hpp>
@@ -175,6 +176,32 @@ private:
   detail::unique_ptr<detail::order_concept> m_concept_uptr;
 };
 
+class no_storage_order : public detail::immediate_process<no_storage_order, void> {
+public:
+  using detail::immediate_process<no_storage_order, void>::operator();
+
+  template<typename F, F Ftor, upd::endianess Endianess, upd::signed_mode Signed_Mode>
+  explicit no_storage_order(std::integral_constant<F &, Ftor>,
+                            upd::endianess_h<Endianess>,
+                            upd::signed_mode_h<Signed_Mode>)
+      : wrapper{+[](detail::src_t &&src, detail::dest_t &&dest) {
+          detail::input_tuple<Endianess, Signed_Mode, F> parameters_tuple;
+          for (auto &byte : parameters_tuple)
+            byte = src();
+          auto return_tuple = upd::make_tuple(
+              upd::endianess_h<Endianess>{}, upd::signed_mode_h<Signed_Mode>{}, parameters_tuple.invoke(Ftor));
+          for (auto byte : return_tuple)
+            dest(byte);
+        }} {}
+
+  template<typename Src, typename Dest, sfinae::require_input_ftor<Src> = 0, sfinae::require_output_ftor<Dest> = 0>
+  void operator()(Src &&src, Dest &&dest) {
+    wrapper(detail::make_function_reference(src), detail::make_function_reference(dest));
+  }
+
+private:
+  void (*wrapper)(detail::src_t &&, detail::dest_t &&);
+};
 } // namespace k2o
 
 #include "detail/undef.hpp" // IWYU pragma: keep

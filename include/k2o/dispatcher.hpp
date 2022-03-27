@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <type_traits>
 
 #include <tl/expected.hpp>
 #include <upd/format.hpp>
@@ -16,6 +17,7 @@
 #include "detail/value_h.hpp" // IWYU pragma: keep
 #include "keyring.hpp"
 #include "order.hpp"
+#include "policy.hpp"
 
 #include "detail/def.hpp"
 
@@ -23,6 +25,41 @@
 
 namespace k2o {
 namespace detail {
+
+template<order_features Order_Features,
+         typename F,
+         F &Ftor,
+         upd::endianess Endianess,
+         upd::signed_mode Signed_Mode,
+         sfinae::require<Order_Features == order_features::STATIC_STORAGE_DURATION_ONLY> = 0>
+no_storage_order make_order() {
+  return no_storage_order{
+      std::integral_constant<F &, Ftor>{}, upd::endianess_h<Endianess>{}, upd::signed_mode_h<Signed_Mode>{}};
+}
+
+template<order_features Order_Features,
+         typename F,
+         F &Ftor,
+         upd::endianess Endianess,
+         upd::signed_mode Signed_Mode,
+         sfinae::require<Order_Features == order_features::ANY> = 0>
+order make_order() {
+  return order{Ftor, upd::endianess_h<Endianess>{}, upd::signed_mode_h<Signed_Mode>{}};
+}
+
+template<order_features>
+struct order_t_impl;
+template<>
+struct order_t_impl<order_features::STATIC_STORAGE_DURATION_ONLY> {
+  using type = no_storage_order;
+};
+template<>
+struct order_t_impl<order_features::ANY> {
+  using type = order;
+};
+
+template<order_features Order_Features>
+using order_t = typename order_t_impl<Order_Features>::type;
 
 //! \brief Extract the index from a byte sequence
 template<typename Src, typename Index>
@@ -36,7 +73,7 @@ Index get_index(Src &&src, Index (&read_index)(const upd::byte_t *)) {
 
 //! \brief Dispatcher implementation
 //! \note The reason for putting the implementation apart is a GCC compiler bug in C++17 with deduction guide.
-template<size_t N>
+template<size_t N, order_features Order_Features>
 struct dispatcher_impl {
   //! \brief Integer type large enougth to store the order indices
   using index_t = uint16_t;
@@ -44,7 +81,9 @@ struct dispatcher_impl {
   //! \brief Function type to unserialize the order indices
   using index_reader_t = index_t(const upd::byte_t *);
 
-  order orders[N];
+  using order_t = detail::order_t<Order_Features>;
+
+  order_t orders[N];
   index_reader_t &read_index;
 
   //! \brief Get the functors held by the provided keyring
@@ -53,7 +92,7 @@ struct dispatcher_impl {
   //! \tparam Ftors... Functors held by the keyring
   template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Fs, Fs &...Ftors>
   explicit dispatcher_impl(keyring<Endianess, Signed_Mode, detail::unevaluated_value_h<Fs, Ftors>...>)
-      : orders{order{Ftors, upd::endianess_h<Endianess>{}, upd::signed_mode_h<Signed_Mode>{}}...},
+      : orders{detail::make_order<Order_Features, Fs, Ftors, Endianess, Signed_Mode>()...},
         read_index{static_cast<index_reader_t &>(upd::read_as<index_t, Endianess, Signed_Mode>)} {}
 
   //! \brief Get the index and arguments from an input byte stream and call the matching order
@@ -74,7 +113,7 @@ struct dispatcher_impl {
 
   //! \brief Get the order indicated by the byte sequence
   template<typename Src>
-  tl::expected<std::reference_wrapper<order>, index_t> get_order(Src &&src) {
+  tl::expected<std::reference_wrapper<order_t>, index_t> get_order(Src &&src) {
     using return_t = tl::expected<std::reference_wrapper<order>, index_t>;
 
     auto index = get_index(FWD(src));
@@ -96,11 +135,13 @@ struct dispatcher_impl {
 //!   function associated with the key, forwarding the arguments from the payload to the function. The
 //!   functions are internally held as 'order' objects.
 //! \tparam N the number of functions held by the keyring
-template<size_t N>
-class dispatcher : public detail::immediate_process<dispatcher<N>, typename detail::dispatcher_impl<N>::index_t> {
+template<size_t N, order_features Order_Features>
+class dispatcher : public detail::immediate_process<dispatcher<N, Order_Features>,
+                                                    typename detail::dispatcher_impl<N, Order_Features>::index_t> {
 public:
-  using index_t = typename detail::dispatcher_impl<N>::index_t;
+  using index_t = typename detail::dispatcher_impl<N, Order_Features>::index_t;
   constexpr static auto size = N;
+  using order_t = detail::order_t<Order_Features>;
 
   //! \brief Construct the object from the provided keyring
   //! \details
@@ -109,9 +150,9 @@ public:
   //! \note
   //!   The strange structure of this function is due to a GCC compiler bug with deduction guide in C++17.
   template<typename Keyring, sfinae::require_is_deriving_from_keyring<Keyring> = 0>
-  explicit dispatcher(Keyring kring) : m_impl{kring} {}
+  explicit dispatcher(Keyring kring, order_features_h<Order_Features>) : m_impl{kring} {}
 
-  using detail::immediate_process<dispatcher<N>, index_t>::operator();
+  using detail::immediate_process<dispatcher<N, Order_Features>, index_t>::operator();
 
   //! \brief Call the function according to the index and arguments obtained from a payload
   //! \param src functor behaving as an input byte stream, from which the payload is fetched
@@ -126,7 +167,7 @@ public:
   //! \param src Functor acting as an input byte stream
   //! \return Either a reference to the order if it exists or the index that obtained from the byte sequence
   template<typename Src, sfinae::require_input_ftor<Src> = 0>
-  tl::expected<std::reference_wrapper<order>, index_t> get_order(Src &&src) {
+  tl::expected<std::reference_wrapper<order_t>, index_t> get_order(Src &&src) {
     return m_impl.get_order(FWD(src));
   }
 
@@ -141,27 +182,37 @@ public:
   //! \param index Index of an order
   //! \return the order associated with that index
   //! \warning There are no bound check performed.
-  order &operator[](index_t index) { return m_impl.orders[index]; }
+  order_t &operator[](index_t index) { return m_impl.orders[index]; }
 
   //! \copydoc operator[]
-  const order &operator[](index_t index) const { return m_impl.orders[index]; }
+  const order_t &operator[](index_t index) const { return m_impl.orders[index]; }
 
 private:
-  detail::dispatcher_impl<N> m_impl;
+  detail::dispatcher_impl<N, Order_Features> m_impl;
 };
 
 #if __cplusplus >= 201703L
-template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Fs, Fs... Ftors>
-dispatcher(keyring<Endianess, Signed_Mode, detail::unevaluated_value_h<Fs, Ftors>...>) -> dispatcher<sizeof...(Fs)>;
+template<upd::endianess Endianess,
+         upd::signed_mode Signed_Mode,
+         order_features Order_Features,
+         typename... Fs,
+         Fs... Ftors>
+dispatcher(keyring<Endianess, Signed_Mode, detail::unevaluated_value_h<Fs, Ftors>...>, order_features_h<Order_Features>)
+    -> dispatcher<sizeof...(Fs), Order_Features>;
 #endif // __cplusplus >= 201703L
 
 //! \brief Make a dispatcher
 //! \param kring keyring forwarded to the dispatcher
 //! \return a dispatcher whose orders calls the functors held by the keyring
-template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Fs, Fs... Ftors>
-dispatcher<sizeof...(Fs)>
-make_dispatcher(keyring<Endianess, Signed_Mode, detail::unevaluated_value_h<Fs, Ftors>...> kring) {
-  return dispatcher<sizeof...(Fs)>{kring};
+template<upd::endianess Endianess,
+         upd::signed_mode Signed_Mode,
+         order_features Order_Features,
+         typename... Fs,
+         Fs... Ftors>
+dispatcher<sizeof...(Fs), Order_Features>
+make_dispatcher(keyring<Endianess, Signed_Mode, detail::unevaluated_value_h<Fs, Ftors>...> kring,
+                order_features_h<Order_Features>) {
+  return dispatcher<sizeof...(Fs), Order_Features>{kring, {}};
 }
 
 } // namespace k2o

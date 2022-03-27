@@ -14,7 +14,7 @@ static void dispatcher_DO_call_order_EXPECT_calling_correct_order() {
   using namespace k2o;
 
   constexpr auto kring = make_keyring(ftor_list);
-  auto dispatcher = make_dispatcher(kring);
+  auto dispatcher = make_dispatcher(kring, policy::any_order);
   auto function16_index = upd::make_tuple(uint16_t{1});
   auto output = upd::make_tuple<int>();
 
@@ -35,7 +35,7 @@ static void dispatcher_DO_get_order_EXPECT_correct_index() {
   auto input_f = [&]() { return function16_index[i++]; };
   auto output_f = [&](upd::byte_t byte) { output[j++] = byte; };
 
-  make_dispatcher(kring)
+  make_dispatcher(kring, policy::any_order)
       .get_order(input_f)
       .map([&](order &o) {
         o(input_f, output_f);
@@ -44,7 +44,22 @@ static void dispatcher_DO_get_order_EXPECT_correct_index() {
       .map_error([](size_t) { TEST_FAIL(); });
 }
 
-#define DISPATCHER make_dispatcher(make_keyring(ftor_list))
+static void dispatcher_DO_call_no_storage_order_EXPECT_correct_behavior() {
+  using namespace k2o;
+
+  constexpr auto kring = make_keyring(ftor_list);
+  auto dispatcher = make_dispatcher(kring, policy::static_storage_duration_only);
+  auto function16_index = upd::make_tuple(uint16_t{1});
+  auto output = upd::make_tuple<int>();
+
+  size_t i = 0, j = 0;
+  dispatcher([&]() { return function16_index[i++]; }, [&](upd::byte_t byte) { output[j++] = byte; });
+
+  TEST_ASSERT_EQUAL_UINT(16, output.get<0>());
+}
+
+#define DISPATCHER make_dispatcher(make_keyring(ftor_list), policy::any_order)
+#define DISPATCHER_STATIC make_dispatcher(make_keyring(ftor_list), policy::static_storage_duration_only)
 
 int main() {
   using namespace k2o;
@@ -52,10 +67,15 @@ int main() {
   DETECT(DISPATCHER(READABLE, WRITABLE),
          DISPATCHER(READABLE, BYTE_PTR),
          DISPATCHER(BYTE_PTR, WRITABLE),
-         DISPATCHER(BYTE_PTR, BYTE_PTR));
+         DISPATCHER(BYTE_PTR, BYTE_PTR),
+         DISPATCHER_STATIC(READABLE, WRITABLE),
+         DISPATCHER_STATIC(READABLE, BYTE_PTR),
+         DISPATCHER_STATIC(BYTE_PTR, WRITABLE),
+         DISPATCHER_STATIC(BYTE_PTR, BYTE_PTR));
 
   UNITY_BEGIN();
   RUN_TEST(dispatcher_DO_call_order_EXPECT_calling_correct_order);
   RUN_TEST(dispatcher_DO_get_order_EXPECT_correct_index);
+  RUN_TEST(dispatcher_DO_call_no_storage_order_EXPECT_correct_behavior);
   return UNITY_END();
 }

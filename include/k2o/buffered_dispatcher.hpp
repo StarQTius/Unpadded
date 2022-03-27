@@ -10,6 +10,7 @@
 #include "detail/io.hpp"
 #include "detail/sfinae.hpp"
 #include "dispatcher.hpp"
+#include "policy.hpp"
 
 #include "detail/def.hpp"
 
@@ -32,23 +33,25 @@ namespace k2o {
 //! \tparam N Number of stored orders
 //! \tparam Input_Iterator Type of the iterator to the input buffer
 //! \tparam Output_Iterator Type of the iterator to the output buffer
-template<std::size_t N, typename Input_Iterator, typename Output_Iterator>
-class buffered_dispatcher : public detail::reader<buffered_dispatcher<N, Input_Iterator, Output_Iterator>, void>,
-                            public detail::writer<buffered_dispatcher<N, Input_Iterator, Output_Iterator>> {
-  using this_t = buffered_dispatcher<N, Input_Iterator, Output_Iterator>;
+template<std::size_t N, typename Input_Iterator, typename Output_Iterator, order_features Order_Features>
+class buffered_dispatcher
+    : public detail::reader<buffered_dispatcher<N, Input_Iterator, Output_Iterator, Order_Features>, void>,
+      public detail::writer<buffered_dispatcher<N, Input_Iterator, Output_Iterator, Order_Features>> {
+  using this_t = buffered_dispatcher<N, Input_Iterator, Output_Iterator, Order_Features>;
 
 public:
   //! \copydoc dispatcher::index_t
-  using index_t = typename dispatcher<N>::index_t;
+  using index_t = typename dispatcher<N, Order_Features>::index_t;
 
   //! \brief Initialize the underlying plain dispatcher with a keyring and hold iterators to the buffers
   //! \tparam Keyring Type of the keyring
   //! \param input_it Start of the input buffer
   //! \param output_it Start of the output buffer
   template<typename Keyring, sfinae::require_is_deriving_from_keyring<Keyring> = 0>
-  buffered_dispatcher(Keyring, Input_Iterator input_it, Output_Iterator output_it)
-      : m_dispatcher{Keyring{}}, m_is_index_loaded{false}, m_load_count{sizeof(index_t)}, m_ibuf_begin{input_it},
-        m_ibuf_next{input_it}, m_obuf_begin{output_it}, m_obuf_next{output_it}, m_obuf_bottom{output_it} {}
+  buffered_dispatcher(Keyring, Input_Iterator input_it, Output_Iterator output_it, order_features_h<Order_Features>)
+      : m_dispatcher{Keyring{}, order_features_h<Order_Features>{}}, m_is_index_loaded{false},
+        m_load_count{sizeof(index_t)}, m_ibuf_begin{input_it}, m_ibuf_next{input_it}, m_obuf_begin{output_it},
+        m_obuf_next{output_it}, m_obuf_bottom{output_it} {}
 
   //! \brief Indicates whether the output buffer contains data to send
   //! \return true if and only if the next call to 'write' or 'write_all' will have a visible effect
@@ -122,24 +125,25 @@ private:
     return m_dispatcher.get_index(FWD(fetch_byte));
   }
 
-  dispatcher<N> m_dispatcher;
+  dispatcher<N, Order_Features> m_dispatcher;
   bool m_is_index_loaded;
   std::size_t m_load_count;
   Input_Iterator m_ibuf_begin, m_ibuf_next;
   Output_Iterator m_obuf_begin, m_obuf_next, m_obuf_bottom;
 };
 
-template<typename Input_Iterator, typename Output_Iterator, typename Keyring>
-buffered_dispatcher<Keyring::size, Input_Iterator, Output_Iterator>
-make_buffered_dispatcher(Keyring, Input_Iterator input_it, Output_Iterator output_it) {
-  return buffered_dispatcher<Keyring::size, Input_Iterator, Output_Iterator>(Keyring{}, input_it, output_it);
+template<typename Input_Iterator, typename Output_Iterator, typename Keyring, order_features Order_Features>
+buffered_dispatcher<Keyring::size, Input_Iterator, Output_Iterator, Order_Features> make_buffered_dispatcher(
+    Keyring, Input_Iterator input_it, Output_Iterator output_it, order_features_h<Order_Features>) {
+  return buffered_dispatcher<Keyring::size, Input_Iterator, Output_Iterator, Order_Features>(
+      Keyring{}, input_it, output_it);
 }
 
 #if __cplusplus >= 201703L
 
-template<typename Keyring, typename Input_Iterator, typename Output_Iterator>
-buffered_dispatcher(Keyring, Input_Iterator, Output_Iterator)
-    -> buffered_dispatcher<decltype(dispatcher{Keyring{}})::size, Input_Iterator, Output_Iterator>;
+template<typename Keyring, typename Input_Iterator, typename Output_Iterator, order_features Order_Features>
+buffered_dispatcher(Keyring, Input_Iterator, Output_Iterator, order_features_h<Order_Features>)
+    -> buffered_dispatcher<Keyring::size, Input_Iterator, Output_Iterator, Order_Features>;
 
 #endif // __cplusplus >= 201703L
 
