@@ -4,6 +4,7 @@
 #pragma once
 
 #include <cstddef>
+#include <memory>
 
 #include <type_traits>
 #include <upd/format.hpp>
@@ -16,7 +17,6 @@
 #include "detail/normalize_to_tuple.hpp"
 #include "detail/sfinae.hpp"
 #include "detail/signature.hpp"
-#include "detail/unique_ptr.hpp"
 
 #include "detail/def.hpp"
 
@@ -173,7 +173,7 @@ public:
   size_t output_size() const { return m_concept_uptr->output_size; }
 
 private:
-  detail::unique_ptr<detail::order_concept> m_concept_uptr;
+  std::unique_ptr<detail::order_concept> m_concept_uptr;
 };
 
 class no_storage_order : public detail::immediate_process<no_storage_order, void> {

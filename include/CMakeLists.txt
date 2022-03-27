@@ -18,7 +18,6 @@ set(K2O_HEADERS
     detail/signature.hpp
     detail/typelist.hpp
     detail/undef.hpp
-    detail/unique_ptr.hpp
     detail/value_h.hpp)
 
 add_library(${PROJECT_NAME} INTERFACE)
