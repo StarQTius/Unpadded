@@ -4,11 +4,14 @@
 #pragma once
 
 #include <cstddef>
+#include <type_traits>
 
 #include <boost/mp11/algorithm.hpp>
 #include <boost/mp11/function.hpp>
 
 // IWYU pragma: no_include "boost/mp11/detail/mp_min_element.hpp"
+// IWYU pragma: no_include "boost/mp11/detail/mp_list.hpp"
+// IWYU pragma: no_include "boost/mp11/detail/mp_plus.hpp"
 
 namespace k2o {
 namespace detail {
@@ -23,11 +26,14 @@ using index_t = std::integral_constant<std::size_t, I>;
 template<std::size_t I>
 index_t<I> index_v;
 
-//! \brief Indexed type holder meant to be derived from
+//! \brief Indexed element holder meant to be derived from
 template<std::size_t I, typename T>
 struct itype {
+  using type = T;
+  constexpr static auto value = I;
+
   constexpr static std::size_t index(T *) { return I; }
-  static T type(index_t<I>);
+  static T element(index_t<I>);
 };
 
 //! \brief Allows efficient operations on template parameter packs
@@ -35,63 +41,65 @@ struct itype {
 //!   Ts should expands to a list of 'itype' instances.
 template<typename... Ts>
 struct tlist_t : Ts... {
-  using Ts::index..., Ts::type...;
+  using Ts::index..., Ts::element...;
   template<typename T1, typename T2>
-  tlist_t(T1, T2) {}
+  constexpr tlist_t(T1, T2) {}
 };
 
-template<std::size_t... Is, typename... Ts>
-tlist_t(std::index_sequence<Is...>, boost::mp11::mp_list<Ts...>) -> tlist_t<itype<Is, Ts>...>;
+template<std::size_t... Is, template<typename...> typename L, typename... Ts>
+tlist_t(std::index_sequence<Is...>, L<Ts...>) -> tlist_t<itype<Is, Ts>...>;
 
 //! \copydoc tlist_t
 template<typename... Ts>
-tlist_t tlist{std::make_index_sequence<sizeof...(Ts)>{}, boost::mp11::mp_list<Ts...>{}};
+constexpr tlist_t tlist{std::make_index_sequence<sizeof...(Ts)>{}, boost::mp11::mp_list<Ts...>{}};
 
-//! \brief Converts a variadic template instance into an equivalent instance of 'tlist_t'
-template<typename>
-struct to_tlist_t;
-
-//! \copydoc to_tlist
-template<template<typename...> typename L, typename... Ts>
-struct to_tlist_t<L<Ts...>> : decltype(tlist<Ts...>) {};
-
-//! \copydoc to_tlist_t
+//! \brief Convert a variadic template instance to a 'tlist_t' instance
 template<typename L>
-to_tlist_t<L> to_tlist;
+constexpr tlist_t to_tlist{std::make_index_sequence<boost::mp11::mp_size<L>::value>{}, L{}};
 
-//! \brief Return an instance of the Ith type a typelist
+//! \brief Return an instance of the Ith element a typelist
 //! \details
 //!   This function must only be used in unevaluated context
 template<std::size_t I, typename... Ts>
 inline auto at_impl(tlist_t<Ts...> tl) {
-  return tl.type(index_v<I>);
+  return tl.element(index_v<I>);
 }
 
 //! \brief Find the maximal value in a typelist of integer holders
 template<typename... Ts>
 constexpr inline auto max_impl(tlist_t<Ts...> tl) {
-  constexpr long long vl[]{Ts::value...}, max = vl[0];
+  constexpr long long vl[]{Ts::type::value...};
+  auto max = vl[0];
   for (auto v : vl)
     max = max < v ? v : max;
   return max;
 }
 
-//! \brief Find the index of the given type in a typelist
+//! \brief Find the index of the given element in a typelist
 //! \details
-//!   There must be only one element in the typelist aliasing the provided type.
+//!   There must be only one element in the typelist aliasing the provided element.
 template<typename T, typename... Ts>
 constexpr inline auto find_impl(tlist_t<Ts...> tl) {
   return index_v<tl.index((T *)nullptr)>;
 }
 
-//! \brief Expands to the type resulting in the call of IMPL on LIST converted to 'tlist_t'
+template<typename... Ts>
+constexpr auto sum_impl(tlist_t<Ts...>) {
+  return std::integral_constant<decltype((0 + ... + Ts::type::value)), (0 + ... + Ts::type::value)>{};
+}
+
+//! \brief Expands to the element resulting in the call of IMPL on LIST converted to 'tlist_t'
 #define K2O_TLIST_FUNCTION(IMPL, LIST, ...) decltype(IMPL<__VA_ARGS__>(to_tlist<LIST>))
+
+#define K2O_TLIST_WRAPPED_VALUE(IMPL, LIST, ...)                                                                       \
+  std::integral_constant<decltype(IMPL<__VA_ARGS__>(to_tlist<LIST>)), IMPL<__VA_ARGS__>(to_tlist<LIST>)>
 
 //! \name C++17 implementations
 //! @{
 #define K2O_AT_IMPL(L, I) K2O_TLIST_FUNCTION(at_impl, L, I)
-#define K2O_MAX_IMPL(L) K2O_TLIST_FUNCTION(max_impl, L)
+#define K2O_MAX_IMPL(L) K2O_TLIST_WRAPPED_VALUE(max_impl, L)
 #define K2O_FIND_IMPL(L, V) K2O_TLIST_FUNCTION(find_impl, L, V)
+#define K2O_SUM_IMPL(L) K2O_TLIST_FUNCTION(sum_impl, L)
 //! }@
 
 #else // __cplusplus >= 201703L
@@ -101,6 +109,8 @@ constexpr inline auto find_impl(tlist_t<Ts...> tl) {
 #define K2O_AT_IMPL(L, I) boost::mp11::mp_at_c<L, I>;
 #define K2O_MAX_IMPL(L) boost::mp11::mp_max_element<L, boost::mp11::mp_less>;
 #define K2O_FIND_IMPL(L, V) boost::mp11::mp_find<L, V>;
+#define K2O_SUM_IMPL(L)                                                                                                \
+  boost::mp11::mp_back<boost::mp11::mp_partial_sum<L, boost::mp11::mp_int<0>, boost::mp11::mp_plus>>
 //! }@
 
 #endif // __cplusplus >= 201703L
@@ -116,6 +126,15 @@ using max = K2O_MAX_IMPL(L);
 //! \copydoc find_impl
 template<typename L, typename V>
 using find = K2O_FIND_IMPL(L, V);
+
+template<typename L, template<typename...> typename F>
+using map = boost::mp11::mp_transform<F, L>;
+
+template<typename L>
+using sum = K2O_SUM_IMPL(L);
+
+template<typename... Ts>
+using max_p = max<boost::mp11::mp_list<Ts...>>;
 
 } // namespace detail
 } // namespace k2o

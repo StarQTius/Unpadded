@@ -143,6 +143,8 @@ public:
   constexpr static auto size = N;
   using order_t = detail::order_t<Order_Features>;
 
+  dispatcher() = default;
+
   //! \brief Construct the object from the provided keyring
   //! \details
   //!   'N' can be deduced from the number of functions held by the keyring.

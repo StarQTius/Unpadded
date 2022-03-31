@@ -4,17 +4,35 @@
 #pragma once
 
 #include <cstddef>
+#include <type_traits>
 
 #include <upd/type.hpp>
 
 #include "detail/io.hpp"
 #include "detail/sfinae.hpp"
+#include "detail/signature.hpp"
+#include "detail/typelist.hpp"
 #include "dispatcher.hpp" // IWYU pragma: keep
 #include "policy.hpp"
 
 #include "detail/def.hpp"
 
 namespace k2o {
+namespace detail {
+
+template<typename Keyring, order_features Order_Features>
+using dispatcher_t = dispatcher<Keyring::size, Keyring::endianess, Keyring::signed_mode, Order_Features>;
+
+template<typename Keyring>
+using needed_input_buffer_size =
+    std::integral_constant<std::size_t,
+                           detail::max<detail::map<typename Keyring::signatures, detail::parameters_size>>::value +
+                               sizeof(typename Keyring::index_t)>;
+
+template<typename Keyring>
+using needed_output_buffer_size = detail::max<detail::map<typename Keyring::signatures, detail::return_type_size>>;
+
+}; // namespace detail
 
 //! \brief Dispatcher with input / output storage
 //! \details
@@ -152,27 +170,55 @@ private:
 };
 
 template<typename Keyring, typename Input_Iterator, typename Output_Iterator, order_features Order_Features>
-buffered_dispatcher<dispatcher<Keyring::size, Keyring::endianess, Keyring::signed_mode, Order_Features>,
-                    Input_Iterator,
-                    Output_Iterator>
+buffered_dispatcher<detail::dispatcher_t<Keyring, Order_Features>, Input_Iterator, Output_Iterator>
 make_buffered_dispatcher(Keyring,
                          Input_Iterator input_it,
                          Output_Iterator output_it,
                          order_features_h<Order_Features>) {
-  return buffered_dispatcher<dispatcher<Keyring::size, Keyring::endianess, Keyring::signed_mode, Order_Features>,
-                             Input_Iterator,
-                             Output_Iterator>(Keyring{}, input_it, output_it);
+  return buffered_dispatcher<detail::dispatcher_t<Keyring, Order_Features>, Input_Iterator, Output_Iterator>(
+      Keyring{}, input_it, output_it);
 }
 
 #if __cplusplus >= 201703L
 
 template<typename Keyring, typename Input_Iterator, typename Output_Iterator, order_features Order_Features>
 buffered_dispatcher(Keyring, Input_Iterator, Output_Iterator, order_features_h<Order_Features>)
-    -> buffered_dispatcher<dispatcher<Keyring::size, Keyring::endianess, Keyring::signed_mode, Order_Features>,
-                           Input_Iterator,
-                           Output_Iterator>;
+    -> buffered_dispatcher<detail::dispatcher_t<Keyring, Order_Features>, Input_Iterator, Output_Iterator>;
 
 #endif // __cplusplus >= 201703L
+
+template<typename Dispatcher, std::size_t Buffer_Size>
+class single_buffered_dispatcher : public buffered_dispatcher<Dispatcher, upd::byte_t *, upd::byte_t *> {
+  using base_t = buffered_dispatcher<Dispatcher, upd::byte_t *, upd::byte_t *>;
+
+public:
+  constexpr static auto buffer_size = Buffer_Size;
+
+  template<typename Keyring, order_features Order_Features>
+  explicit single_buffered_dispatcher(Keyring, order_features_h<Order_Features>)
+      : base_t{Keyring{}, m_buf, m_buf, order_features_h<Order_Features>{}} {}
+
+private:
+  upd::byte_t m_buf[buffer_size];
+};
+
+#if __cplusplus >= 201703L
+template<typename Keyring, order_features Order_Features>
+single_buffered_dispatcher(Keyring, order_features_h<Order_Features>) -> single_buffered_dispatcher<
+    detail::dispatcher_t<Keyring, Order_Features>,
+    detail::max_p<detail::needed_input_buffer_size<Keyring>, detail::needed_output_buffer_size<Keyring>>::value>;
+#endif // __cplusplus >= 201703L
+
+template<typename Keyring, order_features Order_Features>
+single_buffered_dispatcher<
+    detail::dispatcher_t<Keyring, Order_Features>,
+    detail::max_p<detail::needed_input_buffer_size<Keyring>, detail::needed_output_buffer_size<Keyring>>::value>
+make_single_buffered_dispatcher(Keyring, order_features_h<Order_Features>) {
+  return single_buffered_dispatcher<
+      detail::dispatcher_t<Keyring, Order_Features>,
+      detail::max_p<detail::needed_input_buffer_size<Keyring>, detail::needed_output_buffer_size<Keyring>>::value>{
+      Keyring{}, order_features_h<Order_Features>{}};
+}
 
 } // namespace k2o
 

@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <cstddef>
+#include <cstdint>
 
 #include <boost/mp11/detail/mp_list.hpp>
 #include <boost/type_traits/conjunction.hpp>
@@ -39,16 +39,18 @@ class keyring;
 
 template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Fs, Fs... Functions>
 class keyring<Endianess, Signed_Mode, detail::unevaluated_value_h<Fs, Functions>...> {
-  using search_list = boost::mp11::mp_list<detail::unevaluated_value_h<Fs, Functions>...>;
-
-  template<typename H>
-  using key_t = key<detail::find<search_list, H>::value, detail::signature_t<typename H::type>, Endianess, Signed_Mode>;
-
   static_assert((boost::conjunction<boost::integral_constant<bool, detail::is_callable<Fs>()>...>::value),
                 "'keyring' only accepts callable objects as template parameters");
 
 public:
-  constexpr static std::size_t size = sizeof...(Fs);
+  using list = boost::mp11::mp_list<detail::unevaluated_value_h<Fs, Functions>...>;
+  using signatures = boost::mp11::mp_list<Fs...>;
+  template<typename H>
+  using key_t = key<detail::find<list, H>::value, detail::signature_t<typename H::type>, Endianess, Signed_Mode>;
+
+  using index_t = uint16_t;
+
+  constexpr static auto size = sizeof...(Fs);
   constexpr static auto endianess = Endianess;
   constexpr static auto signed_mode = Signed_Mode;
 

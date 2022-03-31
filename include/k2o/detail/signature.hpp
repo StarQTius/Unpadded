@@ -3,9 +3,16 @@
 //! \file
 //! \brief Functor introspection
 
+#include <cstddef>
+#include <type_traits>
+
+#include <boost/mp11.hpp> // IWYU pragma: keep
 #include <boost/type_traits/decay.hpp>
 
 #include "sfinae.hpp"
+#include "typelist.hpp"
+
+// IWYU pragma: no_include "boost/mp11/detail/mp_list.hpp"
 
 namespace k2o {
 namespace detail {
@@ -110,6 +117,15 @@ template<typename F>
 constexpr bool is_callable() {
   return is_callable_impl<F>(0);
 }
+
+template<typename F>
+struct parameters_size : parameters_size<signature_t<F>> {};
+
+template<typename R, typename... Args>
+struct parameters_size<R(Args...)> : sum<boost::mp11::mp_list<std::integral_constant<std::size_t, sizeof(Args)>...>> {};
+
+template<typename F>
+struct return_type_size : std::integral_constant<std::size_t, sizeof(return_t<F>)> {};
 
 } // namespace detail
 } // namespace k2o
