@@ -62,6 +62,38 @@ static void buffered_dispatcher_DO_load_an_order_in_a_double_buffered_dispatcher
   TEST_ASSERT_EQUAL(64, result);
 }
 
+static void buffered_dispatcher_DO_load_an_order_in_a_double_buffered_dispatcher_while_already_loaded() {
+  using namespace k2o;
+
+  upd::byte_t kbuf[64];
+  int result = 0;
+  auto k = kring.get<K2O_CTREF(identity)>();
+  auto dis = make_double_buffered_dispatcher(kring, policy::any_order);
+
+  static_assert(dis.input_buffer_size == sizeof(int) + sizeof(decltype(dis)::index_t));
+  static_assert(dis.output_buffer_size == sizeof(int));
+
+  k(64).write_all(kbuf);
+  dis.read_all(kbuf);
+
+  TEST_ASSERT_TRUE(dis.is_loaded());
+
+  k(32).write_all(kbuf);
+  std::size_t i = 0;
+  for (; i < sizeof(decltype(dis)::index_t); ++i)
+    dis.read(kbuf + i);
+  dis.write_all(reinterpret_cast<upd::byte_t *>(&result));
+
+  TEST_ASSERT_FALSE(dis.is_loaded());
+  TEST_ASSERT_EQUAL(64, result);
+
+  for (; i < sizeof(decltype(dis)::index_t) + sizeof(int); ++i)
+    dis.read(kbuf + i);
+  dis.write_all(reinterpret_cast<upd::byte_t *>(&result));
+
+  TEST_ASSERT_EQUAL(32, result);
+}
+
 #define BUFFERED_DISPATCHER make_buffered_dispatcher(kring, BYTE_PTR, BYTE_PTR, policy::any_order)
 #define BUFFERED_DISPATCHER_STATIC                                                                                     \
   make_buffered_dispatcher(kring, BYTE_PTR, BYTE_PTR, policy::static_storage_duration_only)
@@ -109,5 +141,6 @@ int main() {
   RUN_TEST(buffered_dispatcher_DO_load_an_order_EXPECT_correct_order_loaded_cpp17);
   RUN_TEST(buffered_dispatcher_DO_load_an_order_in_a_single_buffered_dispatcher);
   RUN_TEST(buffered_dispatcher_DO_load_an_order_in_a_double_buffered_dispatcher);
+  RUN_TEST(buffered_dispatcher_DO_load_an_order_in_a_double_buffered_dispatcher_while_already_loaded);
   return UNITY_END();
 }

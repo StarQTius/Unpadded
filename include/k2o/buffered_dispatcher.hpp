@@ -98,20 +98,23 @@ public:
       auto ibuf_it = m_ibuf_begin;
       auto get_index_byte = [&]() { return *ibuf_it++; };
       if (m_is_index_loaded) {
-        m_is_index_loaded = false;
-        m_load_count = sizeof(index_t);
-        m_ibuf_next = m_ibuf_begin;
-
-        auto index = get_index(get_index_byte);
-        if (index >= m_dispatcher.size)
-          return;
         m_obuf_bottom = m_obuf_begin;
         m_obuf_next = m_obuf_begin;
 
-        m_dispatcher[index]([&]() { return *ibuf_it++; }, [&](upd::byte_t byte) { *m_obuf_bottom++ = byte; });
+        auto index = get_index(get_index_byte);
+        if (index < m_dispatcher.size) {
+          m_dispatcher[index]([&]() { return *ibuf_it++; }, [&](upd::byte_t byte) { *m_obuf_bottom++ = byte; });
+        }
+
+        m_is_index_loaded = false;
+        m_load_count = sizeof(index_t);
+        m_ibuf_next = m_ibuf_begin;
       } else {
-        m_is_index_loaded = true;
-        m_load_count = m_dispatcher[get_index(get_index_byte)].input_size();
+        auto index = get_index(get_index_byte);
+        if (index < m_dispatcher.size) {
+          m_is_index_loaded = true;
+          m_load_count = m_dispatcher[index].input_size();
+        }
       }
     }
   }
