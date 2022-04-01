@@ -26,11 +26,11 @@ using dispatcher_t = dispatcher<Keyring::size, Keyring::endianess, Keyring::sign
 template<typename Keyring>
 using needed_input_buffer_size =
     std::integral_constant<std::size_t,
-                           detail::max<detail::map<typename Keyring::signatures, detail::parameters_size>>::value +
+                           detail::max<detail::map<typename Keyring::signatures_t, detail::parameters_size>>::value +
                                sizeof(typename Keyring::index_t)>;
 
 template<typename Keyring>
-using needed_output_buffer_size = detail::max<detail::map<typename Keyring::signatures, detail::return_type_size>>;
+using needed_output_buffer_size = detail::max<detail::map<typename Keyring::signatures_t, detail::return_type_size>>;
 
 }; // namespace detail
 

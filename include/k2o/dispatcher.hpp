@@ -4,7 +4,6 @@
 #pragma once
 
 #include <cstddef>
-#include <cstdint>
 #include <functional>
 #include <type_traits>
 
@@ -14,6 +13,7 @@
 
 #include "detail/io.hpp"
 #include "detail/sfinae.hpp"
+#include "detail/smallest.hpp"
 #include "detail/value_h.hpp" // IWYU pragma: keep
 #include "keyring.hpp"
 #include "order.hpp"
@@ -76,7 +76,7 @@ Index get_index(Src &&src, Index (&read_index)(const upd::byte_t *)) {
 template<size_t N, order_features Order_Features>
 struct dispatcher_impl {
   //! \brief Integer type large enougth to store the order indices
-  using index_t = uint16_t;
+  using index_t = detail::smallest_unsigned_t<N>;
 
   //! \brief Function type to unserialize the order indices
   using index_reader_t = index_t(const upd::byte_t *);

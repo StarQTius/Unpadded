@@ -7,9 +7,9 @@ using byte_t = uint8_t;
 static void key_DO_serialize_argument_EXPECT_correct_id_and_result() {
   using namespace k2o;
 
-  key<16, int(int)> k;
+  key<uint8_t, 16, int(int)> k;
 
-  auto buf = upd::make_tuple(uint16_t{0}, int{0});
+  auto buf = upd::make_tuple(decltype(k)::index_t{0}, int{0});
   size_t i = 0;
   k(64) >> [&](byte_t byte) { buf[i++] = byte; };
 
@@ -17,7 +17,7 @@ static void key_DO_serialize_argument_EXPECT_correct_id_and_result() {
   TEST_ASSERT_EQUAL_INT(64, buf.get<1>());
 }
 
-#define KEY DECLVAL(key<0, int(int), upd::endianess::BUILTIN, upd::signed_mode::BUILTIN>)
+#define KEY DECLVAL(key<uint8_t, 0, int(int), upd::endianess::BUILTIN, upd::signed_mode::BUILTIN>)
 
 int main() {
   using namespace k2o;
