@@ -220,6 +220,41 @@ make_single_buffered_dispatcher(Keyring, order_features_h<Order_Features>) {
       Keyring{}, order_features_h<Order_Features>{}};
 }
 
+template<typename Dispatcher, std::size_t Input_Buffer_Size, std::size_t Output_Buffer_Size>
+class double_buffered_dispatcher : public buffered_dispatcher<Dispatcher, upd::byte_t *, upd::byte_t *> {
+  using base_t = buffered_dispatcher<Dispatcher, upd::byte_t *, upd::byte_t *>;
+
+public:
+  constexpr static auto input_buffer_size = Input_Buffer_Size;
+  constexpr static auto output_buffer_size = Output_Buffer_Size;
+
+  template<typename Keyring, order_features Order_Features>
+  explicit double_buffered_dispatcher(Keyring, order_features_h<Order_Features>)
+      : base_t{Keyring{}, m_ibuf, m_obuf, order_features_h<Order_Features>{}} {}
+
+private:
+  upd::byte_t m_ibuf[input_buffer_size], m_obuf[output_buffer_size];
+};
+
+#if __cplusplus >= 201703L
+template<typename Keyring, order_features Order_Features>
+double_buffered_dispatcher(Keyring, order_features_h<Order_Features>)
+    -> double_buffered_dispatcher<detail::dispatcher_t<Keyring, Order_Features>,
+                                  detail::needed_input_buffer_size<Keyring>::value,
+                                  detail::needed_output_buffer_size<Keyring>::value>;
+#endif // __cplusplus >= 201703L
+
+template<typename Keyring, order_features Order_Features>
+double_buffered_dispatcher<detail::dispatcher_t<Keyring, Order_Features>,
+                           detail::needed_input_buffer_size<Keyring>::value,
+                           detail::needed_output_buffer_size<Keyring>::value>
+make_double_buffered_dispatcher(Keyring, order_features_h<Order_Features>) {
+  return double_buffered_dispatcher<detail::dispatcher_t<Keyring, Order_Features>,
+                                    detail::needed_input_buffer_size<Keyring>::value,
+                                    detail::needed_output_buffer_size<Keyring>::value>{
+      Keyring{}, order_features_h<Order_Features>{}};
+}
+
 } // namespace k2o
 
 #include "detail/undef.hpp" // IWYU pragma: keep
