@@ -61,6 +61,22 @@ public:
   //! @}
 };
 
+//! \class ImmediateReader_CRTP
+//!
+//! The following member functions are also defined through CRTP.
+//! \code
+//! auto operator<<(Src &&);
+//! auto operator<<(Src &&) const;
+//! auto read_all(It);
+//! auto read_all(It) const;
+//! auto operator<<(It);
+//! auto operator<<(It) const;
+//! \endcode
+//! All these functions work the same way as `read_all(Src &&)`.
+//!
+//! \tparam Src Input functor type
+//! \tparam It Input iterator type
+
 //! \brief CRTP base class used to define immediate writing members functions
 //! \details
 //!   Immediate writers are able to write a byte sequence completely.
@@ -110,6 +126,22 @@ public:
   //! @}
 };
 
+//! \class ImmediateWriter_CRTP
+//!
+//! The following member functions are also defined through CRTP.
+//! \code
+//! void operator>>(Dest &&);
+//! void operator>>(Dest &&) const;
+//! void write_all(It);
+//! void write_all(It) const;
+//! void operator>>(It);
+//! void operator>>(It) const;
+//! \endcode
+//! All these functions work the same way as `write_all(Dest &&)`.
+//!
+//! \tparam Dest Output functor type
+//! \tparam It Output iterator type
+
 //! \brief CRTP base class used to define reading members functions
 //! \details
 //!   Readers are able to read a byte sequence byte per byte.
@@ -157,6 +189,21 @@ public:
   //! @}
 };
 
+//! \class Reader_CRTP
+//!
+//! The following member functions are also defined through CRTP.
+//! \code
+//! void read(const volatile upd::byte_t &);
+//! void read(const volatile upd::byte_t &) const;
+//! void operator<<(const volatile upd::byte_t &);
+//! void operator<<(const volatile upd::byte_t &) const;
+//! void read(It it);
+//! void read(It it) const;
+//! \endcode
+//! All these functions work the same way as `read(Src &&)`.
+//!
+//! \tparam It Input iterator type
+
 //! \brief CRTP base class used to define writing members functions
 //! \details
 //!   Writers are able to write a byte sequence byte per byte.
@@ -203,6 +250,21 @@ public:
 
   // @}
 };
+
+//! \class Writer_CRTP
+//!
+//! The following member functions are also defined through CRTP.
+//! \code
+//! void write(const volatile upd::byte_t &);
+//! void write(const volatile upd::byte_t &) const;
+//! void operator>>(const volatile upd::byte_t &);
+//! void operator>>(const volatile upd::byte_t &) const;
+//! void write(It);
+//! void write(It) const;
+//! \endcode
+//! All these functions work the same way as `write(Dest &&)`.
+//!
+//! \tparam It Output iterator type
 
 //! \brief CRTP base class used to define class whose instances process input and yield output immediately
 //! \details
@@ -289,6 +351,18 @@ private:
     return {it};
   }
 };
+
+//! \class ImmediateProcess_CRTP
+//!
+//! The following member functions are also defined through CRTP.
+//! \code
+//! auto operator()(Input &&, Output &&);
+//! auto operator()(Input &&, Output &&) const;
+//! \endcode
+//! All these functions work the same way as `operator()(Src &&, Dest &&)`.
+//!
+//! \tparam Input An input functor type or an input iterator type
+//! \tparam Output An output functor type or an output iterator type
 
 } // namespace detail
 } // namespace k2o

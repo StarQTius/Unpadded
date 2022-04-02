@@ -157,6 +157,7 @@ public:
   using detail::immediate_process<dispatcher<N, Endianess, Signed_Mode, Order_Features>, index_t>::operator();
 
   //! \brief Call the function according to the index and arguments obtained from a payload
+  //! \copydoc ImmediateProcess_CRTP
   //! \param src functor behaving as an input byte stream, from which the payload is fetched
   //! \param dest functor behaving as an output byte stream, in which the function call return value will be put
   //! \return the index of the called order

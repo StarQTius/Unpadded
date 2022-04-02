@@ -157,6 +157,7 @@ public:
   //!   should be callable with a 'upd::byte_t' value. The necessary arguments for the held functor call are
   //!   unserialized from the byte sequence obtained from the input byte stream. If any, the return value resulting from
   //!   the call is serialized then inserted into the output byte stream.
+  //! \copydoc ImmediateProcess_CRTP
   //! \param src Byte input functor
   //! \param dest Byte output functor
   template<typename Src, typename Dest, sfinae::require_input_ftor<Src> = 0, sfinae::require_output_ftor<Dest> = 0>

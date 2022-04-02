@@ -78,6 +78,7 @@ public:
   using detail::immediate_reader<this_t, void>::read_all;
 
   //! \brief Put bytes into the input buffer until a full order request is stored
+  //! \copydoc ImmediateReader_CRTP
   //! \param src_ftor Input functor to a byte sequence
   template<typename Src_F, sfinae::require_input_ftor<Src_F> = 0>
   void read_all(Src_F &&src_ftor) {
@@ -90,6 +91,7 @@ public:
   using detail::reader<this_t, void>::read;
 
   //! \brief Put one byte into the input buffer
+  //! \copydoc Reader_CRTP
   //! \param src_ftor Input functor to a byte sequence
   template<typename Src_F, sfinae::require_input_ftor<Src_F> = 0>
   void read(Src_F &&src_ftor) {
@@ -122,6 +124,7 @@ public:
   using detail::immediate_writer<this_t>::write_all;
 
   //! \brief Completely output the output buffer content
+  //! \copydoc ImmediateWriter_CRTP
   //! \param dest_ftor Output functor for writing byte sequences
   template<typename Dest_F, sfinae::require_output_ftor<Dest_F> = 0>
   void write_all(Dest_F &&dest_ftor) {
@@ -132,6 +135,7 @@ public:
   using detail::writer<this_t>::write;
 
   //! \brief Output one byte from the output buffer
+  //! \copydoc Writer_CRTP
   //! \param dest_ftor Output functor for writing byte sequences
   template<typename Dest_F, sfinae::require_output_ftor<Dest_F> = 0>
   void write(Dest_F &&dest_ftor) {
