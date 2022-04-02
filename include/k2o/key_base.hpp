@@ -36,7 +36,7 @@ struct serialized_message : detail::immediate_writer<serialized_message<Endianes
   using detail::immediate_writer<serialized_message<Endianess, Signed_Mode, Ts...>>::write_all;
 
   //! \brief Completely output the payload represented by the key
-  template<typename Dest_F, sfinae::require_output_ftor<Dest_F> = 0>
+  template<typename Dest_F, REQUIREMENT(output_ftor, Dest_F)>
   void write_all(Dest_F &&insert_byte) const {
     for (auto byte : content)
       insert_byte(byte);
@@ -56,7 +56,7 @@ class key_with_hook {
 public:
   //! \brief Call the stored callback on the provided parameters
   //! \param input_ftor Input functor the parameters will be extracted from
-  template<typename F, sfinae::require_input_ftor<F> = 0>
+  template<typename F, REQUIREMENT(input_ftor, F)>
   void operator()(F &&input_ftor) const {
     m_restorer(m_callback_ptr, detail::make_function_reference<F>(input_ftor));
   }
@@ -64,7 +64,7 @@ public:
   //! \copybrief operator()
   //! \param it Start of the range the parameters will be extracted from
   //! \return The error code resulting from the call to 'read_headerless_packet'
-  template<typename It, sfinae::require_byte_iterator<It> = 0>
+  template<typename It, REQUIREMENT(byte_iterator, It)>
   void operator()(It it) const {
     operator()([&]() { return *it++; });
   }

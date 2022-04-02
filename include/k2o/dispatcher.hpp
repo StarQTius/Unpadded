@@ -31,7 +31,7 @@ template<order_features Order_Features,
          F &Ftor,
          upd::endianess Endianess,
          upd::signed_mode Signed_Mode,
-         sfinae::require<Order_Features == order_features::STATIC_STORAGE_DURATION_ONLY> = 0>
+         REQUIRE(Order_Features == order_features::STATIC_STORAGE_DURATION_ONLY)>
 no_storage_order make_order() {
   return no_storage_order{
       std::integral_constant<F &, Ftor>{}, upd::endianess_h<Endianess>{}, upd::signed_mode_h<Signed_Mode>{}};
@@ -42,7 +42,7 @@ template<order_features Order_Features,
          F &Ftor,
          upd::endianess Endianess,
          upd::signed_mode Signed_Mode,
-         sfinae::require<Order_Features == order_features::ANY> = 0>
+         REQUIRE(Order_Features == order_features::ANY)>
 order make_order() {
   return order{Ftor, upd::endianess_h<Endianess>{}, upd::signed_mode_h<Signed_Mode>{}};
 }
@@ -151,7 +151,7 @@ public:
   //! \param kring Keyring containing the orders to dispatch to
   //! \note
   //!   The strange structure of this function is due to a GCC compiler bug with deduction guide in C++17.
-  template<typename Keyring, sfinae::require_is_deriving_from_keyring<Keyring> = 0>
+  template<typename Keyring, REQUIREMENT(is_deriving_from_keyring, Keyring)>
   explicit dispatcher(Keyring kring, order_features_h<Order_Features>) : m_impl{kring} {}
 
   using detail::immediate_process<dispatcher<N, Endianess, Signed_Mode, Order_Features>, index_t>::operator();
@@ -161,7 +161,7 @@ public:
   //! \param src functor behaving as an input byte stream, from which the payload is fetched
   //! \param dest functor behaving as an output byte stream, in which the function call return value will be put
   //! \return the index of the called order
-  template<typename Src, typename Dest, sfinae::require_input_ftor<Src> = 0, sfinae::require_output_ftor<Dest> = 0>
+  template<typename Src, typename Dest, REQUIREMENT(input_ftor, Src), REQUIREMENT(output_ftor, Dest)>
   index_t operator()(Src &&src, Dest &&dest) {
     return m_impl(FWD(src), FWD(dest));
   }
@@ -169,14 +169,14 @@ public:
   //! \brief Get the order indicated by the byte sequence
   //! \param src Functor acting as an input byte stream
   //! \return Either a reference to the order if it exists or the index that obtained from the byte sequence
-  template<typename Src, sfinae::require_input_ftor<Src> = 0>
+  template<typename Src, REQUIREMENT(input_ftor, Src)>
   tl::expected<std::reference_wrapper<order_t>, index_t> get_order(Src &&src) {
     return m_impl.get_order(FWD(src));
   }
 
   //! \copydoc dispatcher_impl::get_index
   //! \param src Input functor to a byte sequence
-  template<typename Src, sfinae::require_input_ftor<Src> = 0>
+  template<typename Src, REQUIREMENT(input_ftor, Src)>
   index_t get_index(Src &&src) const {
     return m_impl.get_index(FWD(src));
   }

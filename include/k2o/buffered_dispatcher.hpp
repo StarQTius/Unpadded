@@ -65,7 +65,7 @@ public:
   //! \tparam Keyring Type of the keyring
   //! \param input_it Start of the input buffer
   //! \param output_it Start of the output buffer
-  template<typename Keyring, sfinae::require_is_deriving_from_keyring<Keyring> = 0, order_features Order_Features>
+  template<typename Keyring, order_features Order_Features, REQUIREMENT(is_deriving_from_keyring, Keyring)>
   buffered_dispatcher(Keyring, Input_Iterator input_it, Output_Iterator output_it, order_features_h<Order_Features>)
       : m_dispatcher{Keyring{}, order_features_h<Order_Features>{}}, m_is_index_loaded{false},
         m_load_count{sizeof(index_t)}, m_ibuf_begin{input_it}, m_ibuf_next{input_it}, m_obuf_begin{output_it},
@@ -80,7 +80,7 @@ public:
   //! \brief Put bytes into the input buffer until a full order request is stored
   //! \copydoc ImmediateReader_CRTP
   //! \param src_ftor Input functor to a byte sequence
-  template<typename Src_F, sfinae::require_input_ftor<Src_F> = 0>
+  template<typename Src_F, REQUIREMENT(input_ftor, Src_F)>
   void read_all(Src_F &&src_ftor) {
     while (!m_is_index_loaded)
       read(src_ftor);
@@ -93,7 +93,7 @@ public:
   //! \brief Put one byte into the input buffer
   //! \copydoc Reader_CRTP
   //! \param src_ftor Input functor to a byte sequence
-  template<typename Src_F, sfinae::require_input_ftor<Src_F> = 0>
+  template<typename Src_F, REQUIREMENT(input_ftor, Src_F)>
   void read(Src_F &&src_ftor) {
     *m_ibuf_next++ = FWD(src_ftor)();
     if (--m_load_count == 0) {
@@ -126,7 +126,7 @@ public:
   //! \brief Completely output the output buffer content
   //! \copydoc ImmediateWriter_CRTP
   //! \param dest_ftor Output functor for writing byte sequences
-  template<typename Dest_F, sfinae::require_output_ftor<Dest_F> = 0>
+  template<typename Dest_F, REQUIREMENT(output_ftor, Dest_F)>
   void write_all(Dest_F &&dest_ftor) {
     while (is_loaded())
       write(dest_ftor);
@@ -137,7 +137,7 @@ public:
   //! \brief Output one byte from the output buffer
   //! \copydoc Writer_CRTP
   //! \param dest_ftor Output functor for writing byte sequences
-  template<typename Dest_F, sfinae::require_output_ftor<Dest_F> = 0>
+  template<typename Dest_F, REQUIREMENT(output_ftor, Dest_F)>
   void write(Dest_F &&dest_ftor) {
     if (is_loaded())
       FWD(dest_ftor)(*m_obuf_next++);

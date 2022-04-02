@@ -32,7 +32,7 @@ using src_t = abstract_function<upd::byte_t()>;
 using dest_t = abstract_function<void(upd::byte_t)>;
 
 //! \brief Serialize a single integer value as a sequence of byte then map a functor over this sequence
-template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename T, sfinae::require_not_tuple<T> = 0>
+template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename T, REQUIREMENT(not_tuple, T)>
 void insert(dest_t &dest, const T &value) {
   using namespace upd;
 
@@ -51,7 +51,7 @@ void call(src_t &src, F &&ftor) {
 }
 
 //! \copydoc call
-template<typename Tuple, typename F, sfinae::require_is_void<detail::return_t<F>> = 0>
+template<typename Tuple, typename F, REQUIREMENT(is_void, detail::return_t<F>)>
 void call(src_t &src, dest_t &, F &&ftor) {
   Tuple input_args;
   for (auto &byte : input_args)
@@ -60,7 +60,7 @@ void call(src_t &src, dest_t &, F &&ftor) {
 }
 
 //! \copydoc call
-template<typename Tuple, typename F, sfinae::require_not_void<detail::return_t<F>> = 0>
+template<typename Tuple, typename F, REQUIREMENT(not_void, detail::return_t<F>)>
 void call(src_t &src, dest_t &dest, F &&ftor) {
   Tuple input_args;
   for (auto &byte : input_args)
@@ -160,7 +160,7 @@ public:
   //! \copydoc ImmediateProcess_CRTP
   //! \param src Byte input functor
   //! \param dest Byte output functor
-  template<typename Src, typename Dest, sfinae::require_input_ftor<Src> = 0, sfinae::require_output_ftor<Dest> = 0>
+  template<typename Src, typename Dest, REQUIREMENT(input_ftor, Src), REQUIREMENT(output_ftor, Dest)>
   void operator()(Src &&src, Dest &&dest) {
     return (*m_concept_uptr)(detail::make_function_reference(src), detail::make_function_reference(dest));
   }
@@ -195,7 +195,7 @@ public:
             dest(byte);
         }} {}
 
-  template<typename Src, typename Dest, sfinae::require_input_ftor<Src> = 0, sfinae::require_output_ftor<Dest> = 0>
+  template<typename Src, typename Dest, REQUIREMENT(input_ftor, Src), REQUIREMENT(output_ftor, Dest)>
   void operator()(Src &&src, Dest &&dest) {
     wrapper(detail::make_function_reference(src), detail::make_function_reference(dest));
   }
