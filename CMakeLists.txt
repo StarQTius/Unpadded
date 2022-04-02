@@ -21,6 +21,7 @@ if(DEFINED CMAKE_CXX_INCLUDE_WHAT_YOU_USE)
 endif()
 
 add_subdirectory(include)
+add_subdirectory(doc)
 
 if(${PROJECT_NAME}_IS_TOP_LEVEL AND BUILD_TESTING)
   include(CTest)
