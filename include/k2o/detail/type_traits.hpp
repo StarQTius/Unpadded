@@ -19,5 +19,8 @@ template<>
 struct conjunction<> : std::true_type {};
 #endif // __cplusplus >= 201703L
 
+template<typename T>
+using remove_cv_ref_t = typename std::remove_cv<typename std::remove_reference<T>::type>::type;
+
 } // namespace detail
 } // namespace k2o

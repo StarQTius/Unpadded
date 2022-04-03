@@ -27,7 +27,6 @@ target_link_libraries(unit_testing INTERFACE unity::framework ${PROJECT_NAME})
 
 add_cpp11_and_cpp17_test(buffered_dispatcher)
 add_cpp11_and_cpp17_test(dispatcher)
-add_cpp11_and_cpp17_test(key_base)
 add_cpp11_and_cpp17_test(key)
 add_cpp11_and_cpp17_test(keyring)
 add_cpp11_and_cpp17_test(order)

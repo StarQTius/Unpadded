@@ -5,16 +5,17 @@ set(K2O_HEADERS
     cpp11.hpp
     dispatcher.hpp
     flist.hpp
-    key_base.hpp
     key.hpp
     keyring.hpp
     order.hpp
     policy.hpp
+    ticket.hpp
     detail/any_function.hpp
     detail/def.hpp
     detail/input_tuple.hpp
     detail/io.hpp
     detail/normalize_to_tuple.hpp
+    detail/serialized_message.hpp
     detail/sfinae.hpp
     detail/signature.hpp
     detail/smallest.hpp
