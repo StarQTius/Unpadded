@@ -17,12 +17,12 @@
 #include <upd/tuple.hpp>
 #include <upd/type.hpp>
 
-#include "value_h.hpp" // IWYU pragma: keep
+#include "unevaluated.hpp" // IWYU pragma: keep
 
 #include "def.hpp"
 
 // IWYU pragma: no_include "boost/type_traits/detail/is_function_cxx_11.hpp"
-// IWYU pragma: no_forward_declare unevaluated_value_h
+// IWYU pragma: no_forward_declare unevaluated
 
 namespace k2o {
 
@@ -50,7 +50,7 @@ K2O_MAKE_DETECTOR(has_signature_impl,
 
 template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Fs, Fs... Ftors>
 constexpr boost::true_type
-    is_deriving_from_keyring_impl(keyring<Endianess, Signed_Mode, k2o::detail::unevaluated_value_h<Fs, Ftors>...>);
+    is_deriving_from_keyring_impl(keyring<Endianess, Signed_Mode, k2o::detail::unevaluated<Fs, Ftors>...>);
 constexpr boost::false_type is_deriving_from_keyring_impl(...);
 
 template<typename... Args>

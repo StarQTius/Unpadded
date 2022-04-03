@@ -19,7 +19,7 @@ struct value_h {
 //! \tparam T type of the held value
 //! \tparam Value value of the held value
 template<typename T, T Value>
-struct unevaluated_value_h {
+struct unevaluated {
   using type = T;
 };
 
