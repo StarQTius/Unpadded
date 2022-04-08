@@ -20,6 +20,6 @@ int undefined_function(int);
 #define BYTE_PTR DECLVAL(upd::byte_t *)
 #define READABLE DECLVAL(upd::byte_t (&)())
 #define WRITABLE DECLVAL(void (&)(upd::byte_t))
-#define REGISTRY DECLVAL(const volatile upd::byte_t &)
+#define REGISTRY DECLVAL(volatile upd::byte_t &)
 #define WRITABLE DECLVAL(void (&)(upd::byte_t))
 #define FUNCTOR undefined_function

@@ -220,21 +220,21 @@ public:
   //!   These functions may be invoked on hardware registers and output iterators
   //! @{
 
-  void write(const volatile upd::byte_t &reg) {
+  void write(volatile upd::byte_t &reg) {
     derived().write([&]() { return reg; });
   }
 
-  void write(const volatile upd::byte_t &reg) const {
+  void write(volatile upd::byte_t &reg) const {
     derived().write([&]() { return reg; });
   }
 
   using immediate_writer<D>::operator>>;
 
-  void operator>>(const volatile upd::byte_t &reg) {
+  void operator>>(volatile upd::byte_t &reg) {
     derived().write([&]() { return reg; });
   }
 
-  void operator>>(const volatile upd::byte_t &reg) const {
+  void operator>>(volatile upd::byte_t &reg) const {
     derived().write([&]() { return reg; });
   }
 
@@ -255,10 +255,10 @@ public:
 //!
 //! The following member functions are also defined through CRTP.
 //! \code
-//! void write(const volatile upd::byte_t &);
-//! void write(const volatile upd::byte_t &) const;
-//! void operator>>(const volatile upd::byte_t &);
-//! void operator>>(const volatile upd::byte_t &) const;
+//! void write(volatile upd::byte_t &);
+//! void write(volatile upd::byte_t &) const;
+//! void operator>>(volatile upd::byte_t &);
+//! void operator>>(volatile upd::byte_t &) const;
 //! void write(It);
 //! void write(It) const;
 //! \endcode
