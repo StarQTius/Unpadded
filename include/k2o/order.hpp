@@ -15,8 +15,8 @@
 #include "detail/input_tuple.hpp"
 #include "detail/io.hpp"
 #include "detail/normalize_to_tuple.hpp"
-#include "detail/sfinae.hpp"
 #include "detail/signature.hpp"
+#include "detail/type_traits/require.hpp"
 
 #include "detail/def.hpp"
 
@@ -160,7 +160,7 @@ public:
   //! \copydoc ImmediateProcess_CRTP
   //! \param src Byte input functor
   //! \param dest Byte output functor
-  template<typename Src, typename Dest, REQUIREMENT(input_ftor, Src), REQUIREMENT(output_ftor, Dest)>
+  template<typename Src, typename Dest, REQUIREMENT(input_invocable, Src), REQUIREMENT(output_invocable, Dest)>
   void operator()(Src &&src, Dest &&dest) {
     return (*m_concept_uptr)(detail::make_function_reference(src), detail::make_function_reference(dest));
   }
@@ -195,7 +195,7 @@ public:
             dest(byte);
         }} {}
 
-  template<typename Src, typename Dest, REQUIREMENT(input_ftor, Src), REQUIREMENT(output_ftor, Dest)>
+  template<typename Src, typename Dest, REQUIREMENT(input_invocable, Src), REQUIREMENT(output_invocable, Dest)>
   void operator()(Src &&src, Dest &&dest) {
     wrapper(detail::make_function_reference(src), detail::make_function_reference(dest));
   }

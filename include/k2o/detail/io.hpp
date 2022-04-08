@@ -5,7 +5,8 @@
 
 #include <upd/type.hpp>
 
-#include "sfinae.hpp"
+#include "type_traits/has_signature.hpp"
+#include "type_traits/require.hpp"
 
 #include "def.hpp"
 
@@ -28,32 +29,32 @@ public:
   //!   These functions may be invoked on hardware registers and input functors and iterators
   //! @{
 
-  template<typename Src_F, sfinae::require_input_ftor<Src_F> = 0>
+  template<typename Src_F, detail::require_input_invocable<Src_F> = 0>
   R operator<<(Src_F &&src) {
     return derived().read_all(FWD(src));
   }
 
-  template<typename Src_F, sfinae::require_input_ftor<Src_F> = 0>
+  template<typename Src_F, detail::require_input_invocable<Src_F> = 0>
   R operator<<(Src_F &&src) const {
     return derived().read_all(FWD(src));
   }
 
-  template<typename It, sfinae::require_byte_iterator<It> = 0>
+  template<typename It, detail::require_byte_iterator<It> = 0>
   R read_all(It it) {
     return derived().read_all([&]() { return *it++; });
   }
 
-  template<typename It, sfinae::require_byte_iterator<It> = 0>
+  template<typename It, detail::require_byte_iterator<It> = 0>
   R read_all(It it) const {
     return derived().read_all([&]() { return *it++; });
   }
 
-  template<typename It, sfinae::require_byte_iterator<It> = 0>
+  template<typename It, detail::require_byte_iterator<It> = 0>
   R operator<<(It src) {
     return read_all(src);
   }
 
-  template<typename It, sfinae::require_byte_iterator<It> = 0>
+  template<typename It, detail::require_byte_iterator<It> = 0>
   R operator<<(It src) const {
     return read_all(src);
   }
@@ -93,32 +94,32 @@ public:
   //!   These functions may be invoked on hardware registers and output functors and iterators
   //! @{
 
-  template<typename Dest_F, sfinae::require_output_ftor<Dest_F> = 0>
+  template<typename Dest_F, detail::require_output_invocable<Dest_F> = 0>
   void operator>>(Dest_F &&dest) {
     derived().write_all(FWD(dest));
   }
 
-  template<typename Dest_F, sfinae::require_output_ftor<Dest_F> = 0>
+  template<typename Dest_F, detail::require_output_invocable<Dest_F> = 0>
   void operator>>(Dest_F &&dest) const {
     derived().write_all(FWD(dest));
   }
 
-  template<typename It, sfinae::require_byte_iterator<It> = 0>
+  template<typename It, detail::require_byte_iterator<It> = 0>
   void write_all(It it) {
     derived().write_all([&](upd::byte_t byte) { *it++ = byte; });
   }
 
-  template<typename It, sfinae::require_byte_iterator<It> = 0>
+  template<typename It, detail::require_byte_iterator<It> = 0>
   void write_all(It it) const {
     derived().write_all([&](upd::byte_t byte) { *it++ = byte; });
   }
 
-  template<typename It, sfinae::require_byte_iterator<It> = 0>
+  template<typename It, detail::require_byte_iterator<It> = 0>
   void operator>>(It src) {
     write_all(src);
   }
 
-  template<typename It, sfinae::require_byte_iterator<It> = 0>
+  template<typename It, detail::require_byte_iterator<It> = 0>
   void operator>>(It src) const {
     write_all(src);
   }
@@ -176,12 +177,12 @@ public:
     derived().read([&]() { return reg; });
   }
 
-  template<typename It, sfinae::require_byte_iterator<It> = 0>
+  template<typename It, detail::require_byte_iterator<It> = 0>
   void read(It it) {
     derived().read([&]() { return *it; });
   }
 
-  template<typename It, sfinae::require_byte_iterator<It> = 0>
+  template<typename It, detail::require_byte_iterator<It> = 0>
   void read(It it) const {
     derived().read([&]() { return *it; });
   }
@@ -238,12 +239,12 @@ public:
     derived().write([&]() { return reg; });
   }
 
-  template<typename It, sfinae::require_byte_iterator<It> = 0>
+  template<typename It, detail::require_byte_iterator<It> = 0>
   void write(It it) {
     derived().write([&]() { return *it; });
   }
 
-  template<typename It, sfinae::require_byte_iterator<It> = 0>
+  template<typename It, detail::require_byte_iterator<It> = 0>
   void write(It it) const {
     derived().write([&]() { return *it; });
   }
@@ -282,8 +283,8 @@ public:
   //! \return the result of the invocation of the derived instance on the normalized parameters
   template<typename Input,
            typename Output,
-           sfinae::require<!sfinae::has_signature<Input, upd::byte_t()>::value ||
-                           !sfinae::has_signature<Output, void(upd::byte_t)>::value> = 0>
+           detail::require<!detail::has_signature<Input, upd::byte_t()>::value ||
+                           !detail::has_signature<Output, void(upd::byte_t)>::value> = 0>
   R operator()(Input &&input, Output &&output) {
     return derived()(normalize(FWD(input), reader_tag_t{}), normalize(FWD(output), writer_tag_t{}));
   }
@@ -291,8 +292,8 @@ public:
   //! \copydoc operator()
   template<typename Input,
            typename Output,
-           sfinae::require<!sfinae::has_signature<Input, upd::byte_t()>::value ||
-                           !sfinae::has_signature<Output, void(upd::byte_t)>::value> = 0>
+           detail::require<!detail::has_signature<Input, upd::byte_t()>::value ||
+                           !detail::has_signature<Output, void(upd::byte_t)>::value> = 0>
   R operator()(Input &&input, Output &&output) const {
     return derived()(normalize(FWD(input), reader_tag_t{}), normalize(FWD(output), writer_tag_t{}));
   }
@@ -328,25 +329,25 @@ private:
   }
 
   //! Wrap the iterator to get an input functor
-  template<typename It, sfinae::require_byte_iterator<It> = 0>
+  template<typename It, detail::require_byte_iterator<It> = 0>
   reader_iterator<It> normalize(It it, reader_tag_t) {
     return {it};
   }
 
   //! Wrap the iterator to get an input functor
-  template<typename It, sfinae::require_byte_iterator<It> = 0>
+  template<typename It, detail::require_byte_iterator<It> = 0>
   reader_iterator<It> normalize(It it, reader_tag_t) const {
     return {it};
   }
 
   //! Wrap the iterator to get an output functor
-  template<typename It, sfinae::require_byte_iterator<It> = 0>
+  template<typename It, detail::require_byte_iterator<It> = 0>
   writer_iterator<It> normalize(It it, writer_tag_t) {
     return {it};
   }
 
   //! Wrap the iterator to get an output functor
-  template<typename It, sfinae::require_byte_iterator<It> = 0>
+  template<typename It, detail::require_byte_iterator<It> = 0>
   writer_iterator<It> normalize(It it, writer_tag_t) const {
     return {it};
   }

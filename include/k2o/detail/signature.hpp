@@ -9,7 +9,7 @@
 #include <boost/mp11.hpp> // IWYU pragma: keep
 #include <boost/type_traits/decay.hpp>
 
-#include "sfinae.hpp"
+#include "type_traits/require.hpp"
 #include "typelist.hpp"
 
 // IWYU pragma: no_include "boost/mp11/detail/mp_list.hpp"
@@ -95,7 +95,7 @@ using signature_t = typename examine_functor<F>::type;
 template<typename F>
 using return_t = typename examine_functor<F>::return_type;
 
-template<typename F, sfinae::require_is_function<F> = 0>
+template<typename F, detail::require_is_function<F> = 0>
 constexpr bool is_callable_impl(int) {
   return true;
 }

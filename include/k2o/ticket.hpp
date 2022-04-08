@@ -6,7 +6,7 @@
 
 #include "detail/any_function.hpp"
 #include "detail/function_reference.hpp"
-#include "detail/sfinae.hpp"
+#include "detail/type_traits/require.hpp"
 
 #include "detail/def.hpp"
 
@@ -20,10 +20,10 @@ class ticket {
 
 public:
   //! \brief Call the stored callback on the provided parameters
-  //! \param input_ftor Input functor the parameters will be extracted from
-  template<typename F, REQUIREMENT(input_ftor, F)>
-  void operator()(F &&input_ftor) const {
-    m_restorer(m_callback_ptr, detail::make_function_reference<F>(input_ftor));
+  //! \param input_invocable Input functor the parameters will be extracted from
+  template<typename F, REQUIREMENT(input_invocable, F)>
+  void operator()(F &&input_invocable) const {
+    m_restorer(m_callback_ptr, detail::make_function_reference<F>(input_invocable));
   }
 
   //! \copybrief operator()

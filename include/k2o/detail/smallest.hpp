@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <type_traits>
 
-#include "sfinae.hpp"
+#include "type_traits/require.hpp"
 
 namespace k2o {
 namespace detail {
@@ -12,7 +12,7 @@ template<typename T, unsigned long long X>
 struct smallest_unsigned_impl {
   using type = T;
 
-  template<typename U, sfinae::require<U(X) == X>>
+  template<typename U, detail::require<U(X) == X>>
   smallest_unsigned_impl<U, X> try_promote(U &&) const;
   smallest_unsigned_impl<T, X> try_promote(...) const;
 };

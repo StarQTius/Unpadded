@@ -6,7 +6,7 @@
 #include <upd/tuple.hpp>
 
 #include "io.hpp"
-#include "sfinae.hpp"
+#include "type_traits/require.hpp"
 
 #include "def.hpp"
 
@@ -31,7 +31,7 @@ struct serialized_message : detail::immediate_writer<serialized_message<Endianes
   using detail::immediate_writer<serialized_message<Endianess, Signed_Mode, Ts...>>::write_all;
 
   //! \brief Completely output the payload represented by the key
-  template<typename Dest_F, REQUIREMENT(output_ftor, Dest_F)>
+  template<typename Dest_F, REQUIREMENT(output_invocable, Dest_F)>
   void write_all(Dest_F &&insert_byte) const {
     for (auto byte : content)
       insert_byte(byte);

@@ -7,9 +7,9 @@
 
 #include "detail/io.hpp"
 #include "detail/serialized_message.hpp"
-#include "detail/sfinae.hpp"
 #include "detail/signature.hpp"
 #include "detail/type_traits.hpp"
+#include "detail/type_traits/require.hpp"
 #include "ticket.hpp"
 
 #include "detail/def.hpp"
@@ -112,7 +112,7 @@ public:
   //!
   //! \param src Input invocable to the packet
   //! \return the unserialized value
-  template<typename Src, REQUIREMENT(input_ftor, Src)>
+  template<typename Src, REQUIREMENT(input_invocable, Src)>
   return_t read_all(Src &&src) const {
     upd::tuple<Endianess, Signed_Mode, detail::remove_cv_ref_t<R>> retval;
     for (auto &byte : retval)

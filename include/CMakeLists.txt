@@ -16,10 +16,14 @@ set(K2O_HEADERS
     detail/io.hpp
     detail/normalize_to_tuple.hpp
     detail/serialized_message.hpp
-    detail/sfinae.hpp
     detail/signature.hpp
     detail/smallest.hpp
     detail/type_traits.hpp
+    detail/type_traits/detector.hpp
+    detail/type_traits/has_signature.hpp
+    detail/type_traits/is_keyring.hpp
+    detail/type_traits/is_tuple.hpp
+    detail/type_traits/require.hpp
     detail/typelist.hpp
     detail/undef.hpp
     detail/unevaluated.hpp)

@@ -12,8 +12,8 @@
 #include <upd/type.hpp>
 
 #include "detail/io.hpp"
-#include "detail/sfinae.hpp"
 #include "detail/smallest.hpp"
+#include "detail/type_traits/require.hpp"
 #include "detail/unevaluated.hpp" // IWYU pragma: keep
 #include "keyring.hpp"
 #include "order.hpp"
@@ -151,7 +151,7 @@ public:
   //! \param kring Keyring containing the orders to dispatch to
   //! \note
   //!   The strange structure of this function is due to a GCC compiler bug with deduction guide in C++17.
-  template<typename Keyring, REQUIREMENT(is_deriving_from_keyring, Keyring)>
+  template<typename Keyring, REQUIREMENT(is_keyring, Keyring)>
   explicit dispatcher(Keyring kring, order_features_h<Order_Features>) : m_impl{kring} {}
 
   using detail::immediate_process<dispatcher<N, Endianess, Signed_Mode, Order_Features>, index_t>::operator();
@@ -161,7 +161,7 @@ public:
   //! \param src functor behaving as an input byte stream, from which the payload is fetched
   //! \param dest functor behaving as an output byte stream, in which the function call return value will be put
   //! \return the index of the called order
-  template<typename Src, typename Dest, REQUIREMENT(input_ftor, Src), REQUIREMENT(output_ftor, Dest)>
+  template<typename Src, typename Dest, REQUIREMENT(input_invocable, Src), REQUIREMENT(output_invocable, Dest)>
   index_t operator()(Src &&src, Dest &&dest) {
     return m_impl(FWD(src), FWD(dest));
   }
@@ -169,14 +169,14 @@ public:
   //! \brief Get the order indicated by the byte sequence
   //! \param src Functor acting as an input byte stream
   //! \return Either a reference to the order if it exists or the index that obtained from the byte sequence
-  template<typename Src, REQUIREMENT(input_ftor, Src)>
+  template<typename Src, REQUIREMENT(input_invocable, Src)>
   tl::expected<std::reference_wrapper<order_t>, index_t> get_order(Src &&src) {
     return m_impl.get_order(FWD(src));
   }
 
   //! \copydoc dispatcher_impl::get_index
   //! \param src Input functor to a byte sequence
-  template<typename Src, REQUIREMENT(input_ftor, Src)>
+  template<typename Src, REQUIREMENT(input_invocable, Src)>
   index_t get_index(Src &&src) const {
     return m_impl.get_index(FWD(src));
   }
