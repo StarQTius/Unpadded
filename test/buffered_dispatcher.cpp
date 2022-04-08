@@ -10,7 +10,7 @@ int check_64(int x) {
 
 int identity(int x) { return x; }
 
-constexpr auto kring = k2o::make_keyring(k2o::flist_t<K2O_CTREF(check_64), K2O_CTREF(identity)>{});
+constexpr auto kring = k2o::make_keyring(k2o::make_flist(K2O_CTREF(check_64), K2O_CTREF(identity)));
 
 static void buffered_dispatcher_DO_load_an_order_EXPECT_correct_order_loaded_cpp17() {
 #if __cplusplus >= 201703L
@@ -32,7 +32,7 @@ static void buffered_dispatcher_DO_load_an_order_in_a_single_buffered_dispatcher
 
   upd::byte_t kbuf[64];
   int result = 0;
-  auto k = kring.get<K2O_CTREF(identity)>();
+  auto k = kring.get(K2O_CTREF(identity));
   auto dis = make_single_buffered_dispatcher(kring, policy::any_order);
 
   static_assert(dis.buffer_size == sizeof(int) + sizeof(decltype(dis)::index_t));
@@ -49,7 +49,7 @@ static void buffered_dispatcher_DO_load_an_order_in_a_double_buffered_dispatcher
 
   upd::byte_t kbuf[64];
   int result = 0;
-  auto k = kring.get<K2O_CTREF(identity)>();
+  auto k = kring.get(K2O_CTREF(identity));
   auto dis = make_double_buffered_dispatcher(kring, policy::any_order);
 
   static_assert(dis.input_buffer_size == sizeof(int) + sizeof(decltype(dis)::index_t));
@@ -67,7 +67,7 @@ static void buffered_dispatcher_DO_load_an_order_in_a_double_buffered_dispatcher
 
   upd::byte_t kbuf[64];
   int result = 0;
-  auto k = kring.get<K2O_CTREF(identity)>();
+  auto k = kring.get(K2O_CTREF(identity));
   auto dis = make_double_buffered_dispatcher(kring, policy::any_order);
 
   static_assert(dis.input_buffer_size == sizeof(int) + sizeof(decltype(dis)::index_t));
@@ -117,7 +117,7 @@ int main() {
          BUFFERED_DISPATCHER >> BYTE_PTR,
          BUFFERED_DISPATCHER >> WRITABLE,
          BUFFERED_DISPATCHER >> REGISTRY,
-         BUFFERED_DISPATCHER.replace(0, K2O_CTREF(FUNCTOR){}),
+         BUFFERED_DISPATCHER.replace(0, K2O_CTREF(FUNCTOR)),
          BUFFERED_DISPATCHER.replace(0, FUNCTOR),
          BUFFERED_DISPATCHER_STATIC.read_all(BYTE_PTR),
          BUFFERED_DISPATCHER_STATIC.read_all(READABLE),
@@ -135,7 +135,7 @@ int main() {
          BUFFERED_DISPATCHER_STATIC >> BYTE_PTR,
          BUFFERED_DISPATCHER_STATIC >> WRITABLE,
          BUFFERED_DISPATCHER_STATIC >> REGISTRY,
-         BUFFERED_DISPATCHER_STATIC.replace(0, K2O_CTREF(FUNCTOR){}));
+         BUFFERED_DISPATCHER_STATIC.replace(0, K2O_CTREF(FUNCTOR)));
 
   UNITY_BEGIN();
   RUN_TEST(buffered_dispatcher_DO_load_an_order_EXPECT_correct_order_loaded_cpp17);

@@ -15,4 +15,9 @@ template<auto &...Functions>
 flist_t<detail::unevaluated<decltype(Functions), Functions>...> flist;
 #endif // __cplusplus >= 201703L
 
+template<typename... Fs, Fs... Functions>
+constexpr flist_t<detail::unevaluated<Fs, Functions>...> make_flist(detail::unevaluated<Fs, Functions>...) {
+  return {};
+};
+
 } // namespace k2o

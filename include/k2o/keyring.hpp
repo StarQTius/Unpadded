@@ -91,7 +91,7 @@ public:
   //! \brief Make a key associated with the given unevaluated reference to a function
   //! \tparam H Unevaluated reference to a function managed by the keyring
   template<typename H>
-  constexpr key_t<H> get() const {
+  constexpr key_t<H> get(H) const {
     return {};
   }
 
@@ -100,7 +100,7 @@ public:
   //! \tparam Ftor One of the functors managed by the keyring
   template<auto &Ftor>
   constexpr auto get() const {
-    return get<detail::unevaluated<decltype(Ftor), Ftor>>();
+    return get(detail::unevaluated<decltype(Ftor), Ftor>{});
   }
 #endif // __cplusplus >= 201703L
 };
