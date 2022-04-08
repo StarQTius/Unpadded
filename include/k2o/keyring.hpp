@@ -53,7 +53,7 @@ class keyring<Endianess, Signed_Mode, detail::unevaluated<Fs, Functions>...>
 
 public:
   //! \brief Typelist containing unevaluated references to the functions
-  using flist_t = boost::mp11::mp_list<detail::unevaluated<Fs, Functions>...>;
+  using flist_t = k2o::flist_t<detail::unevaluated<Fs, Functions>...>;
 
   //! \brief Typelist containing the signatures of the functions
   using signatures_t = boost::mp11::mp_list<detail::signature_t<Fs>...>;
@@ -80,10 +80,10 @@ public:
   constexpr keyring() = default;
 
   //! \brief (C++17) Create a keyring managing the given functions with the native serialization parameters
-  constexpr explicit keyring(flist11_t<detail::unevaluated<Fs, Functions>...>) {}
+  constexpr explicit keyring(k2o::flist_t<detail::unevaluated<Fs, Functions>...>) {}
 
   //! \brief (C++17) Create a keyring managing the given functions with the provided serialization parameters
-  constexpr explicit keyring(flist11_t<detail::unevaluated<Fs, Functions>...>,
+  constexpr explicit keyring(k2o::flist_t<detail::unevaluated<Fs, Functions>...>,
                              upd::endianess_h<Endianess>,
                              upd::signed_mode_h<Signed_Mode>) {}
 #endif // __cplusplus >= 201703L
@@ -107,10 +107,10 @@ public:
 
 #if __cplusplus >= 201703L
 template<typename... Hs>
-keyring(flist11_t<Hs...>) -> keyring<upd::endianess::BUILTIN, upd::signed_mode::BUILTIN, Hs...>;
+keyring(flist_t<Hs...>) -> keyring<upd::endianess::BUILTIN, upd::signed_mode::BUILTIN, Hs...>;
 
 template<typename... Hs, upd::endianess Endianess, upd::signed_mode Signed_Mode>
-keyring(flist11_t<Hs...>, upd::endianess_h<Endianess>, upd::signed_mode_h<Signed_Mode>)
+keyring(flist_t<Hs...>, upd::endianess_h<Endianess>, upd::signed_mode_h<Signed_Mode>)
     -> keyring<Endianess, Signed_Mode, Hs...>;
 #endif // __cplusplus >= 201703L
 
@@ -118,14 +118,14 @@ keyring(flist11_t<Hs...>, upd::endianess_h<Endianess>, upd::signed_mode_h<Signed
 //! \related keyring
 template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Hs>
 constexpr keyring<Endianess, Signed_Mode, Hs...>
-make_keyring(flist11_t<Hs...>, upd::endianess_h<Endianess>, upd::signed_mode_h<Signed_Mode>) {
+make_keyring(flist_t<Hs...>, upd::endianess_h<Endianess>, upd::signed_mode_h<Signed_Mode>) {
   return {};
 }
 
 //! \copybrief make_keyring
 //! \related keyring
 template<typename... Hs>
-constexpr keyring<upd::endianess::BUILTIN, upd::signed_mode::BUILTIN, Hs...> make_keyring(flist11_t<Hs...>) {
+constexpr keyring<upd::endianess::BUILTIN, upd::signed_mode::BUILTIN, Hs...> make_keyring(flist_t<Hs...>) {
   return {};
 }
 

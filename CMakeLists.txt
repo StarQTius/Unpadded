@@ -17,7 +17,7 @@ FetchContent_Declare(Unity
                      GIT_REPOSITORY https://github.com/ThrowTheSwitch/Unity)
 
 if(DEFINED CMAKE_CXX_INCLUDE_WHAT_YOU_USE)
-  set(FETCHCONTENT_UPDATES_DISCONNECTED ON)
+  set(FETCHCONTENT_FULLY_DISCONNECTED ON)
 endif()
 
 add_subdirectory(include)

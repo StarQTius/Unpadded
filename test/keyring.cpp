@@ -18,12 +18,12 @@ extern callable<int, int> ftor1;
 extern callable<int, long> ftor2;
 extern callable<void, int> ftor3;
 
-constexpr k2o::flist11_t<K2O_CTREF(ftor3),
-                         K2O_CTREF(function1),
-                         K2O_CTREF(function2),
-                         K2O_CTREF(ftor1),
-                         K2O_CTREF(function3),
-                         K2O_CTREF(ftor2)>
+constexpr k2o::flist_t<K2O_CTREF(ftor3),
+                       K2O_CTREF(function1),
+                       K2O_CTREF(function2),
+                       K2O_CTREF(ftor1),
+                       K2O_CTREF(function3),
+                       K2O_CTREF(ftor2)>
     ftor_list;
 
 static void keyring_DO_get_an_ikey_EXPECT_correct_index() {

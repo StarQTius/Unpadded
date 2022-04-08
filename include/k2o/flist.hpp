@@ -5,17 +5,14 @@
 namespace k2o {
 
 template<typename...>
-struct flist11_t;
+struct flist_t;
 
 template<typename... Fs, Fs... Functions>
-struct flist11_t<detail::unevaluated<Fs, Functions>...> {};
+struct flist_t<detail::unevaluated<Fs, Functions>...> {};
 
 #if __cplusplus >= 201703L
 template<auto &...Functions>
-struct flist_t : flist11_t<detail::unevaluated<decltype(Functions), Functions>...> {};
-
-template<auto &...Functions>
-flist_t<Functions...> flist;
+flist_t<detail::unevaluated<decltype(Functions), Functions>...> flist;
 #endif // __cplusplus >= 201703L
 
 } // namespace k2o

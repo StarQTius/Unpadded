@@ -18,12 +18,12 @@ int procedure();
 auto functor = [](int x) { return x; };
 const object_t &function_object(const object_t &x) { return x; }
 
-constexpr k2o::flist11_t<K2O_CTREF(function),
-                         K2O_CTREF(big_function),
-                         K2O_CTREF(integer_function),
-                         K2O_CTREF(procedure),
-                         K2O_CTREF(functor),
-                         K2O_CTREF(function_object)>
+constexpr k2o::flist_t<K2O_CTREF(function),
+                       K2O_CTREF(big_function),
+                       K2O_CTREF(integer_function),
+                       K2O_CTREF(procedure),
+                       K2O_CTREF(functor),
+                       K2O_CTREF(function_object)>
     list;
 constexpr auto kring = k2o::make_keyring(list);
 

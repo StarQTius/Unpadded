@@ -8,7 +8,7 @@ int get_16() { return 16; }
 int get_32() { return 32; }
 int identity(int x) { return x; }
 
-constexpr k2o::flist11_t<K2O_CTREF(get_8), K2O_CTREF(get_16), K2O_CTREF(get_32), K2O_CTREF(identity)> ftor_list;
+constexpr k2o::flist_t<K2O_CTREF(get_8), K2O_CTREF(get_16), K2O_CTREF(get_32), K2O_CTREF(identity)> ftor_list;
 
 static void dispatcher_DO_call_order_EXPECT_calling_correct_order() {
   using namespace k2o;

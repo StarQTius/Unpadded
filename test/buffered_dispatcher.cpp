@@ -10,7 +10,7 @@ int check_64(int x) {
 
 int identity(int x) { return x; }
 
-constexpr auto kring = k2o::make_keyring(k2o::flist11_t<K2O_CTREF(check_64), K2O_CTREF(identity)>{});
+constexpr auto kring = k2o::make_keyring(k2o::flist_t<K2O_CTREF(check_64), K2O_CTREF(identity)>{});
 
 static void buffered_dispatcher_DO_load_an_order_EXPECT_correct_order_loaded_cpp17() {
 #if __cplusplus >= 201703L
