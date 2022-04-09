@@ -1,3 +1,5 @@
+//! \file
+
 #pragma once
 
 #include <cstddef> // IWYU pragma: keep
@@ -6,8 +8,11 @@
 namespace k2o {
 namespace detail {
 
-#if __cplusplus >= 201703L
+//! \name
 //! \brief Forms the logical conjunction of the template parameters
+//! @{
+
+#if __cplusplus >= 201703L
 template<typename... Ts>
 using conjunction = std::integral_constant<bool, (Ts::value && ...)>;
 #else  // __cplusplus >= 201703L
@@ -19,8 +24,7 @@ template<>
 struct conjunction<> : std::true_type {};
 #endif // __cplusplus >= 201703L
 
-template<typename T>
-using remove_cv_ref_t = typename std::remove_cv<typename std::remove_reference<T>::type>::type;
+//! @}
 
 } // namespace detail
 } // namespace k2o

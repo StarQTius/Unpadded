@@ -8,7 +8,7 @@
 
 // IWYU pragma: no_include "boost/mp11/detail/mp_list.hpp"
 
-#include "detail/type_traits.hpp"
+#include "detail/type_traits/conjunction.hpp"
 #include "detail/type_traits/signature.hpp"
 #include "detail/type_traits/smallest.hpp"
 #include "detail/type_traits/typelist.hpp"

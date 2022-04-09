@@ -7,7 +7,7 @@
 
 #include "detail/io.hpp"
 #include "detail/serialized_message.hpp"
-#include "detail/type_traits.hpp"
+#include "detail/type_traits/remove_cv_ref.hpp"
 #include "detail/type_traits/require.hpp"
 #include "detail/type_traits/signature.hpp"
 #include "ticket.hpp"

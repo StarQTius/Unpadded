@@ -17,7 +17,8 @@ set(K2O_HEADERS
     detail/type_traits/flatten_tuple.hpp
     detail/serialized_message.hpp
     detail/type_traits/smallest.hpp
-    detail/type_traits.hpp
+    detail/type_traits/conjunction.hpp
+    detail/type_traits/remove_cv_ref.hpp
     detail/type_traits/detector.hpp
     detail/type_traits/signature.hpp
     detail/type_traits/is_keyring.hpp
