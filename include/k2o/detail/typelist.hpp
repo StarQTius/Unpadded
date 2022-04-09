@@ -7,6 +7,7 @@
 #include <type_traits>
 
 #include <boost/mp11/algorithm.hpp>
+#include <boost/mp11/detail/mp_list.hpp> // IWYU pragma: export
 #include <boost/mp11/function.hpp>
 
 // IWYU pragma: no_include "boost/mp11/detail/mp_min_element.hpp"

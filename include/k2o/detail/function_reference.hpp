@@ -5,7 +5,7 @@
 
 #include <boost/type_traits.hpp>
 
-#include "signature.hpp"
+#include "type_traits/signature.hpp"
 
 namespace k2o {
 namespace detail {

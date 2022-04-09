@@ -7,7 +7,7 @@
 #include <upd/format.hpp>
 #include <upd/tuple.hpp>
 
-#include "signature.hpp"
+#include "type_traits/signature.hpp"
 
 namespace k2o {
 namespace detail {

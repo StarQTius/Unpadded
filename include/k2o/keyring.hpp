@@ -3,16 +3,14 @@
 
 #pragma once
 
-#include <type_traits>
-
 #include <boost/mp11.hpp> // IWYU pragma: keep
 #include <upd/format.hpp>
 
 // IWYU pragma: no_include "boost/mp11/detail/mp_list.hpp"
 
-#include "detail/signature.hpp"
 #include "detail/smallest.hpp"
 #include "detail/type_traits.hpp"
+#include "detail/type_traits/signature.hpp"
 #include "detail/typelist.hpp"
 #include "detail/unevaluated.hpp" // IWYU pragma: keep
 #include "flist.hpp"
@@ -48,7 +46,7 @@ template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Fs,
 class keyring<Endianess, Signed_Mode, detail::unevaluated<Fs, Functions>...>
 #endif // DOXYGEN
 {
-  static_assert((detail::conjunction<std::integral_constant<bool, detail::is_callable<Fs>()>...>::value),
+  static_assert((detail::conjunction<detail::is_invocable<Fs>...>::value),
                 "Keyrings only accepts callable objects as template parameters");
 
 public:

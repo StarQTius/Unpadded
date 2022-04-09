@@ -5,8 +5,8 @@
 
 #include <upd/type.hpp>
 
-#include "type_traits/has_signature.hpp"
 #include "type_traits/require.hpp"
+#include "type_traits/signature.hpp"
 
 #include "def.hpp"
 

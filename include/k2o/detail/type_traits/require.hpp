@@ -7,9 +7,9 @@
 
 #include <upd/type.hpp>
 
-#include "has_signature.hpp"
 #include "is_keyring.hpp"
 #include "is_tuple.hpp"
+#include "signature.hpp"
 
 namespace k2o {
 namespace detail {

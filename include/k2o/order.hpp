@@ -15,8 +15,8 @@
 #include "detail/input_tuple.hpp"
 #include "detail/io.hpp"
 #include "detail/normalize_to_tuple.hpp"
-#include "detail/signature.hpp"
 #include "detail/type_traits/require.hpp"
+#include "detail/type_traits/signature.hpp"
 
 #include "detail/def.hpp"
 
