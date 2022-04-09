@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include <boost/type_traits.hpp>
-
 #include "type_traits/signature.hpp"
 
 namespace k2o {
