@@ -14,10 +14,10 @@
 #include "detail/io/immediate_process.hpp"
 #include "detail/type_traits/require.hpp"
 #include "detail/type_traits/smallest.hpp"
-#include "detail/unevaluated.hpp" // IWYU pragma: keep
 #include "keyring.hpp"
 #include "order.hpp"
 #include "policy.hpp"
+#include "unevaluated.hpp" // IWYU pragma: keep
 
 #include "detail/def.hpp"
 
@@ -91,7 +91,7 @@ struct dispatcher_impl {
   //! \tparam Signed_Mode Signed integer representation used to serialize the values
   //! \tparam Ftors... Functors held by the keyring
   template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Fs, Fs &...Ftors>
-  explicit dispatcher_impl(keyring<Endianess, Signed_Mode, detail::unevaluated<Fs, Ftors>...>)
+  explicit dispatcher_impl(keyring<Endianess, Signed_Mode, unevaluated<Fs, Ftors>...>)
       : orders{detail::make_order<Order_Features, Fs, Ftors, Endianess, Signed_Mode>()...},
         read_index{static_cast<index_reader_t &>(upd::read_as<index_t, Endianess, Signed_Mode>)} {}
 
@@ -193,7 +193,7 @@ public:
 
   //! \brief Replace with a functor with static storage duration
   template<typename F, F &Ftor>
-  void replace(index_t index, detail::unevaluated<F &, Ftor>) {
+  void replace(index_t index, unevaluated<F &, Ftor>) {
     m_impl.orders[index] = detail::make_order<Order_Features, F, Ftor, Endianess, Signed_Mode>();
   }
 
@@ -201,7 +201,7 @@ public:
   //! \brief (C++17) Replace with a functor with static storage duration
   template<auto &Ftor>
   void replace(index_t index) {
-    replace(index, detail::unevaluated<decltype(Ftor) &, Ftor>{});
+    replace(index, unevaluated<decltype(Ftor) &, Ftor>{});
   }
 #endif // __cplusplus >= 201703L
 
@@ -231,7 +231,7 @@ template<upd::endianess Endianess,
          order_features Order_Features,
          typename... Fs,
          Fs... Ftors>
-dispatcher(keyring<Endianess, Signed_Mode, detail::unevaluated<Fs, Ftors>...>, order_features_h<Order_Features>)
+dispatcher(keyring<Endianess, Signed_Mode, unevaluated<Fs, Ftors>...>, order_features_h<Order_Features>)
     -> dispatcher<sizeof...(Fs), Endianess, Signed_Mode, Order_Features>;
 #endif // __cplusplus >= 201703L
 
@@ -244,8 +244,7 @@ template<upd::endianess Endianess,
          typename... Fs,
          Fs... Ftors>
 dispatcher<sizeof...(Fs), Endianess, Signed_Mode, Order_Features>
-make_dispatcher(keyring<Endianess, Signed_Mode, detail::unevaluated<Fs, Ftors>...> kring,
-                order_features_h<Order_Features>) {
+make_dispatcher(keyring<Endianess, Signed_Mode, unevaluated<Fs, Ftors>...> kring, order_features_h<Order_Features>) {
   return dispatcher<sizeof...(Fs), Endianess, Signed_Mode, Order_Features>{kring, {}};
 }
 

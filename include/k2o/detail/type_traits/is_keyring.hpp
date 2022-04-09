@@ -6,7 +6,7 @@
 
 #include <upd/format.hpp>
 
-#include "../unevaluated.hpp" // IWYU pragma: keep
+#include "../../unevaluated.hpp" // IWYU pragma: keep
 
 // IWYU pragma: no_forward_declare unevaluated
 
@@ -18,7 +18,7 @@ class keyring;
 namespace detail {
 
 template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Fs, Fs... Ftors>
-std::true_type is_keyring_impl(keyring<Endianess, Signed_Mode, k2o::detail::unevaluated<Fs, Ftors>...>);
+std::true_type is_keyring_impl(keyring<Endianess, Signed_Mode, k2o::unevaluated<Fs, Ftors>...>);
 std::false_type is_keyring_impl(...);
 
 //! \brief Check if `T` is a valid keyring

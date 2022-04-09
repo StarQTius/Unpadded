@@ -12,9 +12,9 @@
 #include "detail/type_traits/signature.hpp"
 #include "detail/type_traits/smallest.hpp"
 #include "detail/type_traits/typelist.hpp"
-#include "detail/unevaluated.hpp" // IWYU pragma: keep
 #include "flist.hpp"
 #include "key.hpp"
+#include "unevaluated.hpp" // IWYU pragma: keep
 
 // IWYU pragma: no_forward_declare unevaluated
 
@@ -43,7 +43,7 @@ template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Hs>
 class keyring
 #else  // DOXYGEN
 template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Fs, Fs... Functions>
-class keyring<Endianess, Signed_Mode, detail::unevaluated<Fs, Functions>...>
+class keyring<Endianess, Signed_Mode, unevaluated<Fs, Functions>...>
 #endif // DOXYGEN
 {
   static_assert((detail::conjunction<detail::is_invocable<Fs>...>::value),
@@ -51,7 +51,7 @@ class keyring<Endianess, Signed_Mode, detail::unevaluated<Fs, Functions>...>
 
 public:
   //! \brief Typelist containing unevaluated references to the functions
-  using flist_t = k2o::flist_t<detail::unevaluated<Fs, Functions>...>;
+  using flist_t = k2o::flist_t<unevaluated<Fs, Functions>...>;
 
   //! \brief Typelist containing the signatures of the functions
   using signatures_t = boost::mp11::mp_list<detail::signature_t<Fs>...>;
@@ -78,10 +78,10 @@ public:
   constexpr keyring() = default;
 
   //! \brief (C++17) Create a keyring managing the given functions with the native serialization parameters
-  constexpr explicit keyring(k2o::flist_t<detail::unevaluated<Fs, Functions>...>) {}
+  constexpr explicit keyring(k2o::flist_t<unevaluated<Fs, Functions>...>) {}
 
   //! \brief (C++17) Create a keyring managing the given functions with the provided serialization parameters
-  constexpr explicit keyring(k2o::flist_t<detail::unevaluated<Fs, Functions>...>,
+  constexpr explicit keyring(k2o::flist_t<unevaluated<Fs, Functions>...>,
                              upd::endianess_h<Endianess>,
                              upd::signed_mode_h<Signed_Mode>) {}
 #endif // __cplusplus >= 201703L
@@ -98,7 +98,7 @@ public:
   //! \tparam Ftor One of the functors managed by the keyring
   template<auto &Ftor>
   constexpr auto get() const {
-    return get(detail::unevaluated<decltype(Ftor), Ftor>{});
+    return get(unevaluated<decltype(Ftor), Ftor>{});
   }
 #endif // __cplusplus >= 201703L
 };

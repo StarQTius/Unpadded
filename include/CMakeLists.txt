@@ -2,7 +2,6 @@ FetchContent_MakeAvailable(expected Unpadded)
 
 set(K2O_HEADERS
     buffered_dispatcher.hpp
-    cpp11.hpp
     dispatcher.hpp
     flist.hpp
     key.hpp
@@ -30,7 +29,7 @@ set(K2O_HEADERS
     detail/type_traits/require.hpp
     detail/type_traits/typelist.hpp
     detail/undef.hpp
-    detail/unevaluated.hpp)
+    unevaluated.hpp)
 
 add_library(${PROJECT_NAME} INTERFACE)
 target_include_directories(${PROJECT_NAME}
