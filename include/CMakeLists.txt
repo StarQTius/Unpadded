@@ -14,7 +14,7 @@ set(K2O_HEADERS
     detail/def.hpp
     detail/type_traits/input_tuple.hpp
     detail/io.hpp
-    detail/normalize_to_tuple.hpp
+    detail/type_traits/flatten_tuple.hpp
     detail/serialized_message.hpp
     detail/smallest.hpp
     detail/type_traits.hpp

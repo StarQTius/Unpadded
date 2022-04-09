@@ -13,7 +13,7 @@
 
 #include "detail/function_reference.hpp"
 #include "detail/io.hpp"
-#include "detail/normalize_to_tuple.hpp"
+#include "detail/type_traits/flatten_tuple.hpp"
 #include "detail/type_traits/input_tuple.hpp"
 #include "detail/type_traits/require.hpp"
 #include "detail/type_traits/signature.hpp"
@@ -105,7 +105,7 @@ class order_model : public order_concept {
 public:
   explicit order_model(F &&ftor) : m_impl{FWD(ftor)} {
     order_model::input_size = tuple_t::size;
-    order_model::output_size = normalize_to_tuple_t<Endianess, Signed_Mode, return_t<F>>::size;
+    order_model::output_size = flatten_tuple_t<Endianess, Signed_Mode, return_t<F>>::size;
   }
 
   void operator()(src_t &&src) final { return detail::call<tuple_t>(src, FWD(m_impl.ftor)); }
