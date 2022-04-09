@@ -12,9 +12,9 @@
 #include <upd/type.hpp>
 
 #include "detail/function_reference.hpp"
-#include "detail/input_tuple.hpp"
 #include "detail/io.hpp"
 #include "detail/normalize_to_tuple.hpp"
+#include "detail/type_traits/input_tuple.hpp"
 #include "detail/type_traits/require.hpp"
 #include "detail/type_traits/signature.hpp"
 

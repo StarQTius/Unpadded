@@ -12,7 +12,7 @@ set(K2O_HEADERS
     ticket.hpp
     detail/any_function.hpp
     detail/def.hpp
-    detail/input_tuple.hpp
+    detail/type_traits/input_tuple.hpp
     detail/io.hpp
     detail/normalize_to_tuple.hpp
     detail/serialized_message.hpp
