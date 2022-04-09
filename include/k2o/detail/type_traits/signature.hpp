@@ -5,8 +5,8 @@
 #include <cstddef>
 #include <type_traits>
 
-#include "../typelist.hpp"
 #include "detector.hpp"
+#include "typelist.hpp"
 
 #include "../def.hpp"
 

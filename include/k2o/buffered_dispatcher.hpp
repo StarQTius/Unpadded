@@ -11,7 +11,7 @@
 #include "detail/io.hpp"
 #include "detail/type_traits/require.hpp"
 #include "detail/type_traits/signature.hpp"
-#include "detail/typelist.hpp"
+#include "detail/type_traits/typelist.hpp"
 #include "dispatcher.hpp" // IWYU pragma: keep
 #include "policy.hpp"
 

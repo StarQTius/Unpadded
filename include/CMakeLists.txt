@@ -23,7 +23,7 @@ set(K2O_HEADERS
     detail/type_traits/is_keyring.hpp
     detail/type_traits/is_tuple.hpp
     detail/type_traits/require.hpp
-    detail/typelist.hpp
+    detail/type_traits/typelist.hpp
     detail/undef.hpp
     detail/unevaluated.hpp)
 

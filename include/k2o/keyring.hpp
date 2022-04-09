@@ -11,7 +11,7 @@
 #include "detail/smallest.hpp"
 #include "detail/type_traits.hpp"
 #include "detail/type_traits/signature.hpp"
-#include "detail/typelist.hpp"
+#include "detail/type_traits/typelist.hpp"
 #include "detail/unevaluated.hpp" // IWYU pragma: keep
 #include "flist.hpp"
 #include "key.hpp"

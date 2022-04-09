@@ -38,8 +38,8 @@ struct itype {
 };
 
 //! \brief Allows efficient operations on template parameter packs
-//! \details
-//!   Ts should expands to a list of 'itype' instances.
+//!
+//! Ts should expands to a list of `itype` instances.
 template<typename... Ts>
 struct tlist_t : Ts... {
   using Ts::index..., Ts::element...;
@@ -54,13 +54,13 @@ tlist_t(std::index_sequence<Is...>, L<Ts...>) -> tlist_t<itype<Is, Ts>...>;
 template<typename... Ts>
 constexpr tlist_t tlist{std::make_index_sequence<sizeof...(Ts)>{}, boost::mp11::mp_list<Ts...>{}};
 
-//! \brief Convert a variadic template instance to a 'tlist_t' instance
+//! \brief Convert a variadic template instance to a `tlist_t` instance
 template<typename L>
 constexpr tlist_t to_tlist{std::make_index_sequence<boost::mp11::mp_size<L>::value>{}, L{}};
 
 //! \brief Return an instance of the Ith element a typelist
-//! \details
-//!   This function must only be used in unevaluated context
+//!
+//! This function must only be used in unevaluated context
 template<std::size_t I, typename... Ts>
 inline auto at_impl(tlist_t<Ts...> tl) {
   return tl.element(index_v<I>);
@@ -77,21 +77,23 @@ constexpr inline auto max_impl(tlist_t<Ts...> tl) {
 }
 
 //! \brief Find the index of the given element in a typelist
-//! \details
-//!   There must be only one element in the typelist aliasing the provided element.
+//!
+//! There must be only one element in the typelist aliasing the provided element.
 template<typename T, typename... Ts>
 constexpr inline auto find_impl(tlist_t<Ts...> tl) {
   return index_v<tl.index((T *)nullptr)>;
 }
 
+//! \brief Sum the values held by the typelist
 template<typename... Ts>
 constexpr auto sum_impl(tlist_t<Ts...>) {
   return std::integral_constant<decltype((0 + ... + Ts::type::value)), (0 + ... + Ts::type::value)>{};
 }
 
-//! \brief Expands to the element resulting in the call of IMPL on LIST converted to 'tlist_t'
+//! \brief Expands to the element resulting in the call of `IMPL` on `LIST` converted to `tlist_t`
 #define K2O_TLIST_FUNCTION(IMPL, LIST, ...) decltype(IMPL<__VA_ARGS__>(to_tlist<LIST>))
 
+//! \brief Wraps the value of `IMPL` invoked on `LIST` converted to `tlist_t`
 #define K2O_TLIST_WRAPPED_VALUE(IMPL, LIST, ...)                                                                       \
   std::integral_constant<decltype(IMPL<__VA_ARGS__>(to_tlist<LIST>)), IMPL<__VA_ARGS__>(to_tlist<LIST>)>
 
@@ -128,12 +130,15 @@ using max = K2O_MAX_IMPL(L);
 template<typename L, typename V>
 using find = K2O_FIND_IMPL(L, V);
 
+//! \copydoc map_impl
 template<typename L, template<typename...> typename F>
 using map = boost::mp11::mp_transform<F, L>;
 
+//! \copydoc sum_impl
 template<typename L>
 using sum = K2O_SUM_IMPL(L);
 
+//! \copydoc max
 template<typename... Ts>
 using max_p = max<boost::mp11::mp_list<Ts...>>;
 
