@@ -28,6 +28,7 @@ set(K2O_HEADERS
     detail/type_traits/is_tuple.hpp
     detail/type_traits/require.hpp
     detail/type_traits/typelist.hpp
+    detail/sfinae_failure.hpp
     detail/undef.hpp
     unevaluated.hpp)
 
