@@ -1,9 +1,11 @@
+//! \file
+
 #pragma once
 
 #include <cstdint>
 #include <type_traits>
 
-#include "type_traits/require.hpp"
+#include "require.hpp"
 
 namespace k2o {
 namespace detail {
@@ -17,6 +19,10 @@ struct smallest_unsigned_impl {
   smallest_unsigned_impl<T, X> try_promote(...) const;
 };
 
+//! \name
+//! \brief Gets the smallest unsigned integer type that can hold `X`
+//! @{
+
 template<unsigned long long X>
 struct smallest_unsigned {
   using type = typename decltype(smallest_unsigned_impl<std::uint8_t, X>{}
@@ -27,6 +33,8 @@ struct smallest_unsigned {
 
 template<unsigned long long X>
 using smallest_unsigned_t = typename smallest_unsigned<X>::type;
+
+//! @}
 
 } // namespace detail
 } // namespace k2o

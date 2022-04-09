@@ -12,8 +12,8 @@
 #include <upd/type.hpp>
 
 #include "detail/io.hpp"
-#include "detail/smallest.hpp"
 #include "detail/type_traits/require.hpp"
+#include "detail/type_traits/smallest.hpp"
 #include "detail/unevaluated.hpp" // IWYU pragma: keep
 #include "keyring.hpp"
 #include "order.hpp"
