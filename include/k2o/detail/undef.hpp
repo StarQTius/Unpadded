@@ -3,6 +3,7 @@
 
 #undef FWD
 #undef PACK
+#undef BACK_QUOTE
 
 #if !defined(DOXYGEN)
 

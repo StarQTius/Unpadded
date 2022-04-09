@@ -12,6 +12,8 @@
 #include "detail/io/immediate_writer.hpp"
 #include "detail/io/reader.hpp"
 #include "detail/io/writer.hpp"
+#include "detail/static_error.hpp"
+#include "detail/type_traits/is_byte_iterator.hpp"
 #include "detail/type_traits/require.hpp"
 #include "detail/type_traits/signature.hpp"
 #include "detail/type_traits/typelist.hpp"
@@ -38,19 +40,20 @@ using needed_output_buffer_size = detail::max<detail::map<typename Keyring::sign
 }; // namespace detail
 
 //! \brief Dispatcher with input / output storage
-//! \details
-//!   Instances of this class may store input and output byte sequences as they are received / sent. This allows the
-//!   user to load and unload the dispatcher byte after byte, whereas plain dispatchers cannot buffer their input and
-//!   ouput, therefore they must receive and send byte sequences all at once. Buffered dispatchers do not own their
-//!   buffers directly. They must be provided through iterators. A buffered dispatcher state goes through the following
-//!   states:
-//!     -# The input buffer is empty, ready to load an order request in the input buffer.
-//!     -# Once a full order request has been received, it is immediately fulfilled and the result is written in the
-//!     output buffer. The input buffer is reset, thus it may receive a new request while the output buffer is unloaded.
-//!     -# Once the output buffer is empty, it may be written again.
-//!   \note Input buffer reset is soft, in other word, its content is not erased. As a result, it is possible to use a
-//!   single buffer as input and output as long as byte sequence reading and writting does not occur at the same time.
-//!   For that purpose, 'is_loaded' will indicate whether the output buffer is empty or not.
+//!
+//! Instances of this class may store input and output byte sequences as they are received / sent. This allows the
+//! user to load and unload the dispatcher byte after byte, whereas plain dispatchers cannot buffer their input and
+//! ouput, therefore they must receive and send byte sequences all at once. Buffered dispatchers do not own their
+//! buffers directly. They must be provided through iterators. A buffered dispatcher state goes through the following
+//! states:
+//!   -# The input buffer is empty, ready to load an order request in the input buffer.
+//!   -# Once a full order request has been received, it is immediately fulfilled and the result is written in the
+//!   output buffer. The input buffer is reset, thus it may receive a new request while the output buffer is unloaded.
+//!   -# Once the output buffer is empty, it may be written again.
+//! \note Input buffer reset is soft, in other word, its content is not erased. As a result, it is possible to use a
+//! single buffer as input and output as long as byte sequence reading and writting does not occur at the same time.
+//! For that purpose, `is_loaded` will indicate whether the output buffer is empty or not.
+//!
 //! \tparam Dispatcher Number of stored orders
 //! \tparam Input_Iterator Type of the iterator to the input buffer
 //! \tparam Output_Iterator Type of the iterator to the output buffer
@@ -60,6 +63,9 @@ class buffered_dispatcher
       public detail::writer<buffered_dispatcher<Dispatcher, Input_Iterator, Output_Iterator>> {
   using this_t = buffered_dispatcher<Dispatcher, Input_Iterator, Output_Iterator>;
 
+  static_assert(detail::is_byte_iterator<Input_Iterator>::value, K2O_ERROR_NOT_BYTE_ITERATOR(Input_Iterator));
+  static_assert(detail::is_byte_iterator<Output_Iterator>::value, K2O_ERROR_NOT_BYTE_ITERATOR(Output_Iterator));
+
 public:
   //! \copydoc dispatcher::index_t
   using index_t = typename Dispatcher::index_t;
@@ -68,37 +74,39 @@ public:
   //! \tparam Keyring Type of the keyring
   //! \param input_it Start of the input buffer
   //! \param output_it Start of the output buffer
-  template<typename Keyring, order_features Order_Features, REQUIREMENT(is_keyring, Keyring)>
+  template<typename Keyring, order_features Order_Features>
   buffered_dispatcher(Keyring, Input_Iterator input_it, Output_Iterator output_it, order_features_h<Order_Features>)
       : m_dispatcher{Keyring{}, order_features_h<Order_Features>{}}, m_is_index_loaded{false},
         m_load_count{sizeof(index_t)}, m_ibuf_begin{input_it}, m_ibuf_next{input_it}, m_obuf_begin{output_it},
         m_obuf_next{output_it}, m_obuf_bottom{output_it} {}
 
   //! \brief Indicates whether the output buffer contains data to send
-  //! \return true if and only if the next call to 'write' or 'write_all' will have a visible effect
+  //! \return true if and only if the next call to `write` or `write_all` will have a visible effect
   bool is_loaded() const { return m_obuf_next != m_obuf_bottom; }
 
   using detail::immediate_reader<this_t, void>::read_all;
 
   //! \brief Put bytes into the input buffer until a full order request is stored
   //! \copydoc ImmediateReader_CRTP
-  //! \param src_ftor Input functor to a byte sequence
-  template<typename Src_F, REQUIREMENT(input_invocable, Src_F)>
-  void read_all(Src_F &&src_ftor) {
+  //! \param src Input functor to a byte sequence
+  template<typename Src, REQUIREMENT(input_invocable, Src)>
+  void read_all(Src &&src) {
     while (!m_is_index_loaded)
-      read(src_ftor);
+      read(src);
     while (m_is_index_loaded)
-      read(src_ftor);
+      read(src);
   }
+
+  K2O_SFINAE_FAILURE_MEMBER(read_all, K2O_ERROR_NOT_INPUT(src))
 
   using detail::reader<this_t, void>::read;
 
   //! \brief Put one byte into the input buffer
   //! \copydoc Reader_CRTP
-  //! \param src_ftor Input functor to a byte sequence
-  template<typename Src_F, REQUIREMENT(input_invocable, Src_F)>
-  void read(Src_F &&src_ftor) {
-    *m_ibuf_next++ = FWD(src_ftor)();
+  //! \param src Input functor to a byte sequence
+  template<typename Src, REQUIREMENT(input_invocable, Src)>
+  void read(Src &&src) {
+    *m_ibuf_next++ = FWD(src)();
     if (--m_load_count == 0) {
       auto ibuf_it = m_ibuf_begin;
       auto get_index_byte = [&]() { return *ibuf_it++; };
@@ -124,27 +132,33 @@ public:
     }
   }
 
+  K2O_SFINAE_FAILURE_MEMBER(read, K2O_ERROR_NOT_INPUT(src))
+
   using detail::immediate_writer<this_t>::write_all;
 
   //! \brief Completely output the output buffer content
   //! \copydoc ImmediateWriter_CRTP
-  //! \param dest_ftor Output functor for writing byte sequences
-  template<typename Dest_F, REQUIREMENT(output_invocable, Dest_F)>
-  void write_all(Dest_F &&dest_ftor) {
+  //! \param dest Output functor for writing byte sequences
+  template<typename Dest, REQUIREMENT(output_invocable, Dest)>
+  void write_all(Dest &&dest) {
     while (is_loaded())
-      write(dest_ftor);
+      write(dest);
   }
+
+  K2O_SFINAE_FAILURE_MEMBER(write_all, K2O_ERROR_NOT_OUTPUT(dest))
 
   using detail::writer<this_t>::write;
 
   //! \brief Output one byte from the output buffer
   //! \copydoc Writer_CRTP
-  //! \param dest_ftor Output functor for writing byte sequences
-  template<typename Dest_F, REQUIREMENT(output_invocable, Dest_F)>
-  void write(Dest_F &&dest_ftor) {
+  //! \param dest Output functor for writing byte sequences
+  template<typename Dest, REQUIREMENT(output_invocable, Dest)>
+  void write(Dest &&dest) {
     if (is_loaded())
-      FWD(dest_ftor)(*m_obuf_next++);
+      FWD(dest)(*m_obuf_next++);
   }
+
+  K2O_SFINAE_FAILURE_MEMBER(write, K2O_ERROR_NOT_OUTPUT(dest))
 
   //! \name replace
   //!
@@ -167,8 +181,8 @@ public:
 
 private:
   //! \copydoc dispatcher::get_index
-  template<typename Src_F>
-  index_t get_index(Src_F &&fetch_byte) const {
+  template<typename Src>
+  index_t get_index(Src &&fetch_byte) const {
     return m_dispatcher.get_index(FWD(fetch_byte));
   }
 
@@ -179,6 +193,8 @@ private:
   Output_Iterator m_obuf_begin, m_obuf_next, m_obuf_bottom;
 };
 
+//! \brief Make a buffered dispatcher
+//! \related buffered_dispatcher
 template<typename Keyring, typename Input_Iterator, typename Output_Iterator, order_features Order_Features>
 buffered_dispatcher<detail::dispatcher_t<Keyring, Order_Features>, Input_Iterator, Output_Iterator>
 make_buffered_dispatcher(Keyring,
@@ -197,13 +213,26 @@ buffered_dispatcher(Keyring, Input_Iterator, Output_Iterator, order_features_h<O
 
 #endif // __cplusplus >= 201703L
 
+//! \brief Implements a dispatcher using a single buffer for input and output
+//!
+//! The buffer is allocated statically as a plain array. If created using CTAD or `make_single_buffered_dispatcher`, its
+//! size is as small as possible for holding any order request and any order response. \warning It is not possible to
+//! read a request and write a response at the same time. If you need that, use `double_buffered_dispatcher` instead.
+//!
+//! \tparam Dispatcher Underlying dispatcher type
+//! \tparam Buffer_Size Size of the internal buffer
 template<typename Dispatcher, std::size_t Buffer_Size>
 class single_buffered_dispatcher : public buffered_dispatcher<Dispatcher, upd::byte_t *, upd::byte_t *> {
   using base_t = buffered_dispatcher<Dispatcher, upd::byte_t *, upd::byte_t *>;
 
 public:
+  //! \brief Equals the `Buffer_Size` template parameter
   constexpr static auto buffer_size = Buffer_Size;
 
+  //! \brief Initialize the underlying dispatcher
+  //!
+  //! \tparam Keyring Keyring which holds the orders to be managed by the dispatcher
+  //! \tparam Order_Features Features of the orders managed by the dispatcher
   template<typename Keyring, order_features Order_Features>
   explicit single_buffered_dispatcher(Keyring, order_features_h<Order_Features>)
       : base_t{Keyring{}, m_buf, m_buf, order_features_h<Order_Features>{}} {}
@@ -219,6 +248,12 @@ single_buffered_dispatcher(Keyring, order_features_h<Order_Features>) -> single_
     detail::max_p<detail::needed_input_buffer_size<Keyring>, detail::needed_output_buffer_size<Keyring>>::value>;
 #endif // __cplusplus >= 201703L
 
+//! \brief Make a single buffered dispatcher
+//! \related single_buffered_dispatcher
+#if defined(DOXYGEN)
+template<typename Keyring, order_features Order_Features>
+auto make_single_buffered_dispatcher(Keyring, order_features_h<Order_Features>);
+#else  // defined(DOXYGEN)
 template<typename Keyring, order_features Order_Features>
 single_buffered_dispatcher<
     detail::dispatcher_t<Keyring, Order_Features>,
@@ -229,15 +264,33 @@ make_single_buffered_dispatcher(Keyring, order_features_h<Order_Features>) {
       detail::max_p<detail::needed_input_buffer_size<Keyring>, detail::needed_output_buffer_size<Keyring>>::value>{
       Keyring{}, order_features_h<Order_Features>{}};
 }
+#endif // defined(DOXYGEN)
 
+//! \brief Implements a dispatcher using separate buffers for input and output
+//!
+//! The buffers are allocated statically as plain arrays. If created using CTAD or `make_double_buffered_dispatcher`,
+//! their sizes are as small as possible for holding any order request and any order response. \note If you would rather
+//! having a single buffer and do not mind reading and writing at different moment, consider using
+//! `single_buffered_dispatcher` instead.
+//!
+//! \tparam Dispatcher Underlying dispatcher type
+//! \tparam Input_Buffer_Size Size of the input internal buffer
+//! \tparam Output_Buffer_Size Size of the output internal buffer
 template<typename Dispatcher, std::size_t Input_Buffer_Size, std::size_t Output_Buffer_Size>
 class double_buffered_dispatcher : public buffered_dispatcher<Dispatcher, upd::byte_t *, upd::byte_t *> {
   using base_t = buffered_dispatcher<Dispatcher, upd::byte_t *, upd::byte_t *>;
 
 public:
+  //! \brief Equals the `Input_Buffer_Size` template parameter
   constexpr static auto input_buffer_size = Input_Buffer_Size;
+
+  //! \brief Equals the `Output_Buffer_Size` template parameter
   constexpr static auto output_buffer_size = Output_Buffer_Size;
 
+  //! \brief Initialize the underlying dispatcher
+  //!
+  //! \tparam Keyring Keyring which holds the orders to be managed by the dispatcher
+  //! \tparam Order_Features Features of the orders managed by the dispatcher
   template<typename Keyring, order_features Order_Features>
   explicit double_buffered_dispatcher(Keyring, order_features_h<Order_Features>)
       : base_t{Keyring{}, m_ibuf, m_obuf, order_features_h<Order_Features>{}} {}
@@ -254,6 +307,12 @@ double_buffered_dispatcher(Keyring, order_features_h<Order_Features>)
                                   detail::needed_output_buffer_size<Keyring>::value>;
 #endif // __cplusplus >= 201703L
 
+//! \brief Make a double buffered dispatcher
+//! \related double_buffered_dispatcher
+#if defined(DOXYGEN)
+template<typename Keyring, order_features Order_Features>
+auto make_double_buffered_dispatcher(Keyring, order_features_h<Order_Features>);
+#else  // defined(DOXYGEN)
 template<typename Keyring, order_features Order_Features>
 double_buffered_dispatcher<detail::dispatcher_t<Keyring, Order_Features>,
                            detail::needed_input_buffer_size<Keyring>::value,
@@ -264,6 +323,7 @@ make_double_buffered_dispatcher(Keyring, order_features_h<Order_Features>) {
                                     detail::needed_output_buffer_size<Keyring>::value>{
       Keyring{}, order_features_h<Order_Features>{}};
 }
+#endif // defined(DOXYGEN)
 
 } // namespace k2o
 

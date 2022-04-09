@@ -3,6 +3,7 @@
 
 #define FWD(x) static_cast<decltype(x) &&>(x)
 #define PACK(...) __VA_ARGS__
+#define BACK_QUOTE(...) "`" __VA_ARGS__ "`"
 
 #if !defined(DOXYGEN)
 

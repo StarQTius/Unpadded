@@ -24,11 +24,12 @@ set(K2O_HEADERS
     detail/type_traits/remove_cv_ref.hpp
     detail/type_traits/detector.hpp
     detail/type_traits/signature.hpp
+    detail/type_traits/is_byte_iterator.hpp
     detail/type_traits/is_keyring.hpp
     detail/type_traits/is_tuple.hpp
     detail/type_traits/require.hpp
     detail/type_traits/typelist.hpp
-    detail/sfinae_failure.hpp
+    detail/static_error.hpp
     detail/undef.hpp
     unevaluated.hpp)
 
