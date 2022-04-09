@@ -11,7 +11,7 @@
 #include <upd/format.hpp>
 #include <upd/type.hpp>
 
-#include "detail/io.hpp"
+#include "detail/io/immediate_process.hpp"
 #include "detail/type_traits/require.hpp"
 #include "detail/type_traits/smallest.hpp"
 #include "detail/unevaluated.hpp" // IWYU pragma: keep

@@ -12,7 +12,7 @@
 #include <upd/type.hpp>
 
 #include "detail/function_reference.hpp"
-#include "detail/io.hpp"
+#include "detail/io/immediate_process.hpp"
 #include "detail/type_traits/flatten_tuple.hpp"
 #include "detail/type_traits/input_tuple.hpp"
 #include "detail/type_traits/require.hpp"

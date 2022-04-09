@@ -5,7 +5,7 @@
 #include <upd/format.hpp>
 #include <upd/tuple.hpp>
 
-#include "detail/io.hpp"
+#include "detail/io/immediate_reader.hpp"
 #include "detail/serialized_message.hpp"
 #include "detail/type_traits/remove_cv_ref.hpp"
 #include "detail/type_traits/require.hpp"

@@ -5,7 +5,7 @@
 #include <upd/format.hpp>
 #include <upd/tuple.hpp>
 
-#include "io.hpp"
+#include "io/immediate_writer.hpp"
 #include "type_traits/require.hpp"
 
 #include "def.hpp"

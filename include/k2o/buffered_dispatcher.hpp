@@ -8,7 +8,10 @@
 
 #include <upd/type.hpp>
 
-#include "detail/io.hpp"
+#include "detail/io/immediate_reader.hpp"
+#include "detail/io/immediate_writer.hpp"
+#include "detail/io/reader.hpp"
+#include "detail/io/writer.hpp"
 #include "detail/type_traits/require.hpp"
 #include "detail/type_traits/signature.hpp"
 #include "detail/type_traits/typelist.hpp"

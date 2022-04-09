@@ -13,7 +13,11 @@ set(K2O_HEADERS
     detail/any_function.hpp
     detail/def.hpp
     detail/type_traits/input_tuple.hpp
-    detail/io.hpp
+    detail/io/immediate_process.hpp
+    detail/io/immediate_reader.hpp
+    detail/io/immediate_writer.hpp
+    detail/io/reader.hpp
+    detail/io/writer.hpp
     detail/type_traits/flatten_tuple.hpp
     detail/serialized_message.hpp
     detail/type_traits/smallest.hpp
