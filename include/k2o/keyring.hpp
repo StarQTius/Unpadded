@@ -25,15 +25,14 @@ class keyring;
 
 //! \brief Holds a set of functions and index them at compile-time
 //!
-//!   A keyring introduces a RPC convention between the master and the slave. The master must have access to the
-//!   declarations of the functions given to the keyring so it knows what are the parameters to send for each order and
-//!   what type of value it has to except in return. However, only the slave must have access to the function
-//!   definitions, in order to execute any order request from the master. Each function is associated with a key in the
-//!   keyring. For each function, its key can be used by the master to build a packet to send to the salve or interpret
-//!   the value received from the slave. Keyrings also holds the endianess and signed number representation of the data
-//!   in the packets.
-//! \see
-//!   \mgref{key, key} for further information on how packets are generated.
+//! A keyring introduces a RPC convention between the master and the slave. The master must have access to the
+//! declarations of the functions given to the keyring so it knows what are the parameters to send for each order and
+//! what type of value it has to except in return. However, only the slave must have access to the function
+//! definitions, in order to execute any order request from the master. Each function is associated with a key in the
+//! keyring. For each function, its key can be used by the master to build a packet to send to the salve or interpret
+//! the value received from the slave. Keyrings also holds the endianess and signed number representation of the data
+//! in the packets.
+//! \see \mgref{key, key} for further information on how packets are generated.
 //!
 //! \tparam Endianess Endianess of the data in the packets built by the keys
 //! \tparam Signed_Mode Signed number representation of the data in the packets built by the keys
