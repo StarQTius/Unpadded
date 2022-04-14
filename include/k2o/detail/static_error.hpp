@@ -1,5 +1,7 @@
 //! \file
 
+#pragma once
+
 //! \brief Defines a function template which displays an informative message at compile-time and stop compilation when
 //! instanciated
 #define K2O_SFINAE_FAILURE(FNAME, MESSAGE)                                                                             \
@@ -23,9 +25,10 @@
 //! @{
 
 #define K2O_ERROR_NOT_INPUT(X)                                                                                         \
-  BACK_QUOTE(#X) " is neither an invocable with returns a byte when invoked nor an input iterator to a byte sequence"
-#define K2O_ERROR_NOT_OUTPUT(X)                                                                                        \
-  BACK_QUOTE(#X) " is neither invocable on a byte nor an output iterator to a byte sequence"
-#define K2O_ERROR_NOT_BYTE_ITERATOR(X) BACK_QUOTE(#X) " is not an iterator to a byte sequence"
+  "`" #X "` is neither an invocable with returns a byte when invoked nor an input iterator to a byte sequence"
+#define K2O_ERROR_NOT_OUTPUT(X) "`" #X "` is neither invocable on a byte nor an output iterator to a byte sequence"
+#define K2O_ERROR_NOT_BYTE_ITERATOR(X) "`" #X "` is not an iterator to a byte sequence"
+#define K2O_ERROR_NOT_ALL_INVOCABLE(X) "There is one or more element(s) in `" #X "` which are not invocable objects"
+#define K2O_ERROR_NOT_ALL_LVALUE(X) "There is one or more element(s) in `" #X "` which are not lvalues"
 
 //! @}
