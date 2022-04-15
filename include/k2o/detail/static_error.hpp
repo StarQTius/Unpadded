@@ -20,6 +20,14 @@
     return {};                                                                                                         \
   }
 
+//! \brief Defines a constructor function template which displays an informative message at compile-time and stop
+//! compilation when instanciated
+#define K2O_SFINAE_FAILURE_CTOR(CNAME, MESSAGE)                                                                        \
+  template<bool __Sfinae_Failure = false>                                                                              \
+  constexpr explicit CNAME(...) {                                                                                      \
+    static_assert(__Sfinae_Failure, MESSAGE);                                                                          \
+  }
+
 //! \name
 //! \brief Group of predefined error message
 //! @{

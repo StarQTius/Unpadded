@@ -1,22 +1,22 @@
 //! \file
-//! \brief Order execution at receiver side
 
 #pragma once
 
 #include <cstddef>
 #include <memory>
 
-#include <type_traits>
 #include <upd/format.hpp>
 #include <upd/tuple.hpp>
 #include <upd/type.hpp>
 
 #include "detail/function_reference.hpp"
 #include "detail/io/immediate_process.hpp"
+#include "detail/static_error.hpp"
 #include "detail/type_traits/flatten_tuple.hpp"
 #include "detail/type_traits/input_tuple.hpp"
 #include "detail/type_traits/require.hpp"
 #include "detail/type_traits/signature.hpp"
+#include "unevaluated.hpp"
 
 #include "detail/def.hpp"
 
@@ -25,13 +25,13 @@
 namespace k2o {
 namespace detail {
 
-//! \brief Type alias used when a functor acting as a input byte stream is needed
+//! \brief Input invocable erased type
 using src_t = abstract_function<upd::byte_t()>;
 
-//! \brief Type alias used when a functor acting as a output byte stream is needed
+//! \brief Output invocable erased type
 using dest_t = abstract_function<void(upd::byte_t)>;
 
-//! \brief Serialize a single integer value as a sequence of byte then map a functor over this sequence
+//! \brief Serialize `value` as a sequence of byte then call `dest` on every byte of that sequence
 template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename T, REQUIREMENT(not_tuple, T)>
 void insert(dest_t &dest, const T &value) {
   using namespace upd;
@@ -41,7 +41,7 @@ void insert(dest_t &dest, const T &value) {
     dest(byte);
 }
 
-//! \brief Call a functor with arguments serialized as a byte sequence
+//! \brief Invoke `ftor` on the unserialized arguments from `src`
 template<typename Tuple, typename F>
 void call(src_t &src, F &&ftor) {
   Tuple input_args;
@@ -69,10 +69,10 @@ void call(src_t &src, dest_t &dest, F &&ftor) {
   return insert<Tuple::storage_endianess, Tuple::storage_signed_mode>(dest, input_args.invoke(FWD(ftor)));
 }
 
-//! \brief Implementation of the 'order' class behaviour
-//! \details
-//!   This class holds the functor passed to the 'order' constructor and is used to deduce the appropriate 'upd::tuple'
-//!   template instance for holding the functor parameters.
+//! \brief Implementation of the `order` class behaviour
+//!
+//! This class holds the functor passed to the `order` constructor and is used to deduce the appropriate `upd::tuple`
+//! template instance for holding the functor parameters.
 template<typename F, upd::endianess Endianess, upd::signed_mode Signed_Mode>
 struct order_model_impl {
   using tuple_t = input_tuple<Endianess, Signed_Mode, F>;
@@ -82,21 +82,20 @@ struct order_model_impl {
   F ftor;
 };
 
-//! \brief Abstract class used for setting up type erasure in the 'order' class
+//! \brief Abstract class used for setting up type erasure in the `order` class
 struct order_concept {
   virtual ~order_concept() = default;
-  virtual void operator()(src_t &&) = 0;
   virtual void operator()(src_t &&, dest_t &&) = 0;
 
   size_t input_size;
   size_t output_size;
 };
 
-//! \brief Derived class used for setting up type erasure in the 'order' class
-//! \details
-//!   This class is derived from the 'order_concept' as a the "Model" class in the type erasure pattern.
-//!   This implementation of 'order_concept' uses the 'src_t' and 'dest_t' functors to fetch the arguments for calling
-//!   the functor as a byte sequence and serialize the expression resulting from that call.
+//! \brief Derived class used for setting up type erasure in the `order` class
+//!
+//! This class is derived from the `order_concept` as a the "Model" class in the type erasure pattern.
+//! This implementation of `order_concept` uses the `src_t` and `dest_t` functors to fetch the arguments for calling
+//! the functor as a byte sequence and serialize the expression resulting from that call.
 template<typename F, upd::endianess Endianess, upd::signed_mode Signed_Mode>
 class order_model : public order_concept {
   using impl_t = order_model_impl<F, Endianess, Signed_Mode>;
@@ -108,7 +107,6 @@ public:
     order_model::output_size = flatten_tuple_t<Endianess, Signed_Mode, return_t<F>>::size;
   }
 
-  void operator()(src_t &&src) final { return detail::call<tuple_t>(src, FWD(m_impl.ftor)); }
   void operator()(src_t &&src, dest_t &&dest) final { return detail::call<tuple_t>(src, dest, FWD(m_impl.ftor)); }
 
 private:
@@ -117,59 +115,55 @@ private:
 
 } // namespace detail
 
-//! \brief Functor wrapper working as a arguments and return values serializer / unserializer
-//! \details
-//!   This class holds a functor member variable. It acts as a functor itself when provided one or two functors. Those
-//!   provided functor must act as input / output byte stream. The resultings byte sequences represents the arguments or
-//!   return values associated with the calls of the held functor. The values may only be of integer type (signed or
-//!   unsigned) array of integers or 'upd::tuple' objects.
+//! \brief Wrapper around an invocable object which serialize / unserialize parameters and return value
+//!
+//! Given a byte sequence generated by a key, an order of same signature (i.e. whose underlying invocable object has the
+//! same signature as the aforesaid key) is able to unserialize the parameters from that byte sequence, call the
+//! underlying invocable object and serialize the return value as a byte sequence which can later be unserialized the
+//! key to obtain the return value.
 class order : public detail::immediate_process<order, void> {
 public:
-  //! \brief Wrap a copy of the provided functor
-  //! \tparam Endianess considered endianess when serializing / unserializing values
-  //! \tparam Signed_Mode considered signed integer representation when serializing / unserializing values
-  //! \param ftor functor to be wrapped
-  template<upd::endianess Endianess = upd::endianess::BUILTIN,
-           upd::signed_mode Signed_Mode = upd::signed_mode::BUILTIN,
-           typename F>
-  explicit order(F &&ftor, upd::endianess_h<Endianess> = {}, upd::signed_mode_h<Signed_Mode> = {})
+  //! \brief Wrap a copy of the provided invocable object
+  //! \tparam Endianess Byte order of the integers in the generated packets
+  //! \tparam Signed_Mode Representation of signed integers in the generated packets
+  //! \param ftor Invocable object to be wrapped
+  template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename F, REQUIREMENT(invocable, F)>
+  explicit order(F &&ftor, upd::endianess_h<Endianess>, upd::signed_mode_h<Signed_Mode>)
       : m_concept_uptr{new detail::order_model<F, Endianess, Signed_Mode>{FWD(ftor)}} {}
 
-  //! \brief Call the held functor with the serialized argument delivered by the provided input byte stream
-  //! \details
-  //!   The input byte stream is provided through the functor passed as parameter. When called with no parameters, it
-  //!   must return a 'upd::byte_t' value. The necessary arguments for the held functor call are unserialized from the
-  //!   byte sequence obtained from the input byte stream. If any, the return value resulting from the call is
-  //!   discarded.
-  //! \param src Functor acting as a input byte stream
-  template<typename Src>
-  void operator()(Src &&src) {
-    operator()(FWD(src), [](upd::byte_t) {});
-  }
+  //! \copybrief order::order
+  //! \param ftor Invocable object to be wrapped
+  template<typename F, REQUIREMENT(invocable, F)>
+  explicit order(F &&ftor) : order{FWD(ftor), upd::builtin_endianess, upd::builtin_signed_mode} {}
+
+  K2O_SFINAE_FAILURE_CTOR(order, K2O_ERROR_NOT_INVOCABLE(ftor))
 
   using detail::immediate_process<order, void>::operator();
 
-  //! \brief Call the held functor and serialize / unserialize necessary value with the provided byte stream
-  //! \details
-  //!   This function must be provided an input byte stream and an output byte stream. The input byte stream is
-  //!   provided through the functor passed as first parameter. When called with no parameters, it must return a
-  //!   'upd::byte_t' value. The output byte stream is provided through the functor passed as second parameter. It
-  //!   should be callable with a 'upd::byte_t' value. The necessary arguments for the held functor call are
-  //!   unserialized from the byte sequence obtained from the input byte stream. If any, the return value resulting from
-  //!   the call is serialized then inserted into the output byte stream.
+  //! \brief Invoke the held invocable object and serialize / unserialize the parameters / return value
   //! \copydoc ImmediateProcess_CRTP
-  //! \param src Byte input functor
-  //! \param dest Byte output functor
+  //!
+  //! \param src Input invocable object
+  //! \param dest Output invocable object
   template<typename Src, typename Dest, REQUIREMENT(input_invocable, Src), REQUIREMENT(output_invocable, Dest)>
-  void operator()(Src &&src, Dest &&dest) {
+  void operator()(Src &&src, Dest &&dest) const {
     return (*m_concept_uptr)(detail::make_function_reference(src), detail::make_function_reference(dest));
   }
 
-  //! \brief Get the size in bytes of the payload needed to call the wrapped functor
+  K2O_SFINAE_FAILURE_MEMBER(operator(), K2O_ERROR_NOT_INPUT(src) " OR " K2O_ERROR_NOT_OUTPUT(dest))
+
+  //! \copybrief operator()
+  //! \param input Input byte sequence
+  template<typename Input>
+  void operator()(Input &&input) const {
+    operator()(FWD(input), [](upd::byte_t) {});
+  }
+
+  //! \brief Get the size in bytes of the payload needed to invoke the wrapped object
   //! \return The size of the payload in bytes
   size_t input_size() const { return m_concept_uptr->input_size; }
 
-  //! \brief Get the size in bytes of the payload representing the returned value from a call to the wrapped functor
+  //! \brief Get the size in bytes of the payload representing the return value of the wrapped invocable object
   //! \return The size of the payload in bytes
   size_t output_size() const { return m_concept_uptr->output_size; }
 
@@ -177,14 +171,20 @@ private:
   std::unique_ptr<detail::order_concept> m_concept_uptr;
 };
 
+//! \brief Order which does not manage storage for its underlying functor
+//!
+//! Orders without storage must be given plain function or invocable with static storage duration. On the other hand,
+//! they do not rely on dynamic allocation and are lighter than standard orders.
 class no_storage_order : public detail::immediate_process<no_storage_order, void> {
 public:
   using detail::immediate_process<no_storage_order, void>::operator();
 
+  //! \brief Create an order holding the provided invocable object
+  //! \tparam Ftor Reference to an invocable object with static storage duration
+  //! \tparam Endianess Byte order of the integers in the generated packets
+  //! \tparam Signed_Mode Representation of signed integers in the generated packets
   template<typename F, F Ftor, upd::endianess Endianess, upd::signed_mode Signed_Mode>
-  explicit no_storage_order(std::integral_constant<F &, Ftor>,
-                            upd::endianess_h<Endianess>,
-                            upd::signed_mode_h<Signed_Mode>)
+  explicit no_storage_order(unevaluated<F, Ftor>, upd::endianess_h<Endianess>, upd::signed_mode_h<Signed_Mode>)
       : wrapper{+[](detail::src_t &&src, detail::dest_t &&dest) {
           detail::input_tuple<Endianess, Signed_Mode, F> parameters_tuple;
           for (auto &byte : parameters_tuple)
@@ -195,10 +195,23 @@ public:
             dest(byte);
         }} {}
 
+  //! \copybrief no_storage_order::no_storage_order
+  //! \tparam Ftor Reference to an invocable object with static storage duration
+  template<typename F, F Ftor>
+  explicit no_storage_order(unevaluated<F, Ftor>)
+      : no_storage_order{unevaluated<F, Ftor>{}, upd::builtin_endianess, upd::builtin_signed_mode} {}
+
+  //! \brief Invoke the held invocable object and serialize / unserialize the parameters / return value
+  //! \copydoc ImmediateProcess_CRTP
+  //!
+  //! \param src Input invocable object
+  //! \param dest Output invocable object
   template<typename Src, typename Dest, REQUIREMENT(input_invocable, Src), REQUIREMENT(output_invocable, Dest)>
-  void operator()(Src &&src, Dest &&dest) {
+  void operator()(Src &&src, Dest &&dest) const {
     wrapper(detail::make_function_reference(src), detail::make_function_reference(dest));
   }
+
+  K2O_SFINAE_FAILURE_MEMBER(operator(), K2O_ERROR_NOT_INPUT(src) " OR " K2O_ERROR_NOT_OUTPUT(dest))
 
 private:
   void (*wrapper)(detail::src_t &&, detail::dest_t &&);

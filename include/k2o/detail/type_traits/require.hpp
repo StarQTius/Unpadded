@@ -64,5 +64,9 @@ using require_byte_iterator =
     require_t<typename std::iterator_traits<T>::iterator_category,
               require<std::is_convertible<typename std::iterator_traits<T>::value_type, upd::byte_t>::value>>;
 
+//! \brief Require `T` to be invocable
+template<typename T, typename U = int>
+using require_invocable = require<is_invocable<T>::value>;
+
 } // namespace detail
 } // namespace k2o

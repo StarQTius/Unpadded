@@ -4,8 +4,8 @@
 
 #include <upd/type.hpp>
 
+#include "../type_traits/is_byte_iterator.hpp"
 #include "../type_traits/require.hpp"
-#include "../type_traits/signature.hpp"
 
 #include "../def.hpp"
 
@@ -28,8 +28,7 @@ public:
   //! \return the result of the invocation of the derived instance on the normalized parameters
   template<typename Input,
            typename Output,
-           detail::require<!detail::has_signature<Input, upd::byte_t()>::value ||
-                           !detail::has_signature<Output, void(upd::byte_t)>::value> = 0>
+           detail::require<detail::is_byte_iterator<Input>::value || detail::is_byte_iterator<Output>::value> = 0>
   R operator()(Input &&input, Output &&output) {
     return derived()(normalize(FWD(input), reader_tag_t{}), normalize(FWD(output), writer_tag_t{}));
   }
@@ -37,8 +36,7 @@ public:
   //! \copydoc operator()
   template<typename Input,
            typename Output,
-           detail::require<!detail::has_signature<Input, upd::byte_t()>::value ||
-                           !detail::has_signature<Output, void(upd::byte_t)>::value> = 0>
+           detail::require<detail::is_byte_iterator<Input>::value || detail::is_byte_iterator<Output>::value> = 0>
   R operator()(Input &&input, Output &&output) const {
     return derived()(normalize(FWD(input), reader_tag_t{}), normalize(FWD(output), writer_tag_t{}));
   }

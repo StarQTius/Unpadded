@@ -4,7 +4,6 @@
 
 #include <cstddef>
 #include <functional>
-#include <type_traits>
 
 #include <tl/expected.hpp>
 #include <upd/format.hpp>
@@ -36,8 +35,7 @@ template<order_features Order_Features,
          upd::signed_mode Signed_Mode,
          REQUIRE(Order_Features == order_features::STATIC_STORAGE_DURATION_ONLY)>
 no_storage_order make_order() {
-  return no_storage_order{
-      std::integral_constant<F, Ftor>{}, upd::endianess_h<Endianess>{}, upd::signed_mode_h<Signed_Mode>{}};
+  return no_storage_order{unevaluated<F, Ftor>{}, upd::endianess_h<Endianess>{}, upd::signed_mode_h<Signed_Mode>{}};
 }
 
 template<order_features Order_Features,
