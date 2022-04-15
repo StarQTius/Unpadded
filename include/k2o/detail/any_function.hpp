@@ -11,8 +11,10 @@ namespace k2o {
 namespace detail {
 
 //! \brief Arbitrary function type
-//! \details When forming a pointer to this type, the result may not necessarly be of the same type as 'void *' on Von
-//! Neumann architectures
+//!
+//! When forming a pointer to this type, the result may not necessarly be of the same type as 'void *' on Von Neumann
+//! architectures. It should also be large enough to store a data pointer. Alignment might be a problem though in some
+//! case.
 using any_function_t = void();
 
 //! \brief Common type of 'restore_and_call' template instances
