@@ -7,6 +7,7 @@
 
 #include "detail/io/immediate_reader.hpp"
 #include "detail/serialized_message.hpp"
+#include "detail/static_error.hpp"
 #include "detail/type_traits/remove_cv_ref.hpp"
 #include "detail/type_traits/require.hpp"
 #include "detail/type_traits/signature.hpp"
@@ -17,7 +18,9 @@
 namespace k2o {
 
 template<typename Index_T, Index_T Index, typename F, upd::endianess Endianess, upd::signed_mode Signed_Mode>
-class key : public key<Index_T, Index, detail::signature_t<F>, Endianess, Signed_Mode> {};
+class key : public key<Index_T, Index, detail::signature_t<F>, Endianess, Signed_Mode> {
+  static_assert(detail::is_invocable<F>::value, K2O_ERROR_NOT_INVOCABLE(F));
+};
 
 //! \brief Packet generator for invoking an order on a slave device
 //!
@@ -121,15 +124,22 @@ public:
     return retval.template get<0>();
   }
 
+  K2O_SFINAE_FAILURE_MEMBER(read_all, K2O_ERROR_NOT_INPUT(src))
+
   //! \brief Plan an action to perform when a packet resulting from the execution of the order is received
   //!
   //! \param hook Callback which will carry out the action
   //! \return a ticket holding the provided hook
-  template<typename F>
+  template<typename F, REQUIRE(detail::is_invocable<F>::value)>
   ticket with_hook(F &&hook) {
     return ticket{FWD(hook), *this};
   }
+
+  K2O_SFINAE_FAILURE_MEMBER(with_hook, K2O_ERROR_NOT_INVOCABLE(hook))
 };
+
+template<typename Index_T, Index_T Index, upd::endianess Endianess, upd::signed_mode Signed_Mode>
+class key<Index_T, Index, detail::no_signature, Endianess, Signed_Mode> {};
 
 #include "detail/undef.hpp" // IWYU pragma: keep
 

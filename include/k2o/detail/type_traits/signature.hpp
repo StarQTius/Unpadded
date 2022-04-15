@@ -16,10 +16,9 @@ namespace detail {
 //! \name
 //! \brief Allows to hold a function signature
 //!
-//!  The type member `type` is an alias for the type of a function of the given signature. The type member `return_type`
-//!  is an alias for the return type of a function of the given signature.
+//! The type member `type` is an alias for the type of a function of the given signature. The type member `return_type`
+//! is an alias for the return type of a function of the given signature.
 //! @{
-
 template<typename F>
 struct signature;
 template<typename R, typename... Args>
@@ -30,8 +29,20 @@ struct signature<R(Args...)> {
 
 //! @}
 
+//! \brief Indicates that a type has no signature
+struct no_signature {
+  using type = no_signature;
+  using return_type = no_signature;
+};
+
+//! \brief Attempt to access the type of the `operator()` member of `F` if it exists
+template<typename F, typename = decltype(&F::operator())>
+decltype(&F::operator()) try_get_call_member(int);
+template<typename>
+no_signature try_get_call_member(...);
+
 template<typename F>
-struct examine_invocable_impl : examine_invocable_impl<decltype(&F::operator())> {};
+struct examine_invocable_impl : examine_invocable_impl<decltype(try_get_call_member<F>(0))> {};
 template<typename R, typename... Args>
 struct examine_invocable_impl<R (*)(Args...)> : signature<R(Args...)> {};
 template<typename R, typename C, typename... Args>
@@ -58,6 +69,8 @@ template<typename R, typename C, typename... Args>
 struct examine_invocable_impl<R (C::*)(Args...) volatile &&> : signature<R(Args...)> {};
 template<typename R, typename C, typename... Args>
 struct examine_invocable_impl<R (C::*)(Args...) const volatile &&> : signature<R(Args...)> {};
+template<>
+struct examine_invocable_impl<no_signature> : no_signature {};
 
 //! \brief Gets information on the signature of an invocable object
 //!
@@ -75,7 +88,10 @@ using signature_t = typename examine_invocable<F>::type;
 template<typename F>
 using return_t = typename examine_invocable<F>::return_type;
 
-K2O_DETAIL_MAKE_DETECTOR(is_invocable_impl, PACK(typename F), PACK(typename = examine_invocable<F>))
+K2O_DETAIL_MAKE_DETECTOR(
+    is_invocable_impl,
+    PACK(typename F),
+    PACK(typename = typename std::enable_if<!std::is_convertible<examine_invocable<F>, no_signature>::value>::type))
 
 //! \brief Indicates whether `F` is an invocable type
 template<typename F>
