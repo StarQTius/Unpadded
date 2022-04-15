@@ -1,5 +1,4 @@
 //! \file
-//! \brief Function aggregates indexing for C++11
 
 #pragma once
 
