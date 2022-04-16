@@ -123,6 +123,8 @@ private:
 //! key to obtain the return value.
 class order : public detail::immediate_process<order, void> {
 public:
+  order() = delete;
+
   //! \brief Wrap a copy of the provided invocable object
   //! \tparam Endianess Byte order of the integers in the generated packets
   //! \tparam Signed_Mode Representation of signed integers in the generated packets
