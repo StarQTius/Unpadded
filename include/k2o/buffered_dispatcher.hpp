@@ -1,5 +1,4 @@
 //! \file
-//! \brief Order request storage and processing
 
 #pragma once
 

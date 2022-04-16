@@ -1,5 +1,4 @@
 //! \file
-//! \brief Arbitrary function storage and restoration
 
 #pragma once
 

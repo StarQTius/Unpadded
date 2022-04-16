@@ -1,5 +1,4 @@
 //! \file
-//! \brief Variadic template manipulation
 
 #pragma once
 

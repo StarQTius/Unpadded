@@ -1,5 +1,4 @@
 //! \file
-//! \brief Functor reference wrapping
 
 #pragma once
 
