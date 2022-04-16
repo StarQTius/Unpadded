@@ -39,5 +39,6 @@
 #define K2O_ERROR_NOT_INVOCABLE(X) "`" #X "` is not invocable"
 #define K2O_ERROR_NOT_ALL_INVOCABLE(X) "There is one or more element(s) in `" #X "` which are not invocable objects"
 #define K2O_ERROR_NOT_ALL_LVALUE(X) "There is one or more element(s) in `" #X "` which are not lvalues"
+#define K2O_ERROR_NOT_KEYRING(X) "`" #X "` is not a template instance of `keyring`"
 
 //! @}

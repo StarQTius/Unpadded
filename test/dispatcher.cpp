@@ -1,4 +1,5 @@
 #include <k2o/dispatcher.hpp>
+#include <k2o/keyring.hpp>
 #include <k2o/unevaluated.hpp>
 
 #include "utility.hpp"

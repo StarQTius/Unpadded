@@ -24,9 +24,6 @@
 namespace k2o {
 namespace detail {
 
-template<typename Keyring, order_features Order_Features>
-using dispatcher_t = dispatcher<Keyring::size, Keyring::endianess, Keyring::signed_mode, Order_Features>;
-
 template<typename Keyring>
 using needed_input_buffer_size =
     std::integral_constant<std::size_t,
@@ -195,12 +192,9 @@ private:
 //! \brief Make a buffered dispatcher
 //! \related buffered_dispatcher
 template<typename Keyring, typename Input_Iterator, typename Output_Iterator, order_features Order_Features>
-buffered_dispatcher<detail::dispatcher_t<Keyring, Order_Features>, Input_Iterator, Output_Iterator>
-make_buffered_dispatcher(Keyring,
-                         Input_Iterator input_it,
-                         Output_Iterator output_it,
-                         order_features_h<Order_Features>) {
-  return buffered_dispatcher<detail::dispatcher_t<Keyring, Order_Features>, Input_Iterator, Output_Iterator>(
+buffered_dispatcher<dispatcher<Keyring, Order_Features>, Input_Iterator, Output_Iterator> make_buffered_dispatcher(
+    Keyring, Input_Iterator input_it, Output_Iterator output_it, order_features_h<Order_Features>) {
+  return buffered_dispatcher<dispatcher<Keyring, Order_Features>, Input_Iterator, Output_Iterator>(
       Keyring{}, input_it, output_it);
 }
 
@@ -208,7 +202,7 @@ make_buffered_dispatcher(Keyring,
 
 template<typename Keyring, typename Input_Iterator, typename Output_Iterator, order_features Order_Features>
 buffered_dispatcher(Keyring, Input_Iterator, Output_Iterator, order_features_h<Order_Features>)
-    -> buffered_dispatcher<detail::dispatcher_t<Keyring, Order_Features>, Input_Iterator, Output_Iterator>;
+    -> buffered_dispatcher<dispatcher<Keyring, Order_Features>, Input_Iterator, Output_Iterator>;
 
 #endif // __cplusplus >= 201703L
 
@@ -243,7 +237,7 @@ private:
 #if __cplusplus >= 201703L
 template<typename Keyring, order_features Order_Features>
 single_buffered_dispatcher(Keyring, order_features_h<Order_Features>) -> single_buffered_dispatcher<
-    detail::dispatcher_t<Keyring, Order_Features>,
+    dispatcher<Keyring, Order_Features>,
     detail::max_p<detail::needed_input_buffer_size<Keyring>, detail::needed_output_buffer_size<Keyring>>::value>;
 #endif // __cplusplus >= 201703L
 
@@ -255,11 +249,11 @@ auto make_single_buffered_dispatcher(Keyring, order_features_h<Order_Features>);
 #else  // defined(DOXYGEN)
 template<typename Keyring, order_features Order_Features>
 single_buffered_dispatcher<
-    detail::dispatcher_t<Keyring, Order_Features>,
+    dispatcher<Keyring, Order_Features>,
     detail::max_p<detail::needed_input_buffer_size<Keyring>, detail::needed_output_buffer_size<Keyring>>::value>
 make_single_buffered_dispatcher(Keyring, order_features_h<Order_Features>) {
   return single_buffered_dispatcher<
-      detail::dispatcher_t<Keyring, Order_Features>,
+      dispatcher<Keyring, Order_Features>,
       detail::max_p<detail::needed_input_buffer_size<Keyring>, detail::needed_output_buffer_size<Keyring>>::value>{
       Keyring{}, order_features_h<Order_Features>{}};
 }
@@ -301,7 +295,7 @@ private:
 #if __cplusplus >= 201703L
 template<typename Keyring, order_features Order_Features>
 double_buffered_dispatcher(Keyring, order_features_h<Order_Features>)
-    -> double_buffered_dispatcher<detail::dispatcher_t<Keyring, Order_Features>,
+    -> double_buffered_dispatcher<dispatcher<Keyring, Order_Features>,
                                   detail::needed_input_buffer_size<Keyring>::value,
                                   detail::needed_output_buffer_size<Keyring>::value>;
 #endif // __cplusplus >= 201703L
@@ -313,11 +307,11 @@ template<typename Keyring, order_features Order_Features>
 auto make_double_buffered_dispatcher(Keyring, order_features_h<Order_Features>);
 #else  // defined(DOXYGEN)
 template<typename Keyring, order_features Order_Features>
-double_buffered_dispatcher<detail::dispatcher_t<Keyring, Order_Features>,
+double_buffered_dispatcher<dispatcher<Keyring, Order_Features>,
                            detail::needed_input_buffer_size<Keyring>::value,
                            detail::needed_output_buffer_size<Keyring>::value>
 make_double_buffered_dispatcher(Keyring, order_features_h<Order_Features>) {
-  return double_buffered_dispatcher<detail::dispatcher_t<Keyring, Order_Features>,
+  return double_buffered_dispatcher<dispatcher<Keyring, Order_Features>,
                                     detail::needed_input_buffer_size<Keyring>::value,
                                     detail::needed_output_buffer_size<Keyring>::value>{
       Keyring{}, order_features_h<Order_Features>{}};
