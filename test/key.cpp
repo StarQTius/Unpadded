@@ -1,7 +1,6 @@
 #include <k2o/flist.hpp>
 #include <k2o/key.hpp>
 #include <k2o/keyring.hpp>
-#include <k2o/ticket.hpp>
 #include <k2o/unevaluated.hpp>
 
 #include "utility.hpp"
@@ -131,7 +130,6 @@ static void key_base_DO_hook_a_callback_EXPECT_callback_receiving_correct_argume
 }
 
 #define KEY DECLVAL(key<uint8_t, 0, int(int), upd::endianess::BUILTIN, upd::signed_mode::BUILTIN>)
-#define TICKET DECLVAL(ticket)
 
 int main() {
   using namespace k2o;
@@ -143,9 +141,7 @@ int main() {
          KEY(0).write_all(BYTE_PTR),
          KEY(0).write_all(WRITABLE),
          KEY(0) >> BYTE_PTR,
-         KEY(0) >> WRITABLE,
-         TICKET(BYTE_PTR),
-         TICKET(READABLE));
+         KEY(0) >> WRITABLE);
 
   UNITY_BEGIN();
   RUN_TEST(key_base_DO_serialize_arguments_EXPECT_correct_byte_sequence);

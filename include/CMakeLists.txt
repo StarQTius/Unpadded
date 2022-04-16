@@ -8,7 +8,6 @@ set(K2O_HEADERS
     keyring.hpp
     order.hpp
     policy.hpp
-    ticket.hpp
     detail/any_function.hpp
     detail/def.hpp
     detail/type_traits/input_tuple.hpp

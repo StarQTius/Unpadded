@@ -11,7 +11,8 @@
 #include "detail/type_traits/remove_cv_ref.hpp"
 #include "detail/type_traits/require.hpp"
 #include "detail/type_traits/signature.hpp"
-#include "ticket.hpp"
+#include "order.hpp"
+#include "unevaluated.hpp"
 
 #include "detail/def.hpp"
 
@@ -127,15 +128,32 @@ public:
   K2O_SFINAE_FAILURE_MEMBER(read_all, K2O_ERROR_NOT_INPUT(src))
 
   //! \brief Plan an action to perform when a packet resulting from the execution of the order is received
-  //!
-  //! \param hook Callback which will carry out the action
-  //! \return a ticket holding the provided hook
-  template<typename F, REQUIRE(detail::is_invocable<F>::value)>
-  ticket with_hook(F &&hook) {
-    return ticket{FWD(hook), *this};
+  //! \param ftor Callback which will carry out the action
+  //! \return an order holding the provided hook
+  template<typename F, REQUIREMENT(invocable, F)>
+  order with_hook(F &&ftor) const {
+    return order{FWD(ftor), upd::endianess_h<Endianess>{}, upd::signed_mode_h<Signed_Mode>{}};
   }
 
-  K2O_SFINAE_FAILURE_MEMBER(with_hook, K2O_ERROR_NOT_INVOCABLE(hook))
+  //! \copybrief with_hook
+  //! \tparam Ftor Callback which will carry out the action
+  //! \return an order holding the provided hook
+  template<typename F, F Ftor, REQUIREMENT(invocable, F)>
+  no_storage_order with_hook(unevaluated<F, Ftor>) const {
+    return no_storage_order{unevaluated<F, Ftor>{}, upd::endianess_h<Endianess>{}, upd::signed_mode_h<Signed_Mode>{}};
+  }
+
+#if __cplusplus >= 201703L
+  //! \copybrief with_hook
+  //! \tparam Ftor Callback which will carry out the action
+  //! \return an order holding the provided hook
+  template<auto &Ftor, REQUIREMENT(invocable, decltype(Ftor))>
+  auto with_hook() const {
+    return with_hook(unevaluated<decltype(Ftor), Ftor>{});
+  }
+#endif // __cplusplus >= 201703L
+
+  K2O_SFINAE_FAILURE_MEMBER(with_hook, K2O_ERROR_NOT_INVOCABLE(F))
 };
 
 template<typename Index_T, Index_T Index, upd::endianess Endianess, upd::signed_mode Signed_Mode>
