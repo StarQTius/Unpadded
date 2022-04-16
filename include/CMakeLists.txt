@@ -1,4 +1,4 @@
-FetchContent_MakeAvailable(expected Unpadded)
+FetchContent_MakeAvailable(Unpadded)
 
 set(K2O_HEADERS
     buffered_dispatcher.hpp
@@ -35,7 +35,7 @@ set(K2O_HEADERS
 add_library(${PROJECT_NAME} INTERFACE)
 target_include_directories(${PROJECT_NAME}
                            INTERFACE ${PROJECT_SOURCE_DIR}/include)
-target_link_libraries(${PROJECT_NAME} INTERFACE expected Unpadded)
+target_link_libraries(${PROJECT_NAME} INTERFACE Unpadded)
 
 if(DEFINED CMAKE_CXX_INCLUDE_WHAT_YOU_USE)
   foreach(HEADER IN LISTS K2O_HEADERS)

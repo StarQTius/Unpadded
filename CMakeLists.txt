@@ -6,10 +6,6 @@ include(${PROJECT_NAME})
 
 include(FetchContent)
 
-set(EXPECTED_BUILD_TESTS OFF)
-FetchContent_Declare(expected
-                     GIT_REPOSITORY https://github.com/TartanLlama/expected)
-
 FetchContent_Declare(Unpadded
                      GIT_REPOSITORY https://github.com/StarQTius/Unpadded)
 

@@ -2,9 +2,6 @@
 
 #pragma once
 
-#include <functional>
-
-#include <tl/expected.hpp>
 #include <upd/format.hpp>
 #include <upd/tuple.hpp>
 
@@ -126,13 +123,11 @@ public:
 
   //! \brief Extract an index from a byte sequence and get the order with that index
   //! \param src Input invocable
-  //! \return Either a reference to the order if it exists or the index that obtained from the byte sequence
+  //! \return Either a reference to the order if it exists or `nullptr`
   template<typename Src, REQUIREMENT(input_invocable, Src)>
-  tl::expected<std::reference_wrapper<order_t>, index_t> get_order(Src &&src) {
-    using return_t = tl::expected<std::reference_wrapper<order>, index_t>;
-
+  order_t *get_order(Src &&src) {
     auto index = get_index(FWD(src));
-    return index < size ? return_t{m_orders.content[index]} : tl::make_unexpected(index);
+    return index < size ? m_orders.content + index : nullptr;
   }
 
   //! \brief Extract an index from a byte sequence

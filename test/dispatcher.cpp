@@ -36,13 +36,12 @@ static void dispatcher_DO_get_order_EXPECT_correct_index() {
   auto input_f = [&]() { return function16_index[i++]; };
   auto output_f = [&](upd::byte_t byte) { output[j++] = byte; };
 
-  make_dispatcher(kring, policy::any_order)
-      .get_order(input_f)
-      .map([&](order &o) {
-        o(input_f, output_f);
-        TEST_ASSERT_EQUAL_UINT(16, output.get<0>());
-      })
-      .map_error([](size_t) { TEST_FAIL(); });
+  auto d = make_dispatcher(kring, policy::any_order);
+  auto *order_ptr = d.get_order(input_f);
+  TEST_ASSERT_NOT_NULL(order_ptr);
+
+  (*order_ptr)(input_f, output_f);
+  TEST_ASSERT_EQUAL_UINT(16, output.get<0>());
 }
 
 static void dispatcher_DO_call_no_storage_order_EXPECT_correct_behavior() {
