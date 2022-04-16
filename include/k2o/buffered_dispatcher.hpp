@@ -18,6 +18,7 @@
 #include "detail/type_traits/typelist.hpp"
 #include "dispatcher.hpp" // IWYU pragma: keep
 #include "policy.hpp"
+#include "unevaluated.hpp"
 
 #include "detail/def.hpp"
 
@@ -156,24 +157,25 @@ public:
 
   K2O_SFINAE_FAILURE_MEMBER(write, K2O_ERROR_NOT_OUTPUT(dest))
 
-  //! \name replace
-  //!
-  //! Forward the arguments to \mgref{Dispatcher_Replace, dispatcher::replace}
-  //! @{
-
-  template<typename T>
-  void replace(index_t index, T &&x) {
-    m_dispatcher.replace(index, FWD(x));
+  //! \copydoc dispatcher::replace(unevaluated<F,Ftor>)
+  template<index_t Index, typename F, F Ftor>
+  void replace(unevaluated<F, Ftor>) {
+    m_dispatcher.template replace<Index>(unevaluated<F, Ftor>{});
   }
 
 #if __cplusplus >= 201703L
-  template<auto &Ftor>
-  void replace(index_t index) {
-    m_dispatcher.replace<Ftor>(index);
+  //! \copydoc dispatcher::replace()
+  template<index_t Index, auto &Ftor>
+  void replace() {
+    m_dispatcher.template replace<Index, Ftor>();
   }
 #endif // __cplusplus >= 201703L
 
-  //! @}
+  //! \copydoc dispatcher::replace(F&&)
+  template<index_t Index, typename F>
+  void replace(F &&ftor) {
+    m_dispatcher.template replace<Index>(FWD(ftor));
+  }
 
 private:
   //! \copydoc dispatcher::get_index
@@ -195,7 +197,7 @@ template<typename Keyring, typename Input_Iterator, typename Output_Iterator, or
 buffered_dispatcher<dispatcher<Keyring, Order_Features>, Input_Iterator, Output_Iterator> make_buffered_dispatcher(
     Keyring, Input_Iterator input_it, Output_Iterator output_it, order_features_h<Order_Features>) {
   return buffered_dispatcher<dispatcher<Keyring, Order_Features>, Input_Iterator, Output_Iterator>(
-      Keyring{}, input_it, output_it);
+      Keyring{}, input_it, output_it, order_features_h<Order_Features>{});
 }
 
 #if __cplusplus >= 201703L

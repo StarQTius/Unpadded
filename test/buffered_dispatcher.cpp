@@ -95,6 +95,23 @@ static void buffered_dispatcher_DO_load_an_order_in_a_double_buffered_dispatcher
   TEST_ASSERT_EQUAL(32, result);
 }
 
+static void buffered_dispatcher_DO_replace_an_order() {
+  using namespace k2o;
+
+  upd::byte_t buf[8], kbuf[8];
+  auto dis = make_buffered_dispatcher(kring, buf, buf, policy::any_order);
+  auto k = kring.get(K2O_CTREF(identity));
+
+  dis.replace<1>([](int x) {
+    TEST_ASSERT_EQUAL(x, 64);
+    return 32;
+  });
+  k(64) >> kbuf;
+  dis << kbuf;
+  dis >> kbuf;
+  TEST_ASSERT_EQUAL(k << kbuf, 32);
+}
+
 #define BUFFERED_DISPATCHER make_buffered_dispatcher(kring, BYTE_PTR, BYTE_PTR, policy::any_order)
 #define BUFFERED_DISPATCHER_STATIC                                                                                     \
   make_buffered_dispatcher(kring, BYTE_PTR, BYTE_PTR, policy::static_storage_duration_only)
@@ -118,8 +135,8 @@ int main() {
          BUFFERED_DISPATCHER >> BYTE_PTR,
          BUFFERED_DISPATCHER >> WRITABLE,
          BUFFERED_DISPATCHER >> REGISTRY,
-         BUFFERED_DISPATCHER.replace(0, K2O_CTREF(FUNCTOR)),
-         BUFFERED_DISPATCHER.replace(0, FUNCTOR),
+         BUFFERED_DISPATCHER.replace<0>(K2O_CTREF(FUNCTOR)),
+         BUFFERED_DISPATCHER.replace<0>(FUNCTOR),
          BUFFERED_DISPATCHER_STATIC.read_all(BYTE_PTR),
          BUFFERED_DISPATCHER_STATIC.read_all(READABLE),
          BUFFERED_DISPATCHER_STATIC.read(BYTE_PTR),
@@ -136,12 +153,13 @@ int main() {
          BUFFERED_DISPATCHER_STATIC >> BYTE_PTR,
          BUFFERED_DISPATCHER_STATIC >> WRITABLE,
          BUFFERED_DISPATCHER_STATIC >> REGISTRY,
-         BUFFERED_DISPATCHER_STATIC.replace(0, K2O_CTREF(FUNCTOR)));
+         BUFFERED_DISPATCHER_STATIC.replace<0>(K2O_CTREF(FUNCTOR)));
 
   UNITY_BEGIN();
   RUN_TEST(buffered_dispatcher_DO_load_an_order_EXPECT_correct_order_loaded_cpp17);
   RUN_TEST(buffered_dispatcher_DO_load_an_order_in_a_single_buffered_dispatcher);
   RUN_TEST(buffered_dispatcher_DO_load_an_order_in_a_double_buffered_dispatcher);
   RUN_TEST(buffered_dispatcher_DO_load_an_order_in_a_double_buffered_dispatcher_while_already_loaded);
+  RUN_TEST(buffered_dispatcher_DO_replace_an_order);
   return UNITY_END();
 }
