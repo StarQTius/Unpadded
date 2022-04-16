@@ -40,5 +40,7 @@
 #define K2O_ERROR_NOT_ALL_INVOCABLE(X) "There is one or more element(s) in `" #X "` which are not invocable objects"
 #define K2O_ERROR_NOT_ALL_LVALUE(X) "There is one or more element(s) in `" #X "` which are not lvalues"
 #define K2O_ERROR_NOT_KEYRING(X) "`" #X "` is not a template instance of `keyring`"
+#define K2O_ERROR_OUT_OF_BOUND(X) "`" #X "` is an invalid index"
+#define K2O_ERROR_SIGNATURE_MISMATCH(X) "`" #X "` does not match the target signature"
 
 //! @}

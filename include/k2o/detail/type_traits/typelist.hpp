@@ -32,8 +32,8 @@ struct itype {
   using type = T;
   constexpr static auto value = I;
 
-  constexpr static std::size_t index(T *) { return I; }
-  static T element(index_t<I>);
+  constexpr static itype<I, T> index(T *) { return {}; };
+  constexpr static itype<I, T> element(index_t<I>) { return {}; };
 };
 
 //! \brief Allows efficient operations on template parameter packs
@@ -80,7 +80,7 @@ constexpr inline auto max_impl(tlist_t<Ts...> tl) {
 //! There must be only one element in the typelist aliasing the provided element.
 template<typename T, typename... Ts>
 constexpr inline auto find_impl(tlist_t<Ts...> tl) {
-  return index_v<tl.index((T *)nullptr)>;
+  return index_v<tl.index((T *)nullptr).value>;
 }
 
 //! \brief Sum the values held by the typelist
@@ -90,7 +90,7 @@ constexpr auto sum_impl(tlist_t<Ts...>) {
 }
 
 //! \brief Expands to the element resulting in the call of `IMPL` on `LIST` converted to `tlist_t`
-#define K2O_TLIST_FUNCTION(IMPL, LIST, ...) decltype(IMPL<__VA_ARGS__>(to_tlist<LIST>))
+#define K2O_TLIST_FUNCTION(IMPL, LIST, ...) typename decltype(IMPL<__VA_ARGS__>(to_tlist<LIST>))::type
 
 //! \brief Wraps the value of `IMPL` invoked on `LIST` converted to `tlist_t`
 #define K2O_TLIST_WRAPPED_VALUE(IMPL, LIST, ...)                                                                       \

@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <type_traits>
+
 #include <upd/format.hpp>
 #include <upd/tuple.hpp>
 
@@ -9,6 +11,8 @@
 #include "detail/static_error.hpp"
 #include "detail/type_traits/is_keyring.hpp"
 #include "detail/type_traits/require.hpp"
+#include "detail/type_traits/signature.hpp"
+#include "detail/type_traits/typelist.hpp"
 #include "flist.hpp"
 #include "order.hpp"
 #include "policy.hpp"
@@ -144,28 +148,41 @@ public:
   }
 
   //! \brief Replace with an invocable with static storage duration
+  //! \tparam Index Index of the order to replace
   //! \tparam Ftor Invocable with static storage duration
-  //! \param index Index of the order associated with this invocable
-  template<typename F, F Ftor>
-  void replace(index_t index, unevaluated<F, Ftor>) {
-    m_orders.content[index] = detail::make_order<Order_Features, F, Ftor, endianess, signed_mode>();
+  template<index_t Index, typename F, F Ftor>
+  void replace(unevaluated<F, Ftor>) {
+    static_assert(Index < size, K2O_ERROR_OUT_OF_BOUND(Index));
+    static_assert(std::is_same<detail::at<signatures_t, Index>, detail::signature_t<F>>::value,
+                  K2O_ERROR_SIGNATURE_MISMATCH(Ftor));
+
+    m_orders.content[Index] = detail::make_order<Order_Features, F, Ftor, endianess, signed_mode>();
   }
 
 #if __cplusplus >= 201703L
   //! \brief (C++17) Replace with an invocable with static storage duration
+  //! \tparam Index Index of the order to replace
   //! \tparam Ftor Invocable with static storage duration
-  template<auto &Ftor>
-  void replace(index_t index) {
-    replace(index, unevaluated<decltype(Ftor) &, Ftor>{});
+  template<index_t Index, auto &Ftor>
+  void replace() {
+    static_assert(Index < size, K2O_ERROR_OUT_OF_BOUND(Index));
+    static_assert(std::is_same<detail::at<signatures_t, Index>, detail::signature_t<decltype(Ftor)>>::value,
+                  K2O_ERROR_SIGNATURE_MISMATCH(Ftor));
+
+    replace<Index>(unevaluated<decltype(Ftor) &, Ftor>{});
   }
 #endif // __cplusplus >= 201703L
 
   //! \brief Replace with an invocable of any kind
-  //! \param index Index of the order associated with this new invocable
+  //! \tparam Index Index of the order to replace
   //! \param ftor Invocable of any kind
-  template<typename F, REQUIRE_CLASS(Order_Features == order_features::ANY)>
-  void replace(index_t index, F &&ftor) {
-    m_orders.content[index] = order{FWD(ftor), upd::endianess_h<endianess>{}, upd::signed_mode_h<signed_mode>{}};
+  template<index_t Index, typename F, REQUIRE_CLASS(Order_Features == order_features::ANY)>
+  void replace(F &&ftor) {
+    static_assert(Index < size, K2O_ERROR_OUT_OF_BOUND(Index));
+    static_assert(std::is_same<detail::at<signatures_t, Index>, detail::signature_t<F>>::value,
+                  K2O_ERROR_SIGNATURE_MISMATCH(ftor));
+
+    m_orders.content[Index] = order{FWD(ftor), upd::endianess_h<endianess>{}, upd::signed_mode_h<signed_mode>{}};
   }
 
   //! \brief Get one of the stored orders
