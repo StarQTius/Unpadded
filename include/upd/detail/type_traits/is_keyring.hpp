@@ -4,8 +4,7 @@
 
 #include <type_traits>
 
-#include <upd/format.hpp>
-
+#include "../../format.hpp"
 #include "../../unevaluated.hpp" // IWYU pragma: keep
 
 // IWYU pragma: no_forward_declare unevaluated

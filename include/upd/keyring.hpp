@@ -2,8 +2,8 @@
 
 #pragma once
 
+#include "format.hpp"
 #include <boost/mp11.hpp> // IWYU pragma: keep
-#include <upd/format.hpp>
 
 // IWYU pragma: no_include "boost/mp11/detail/mp_list.hpp"
 
