@@ -51,6 +51,6 @@ if(Unpadded_IS_TOP_LEVEL AND DEFINED CMAKE_CXX_INCLUDE_WHAT_YOU_USE)
 
   foreach(HEADER IN LISTS UNPADDED_HEADERS)
     message(${HEADER})
-    add_iwyu_target(upd/${HEADER})
+    add_iwyu_target(upd/${HEADER} upd)
   endforeach()
 endif()
