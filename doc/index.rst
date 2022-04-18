@@ -20,7 +20,7 @@ Dispatcher
   :members:
 
 Action
-=====
+======
 
 .. doxygenclass:: k2o::action
   :members:

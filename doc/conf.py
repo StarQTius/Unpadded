@@ -1,4 +1,4 @@
 extensions = [ "breathe" ]
-breathe_projects = { "Key-To-Order": "../build/xml" }
-breathe_default_project = "Key-To-Order"
+breathe_projects = { "Unpadded": "../build/xml" }
+breathe_default_project = "Unpadded"
 html_theme = "sphinx_rtd_theme"
