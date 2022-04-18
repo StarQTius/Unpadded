@@ -50,6 +50,7 @@ if(Unpadded_IS_TOP_LEVEL AND DEFINED CMAKE_CXX_INCLUDE_WHAT_YOU_USE)
   include(Unpadded)
 
   foreach(HEADER IN LISTS UNPADDED_HEADERS)
+    message(${HEADER})
     add_iwyu_target(upd/${HEADER})
   endforeach()
 endif()
