@@ -40,7 +40,7 @@ using needed_output_buffer_size = detail::max<detail::map<typename Keyring::sign
 //!
 //! - `LOADING_PACKET`: The packet is currently being loaded and is not yet complete
 //! - `DROPPED_PACKET`: The packet loading has been canceled before completion
-//! - `RESOLVED_PACKET`: The packet loading has been completed and the corresponding order called
+//! - `RESOLVED_PACKET`: The packet loading has been completed and the corresponding action called
 //!
 enum class packet_status { LOADING_PACKET, DROPPED_PACKET, RESOLVED_PACKET };
 
@@ -51,15 +51,15 @@ enum class packet_status { LOADING_PACKET, DROPPED_PACKET, RESOLVED_PACKET };
 //! ouput, therefore they must receive and send byte sequences all at once. Buffered dispatchers do not own their
 //! buffers directly. They must be provided through iterators. A buffered dispatcher state goes through the following
 //! states:
-//!   -# The input buffer is empty, ready to load an order request in the input buffer.
-//!   -# Once a full order request has been received, it is immediately fulfilled and the result is written in the
+//!   -# The input buffer is empty, ready to load an action request in the input buffer.
+//!   -# Once a full action request has been received, it is immediately fulfilled and the result is written in the
 //!   output buffer. The input buffer is reset, thus it may receive a new request while the output buffer is unloaded.
 //!   -# Once the output buffer is empty, it may be written again.
 //! \note Input buffer reset is soft, in other word, its content is not erased. As a result, it is possible to use a
 //! single buffer as input and output as long as byte sequence reading and writting does not occur at the same time.
 //! For that purpose, `is_loaded` will indicate whether the output buffer is empty or not.
 //!
-//! \tparam Dispatcher Number of stored orders
+//! \tparam Dispatcher Number of stored actions
 //! \tparam Input_Iterator Type of the iterator to the input buffer
 //! \tparam Output_Iterator Type of the iterator to the output buffer
 template<typename Dispatcher, typename Input_Iterator, typename Output_Iterator>
@@ -79,9 +79,9 @@ public:
   //! \tparam Keyring Type of the keyring
   //! \param input_it Start of the input buffer
   //! \param output_it Start of the output buffer
-  template<typename Keyring, order_features Order_Features>
-  buffered_dispatcher(Keyring, Input_Iterator input_it, Output_Iterator output_it, order_features_h<Order_Features>)
-      : m_dispatcher{Keyring{}, order_features_h<Order_Features>{}}, m_is_index_loaded{false},
+  template<typename Keyring, action_features Action_Features>
+  buffered_dispatcher(Keyring, Input_Iterator input_it, Output_Iterator output_it, action_features_h<Action_Features>)
+      : m_dispatcher{Keyring{}, action_features_h<Action_Features>{}}, m_is_index_loaded{false},
         m_load_count{sizeof(index_t)}, m_ibuf_begin{input_it}, m_ibuf_next{input_it}, m_obuf_begin{output_it},
         m_obuf_next{output_it}, m_obuf_bottom{output_it} {}
 
@@ -91,13 +91,13 @@ public:
 
   using detail::immediate_reader<this_t, packet_status>::read_all;
 
-  //! \brief Put bytes into the input buffer until a full order request is stored
+  //! \brief Put bytes into the input buffer until a full action request is stored
   //! \copydoc ImmediateReader_CRTP
   //! \param src Input functor to a byte sequence
   //! \return one of the following :
   //!   - `DROPPED_PACKET`: the received index was invalid and the input buffer content was therefore discarded
-  //!   - `RESOLVED_PACKET`: the packet was fully loaded and the associated order has been called (the input buffer is
-  //!   empty and the output buffer contains the result of the order invocation)
+  //!   - `RESOLVED_PACKET`: the packet was fully loaded and the associated action has been called (the input buffer is
+  //!   empty and the output buffer contains the result of the action invocation)
   template<typename Src, REQUIREMENT(input_invocable, Src)>
   packet_status read_all(Src &&src) {
     packet_status status = packet_status::LOADING_PACKET;
@@ -118,8 +118,8 @@ public:
   //! \return one of the following :
   //!   - `LOADING_PACKET`: the packet is not yet fully loaded
   //!   - `DROPPED_PACKET`: the received index was invalid and the input buffer content was therefore discarded
-  //!   - `RESOLVED_PACKET`: the packet was fully loaded and the associated order has been called (the input buffer is
-  //!   empty and the output buffer contains the result of the order invocation)
+  //!   - `RESOLVED_PACKET`: the packet was fully loaded and the associated action has been called (the input buffer is
+  //!   empty and the output buffer contains the result of the action invocation)
   template<typename Src, REQUIREMENT(input_invocable, Src)>
   packet_status read(Src &&src) {
     *m_ibuf_next++ = FWD(src)();
@@ -200,8 +200,8 @@ public:
   }
 
 private:
-  //! \brief Provided that the input buffer does contain a full order request, invoke the corresponding order
-  //! \warning If the input buffer does not contain a valid order request, the behavior is undefined.
+  //! \brief Provided that the input buffer does contain a full action request, invoke the corresponding action
+  //! \warning If the input buffer does not contain a valid action request, the behavior is undefined.
   void call() {
     m_obuf_bottom = m_obuf_begin;
     m_obuf_next = m_obuf_begin;
@@ -230,26 +230,27 @@ private:
 
 //! \brief Make a buffered dispatcher
 //! \related buffered_dispatcher
-template<typename Keyring, typename Input_Iterator, typename Output_Iterator, order_features Order_Features>
-buffered_dispatcher<dispatcher<Keyring, Order_Features>, Input_Iterator, Output_Iterator> make_buffered_dispatcher(
-    Keyring, Input_Iterator input_it, Output_Iterator output_it, order_features_h<Order_Features>) {
-  return buffered_dispatcher<dispatcher<Keyring, Order_Features>, Input_Iterator, Output_Iterator>(
-      Keyring{}, input_it, output_it, order_features_h<Order_Features>{});
+template<typename Keyring, typename Input_Iterator, typename Output_Iterator, action_features Action_Features>
+buffered_dispatcher<dispatcher<Keyring, Action_Features>, Input_Iterator, Output_Iterator> make_buffered_dispatcher(
+    Keyring, Input_Iterator input_it, Output_Iterator output_it, action_features_h<Action_Features>) {
+  return buffered_dispatcher<dispatcher<Keyring, Action_Features>, Input_Iterator, Output_Iterator>(
+      Keyring{}, input_it, output_it, action_features_h<Action_Features>{});
 }
 
 #if __cplusplus >= 201703L
 
-template<typename Keyring, typename Input_Iterator, typename Output_Iterator, order_features Order_Features>
-buffered_dispatcher(Keyring, Input_Iterator, Output_Iterator, order_features_h<Order_Features>)
-    -> buffered_dispatcher<dispatcher<Keyring, Order_Features>, Input_Iterator, Output_Iterator>;
+template<typename Keyring, typename Input_Iterator, typename Output_Iterator, action_features Action_Features>
+buffered_dispatcher(Keyring, Input_Iterator, Output_Iterator, action_features_h<Action_Features>)
+    -> buffered_dispatcher<dispatcher<Keyring, Action_Features>, Input_Iterator, Output_Iterator>;
 
 #endif // __cplusplus >= 201703L
 
 //! \brief Implements a dispatcher using a single buffer for input and output
 //!
 //! The buffer is allocated statically as a plain array. If created using CTAD or `make_single_buffered_dispatcher`, its
-//! size is as small as possible for holding any order request and any order response. \warning It is not possible to
-//! read a request and write a response at the same time. If you need that, use `double_buffered_dispatcher` instead.
+//! size is as small as possible for holding any action request and any action response.
+//! \warning It is not possible to read a request and write a response at the same time. If you need that, use
+//! `double_buffered_dispatcher` instead.
 //!
 //! \tparam Dispatcher Underlying dispatcher type
 //! \tparam Buffer_Size Size of the internal buffer
@@ -263,46 +264,46 @@ public:
 
   //! \brief Initialize the underlying dispatcher
   //!
-  //! \tparam Keyring Keyring which holds the orders to be managed by the dispatcher
-  //! \tparam Order_Features Features of the orders managed by the dispatcher
-  template<typename Keyring, order_features Order_Features>
-  explicit single_buffered_dispatcher(Keyring, order_features_h<Order_Features>)
-      : base_t{Keyring{}, m_buf, m_buf, order_features_h<Order_Features>{}} {}
+  //! \tparam Keyring Keyring which holds the actions to be managed by the dispatcher
+  //! \tparam Action_Features Features of the actions managed by the dispatcher
+  template<typename Keyring, action_features Action_Features>
+  explicit single_buffered_dispatcher(Keyring, action_features_h<Action_Features>)
+      : base_t{Keyring{}, m_buf, m_buf, action_features_h<Action_Features>{}} {}
 
 private:
   upd::byte_t m_buf[buffer_size];
 };
 
 #if __cplusplus >= 201703L
-template<typename Keyring, order_features Order_Features>
-single_buffered_dispatcher(Keyring, order_features_h<Order_Features>) -> single_buffered_dispatcher<
-    dispatcher<Keyring, Order_Features>,
+template<typename Keyring, action_features Action_Features>
+single_buffered_dispatcher(Keyring, action_features_h<Action_Features>) -> single_buffered_dispatcher<
+    dispatcher<Keyring, Action_Features>,
     detail::max_p<detail::needed_input_buffer_size<Keyring>, detail::needed_output_buffer_size<Keyring>>::value>;
 #endif // __cplusplus >= 201703L
 
 //! \brief Make a single buffered dispatcher
 //! \related single_buffered_dispatcher
 #if defined(DOXYGEN)
-template<typename Keyring, order_features Order_Features>
-auto make_single_buffered_dispatcher(Keyring, order_features_h<Order_Features>);
+template<typename Keyring, action_features Action_Features>
+auto make_single_buffered_dispatcher(Keyring, action_features_h<Action_Features>);
 #else  // defined(DOXYGEN)
-template<typename Keyring, order_features Order_Features>
+template<typename Keyring, action_features Action_Features>
 single_buffered_dispatcher<
-    dispatcher<Keyring, Order_Features>,
+    dispatcher<Keyring, Action_Features>,
     detail::max_p<detail::needed_input_buffer_size<Keyring>, detail::needed_output_buffer_size<Keyring>>::value>
-make_single_buffered_dispatcher(Keyring, order_features_h<Order_Features>) {
+make_single_buffered_dispatcher(Keyring, action_features_h<Action_Features>) {
   return single_buffered_dispatcher<
-      dispatcher<Keyring, Order_Features>,
+      dispatcher<Keyring, Action_Features>,
       detail::max_p<detail::needed_input_buffer_size<Keyring>, detail::needed_output_buffer_size<Keyring>>::value>{
-      Keyring{}, order_features_h<Order_Features>{}};
+      Keyring{}, action_features_h<Action_Features>{}};
 }
 #endif // defined(DOXYGEN)
 
 //! \brief Implements a dispatcher using separate buffers for input and output
 //!
 //! The buffers are allocated statically as plain arrays. If created using CTAD or `make_double_buffered_dispatcher`,
-//! their sizes are as small as possible for holding any order request and any order response. \note If you would rather
-//! having a single buffer and do not mind reading and writing at different moment, consider using
+//! their sizes are as small as possible for holding any action request and any action response. \note If you would
+//! rather having a single buffer and do not mind reading and writing at different moment, consider using
 //! `single_buffered_dispatcher` instead.
 //!
 //! \tparam Dispatcher Underlying dispatcher type
@@ -321,20 +322,20 @@ public:
 
   //! \brief Initialize the underlying dispatcher
   //!
-  //! \tparam Keyring Keyring which holds the orders to be managed by the dispatcher
-  //! \tparam Order_Features Features of the orders managed by the dispatcher
-  template<typename Keyring, order_features Order_Features>
-  explicit double_buffered_dispatcher(Keyring, order_features_h<Order_Features>)
-      : base_t{Keyring{}, m_ibuf, m_obuf, order_features_h<Order_Features>{}} {}
+  //! \tparam Keyring Keyring which holds the actions to be managed by the dispatcher
+  //! \tparam Action_Features Features of the actions managed by the dispatcher
+  template<typename Keyring, action_features Action_Features>
+  explicit double_buffered_dispatcher(Keyring, action_features_h<Action_Features>)
+      : base_t{Keyring{}, m_ibuf, m_obuf, action_features_h<Action_Features>{}} {}
 
 private:
   upd::byte_t m_ibuf[input_buffer_size], m_obuf[output_buffer_size];
 };
 
 #if __cplusplus >= 201703L
-template<typename Keyring, order_features Order_Features>
-double_buffered_dispatcher(Keyring, order_features_h<Order_Features>)
-    -> double_buffered_dispatcher<dispatcher<Keyring, Order_Features>,
+template<typename Keyring, action_features Action_Features>
+double_buffered_dispatcher(Keyring, action_features_h<Action_Features>)
+    -> double_buffered_dispatcher<dispatcher<Keyring, Action_Features>,
                                   detail::needed_input_buffer_size<Keyring>::value,
                                   detail::needed_output_buffer_size<Keyring>::value>;
 #endif // __cplusplus >= 201703L
@@ -342,18 +343,18 @@ double_buffered_dispatcher(Keyring, order_features_h<Order_Features>)
 //! \brief Make a double buffered dispatcher
 //! \related double_buffered_dispatcher
 #if defined(DOXYGEN)
-template<typename Keyring, order_features Order_Features>
-auto make_double_buffered_dispatcher(Keyring, order_features_h<Order_Features>);
+template<typename Keyring, action_features Action_Features>
+auto make_double_buffered_dispatcher(Keyring, action_features_h<Action_Features>);
 #else  // defined(DOXYGEN)
-template<typename Keyring, order_features Order_Features>
-double_buffered_dispatcher<dispatcher<Keyring, Order_Features>,
+template<typename Keyring, action_features Action_Features>
+double_buffered_dispatcher<dispatcher<Keyring, Action_Features>,
                            detail::needed_input_buffer_size<Keyring>::value,
                            detail::needed_output_buffer_size<Keyring>::value>
-make_double_buffered_dispatcher(Keyring, order_features_h<Order_Features>) {
-  return double_buffered_dispatcher<dispatcher<Keyring, Order_Features>,
+make_double_buffered_dispatcher(Keyring, action_features_h<Action_Features>) {
+  return double_buffered_dispatcher<dispatcher<Keyring, Action_Features>,
                                     detail::needed_input_buffer_size<Keyring>::value,
                                     detail::needed_output_buffer_size<Keyring>::value>{
-      Keyring{}, order_features_h<Order_Features>{}};
+      Keyring{}, action_features_h<Action_Features>{}};
 }
 #endif // defined(DOXYGEN)
 

@@ -19,8 +19,8 @@ Dispatcher
 .. doxygenclass:: k2o::buffered_dispatcher
   :members:
 
-Order
+Action
 =====
 
-.. doxygenclass:: k2o::order
+.. doxygenclass:: k2o::action
   :members:

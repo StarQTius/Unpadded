@@ -11,11 +11,11 @@ int identity(int x) { return x; }
 
 constexpr auto ftor_list = k2o::make_flist(K2O_CTREF(get_8), K2O_CTREF(get_16), K2O_CTREF(get_32), K2O_CTREF(identity));
 
-static void dispatcher_DO_call_order_EXPECT_calling_correct_order() {
+static void dispatcher_DO_call_action_EXPECT_calling_correct_action() {
   using namespace k2o;
 
   constexpr auto kring = make_keyring(ftor_list);
-  auto dispatcher = make_dispatcher(kring, policy::any_order);
+  auto dispatcher = make_dispatcher(kring, policy::any_action);
   auto function16_index = upd::make_tuple(uint16_t{1});
   auto output = upd::make_tuple<int>();
 
@@ -25,7 +25,7 @@ static void dispatcher_DO_call_order_EXPECT_calling_correct_order() {
   TEST_ASSERT_EQUAL_UINT(16, output.get<0>());
 }
 
-static void dispatcher_DO_get_order_EXPECT_correct_index() {
+static void dispatcher_DO_get_action_EXPECT_correct_index() {
   using namespace k2o;
 
   constexpr auto kring = make_keyring(ftor_list);
@@ -36,15 +36,15 @@ static void dispatcher_DO_get_order_EXPECT_correct_index() {
   auto input_f = [&]() { return function16_index[i++]; };
   auto output_f = [&](upd::byte_t byte) { output[j++] = byte; };
 
-  auto d = make_dispatcher(kring, policy::any_order);
-  auto *order_ptr = d.get_order(input_f);
-  TEST_ASSERT_NOT_NULL(order_ptr);
+  auto d = make_dispatcher(kring, policy::any_action);
+  auto *action_ptr = d.get_action(input_f);
+  TEST_ASSERT_NOT_NULL(action_ptr);
 
-  (*order_ptr)(input_f, output_f);
+  (*action_ptr)(input_f, output_f);
   TEST_ASSERT_EQUAL_UINT(16, output.get<0>());
 }
 
-static void dispatcher_DO_call_no_storage_order_EXPECT_correct_behavior() {
+static void dispatcher_DO_call_no_storage_action_EXPECT_correct_behavior() {
   using namespace k2o;
 
   constexpr auto kring = make_keyring(ftor_list);
@@ -58,11 +58,11 @@ static void dispatcher_DO_call_no_storage_order_EXPECT_correct_behavior() {
   TEST_ASSERT_EQUAL_UINT(16, output.get<0>());
 }
 
-static void dispatcher_DO_replace_an_order_EXPECT_changed_order() {
+static void dispatcher_DO_replace_an_action_EXPECT_changed_action() {
   using namespace k2o;
 
   constexpr auto kring = make_keyring(ftor_list);
-  auto dispatcher = make_dispatcher(kring, policy::any_order);
+  auto dispatcher = make_dispatcher(kring, policy::any_action);
   auto function16_index = upd::make_tuple(uint16_t{1});
   auto output = upd::make_tuple<int>();
 
@@ -78,7 +78,7 @@ static void dispatcher_DO_replace_an_order_EXPECT_changed_order() {
   TEST_ASSERT_EQUAL_UINT(32, output.get<0>());
 }
 
-static void dispatcher_DO_replace_a_no_storage_order_EXPECT_changed_order() {
+static void dispatcher_DO_replace_a_no_storage_action_EXPECT_changed_action() {
   using namespace k2o;
 
   constexpr auto kring = make_keyring(ftor_list);
@@ -98,7 +98,7 @@ static void dispatcher_DO_replace_a_no_storage_order_EXPECT_changed_order() {
   TEST_ASSERT_EQUAL_UINT(32, output.get<0>());
 }
 
-#define DISPATCHER make_dispatcher(make_keyring(ftor_list), policy::any_order)
+#define DISPATCHER make_dispatcher(make_keyring(ftor_list), policy::any_action)
 #define DISPATCHER_STATIC make_dispatcher(make_keyring(ftor_list), policy::static_storage_duration_only)
 
 int main() {
@@ -117,10 +117,10 @@ int main() {
          DISPATCHER_STATIC.replace<0>(K2O_CTREF(FUNCTOR)));
 
   UNITY_BEGIN();
-  RUN_TEST(dispatcher_DO_call_order_EXPECT_calling_correct_order);
-  RUN_TEST(dispatcher_DO_get_order_EXPECT_correct_index);
-  RUN_TEST(dispatcher_DO_call_no_storage_order_EXPECT_correct_behavior);
-  RUN_TEST(dispatcher_DO_replace_an_order_EXPECT_changed_order);
-  RUN_TEST(dispatcher_DO_replace_a_no_storage_order_EXPECT_changed_order);
+  RUN_TEST(dispatcher_DO_call_action_EXPECT_calling_correct_action);
+  RUN_TEST(dispatcher_DO_get_action_EXPECT_correct_index);
+  RUN_TEST(dispatcher_DO_call_no_storage_action_EXPECT_correct_behavior);
+  RUN_TEST(dispatcher_DO_replace_an_action_EXPECT_changed_action);
+  RUN_TEST(dispatcher_DO_replace_a_no_storage_action_EXPECT_changed_action);
   return UNITY_END();
 }

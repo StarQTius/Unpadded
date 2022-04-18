@@ -7,6 +7,7 @@
 #include <upd/format.hpp>
 #include <upd/tuple.hpp>
 
+#include "action.hpp"
 #include "detail/io/immediate_process.hpp"
 #include "detail/static_error.hpp"
 #include "detail/type_traits/is_keyring.hpp"
@@ -14,7 +15,6 @@
 #include "detail/type_traits/signature.hpp"
 #include "detail/type_traits/typelist.hpp"
 #include "flist.hpp"
-#include "order.hpp"
 #include "policy.hpp"
 #include "unevaluated.hpp" // IWYU pragma: keep
 
@@ -26,60 +26,60 @@ namespace k2o {
 namespace detail {
 
 //! \name
-//! \brief Make an order, with or without storage depending on the value of `Order_Features`
+//! \brief Make an action, with or without storage depending on the value of `Action_Features`
 //! @{
 
-template<order_features Order_Features,
+template<action_features Action_Features,
          typename F,
          F Ftor,
          upd::endianess Endianess,
          upd::signed_mode Signed_Mode,
-         REQUIRE(Order_Features == order_features::STATIC_STORAGE_DURATION_ONLY)>
-no_storage_order make_order() {
-  return no_storage_order{unevaluated<F, Ftor>{}, upd::endianess_h<Endianess>{}, upd::signed_mode_h<Signed_Mode>{}};
+         REQUIRE(Action_Features == action_features::STATIC_STORAGE_DURATION_ONLY)>
+no_storage_action make_action() {
+  return no_storage_action{unevaluated<F, Ftor>{}, upd::endianess_h<Endianess>{}, upd::signed_mode_h<Signed_Mode>{}};
 }
 
-template<order_features Order_Features,
+template<action_features Action_Features,
          typename F,
          F Ftor,
          upd::endianess Endianess,
          upd::signed_mode Signed_Mode,
-         REQUIRE(Order_Features == order_features::ANY)>
-order make_order() {
-  return order{Ftor, upd::endianess_h<Endianess>{}, upd::signed_mode_h<Signed_Mode>{}};
+         REQUIRE(Action_Features == action_features::ANY)>
+action make_action() {
+  return action{Ftor, upd::endianess_h<Endianess>{}, upd::signed_mode_h<Signed_Mode>{}};
 }
 
 //! @}
 
-//! \brief Alias for `order` if `Order_Features` is `order_features::ANY`, `no_storage_order` otherwise
-template<order_features Order_Features>
-using order_t = decltype(make_order<Order_Features, int, 0, upd::endianess::BUILTIN, upd::signed_mode::BUILTIN>());
+//! \brief Alias for `action` if `Action_Features` is `action_features::ANY`, `no_storage_action` otherwise
+template<action_features Action_Features>
+using action_t = decltype(make_action<Action_Features, int, 0, upd::endianess::BUILTIN, upd::signed_mode::BUILTIN>());
 
-//! \brief Stores orders
+//! \brief Stores actions
 //!
 //! This class template helps with initializing the storage with a typelist
-template<typename Index_T, Index_T Size, order_features Order_Features>
-struct orders {
+template<typename Index_T, Index_T Size, action_features Action_Features>
+struct actions {
   template<typename... Fs, Fs... Ftors, upd::endianess Endianess, upd::signed_mode Signed_Mode>
-  orders(flist_t<unevaluated<Fs, Ftors>...>, upd::endianess_h<Endianess>, upd::signed_mode_h<Signed_Mode>)
-      : content{make_order<Order_Features, Fs, Ftors, Endianess, Signed_Mode>()...} {}
+  actions(flist_t<unevaluated<Fs, Ftors>...>, upd::endianess_h<Endianess>, upd::signed_mode_h<Signed_Mode>)
+      : content{make_action<Action_Features, Fs, Ftors, Endianess, Signed_Mode>()...} {}
 
-  order_t<Order_Features> content[Size];
+  action_t<Action_Features> content[Size];
 };
 
 } // namespace detail
 
-//! \brief Order containers able to unserialize byte sequence serialized by an key
+//! \brief Action containers able to unserialize byte sequence serialized by an key
 //!
 //! A dispatcher is constructed from a keyring and is able to unserialize a payload serialized by
 //! an key created from the same keyring. When it happens, the dispatcher calls the
 //! function associated with the key, forwarding the arguments from the payload to the function. The
-//! functions are internally held as `order` objects.
+//! functions are internally held as `action` objects.
 //!
-//! \tparam Keyring Keyring describing the orders to manage
-//! \tparam Order_Features Restriction on stored orders
-template<typename Keyring, order_features Order_Features>
-class dispatcher : public detail::immediate_process<dispatcher<Keyring, Order_Features>, typename Keyring::index_t> {
+//! \tparam Keyring Keyring describing the actions to manage
+//! \tparam Action_Features Restriction on stored actions
+template<typename Keyring, action_features Action_Features>
+class dispatcher : public detail::immediate_process<dispatcher<Keyring, Action_Features>, typename Keyring::index_t> {
   static_assert(detail::is_keyring<Keyring>::value, K2O_ERROR_NOT_KEYRING(Keyring));
 
 public:
@@ -89,8 +89,8 @@ public:
   //! \copydoc keyring::index_t
   using index_t = typename Keyring::index_t;
 
-  //! \copydoc detail::order_t
-  using order_t = detail::order_t<Order_Features>;
+  //! \copydoc detail::action_t
+  using action_t = detail::action_t<Action_Features>;
 
   //! \copydoc keyring::size
   constexpr static auto size = Keyring::size;
@@ -102,36 +102,36 @@ public:
   constexpr static auto signed_mode = Keyring::signed_mode;
 
   //! \brief Construct the object from the provided keyring
-  explicit dispatcher(Keyring, order_features_h<Order_Features>)
-      : m_orders{typename Keyring::flist_t{}, upd::endianess_h<endianess>{}, upd::signed_mode_h<signed_mode>{}} {}
+  explicit dispatcher(Keyring, action_features_h<Action_Features>)
+      : m_actions{typename Keyring::flist_t{}, upd::endianess_h<endianess>{}, upd::signed_mode_h<signed_mode>{}} {}
 
-  using detail::immediate_process<dispatcher<Keyring, Order_Features>, index_t>::operator();
+  using detail::immediate_process<dispatcher<Keyring, Action_Features>, index_t>::operator();
 
-  //! \brief Extract an index from a byte sequence then invoke the order with that index
+  //! \brief Extract an index from a byte sequence then invoke the action with that index
   //!
-  //! The parameters for the order call are extracted from `src` and the return value is inserted into `dest`.
+  //! The parameters for the action call are extracted from `src` and the return value is inserted into `dest`.
   //! \copydoc ImmediateProcess_CRTP
   //!
   //! \param src Input invocable
   //! \param dest Output invocable
-  //! \return the index of the called order
+  //! \return the index of the called action
   template<typename Src, typename Dest, REQUIREMENT(input_invocable, Src), REQUIREMENT(output_invocable, Dest)>
   index_t operator()(Src &&src, Dest &&dest) {
     auto index = get_index(src);
 
     if (index < size)
-      m_orders.content[index](src, dest);
+      m_actions.content[index](src, dest);
 
     return index;
   }
 
-  //! \brief Extract an index from a byte sequence and get the order with that index
+  //! \brief Extract an index from a byte sequence and get the action with that index
   //! \param src Input invocable
-  //! \return Either a reference to the order if it exists or `nullptr`
+  //! \return Either a reference to the action if it exists or `nullptr`
   template<typename Src, REQUIREMENT(input_invocable, Src)>
-  order_t *get_order(Src &&src) {
+  action_t *get_action(Src &&src) {
     auto index = get_index(FWD(src));
-    return index < size ? m_orders.content + index : nullptr;
+    return index < size ? m_actions.content + index : nullptr;
   }
 
   //! \brief Extract an index from a byte sequence
@@ -148,7 +148,7 @@ public:
   }
 
   //! \brief Replace with an invocable with static storage duration
-  //! \tparam Index Index of the order to replace
+  //! \tparam Index Index of the action to replace
   //! \tparam Ftor Invocable with static storage duration
   template<index_t Index, typename F, F Ftor>
   void replace(unevaluated<F, Ftor>) {
@@ -156,12 +156,12 @@ public:
     static_assert(std::is_same<detail::at<signatures_t, Index>, detail::signature_t<F>>::value,
                   K2O_ERROR_SIGNATURE_MISMATCH(Ftor));
 
-    m_orders.content[Index] = detail::make_order<Order_Features, F, Ftor, endianess, signed_mode>();
+    m_actions.content[Index] = detail::make_action<Action_Features, F, Ftor, endianess, signed_mode>();
   }
 
 #if __cplusplus >= 201703L
   //! \brief (C++17) Replace with an invocable with static storage duration
-  //! \tparam Index Index of the order to replace
+  //! \tparam Index Index of the action to replace
   //! \tparam Ftor Invocable with static storage duration
   template<index_t Index, auto &Ftor>
   void replace() {
@@ -174,35 +174,35 @@ public:
 #endif // __cplusplus >= 201703L
 
   //! \brief Replace with an invocable of any kind
-  //! \tparam Index Index of the order to replace
+  //! \tparam Index Index of the action to replace
   //! \param ftor Invocable of any kind
-  template<index_t Index, typename F, REQUIRE_CLASS(Order_Features == order_features::ANY)>
+  template<index_t Index, typename F, REQUIRE_CLASS(Action_Features == action_features::ANY)>
   void replace(F &&ftor) {
     static_assert(Index < size, K2O_ERROR_OUT_OF_BOUND(Index));
     static_assert(std::is_same<detail::at<signatures_t, Index>, detail::signature_t<F>>::value,
                   K2O_ERROR_SIGNATURE_MISMATCH(ftor));
 
-    m_orders.content[Index] = order{FWD(ftor), upd::endianess_h<endianess>{}, upd::signed_mode_h<signed_mode>{}};
+    m_actions.content[Index] = action{FWD(ftor), upd::endianess_h<endianess>{}, upd::signed_mode_h<signed_mode>{}};
   }
 
-  //! \brief Get one of the stored orders
-  //! \param index Index of an order
-  //! \return the order associated with that index
+  //! \brief Get one of the stored actions
+  //! \param index Index of an action
+  //! \return the action associated with that index
   //! \warning No bound check is performed.
-  order_t &operator[](index_t index) { return m_orders.content[index]; }
+  action_t &operator[](index_t index) { return m_actions.content[index]; }
 
   //! \copydoc operator[]
-  const order_t &operator[](index_t index) const { return m_orders.content[index]; }
+  const action_t &operator[](index_t index) const { return m_actions.content[index]; }
 
 private:
-  detail::orders<index_t, size, Order_Features> m_orders;
+  detail::actions<index_t, size, Action_Features> m_actions;
 };
 
 //! \brief Make a dispatcher
 //! \related dispatcher
-template<typename Keyring, order_features Order_Features>
-dispatcher<Keyring, Order_Features> make_dispatcher(Keyring, order_features_h<Order_Features>) {
-  return dispatcher<Keyring, Order_Features>{Keyring{}, {}};
+template<typename Keyring, action_features Action_Features>
+dispatcher<Keyring, Action_Features> make_dispatcher(Keyring, action_features_h<Action_Features>) {
+  return dispatcher<Keyring, Action_Features>{Keyring{}, {}};
 }
 
 } // namespace k2o

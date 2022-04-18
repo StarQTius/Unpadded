@@ -5,13 +5,13 @@
 #include <upd/format.hpp>
 #include <upd/tuple.hpp>
 
+#include "action.hpp"
 #include "detail/io/immediate_reader.hpp"
 #include "detail/serialized_message.hpp"
 #include "detail/static_error.hpp"
 #include "detail/type_traits/remove_cv_ref.hpp"
 #include "detail/type_traits/require.hpp"
 #include "detail/type_traits/signature.hpp"
-#include "order.hpp"
 #include "unevaluated.hpp"
 
 #include "detail/def.hpp"
@@ -23,13 +23,13 @@ class key : public key<Index_T, Index, detail::signature_t<F>, Endianess, Signed
   static_assert(detail::is_invocable<F>::value, K2O_ERROR_NOT_INVOCABLE(F));
 };
 
-//! \brief Packet generator for invoking an order on a slave device
+//! \brief Packet generator for invoking an action on a slave device
 //!
 //! Keys will generate packets whose structure is the following:
-//!   - index of the order (value: `Index`; size: `sizeof Index`);
+//!   - index of the action (value: `Index`; size: `sizeof Index`);
 //!   - payload (size: `sizeof(Args) + ...`);
 //!
-//! The index is used by the slave to determine which order is addressed (see `dispatcher`). The content of the payload
+//! The index is used by the slave to determine which action is addressed (see `dispatcher`). The content of the payload
 //! is choosen by the user. In the following example \code int function1(uint8_t, uint16_t); int function2(uint16_t,
 //! uint32_t); int function3(uint32_t, uint64_t);
 //!
@@ -51,7 +51,7 @@ class key : public key<Index_T, Index, detail::signature_t<F>, Endianess, Signed
 //! program until the slave device response is not a viable option, it is possible to save a callback to be executed
 //! once the slave device has finished using the `ticket` class.
 //!
-//! \tparam Index Index of the order in the keyring
+//! \tparam Index Index of the action in the keyring
 //! \tparam F Signature of the invocable associated with the key
 //! \tparam Endianess Byte order of the integers in the generated packets
 //! \tparam Signed_Mode Representation of signed integers in the generated packets
@@ -95,7 +95,7 @@ public:
   //! \brief Generate a packet ready to be sent
   //!
   //! This allows the following syntax : `key(x1, x2, x3, ...) >> dest` (with `dest` being an output invocable).
-  //! `dest_f` is invoked on every byte representing the data passed as parameter, in the order they appear in the
+  //! `dest_f` is invoked on every byte representing the data passed as parameter, in the action they appear in the
   //! packet.
   //!
   //! \param args... Values to insert in the payload
@@ -127,26 +127,26 @@ public:
 
   K2O_SFINAE_FAILURE_MEMBER(read_all, K2O_ERROR_NOT_INPUT(src))
 
-  //! \brief Plan an action to perform when a packet resulting from the execution of the order is received
+  //! \brief Plan an action to perform when a packet resulting from the execution of the action is received
   //! \param ftor Callback which will carry out the action
-  //! \return an order holding the provided hook
+  //! \return an action holding the provided hook
   template<typename F, REQUIREMENT(invocable, F)>
-  order with_hook(F &&ftor) const {
-    return order{FWD(ftor), upd::endianess_h<Endianess>{}, upd::signed_mode_h<Signed_Mode>{}};
+  action with_hook(F &&ftor) const {
+    return action{FWD(ftor), upd::endianess_h<Endianess>{}, upd::signed_mode_h<Signed_Mode>{}};
   }
 
   //! \copybrief with_hook
   //! \tparam Ftor Callback which will carry out the action
-  //! \return an order holding the provided hook
+  //! \return an action holding the provided hook
   template<typename F, F Ftor, REQUIREMENT(invocable, F)>
-  no_storage_order with_hook(unevaluated<F, Ftor>) const {
-    return no_storage_order{unevaluated<F, Ftor>{}, upd::endianess_h<Endianess>{}, upd::signed_mode_h<Signed_Mode>{}};
+  no_storage_action with_hook(unevaluated<F, Ftor>) const {
+    return no_storage_action{unevaluated<F, Ftor>{}, upd::endianess_h<Endianess>{}, upd::signed_mode_h<Signed_Mode>{}};
   }
 
 #if __cplusplus >= 201703L
   //! \copybrief with_hook
   //! \tparam Ftor Callback which will carry out the action
-  //! \return an order holding the provided hook
+  //! \return an action holding the provided hook
   template<auto &Ftor, REQUIREMENT(invocable, decltype(Ftor))>
   auto with_hook() const {
     return with_hook(unevaluated<decltype(Ftor), Ftor>{});
