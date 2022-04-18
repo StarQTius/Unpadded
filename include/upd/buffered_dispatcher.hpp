@@ -22,7 +22,7 @@
 
 #include "detail/def.hpp"
 
-namespace k2o {
+namespace upd {
 namespace detail {
 
 template<typename Keyring>
@@ -208,7 +208,7 @@ private:
 
     auto ibuf_it = m_ibuf_begin;
     auto index = get_index([&]() { return *ibuf_it++; });
-    m_dispatcher[index]([&]() { return *ibuf_it++; }, [&](upd::byte_t byte) { *m_obuf_bottom++ = byte; });
+    m_dispatcher[index]([&]() { return *ibuf_it++; }, [&](byte_t byte) { *m_obuf_bottom++ = byte; });
 
     m_is_index_loaded = false;
     m_load_count = sizeof(index_t);
@@ -255,8 +255,8 @@ buffered_dispatcher(Keyring, Input_Iterator, Output_Iterator, action_features_h<
 //! \tparam Dispatcher Underlying dispatcher type
 //! \tparam Buffer_Size Size of the internal buffer
 template<typename Dispatcher, std::size_t Buffer_Size>
-class single_buffered_dispatcher : public buffered_dispatcher<Dispatcher, upd::byte_t *, upd::byte_t *> {
-  using base_t = buffered_dispatcher<Dispatcher, upd::byte_t *, upd::byte_t *>;
+class single_buffered_dispatcher : public buffered_dispatcher<Dispatcher, byte_t *, byte_t *> {
+  using base_t = buffered_dispatcher<Dispatcher, byte_t *, byte_t *>;
 
 public:
   //! \brief Equals the `Buffer_Size` template parameter
@@ -271,7 +271,7 @@ public:
       : base_t{Keyring{}, m_buf, m_buf, action_features_h<Action_Features>{}} {}
 
 private:
-  upd::byte_t m_buf[buffer_size];
+  byte_t m_buf[buffer_size];
 };
 
 #if __cplusplus >= 201703L
@@ -310,8 +310,8 @@ make_single_buffered_dispatcher(Keyring, action_features_h<Action_Features>) {
 //! \tparam Input_Buffer_Size Size of the input internal buffer
 //! \tparam Output_Buffer_Size Size of the output internal buffer
 template<typename Dispatcher, std::size_t Input_Buffer_Size, std::size_t Output_Buffer_Size>
-class double_buffered_dispatcher : public buffered_dispatcher<Dispatcher, upd::byte_t *, upd::byte_t *> {
-  using base_t = buffered_dispatcher<Dispatcher, upd::byte_t *, upd::byte_t *>;
+class double_buffered_dispatcher : public buffered_dispatcher<Dispatcher, byte_t *, byte_t *> {
+  using base_t = buffered_dispatcher<Dispatcher, byte_t *, byte_t *>;
 
 public:
   //! \brief Equals the `Input_Buffer_Size` template parameter
@@ -329,7 +329,7 @@ public:
       : base_t{Keyring{}, m_ibuf, m_obuf, action_features_h<Action_Features>{}} {}
 
 private:
-  upd::byte_t m_ibuf[input_buffer_size], m_obuf[output_buffer_size];
+  byte_t m_ibuf[input_buffer_size], m_obuf[output_buffer_size];
 };
 
 #if __cplusplus >= 201703L
@@ -358,6 +358,6 @@ make_double_buffered_dispatcher(Keyring, action_features_h<Action_Features>) {
 }
 #endif // defined(DOXYGEN)
 
-} // namespace k2o
+} // namespace upd
 
 #include "detail/undef.hpp" // IWYU pragma: keep

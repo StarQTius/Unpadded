@@ -7,7 +7,7 @@
 #include "../type_traits/require.hpp"
 #include "immediate_writer.hpp"
 
-namespace k2o {
+namespace upd {
 namespace detail {
 
 //! \brief CRTP base class used to define writing members functions
@@ -26,32 +26,32 @@ public:
   //!   These functions may be invoked on hardware registers and output iterators
   //! @{
 
-  void write(volatile upd::byte_t &reg) {
-    derived().write([&](upd::byte_t byte) { reg = byte; });
+  void write(volatile byte_t &reg) {
+    derived().write([&](byte_t byte) { reg = byte; });
   }
 
-  void write(volatile upd::byte_t &reg) const {
-    derived().write([&](upd::byte_t byte) { reg = byte; });
+  void write(volatile byte_t &reg) const {
+    derived().write([&](byte_t byte) { reg = byte; });
   }
 
   using immediate_writer<D>::operator>>;
 
-  void operator>>(volatile upd::byte_t &reg) {
-    derived().write([&](upd::byte_t byte) { reg = byte; });
+  void operator>>(volatile byte_t &reg) {
+    derived().write([&](byte_t byte) { reg = byte; });
   }
 
-  void operator>>(volatile upd::byte_t &reg) const {
-    derived().write([&](upd::byte_t byte) { reg = byte; });
+  void operator>>(volatile byte_t &reg) const {
+    derived().write([&](byte_t byte) { reg = byte; });
   }
 
   template<typename It, detail::require_byte_iterator<It> = 0>
   void write(It it) {
-    derived().write([&](upd::byte_t byte) { *it = byte; });
+    derived().write([&](byte_t byte) { *it = byte; });
   }
 
   template<typename It, detail::require_byte_iterator<It> = 0>
   void write(It it) const {
-    derived().write([&](upd::byte_t byte) { *it = byte; });
+    derived().write([&](byte_t byte) { *it = byte; });
   }
 
   // @}
@@ -61,10 +61,10 @@ public:
 //!
 //! The following member functions are also defined through CRTP.
 //! \code
-//! void write(volatile upd::byte_t &);
-//! void write(volatile upd::byte_t &) const;
-//! void operator>>(volatile upd::byte_t &);
-//! void operator>>(volatile upd::byte_t &) const;
+//! void write(volatile byte_t &);
+//! void write(volatile byte_t &) const;
+//! void operator>>(volatile byte_t &);
+//! void operator>>(volatile byte_t &) const;
 //! void write(It);
 //! void write(It) const;
 //! \endcode
@@ -73,4 +73,4 @@ public:
 //! \tparam It Output iterator type
 
 } // namespace detail
-} // namespace k2o
+} // namespace upd

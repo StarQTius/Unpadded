@@ -9,7 +9,7 @@
 
 #include "../def.hpp"
 
-namespace k2o {
+namespace upd {
 namespace detail {
 
 //! \brief CRTP base class used to define class whose instances process input and yield output immediately
@@ -48,14 +48,14 @@ private:
   //! \brief Iterator wrapper behaving like an input functor
   template<typename It>
   struct reader_iterator {
-    upd::byte_t operator()() { return *it++; }
+    byte_t operator()() { return *it++; }
     It it;
   };
 
   //! \brief Iterator wrapper behaving like an output functor
   template<typename It>
   struct writer_iterator {
-    void operator()(upd::byte_t byte) { *it++ = byte; }
+    void operator()(byte_t byte) { *it++ = byte; }
     It it;
   };
 
@@ -109,6 +109,6 @@ private:
 //! \tparam Output An output functor type or an output iterator type
 
 } // namespace detail
-} // namespace k2o
+} // namespace upd
 
 #include "../undef.hpp" // IWYU pragma: keep

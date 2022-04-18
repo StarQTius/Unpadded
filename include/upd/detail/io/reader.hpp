@@ -7,7 +7,7 @@
 #include "../type_traits/require.hpp"
 #include "immediate_reader.hpp"
 
-namespace k2o {
+namespace upd {
 namespace detail {
 
 //! \brief CRTP base class used to define reading members functions
@@ -28,19 +28,19 @@ public:
   //!   These functions may be invoked on hardware registers and input iterators
   //! @{
 
-  R read(const volatile upd::byte_t &reg) {
+  R read(const volatile byte_t &reg) {
     return derived().read([&]() { return reg; });
   }
 
-  R read(const volatile upd::byte_t &reg) const {
+  R read(const volatile byte_t &reg) const {
     return derived().read([&]() { return reg; });
   }
 
-  R operator<<(const volatile upd::byte_t &reg) {
+  R operator<<(const volatile byte_t &reg) {
     return derived().read([&]() { return reg; });
   }
 
-  R operator<<(const volatile upd::byte_t &reg) const {
+  R operator<<(const volatile byte_t &reg) const {
     return derived().read([&]() { return reg; });
   }
 
@@ -61,10 +61,10 @@ public:
 //!
 //! The following member functions are also defined through CRTP.
 //! \code
-//! R read(const volatile upd::byte_t &);
-//! R read(const volatile upd::byte_t &) const;
-//! R operator<<(const volatile upd::byte_t &);
-//! R operator<<(const volatile upd::byte_t &) const;
+//! R read(const volatile byte_t &);
+//! R read(const volatile byte_t &) const;
+//! R operator<<(const volatile byte_t &);
+//! R operator<<(const volatile byte_t &) const;
 //! R read(It it);
 //! R read(It it) const;
 //! \endcode
@@ -73,4 +73,4 @@ public:
 //! \tparam It Input iterator type
 
 } // namespace detail
-} // namespace k2o
+} // namespace upd

@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include <cstddef>
 #include <memory>
 
 #include <upd/format.hpp>
@@ -22,22 +21,22 @@
 
 // IWYU pragma: no_include "upd/detail/value_h.hpp"
 
-namespace k2o {
+namespace upd {
 namespace detail {
 
 //! \brief Input invocable erased type
-using src_t = abstract_function<upd::byte_t()>;
+using src_t = abstract_function<byte_t()>;
 
 //! \brief Output invocable erased type
-using dest_t = abstract_function<void(upd::byte_t)>;
+using dest_t = abstract_function<void(byte_t)>;
 
 //! \brief Serialize `value` as a sequence of byte then call `dest` on every byte of that sequence
-template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename T, REQUIREMENT(not_tuple, T)>
+template<endianess Endianess, signed_mode Signed_Mode, typename T, REQUIREMENT(not_tuple, T)>
 void insert(dest_t &dest, const T &value) {
   using namespace upd;
 
   auto output = make_tuple(endianess_h<Endianess>{}, signed_mode_h<Signed_Mode>{}, value);
-  for (upd::byte_t byte : output)
+  for (byte_t byte : output)
     dest(byte);
 }
 
@@ -71,9 +70,9 @@ void call(src_t &src, dest_t &dest, F &&ftor) {
 
 //! \brief Implementation of the `action` class behaviour
 //!
-//! This class holds the functor passed to the `action` constructor and is used to deduce the appropriate `upd::tuple`
+//! This class holds the functor passed to the `action` constructor and is used to deduce the appropriate `tuple`
 //! template instance for holding the functor parameters.
-template<typename F, upd::endianess Endianess, upd::signed_mode Signed_Mode>
+template<typename F, endianess Endianess, signed_mode Signed_Mode>
 struct action_model_impl {
   using tuple_t = input_tuple<Endianess, Signed_Mode, F>;
 
@@ -96,7 +95,7 @@ struct action_concept {
 //! This class is derived from the `action_concept` as a the "Model" class in the type erasure pattern.
 //! This implementation of `action_concept` uses the `src_t` and `dest_t` functors to fetch the arguments for calling
 //! the functor as a byte sequence and serialize the expression resulting from that call.
-template<typename F, upd::endianess Endianess, upd::signed_mode Signed_Mode>
+template<typename F, endianess Endianess, signed_mode Signed_Mode>
 class action_model : public action_concept {
   using impl_t = action_model_impl<F, Endianess, Signed_Mode>;
   using tuple_t = typename impl_t::tuple_t;
@@ -129,14 +128,14 @@ public:
   //! \tparam Endianess Byte order of the integers in the generated packets
   //! \tparam Signed_Mode Representation of signed integers in the generated packets
   //! \param ftor Invocable object to be wrapped
-  template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename F, REQUIREMENT(invocable, F)>
-  explicit action(F &&ftor, upd::endianess_h<Endianess>, upd::signed_mode_h<Signed_Mode>)
+  template<endianess Endianess, signed_mode Signed_Mode, typename F, REQUIREMENT(invocable, F)>
+  explicit action(F &&ftor, endianess_h<Endianess>, signed_mode_h<Signed_Mode>)
       : m_concept_uptr{new detail::action_model<F, Endianess, Signed_Mode>{FWD(ftor)}} {}
 
   //! \copybrief action::action
   //! \param ftor Invocable object to be wrapped
   template<typename F, REQUIREMENT(invocable, F)>
-  explicit action(F &&ftor) : action{FWD(ftor), upd::builtin_endianess, upd::builtin_signed_mode} {}
+  explicit action(F &&ftor) : action{FWD(ftor), builtin_endianess, builtin_signed_mode} {}
 
   K2O_SFINAE_FAILURE_CTOR(action, K2O_ERROR_NOT_INVOCABLE(ftor))
 
@@ -158,7 +157,7 @@ public:
   //! \param input Input byte sequence
   template<typename Input>
   void operator()(Input &&input) const {
-    operator()(FWD(input), [](upd::byte_t) {});
+    operator()(FWD(input), [](byte_t) {});
   }
 
   //! \brief Get the size in bytes of the payload needed to invoke the wrapped object
@@ -185,14 +184,14 @@ public:
   //! \tparam Ftor Reference to an invocable object with static storage duration
   //! \tparam Endianess Byte order of the integers in the generated packets
   //! \tparam Signed_Mode Representation of signed integers in the generated packets
-  template<typename F, F Ftor, upd::endianess Endianess, upd::signed_mode Signed_Mode>
-  explicit no_storage_action(unevaluated<F, Ftor>, upd::endianess_h<Endianess>, upd::signed_mode_h<Signed_Mode>)
+  template<typename F, F Ftor, endianess Endianess, signed_mode Signed_Mode>
+  explicit no_storage_action(unevaluated<F, Ftor>, endianess_h<Endianess>, signed_mode_h<Signed_Mode>)
       : wrapper{+[](detail::src_t &&src, detail::dest_t &&dest) {
           detail::input_tuple<Endianess, Signed_Mode, F> parameters_tuple;
           for (auto &byte : parameters_tuple)
             byte = src();
-          auto return_tuple = upd::make_tuple(
-              upd::endianess_h<Endianess>{}, upd::signed_mode_h<Signed_Mode>{}, parameters_tuple.invoke(Ftor));
+          auto return_tuple =
+              make_tuple(endianess_h<Endianess>{}, signed_mode_h<Signed_Mode>{}, parameters_tuple.invoke(Ftor));
           for (auto byte : return_tuple)
             dest(byte);
         }} {}
@@ -201,7 +200,7 @@ public:
   //! \tparam Ftor Reference to an invocable object with static storage duration
   template<typename F, F Ftor>
   explicit no_storage_action(unevaluated<F, Ftor>)
-      : no_storage_action{unevaluated<F, Ftor>{}, upd::builtin_endianess, upd::builtin_signed_mode} {}
+      : no_storage_action{unevaluated<F, Ftor>{}, builtin_endianess, builtin_signed_mode} {}
 
   //! \brief Invoke the held invocable object and serialize / unserialize the parameters / return value
   //! \copydoc ImmediateProcess_CRTP
@@ -218,6 +217,6 @@ public:
 private:
   void (*wrapper)(detail::src_t &&, detail::dest_t &&);
 };
-} // namespace k2o
+} // namespace upd
 
 #include "detail/undef.hpp" // IWYU pragma: keep

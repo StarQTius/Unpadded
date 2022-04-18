@@ -2,7 +2,7 @@
 
 #pragma once
 
-namespace k2o {
+namespace upd {
 namespace detail {
 
 //! \name
@@ -23,4 +23,4 @@ using ternary_t = typename ternary<Condition, True_T, False_T>::type;
 //! @}
 
 } // namespace detail
-} // namespace k2o
+} // namespace upd

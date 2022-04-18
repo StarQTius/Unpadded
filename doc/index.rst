@@ -1,26 +1,26 @@
 Keyring
 =======
 
-.. doxygenclass:: k2o::keyring
+.. doxygenclass:: upd::keyring
   :members:
 
 Key
 ===
 
-.. doxygenclass:: k2o::key
+.. doxygenclass:: upd::key
   :members:
 
 Dispatcher
 ==========
 
-.. doxygenclass:: k2o::dispatcher
+.. doxygenclass:: upd::dispatcher
   :members:
 
-.. doxygenclass:: k2o::buffered_dispatcher
+.. doxygenclass:: upd::buffered_dispatcher
   :members:
 
 Action
 ======
 
-.. doxygenclass:: k2o::action
+.. doxygenclass:: upd::action
   :members:

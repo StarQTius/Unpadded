@@ -22,7 +22,7 @@
 
 // IWYU pragma: no_forward_declare unevaluated
 
-namespace k2o {
+namespace upd {
 namespace detail {
 
 //! \name
@@ -32,36 +32,36 @@ namespace detail {
 template<action_features Action_Features,
          typename F,
          F Ftor,
-         upd::endianess Endianess,
-         upd::signed_mode Signed_Mode,
+         endianess Endianess,
+         signed_mode Signed_Mode,
          REQUIRE(Action_Features == action_features::STATIC_STORAGE_DURATION_ONLY)>
 no_storage_action make_action() {
-  return no_storage_action{unevaluated<F, Ftor>{}, upd::endianess_h<Endianess>{}, upd::signed_mode_h<Signed_Mode>{}};
+  return no_storage_action{unevaluated<F, Ftor>{}, endianess_h<Endianess>{}, signed_mode_h<Signed_Mode>{}};
 }
 
 template<action_features Action_Features,
          typename F,
          F Ftor,
-         upd::endianess Endianess,
-         upd::signed_mode Signed_Mode,
+         endianess Endianess,
+         signed_mode Signed_Mode,
          REQUIRE(Action_Features == action_features::ANY)>
 action make_action() {
-  return action{Ftor, upd::endianess_h<Endianess>{}, upd::signed_mode_h<Signed_Mode>{}};
+  return action{Ftor, endianess_h<Endianess>{}, signed_mode_h<Signed_Mode>{}};
 }
 
 //! @}
 
 //! \brief Alias for `action` if `Action_Features` is `action_features::ANY`, `no_storage_action` otherwise
 template<action_features Action_Features>
-using action_t = decltype(make_action<Action_Features, int, 0, upd::endianess::BUILTIN, upd::signed_mode::BUILTIN>());
+using action_t = decltype(make_action<Action_Features, int, 0, endianess::BUILTIN, signed_mode::BUILTIN>());
 
 //! \brief Stores actions
 //!
 //! This class template helps with initializing the storage with a typelist
 template<typename Index_T, Index_T Size, action_features Action_Features>
 struct actions {
-  template<typename... Fs, Fs... Ftors, upd::endianess Endianess, upd::signed_mode Signed_Mode>
-  actions(flist_t<unevaluated<Fs, Ftors>...>, upd::endianess_h<Endianess>, upd::signed_mode_h<Signed_Mode>)
+  template<typename... Fs, Fs... Ftors, endianess Endianess, signed_mode Signed_Mode>
+  actions(flist_t<unevaluated<Fs, Ftors>...>, endianess_h<Endianess>, signed_mode_h<Signed_Mode>)
       : content{make_action<Action_Features, Fs, Ftors, Endianess, Signed_Mode>()...} {}
 
   action_t<Action_Features> content[Size];
@@ -103,7 +103,7 @@ public:
 
   //! \brief Construct the object from the provided keyring
   explicit dispatcher(Keyring, action_features_h<Action_Features>)
-      : m_actions{typename Keyring::flist_t{}, upd::endianess_h<endianess>{}, upd::signed_mode_h<signed_mode>{}} {}
+      : m_actions{typename Keyring::flist_t{}, endianess_h<endianess>{}, signed_mode_h<signed_mode>{}} {}
 
   using detail::immediate_process<dispatcher<Keyring, Action_Features>, index_t>::operator();
 
@@ -139,7 +139,7 @@ public:
   //! \return The extracted index
   template<typename Src, REQUIREMENT(input_invocable, Src)>
   index_t get_index(Src &&src) const {
-    upd::tuple<endianess, signed_mode, index_t> index_tuple;
+    tuple<endianess, signed_mode, index_t> index_tuple;
 
     for (auto &byte : index_tuple)
       byte = src();
@@ -182,7 +182,7 @@ public:
     static_assert(std::is_same<detail::at<signatures_t, Index>, detail::signature_t<F>>::value,
                   K2O_ERROR_SIGNATURE_MISMATCH(ftor));
 
-    m_actions.content[Index] = action{FWD(ftor), upd::endianess_h<endianess>{}, upd::signed_mode_h<signed_mode>{}};
+    m_actions.content[Index] = action{FWD(ftor), endianess_h<endianess>{}, signed_mode_h<signed_mode>{}};
   }
 
   //! \brief Get one of the stored actions
@@ -205,6 +205,6 @@ dispatcher<Keyring, Action_Features> make_dispatcher(Keyring, action_features_h<
   return dispatcher<Keyring, Action_Features>{Keyring{}, {}};
 }
 
-} // namespace k2o
+} // namespace upd
 
 #include "detail/undef.hpp" // IWYU pragma: keep

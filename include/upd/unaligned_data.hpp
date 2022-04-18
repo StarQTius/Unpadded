@@ -7,7 +7,7 @@
 
 #include <boost/type_traits/declval.hpp>
 
-#include "detail/signature.hpp"
+#include "detail/type_traits/signature.hpp"
 #include "format.hpp"
 #include "serialization.hpp"
 #include "type.hpp"

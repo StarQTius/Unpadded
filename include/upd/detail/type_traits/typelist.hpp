@@ -16,7 +16,7 @@
 // IWYU pragma: no_include "boost/mp11/detail/mp_list.hpp"
 // IWYU pragma: no_include "boost/mp11/detail/mp_plus.hpp"
 
-namespace k2o {
+namespace upd {
 namespace detail {
 
 #if __cplusplus >= 201703L
@@ -147,4 +147,4 @@ template<typename... Ts>
 using max_p = max<boost::mp11::mp_list<Ts...>>;
 
 } // namespace detail
-} // namespace k2o
+} // namespace upd

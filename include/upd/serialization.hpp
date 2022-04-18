@@ -9,8 +9,8 @@
 #include "array_wrapper.hpp"
 #include "detail/endianess.hpp"
 #include "detail/sfinae.hpp"
-#include "detail/signature.hpp"
 #include "detail/signed_representation.hpp"
+#include "detail/type_traits/signature.hpp"
 #include "format.hpp"
 #include "type.hpp"
 
@@ -64,7 +64,7 @@ array_wrapper<T> read_as(const byte_t *sequence) {
 template<typename T, endianess Endianess, signed_mode Signed_Mode, sfinae::require_is_user_serializable<T> = 0>
 T read_as(const byte_t *sequence) {
   auto view = detail::make_view_for<Endianess, Signed_Mode>(
-      sequence, detail::examine_functor<decltype(upd_extension(static_cast<T *>(nullptr)).unserialize)>{});
+      sequence, detail::examine_invocable<decltype(upd_extension(static_cast<T *>(nullptr)).unserialize)>{});
   return view.invoke(upd_extension(static_cast<T *>(nullptr)).unserialize);
 }
 template<typename T, endianess Endianess, signed_mode Signed_Mode, typename It, sfinae::require_not_pointer<It> = 0>
@@ -128,7 +128,7 @@ void write_as(const T &array, byte_t *sequence) {
 template<endianess Endianess, signed_mode Signed_Mode, typename T, sfinae::require_is_user_serializable<T> = 0>
 void write_as(const T &x, byte_t *sequence) {
   auto view = detail::make_view_for<Endianess, Signed_Mode>(
-      sequence, detail::examine_functor<decltype(upd_extension(static_cast<T *>(nullptr)).unserialize)>{});
+      sequence, detail::examine_invocable<decltype(upd_extension(static_cast<T *>(nullptr)).unserialize)>{});
   upd_extension(static_cast<T *>(nullptr)).serialize(x, view);
 }
 template<endianess Endianess, signed_mode Signed_Mode, typename T, typename It, sfinae::require_not_pointer<It> = 0>

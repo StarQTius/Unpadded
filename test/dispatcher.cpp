@@ -9,10 +9,10 @@ int get_16() { return 16; }
 int get_32() { return 32; }
 int identity(int x) { return x; }
 
-constexpr auto ftor_list = k2o::make_flist(K2O_CTREF(get_8), K2O_CTREF(get_16), K2O_CTREF(get_32), K2O_CTREF(identity));
+constexpr auto ftor_list = upd::make_flist(K2O_CTREF(get_8), K2O_CTREF(get_16), K2O_CTREF(get_32), K2O_CTREF(identity));
 
 static void dispatcher_DO_call_action_EXPECT_calling_correct_action() {
-  using namespace k2o;
+  using namespace upd;
 
   constexpr auto kring = make_keyring(ftor_list);
   auto dispatcher = make_dispatcher(kring, policy::any_action);
@@ -26,7 +26,7 @@ static void dispatcher_DO_call_action_EXPECT_calling_correct_action() {
 }
 
 static void dispatcher_DO_get_action_EXPECT_correct_index() {
-  using namespace k2o;
+  using namespace upd;
 
   constexpr auto kring = make_keyring(ftor_list);
   auto function16_index = upd::make_tuple(uint16_t{1});
@@ -45,7 +45,7 @@ static void dispatcher_DO_get_action_EXPECT_correct_index() {
 }
 
 static void dispatcher_DO_call_no_storage_action_EXPECT_correct_behavior() {
-  using namespace k2o;
+  using namespace upd;
 
   constexpr auto kring = make_keyring(ftor_list);
   auto dispatcher = make_dispatcher(kring, policy::static_storage_duration_only);
@@ -59,7 +59,7 @@ static void dispatcher_DO_call_no_storage_action_EXPECT_correct_behavior() {
 }
 
 static void dispatcher_DO_replace_an_action_EXPECT_changed_action() {
-  using namespace k2o;
+  using namespace upd;
 
   constexpr auto kring = make_keyring(ftor_list);
   auto dispatcher = make_dispatcher(kring, policy::any_action);
@@ -79,7 +79,7 @@ static void dispatcher_DO_replace_an_action_EXPECT_changed_action() {
 }
 
 static void dispatcher_DO_replace_a_no_storage_action_EXPECT_changed_action() {
-  using namespace k2o;
+  using namespace upd;
 
   constexpr auto kring = make_keyring(ftor_list);
   auto dispatcher = make_dispatcher(kring, policy::static_storage_duration_only);
@@ -102,7 +102,7 @@ static void dispatcher_DO_replace_a_no_storage_action_EXPECT_changed_action() {
 #define DISPATCHER_STATIC make_dispatcher(make_keyring(ftor_list), policy::static_storage_duration_only)
 
 int main() {
-  using namespace k2o;
+  using namespace upd;
 
   DETECT(DISPATCHER(READABLE, WRITABLE),
          DISPATCHER(READABLE, BYTE_PTR),

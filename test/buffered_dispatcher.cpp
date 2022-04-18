@@ -14,11 +14,11 @@ int identity(int x) { return x; }
 void void_procedure() {}
 
 constexpr auto kring =
-    k2o::make_keyring(k2o::make_flist(K2O_CTREF(check_64), K2O_CTREF(identity), K2O_CTREF(void_procedure)));
+    upd::make_keyring(upd::make_flist(K2O_CTREF(check_64), K2O_CTREF(identity), K2O_CTREF(void_procedure)));
 
 static void buffered_dispatcher_DO_load_an_action_EXPECT_correct_action_loaded_cpp17() {
 #if __cplusplus >= 201703L
-  using namespace k2o;
+  using namespace upd;
 
   upd::byte_t kbuf[64], buf[64];
   auto k = kring.get<check_64>();
@@ -32,7 +32,7 @@ static void buffered_dispatcher_DO_load_an_action_EXPECT_correct_action_loaded_c
 }
 
 static void buffered_dispatcher_DO_load_an_action_in_a_single_buffered_dispatcher() {
-  using namespace k2o;
+  using namespace upd;
 
   upd::byte_t kbuf[64];
   int result = 0;
@@ -49,7 +49,7 @@ static void buffered_dispatcher_DO_load_an_action_in_a_single_buffered_dispatche
 }
 
 static void buffered_dispatcher_DO_load_an_action_in_a_double_buffered_dispatcher() {
-  using namespace k2o;
+  using namespace upd;
 
   upd::byte_t kbuf[64];
   int result = 0;
@@ -67,7 +67,7 @@ static void buffered_dispatcher_DO_load_an_action_in_a_double_buffered_dispatche
 }
 
 static void buffered_dispatcher_DO_load_an_action_in_a_double_buffered_dispatcher_while_already_loaded() {
-  using namespace k2o;
+  using namespace upd;
 
   upd::byte_t kbuf[64];
   int result = 0;
@@ -99,7 +99,7 @@ static void buffered_dispatcher_DO_load_an_action_in_a_double_buffered_dispatche
 }
 
 static void buffered_dispatcher_DO_replace_an_action() {
-  using namespace k2o;
+  using namespace upd;
 
   upd::byte_t buf[16], kbuf[16];
   auto dis = make_buffered_dispatcher(kring, buf, buf, policy::any_action);
@@ -116,7 +116,7 @@ static void buffered_dispatcher_DO_replace_an_action() {
 }
 
 static void buffered_dispatcher_DO_give_an_invalid_index() {
-  using namespace k2o;
+  using namespace upd;
 
   upd::byte_t buf[16], kbuf[16];
   auto dis = make_buffered_dispatcher(kring, buf, buf, policy::any_action);
@@ -136,7 +136,7 @@ static void buffered_dispatcher_DO_give_an_invalid_index() {
 }
 
 static void buffered_dispatcher_DO_replace_void_procedure() {
-  using namespace k2o;
+  using namespace upd;
 
   upd::byte_t buf[16], kbuf[16];
   auto dis = make_buffered_dispatcher(kring, buf, buf, policy::any_action);
@@ -152,7 +152,7 @@ static void buffered_dispatcher_DO_replace_void_procedure() {
 }
 
 static void buffered_dispatcher_DO_insert_bytes_one_by_one() {
-  using namespace k2o;
+  using namespace upd;
 
   upd::byte_t buf[16], kbuf[16];
   auto dis = make_buffered_dispatcher(kring, buf, buf, policy::any_action);
@@ -179,7 +179,7 @@ static void buffered_dispatcher_DO_insert_bytes_one_by_one() {
   make_buffered_dispatcher(kring, BYTE_PTR, BYTE_PTR, policy::static_storage_duration_only)
 
 int main() {
-  using namespace k2o;
+  using namespace upd;
 
   DETECT(BUFFERED_DISPATCHER.read_all(BYTE_PTR),
          BUFFERED_DISPATCHER.read_all(READABLE),

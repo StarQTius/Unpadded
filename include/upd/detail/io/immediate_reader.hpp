@@ -6,7 +6,7 @@
 
 #include "../def.hpp"
 
-namespace k2o {
+namespace upd {
 namespace detail {
 
 //! \brief CRTP base class used to define immediate reading members functions
@@ -75,6 +75,6 @@ public:
 //! \tparam It Input iterator type
 
 } // namespace detail
-} // namespace k2o
+} // namespace upd
 
 #include "../undef.hpp" // IWYU pragma: keep

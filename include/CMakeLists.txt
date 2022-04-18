@@ -15,7 +15,6 @@ set(UNPADDED_HEADERS
     detail/io/writer.hpp
     detail/serialized_message.hpp
     detail/sfinae.hpp
-    detail/signature.hpp
     detail/signed_representation.hpp
     detail/static_error.hpp
     detail/type_traits/conjunction.hpp

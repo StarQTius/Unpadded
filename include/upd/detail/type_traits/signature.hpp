@@ -10,7 +10,7 @@
 
 #include "../def.hpp"
 
-namespace k2o {
+namespace upd {
 namespace detail {
 
 //! \name
@@ -132,6 +132,6 @@ struct has_signature<F, R(Args...)> : decltype(has_signature_impl<F, R, Args...>
 //! @}
 
 } // namespace detail
-} // namespace k2o
+} // namespace upd
 
 #include "../undef.hpp" // IWYU pragma: keep

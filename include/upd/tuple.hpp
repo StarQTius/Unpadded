@@ -19,13 +19,14 @@
 #include <boost/type_traits/is_reference.hpp>
 #include <boost/type_traits/is_volatile.hpp>
 
-#include "detail/def.hpp"
 #include "detail/sfinae.hpp"
-#include "detail/signature.hpp"
+#include "detail/type_traits/signature.hpp"
 #include "format.hpp"
 #include "serialization.hpp"
 #include "type.hpp"
 #include "unaligned_data.hpp"
+
+#include "detail/def.hpp"
 
 template<size_t I, typename T, upd::sfinae::fail<T> = 0>
 void get(T &&);
@@ -48,7 +49,7 @@ constexpr size_t serialization_size_impl(...) {
 template<typename T, sfinae::require_is_user_serializable<T> = 0>
 constexpr size_t serialization_size_impl(int) {
   return decltype(make_view_for<endianess::BUILTIN, signed_mode::BUILTIN>(
-      (byte_t *)nullptr, examine_functor<decltype(upd_extension((T *)nullptr).unserialize)>{}))::size;
+      (byte_t *)nullptr, examine_invocable<decltype(upd_extension((T *)nullptr).unserialize)>{}))::size;
 }
 
 //! \brief Return the size in bytes occupied by the serialization of instances of the provided type (if serializable)
@@ -414,17 +415,17 @@ tuple<endianess::BUILTIN, signed_mode::BUILTIN, Args...> make_tuple() {
 
 } // namespace upd
 
-//! \brief Partial specialization of 'std::tuple_size' for 'upd::tuple'
+//! \brief Partial specialization of 'std::tuple_size' for 'tuple'
 //! \detail
-//!   This specialization enables to use structured binding with 'upd::tuple'
+//!   This specialization enables to use structured binding with 'tuple'
 template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Ts>
 struct std::tuple_size<upd::tuple<Endianess, Signed_Mode, Ts...>> {
   constexpr static auto value = sizeof...(Ts);
 };
 
-//! \brief Partial specialization of 'std::tuple_element' for 'upd::tuple'
+//! \brief Partial specialization of 'std::tuple_element' for 'tuple'
 //! \detail
-//!   This specialization enables to use structured binding with 'upd::tuple'
+//!   This specialization enables to use structured binding with 'tuple'
 template<size_t I, upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Ts>
 struct std::tuple_element<I, upd::tuple<Endianess, Signed_Mode, Ts...>> {
   using type = decltype(boost::declval<upd::tuple<Endianess, Signed_Mode, Ts...>>().template get<I>());

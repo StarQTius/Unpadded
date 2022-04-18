@@ -16,9 +16,9 @@
 
 #include "detail/def.hpp"
 
-namespace k2o {
+namespace upd {
 
-template<typename Index_T, Index_T Index, typename F, upd::endianess Endianess, upd::signed_mode Signed_Mode>
+template<typename Index_T, Index_T Index, typename F, endianess Endianess, signed_mode Signed_Mode>
 class key : public key<Index_T, Index, detail::signature_t<F>, Endianess, Signed_Mode> {
   static_assert(detail::is_invocable<F>::value, K2O_ERROR_NOT_INVOCABLE(F));
 };
@@ -33,7 +33,7 @@ class key : public key<Index_T, Index, detail::signature_t<F>, Endianess, Signed
 //! is choosen by the user. In the following example \code int function1(uint8_t, uint16_t); int function2(uint16_t,
 //! uint32_t); int function3(uint32_t, uint64_t);
 //!
-//! constexpr k2o::keyring keyring{k2o::flist<function1, function2, function3>};
+//! constexpr keyring keyring{flist<function1, function2, function3>};
 //!
 //! int main() {
 //!   auto key = keyring.get<function2>();
@@ -56,15 +56,10 @@ class key : public key<Index_T, Index, detail::signature_t<F>, Endianess, Signed
 //! \tparam Endianess Byte order of the integers in the generated packets
 //! \tparam Signed_Mode Representation of signed integers in the generated packets
 #if defined(DOXYGEN)
-template<typename Index_T, Index_T Index, typename F, upd::endianess Endianess, upd::signed_mode Signed_Mode>
+template<typename Index_T, Index_T Index, typename F, endianess Endianess, signed_mode Signed_Mode>
 class key
 #else  // defined(DOXYGEN)
-template<typename Index_T,
-         Index_T Index,
-         typename R,
-         typename... Args,
-         upd::endianess Endianess,
-         upd::signed_mode Signed_Mode>
+template<typename Index_T, Index_T Index, typename R, typename... Args, endianess Endianess, signed_mode Signed_Mode>
 class key<Index_T, Index, R(Args...), Endianess, Signed_Mode>
     : public detail::immediate_reader<key<Index_T, Index, R(Args...), Endianess, Signed_Mode>,
                                       detail::remove_cv_ref_t<R>>
@@ -81,7 +76,7 @@ public:
   using return_t = detail::remove_cv_ref_t<R>;
 
   //! \brief Type of the tuple which can be invoked on this key (like so for example: `t.invoke(key)`)
-  using tuple_t = upd::tuple<Endianess, Signed_Mode, detail::remove_cv_ref_t<Args>...>;
+  using tuple_t = tuple<Endianess, Signed_Mode, detail::remove_cv_ref_t<Args>...>;
 
   //! \brief Equals the `Index` template parameter
   constexpr static auto index = Index;
@@ -118,7 +113,7 @@ public:
   //! \return the unserialized value
   template<typename Src, REQUIREMENT(input_invocable, Src)>
   return_t read_all(Src &&src) const {
-    upd::tuple<Endianess, Signed_Mode, detail::remove_cv_ref_t<R>> retval;
+    tuple<Endianess, Signed_Mode, detail::remove_cv_ref_t<R>> retval;
     for (auto &byte : retval)
       byte = FWD(src)();
 
@@ -132,7 +127,7 @@ public:
   //! \return an action holding the provided hook
   template<typename F, REQUIREMENT(invocable, F)>
   action with_hook(F &&ftor) const {
-    return action{FWD(ftor), upd::endianess_h<Endianess>{}, upd::signed_mode_h<Signed_Mode>{}};
+    return action{FWD(ftor), endianess_h<Endianess>{}, signed_mode_h<Signed_Mode>{}};
   }
 
   //! \copybrief with_hook
@@ -140,7 +135,7 @@ public:
   //! \return an action holding the provided hook
   template<typename F, F Ftor, REQUIREMENT(invocable, F)>
   no_storage_action with_hook(unevaluated<F, Ftor>) const {
-    return no_storage_action{unevaluated<F, Ftor>{}, upd::endianess_h<Endianess>{}, upd::signed_mode_h<Signed_Mode>{}};
+    return no_storage_action{unevaluated<F, Ftor>{}, endianess_h<Endianess>{}, signed_mode_h<Signed_Mode>{}};
   }
 
 #if __cplusplus >= 201703L
@@ -156,9 +151,9 @@ public:
   K2O_SFINAE_FAILURE_MEMBER(with_hook, K2O_ERROR_NOT_INVOCABLE(F))
 };
 
-template<typename Index_T, Index_T Index, upd::endianess Endianess, upd::signed_mode Signed_Mode>
+template<typename Index_T, Index_T Index, endianess Endianess, signed_mode Signed_Mode>
 class key<Index_T, Index, detail::no_signature, Endianess, Signed_Mode> {};
 
 #include "detail/undef.hpp" // IWYU pragma: keep
 
-} // namespace k2o
+} // namespace upd

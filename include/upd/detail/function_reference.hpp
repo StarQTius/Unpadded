@@ -4,7 +4,7 @@
 
 #include "type_traits/signature.hpp"
 
-namespace k2o {
+namespace upd {
 namespace detail {
 
 template<typename>
@@ -62,4 +62,4 @@ function_reference<F> make_function_reference(F &ftor) {
 }
 
 } // namespace detail
-} // namespace k2o
+} // namespace upd

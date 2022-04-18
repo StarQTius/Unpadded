@@ -9,9 +9,9 @@
 #include "detail/type_traits/signature.hpp" // IWYU pragma: keep
 #include "unevaluated.hpp"                  // IWYU pragma: keep
 
-// IWYU pragma: no_forward_declare k2o::detail::is_invocable
+// IWYU pragma: no_forward_declare detail::is_invocable
 
-namespace k2o {
+namespace upd {
 
 template<typename...>
 struct flist_t;
@@ -37,4 +37,4 @@ constexpr flist_t<unevaluated<Fs, Functions>...> make_flist(unevaluated<Fs, Func
   return {};
 };
 
-} // namespace k2o
+} // namespace upd

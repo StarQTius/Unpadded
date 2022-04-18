@@ -17,13 +17,13 @@ int procedure();
 auto functor = [](int x) { return x; };
 const object_t &function_object(const object_t &x) { return x; }
 
-constexpr auto list = k2o::make_flist(K2O_CTREF(function),
+constexpr auto list = upd::make_flist(K2O_CTREF(function),
                                       K2O_CTREF(big_function),
                                       K2O_CTREF(integer_function),
                                       K2O_CTREF(procedure),
                                       K2O_CTREF(functor),
                                       K2O_CTREF(function_object));
-constexpr auto kring = k2o::make_keyring(list);
+constexpr auto kring = upd::make_keyring(list);
 
 struct object_extension_t {
   template<typename View_T>
@@ -36,7 +36,7 @@ struct object_extension_t {
 object_extension_t upd_extension(object_t *) { return {}; }
 
 static void key_base_DO_serialize_arguments_EXPECT_correct_byte_sequence() {
-  using namespace k2o;
+  using namespace upd;
 
   constexpr auto k = kring.get(K2O_CTREF(big_function));
   auto index = k.index;
@@ -51,7 +51,7 @@ static void key_base_DO_serialize_arguments_EXPECT_correct_byte_sequence() {
 }
 
 static void key_base_DO_serialize_arguments_with_parameter_EXPECT_correct_byte_sequence() {
-  using namespace k2o;
+  using namespace upd;
 
   constexpr auto kring = make_keyring(list, upd::little_endian, upd::one_complement);
   constexpr auto k = kring.get(K2O_CTREF(integer_function));
@@ -67,7 +67,7 @@ static void key_base_DO_serialize_arguments_with_parameter_EXPECT_correct_byte_s
 }
 
 static void key_base_DO_unserialize_data_sequence_EXPECT_correct_value() {
-  using namespace k2o;
+  using namespace upd;
 
   constexpr auto k = kring.get(K2O_CTREF(procedure));
   auto t = upd::make_tuple(int{64});
@@ -79,7 +79,7 @@ static void key_base_DO_unserialize_data_sequence_EXPECT_correct_value() {
 }
 
 static void key_base_DO_unserialize_data_sequence_with_parameter_EXPECT_correct_value() {
-  using namespace k2o;
+  using namespace upd;
 
   constexpr auto kring = make_keyring(list, upd::little_endian, upd::one_complement);
   constexpr auto k = kring.get(K2O_CTREF(integer_function));
@@ -92,7 +92,7 @@ static void key_base_DO_unserialize_data_sequence_with_parameter_EXPECT_correct_
 }
 
 static void key_base_DO_create_key_from_ftor_signature_EXPECT_key_holding_ftor_signature() {
-  using namespace k2o;
+  using namespace upd;
 
   auto k = kring.get(K2O_CTREF(functor));
 
@@ -105,7 +105,7 @@ static void key_base_DO_create_key_from_ftor_signature_EXPECT_key_holding_ftor_s
 }
 
 static void key_base_DO_create_key_from_function_using_user_extended_type_EXPECT_correct_behaviour() {
-  using namespace k2o;
+  using namespace upd;
 
   auto k = kring.get(K2O_CTREF(function_object));
   auto buf = upd::make_tuple<decltype(k)::index_t, object_t>();
@@ -120,7 +120,7 @@ static void key_base_DO_create_key_from_function_using_user_extended_type_EXPECT
 }
 
 static void key_base_DO_hook_a_callback_EXPECT_callback_receiving_correct_argument() {
-  using namespace k2o;
+  using namespace upd;
 
   auto k = kring.get(K2O_CTREF(procedure));
   auto t = upd::make_tuple(int{64});
@@ -132,7 +132,7 @@ static void key_base_DO_hook_a_callback_EXPECT_callback_receiving_correct_argume
 #define KEY DECLVAL(key<uint8_t, 0, int(int), upd::endianess::BUILTIN, upd::signed_mode::BUILTIN>)
 
 int main() {
-  using namespace k2o;
+  using namespace upd;
 
   DETECT(INTEGER = KEY.read_all(BYTE_PTR),
          INTEGER = KEY.read_all(READABLE),

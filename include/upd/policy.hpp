@@ -4,7 +4,7 @@
 
 #include <type_traits>
 
-namespace k2o {
+namespace upd {
 
 //! \brief Available restrictions for action storage
 enum class action_features { STATIC_STORAGE_DURATION_ONLY, ANY };
@@ -25,4 +25,4 @@ constexpr action_features_h<action_features::STATIC_STORAGE_DURATION_ONLY> stati
 constexpr action_features_h<action_features::ANY> any_action;
 
 } // namespace policy
-} // namespace k2o
+} // namespace upd

@@ -17,9 +17,9 @@
 
 // IWYU pragma: no_forward_declare unevaluated
 
-namespace k2o {
+namespace upd {
 
-template<upd::endianess, upd::signed_mode, typename...>
+template<endianess, signed_mode, typename...>
 class keyring;
 
 //! \brief Holds a set of functions and index them at compile-time
@@ -37,10 +37,10 @@ class keyring;
 //! \tparam Signed_Mode Signed number representation of the data in the packets built by the keys
 //! \tparam Hs Unevaluated references to functions available for calling
 #ifdef DOXYGEN
-template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Hs>
+template<endianess Endianess, signed_mode Signed_Mode, typename... Hs>
 class keyring
 #else  // DOXYGEN
-template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Fs, Fs... Functions>
+template<endianess Endianess, signed_mode Signed_Mode, typename... Fs, Fs... Functions>
 class keyring<Endianess, Signed_Mode, unevaluated<Fs, Functions>...>
 #endif // DOXYGEN
 {
@@ -49,7 +49,7 @@ class keyring<Endianess, Signed_Mode, unevaluated<Fs, Functions>...>
 
 public:
   //! \brief Typelist containing unevaluated references to the functions
-  using flist_t = k2o::flist_t<unevaluated<Fs, Functions>...>;
+  using flist_t = upd::flist_t<unevaluated<Fs, Functions>...>;
 
   //! \brief Typelist containing the signatures of the functions
   using signatures_t = boost::mp11::mp_list<detail::signature_t<Fs>...>;
@@ -76,12 +76,12 @@ public:
   constexpr keyring() = default;
 
   //! \brief (C++17) Create a keyring managing the given functions with the native serialization parameters
-  constexpr explicit keyring(k2o::flist_t<unevaluated<Fs, Functions>...>) {}
+  constexpr explicit keyring(upd::flist_t<unevaluated<Fs, Functions>...>) {}
 
   //! \brief (C++17) Create a keyring managing the given functions with the provided serialization parameters
-  constexpr explicit keyring(k2o::flist_t<unevaluated<Fs, Functions>...>,
-                             upd::endianess_h<Endianess>,
-                             upd::signed_mode_h<Signed_Mode>) {}
+  constexpr explicit keyring(upd::flist_t<unevaluated<Fs, Functions>...>,
+                             endianess_h<Endianess>,
+                             signed_mode_h<Signed_Mode>) {}
 #endif // __cplusplus >= 201703L
 
   //! \brief Make a key associated with the given unevaluated reference to a function
@@ -103,26 +103,25 @@ public:
 
 #if __cplusplus >= 201703L
 template<typename... Hs>
-keyring(flist_t<Hs...>) -> keyring<upd::endianess::BUILTIN, upd::signed_mode::BUILTIN, Hs...>;
+keyring(flist_t<Hs...>) -> keyring<endianess::BUILTIN, signed_mode::BUILTIN, Hs...>;
 
-template<typename... Hs, upd::endianess Endianess, upd::signed_mode Signed_Mode>
-keyring(flist_t<Hs...>, upd::endianess_h<Endianess>, upd::signed_mode_h<Signed_Mode>)
-    -> keyring<Endianess, Signed_Mode, Hs...>;
+template<typename... Hs, endianess Endianess, signed_mode Signed_Mode>
+keyring(flist_t<Hs...>, endianess_h<Endianess>, signed_mode_h<Signed_Mode>) -> keyring<Endianess, Signed_Mode, Hs...>;
 #endif // __cplusplus >= 201703L
 
 //! \brief Make a keyring objects
 //! \related keyring
-template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Hs>
+template<endianess Endianess, signed_mode Signed_Mode, typename... Hs>
 constexpr keyring<Endianess, Signed_Mode, Hs...>
-make_keyring(flist_t<Hs...>, upd::endianess_h<Endianess>, upd::signed_mode_h<Signed_Mode>) {
+make_keyring(flist_t<Hs...>, endianess_h<Endianess>, signed_mode_h<Signed_Mode>) {
   return {};
 }
 
 //! \copybrief make_keyring
 //! \related keyring
 template<typename... Hs>
-constexpr keyring<upd::endianess::BUILTIN, upd::signed_mode::BUILTIN, Hs...> make_keyring(flist_t<Hs...>) {
+constexpr keyring<endianess::BUILTIN, signed_mode::BUILTIN, Hs...> make_keyring(flist_t<Hs...>) {
   return {};
 }
 
-} // namespace k2o
+} // namespace upd

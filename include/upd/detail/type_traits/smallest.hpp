@@ -7,7 +7,7 @@
 
 #include "require.hpp"
 
-namespace k2o {
+namespace upd {
 namespace detail {
 
 template<typename T, unsigned long long X>
@@ -37,4 +37,4 @@ using smallest_unsigned_t = typename smallest_unsigned<X>::type;
 //! @}
 
 } // namespace detail
-} // namespace k2o
+} // namespace upd

@@ -8,7 +8,7 @@
 
 #include "../def.hpp"
 
-namespace k2o {
+namespace upd {
 namespace detail {
 
 //! \brief CRTP base class used to define immediate writing members functions
@@ -39,12 +39,12 @@ public:
 
   template<typename It, detail::require_byte_iterator<It> = 0>
   void write_all(It it) {
-    derived().write_all([&](upd::byte_t byte) { *it++ = byte; });
+    derived().write_all([&](byte_t byte) { *it++ = byte; });
   }
 
   template<typename It, detail::require_byte_iterator<It> = 0>
   void write_all(It it) const {
-    derived().write_all([&](upd::byte_t byte) { *it++ = byte; });
+    derived().write_all([&](byte_t byte) { *it++ = byte; });
   }
 
   template<typename It, detail::require_byte_iterator<It> = 0>
@@ -77,6 +77,6 @@ public:
 //! \tparam It Output iterator type
 
 } // namespace detail
-} // namespace k2o
+} // namespace upd
 
 #include "../undef.hpp" // IWYU pragma: keep

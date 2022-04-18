@@ -5,7 +5,7 @@
 #include <cstddef> // IWYU pragma: keep
 #include <type_traits>
 
-namespace k2o {
+namespace upd {
 namespace detail {
 
 //! \name
@@ -27,4 +27,4 @@ struct conjunction<> : std::true_type {};
 //! @}
 
 } // namespace detail
-} // namespace k2o
+} // namespace upd

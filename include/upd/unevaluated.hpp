@@ -4,9 +4,9 @@
 
 //! \brief Bind an object with static storage duration to a compile-time reference
 #define K2O_CTREF(VALUE)                                                                                               \
-  ::k2o::unevaluated<decltype(VALUE) &, VALUE> {}
+  ::upd::unevaluated<decltype(VALUE) &, VALUE> {}
 
-namespace k2o {
+namespace upd {
 
 //! \brief Holds a value without evaluating it
 //!
@@ -19,4 +19,4 @@ struct unevaluated {
   using type = T;
 };
 
-} // namespace k2o
+} // namespace upd
