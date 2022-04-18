@@ -5,7 +5,7 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/tool)
 
 include(FetchContent)
 
-set(UNPADDED_BOOST_MODULES mp11 type_traits config static_assert)
+set(UNPADDED_BOOST_MODULES mp11 config type_traits static_assert)
 set(UNPADDED_BOOST_LIBRARIES_DIRECTORY ${UNPADDED_BOOST_MODULES})
 list(TRANSFORM UNPADDED_BOOST_LIBRARIES_DIRECTORY PREPEND libs/)
 FetchContent_Declare(
@@ -16,13 +16,15 @@ FetchContent_Declare(
 FetchContent_Declare(Unity
                      GIT_REPOSITORY https://github.com/ThrowTheSwitch/Unity)
 
-if(Unpadded_IS_TOP_LEVEL AND DEFINED CMAKE_CXX_INCLUDE_WHAT_YOU_USE)
+if(${PROJECT_NAME}_IS_TOP_LEVEL AND DEFINED CMAKE_CXX_INCLUDE_WHAT_YOU_USE)
   set(FETCHCONTENT_FULLY_DISCONNECTED ON)
 endif()
 
 add_subdirectory(include)
+add_subdirectory(doc)
 
-if(Unpadded_IS_TOP_LEVEL AND BUILD_TESTING)
+if(${PROJECT_NAME}_IS_TOP_LEVEL AND BUILD_TESTING)
   include(CTest)
+
   add_subdirectory(test)
 endif()
