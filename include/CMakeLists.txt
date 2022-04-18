@@ -1,49 +1,47 @@
 FetchContent_MakeAvailable(Boost)
 
 set(UNPADDED_HEADERS
+    action.hpp
+    array_wrapper.hpp
     buffered_dispatcher.hpp
     dispatcher.hpp
-    flist.hpp
-    key.hpp
-    keyring.hpp
-    action.hpp
-    policy.hpp
     detail/any_function.hpp
     detail/def.hpp
-    detail/type_traits/input_tuple.hpp
+    detail/endianess.hpp
     detail/io/immediate_process.hpp
     detail/io/immediate_reader.hpp
     detail/io/immediate_writer.hpp
     detail/io/reader.hpp
     detail/io/writer.hpp
-    detail/type_traits/flatten_tuple.hpp
     detail/serialized_message.hpp
-    detail/type_traits/smallest.hpp
+    detail/sfinae.hpp
+    detail/signature.hpp
+    detail/signed_representation.hpp
+    detail/static_error.hpp
     detail/type_traits/conjunction.hpp
-    detail/type_traits/remove_cv_ref.hpp
     detail/type_traits/detector.hpp
-    detail/type_traits/signature.hpp
+    detail/type_traits/flatten_tuple.hpp
+    detail/type_traits/input_tuple.hpp
     detail/type_traits/is_byte_iterator.hpp
     detail/type_traits/is_keyring.hpp
     detail/type_traits/is_tuple.hpp
+    detail/type_traits/remove_cv_ref.hpp
     detail/type_traits/require.hpp
+    detail/type_traits/smallest.hpp
+    detail/type_traits/signature.hpp
     detail/type_traits/typelist.hpp
-    detail/static_error.hpp
     detail/undef.hpp
-    unevaluated.hpp
-    array_wrapper.hpp
+    detail/value_h.hpp
+    flist.hpp
     format.hpp
+    key.hpp
+    keyring.hpp
+    policy.hpp
     serialization.hpp
     tuple.hpp
     type.hpp
     unaligned_data.hpp
-    detail/def.hpp
-    detail/endianess.hpp
-    detail/sfinae.hpp
-    detail/signature.hpp
-    detail/signed_representation.hpp
-    detail/undef.hpp
-    detail/value_h.hpp)
+    unevaluated.hpp)
 
 add_library(Unpadded INTERFACE)
 target_include_directories(Unpadded INTERFACE ${PROJECT_SOURCE_DIR}/include)
