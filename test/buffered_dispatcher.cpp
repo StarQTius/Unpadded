@@ -11,7 +11,10 @@ int check_64(int x) {
 
 int identity(int x) { return x; }
 
-constexpr auto kring = k2o::make_keyring(k2o::make_flist(K2O_CTREF(check_64), K2O_CTREF(identity)));
+void void_procedure() {}
+
+constexpr auto kring =
+    k2o::make_keyring(k2o::make_flist(K2O_CTREF(check_64), K2O_CTREF(identity), K2O_CTREF(void_procedure)));
 
 static void buffered_dispatcher_DO_load_an_order_EXPECT_correct_order_loaded_cpp17() {
 #if __cplusplus >= 201703L
@@ -22,7 +25,7 @@ static void buffered_dispatcher_DO_load_an_order_EXPECT_correct_order_loaded_cpp
   buffered_dispatcher dis{kring, buf, buf, policy::any_order};
 
   k(64).write_all(kbuf);
-  dis.read_all(kbuf);
+  TEST_ASSERT_EQUAL(packet_status::RESOLVED_PACKET, dis.read_all(kbuf));
 
   TEST_ASSERT_TRUE(dis.is_loaded());
 #endif // __cplusplus >= 201703L
@@ -39,7 +42,7 @@ static void buffered_dispatcher_DO_load_an_order_in_a_single_buffered_dispatcher
   static_assert(dis.buffer_size == sizeof(int) + sizeof(decltype(dis)::index_t));
 
   k(64).write_all(kbuf);
-  dis.read_all(kbuf);
+  TEST_ASSERT_EQUAL(packet_status::RESOLVED_PACKET, dis.read_all(kbuf));
   dis.write_all(reinterpret_cast<upd::byte_t *>(&result));
 
   TEST_ASSERT_EQUAL(64, result);
@@ -57,7 +60,7 @@ static void buffered_dispatcher_DO_load_an_order_in_a_double_buffered_dispatcher
   static_assert(dis.output_buffer_size == sizeof(int));
 
   k(64).write_all(kbuf);
-  dis.read_all(kbuf);
+  TEST_ASSERT_EQUAL(packet_status::RESOLVED_PACKET, dis.read_all(kbuf));
   dis.write_all(reinterpret_cast<upd::byte_t *>(&result));
 
   TEST_ASSERT_EQUAL(64, result);
@@ -75,7 +78,7 @@ static void buffered_dispatcher_DO_load_an_order_in_a_double_buffered_dispatcher
   static_assert(dis.output_buffer_size == sizeof(int));
 
   k(64).write_all(kbuf);
-  dis.read_all(kbuf);
+  TEST_ASSERT_EQUAL(packet_status::RESOLVED_PACKET, dis.read_all(kbuf));
 
   TEST_ASSERT_TRUE(dis.is_loaded());
 
@@ -98,7 +101,7 @@ static void buffered_dispatcher_DO_load_an_order_in_a_double_buffered_dispatcher
 static void buffered_dispatcher_DO_replace_an_order() {
   using namespace k2o;
 
-  upd::byte_t buf[8], kbuf[8];
+  upd::byte_t buf[16], kbuf[16];
   auto dis = make_buffered_dispatcher(kring, buf, buf, policy::any_order);
   auto k = kring.get(K2O_CTREF(identity));
 
@@ -107,9 +110,68 @@ static void buffered_dispatcher_DO_replace_an_order() {
     return 32;
   });
   k(64) >> kbuf;
-  dis << kbuf;
+  TEST_ASSERT_EQUAL(packet_status::RESOLVED_PACKET, dis << kbuf);
   dis >> kbuf;
   TEST_ASSERT_EQUAL(k << kbuf, 32);
+}
+
+static void buffered_dispatcher_DO_give_an_invalid_index() {
+  using namespace k2o;
+
+  upd::byte_t buf[16], kbuf[16];
+  auto dis = make_buffered_dispatcher(kring, buf, buf, policy::any_order);
+  auto k = kring.get(K2O_CTREF(identity));
+
+  k(64) >> kbuf;
+  kbuf[0] = 0xff;
+
+  TEST_ASSERT_EQUAL(packet_status::DROPPED_PACKET, dis << kbuf);
+  TEST_ASSERT_FALSE(dis.is_loaded());
+
+  k(64) >> kbuf;
+  TEST_ASSERT_EQUAL(packet_status::RESOLVED_PACKET, dis << kbuf);
+  TEST_ASSERT_TRUE(dis.is_loaded());
+  dis >> kbuf;
+  TEST_ASSERT_EQUAL(64, k << kbuf);
+}
+
+static void buffered_dispatcher_DO_replace_void_procedure() {
+  using namespace k2o;
+
+  upd::byte_t buf[16], kbuf[16];
+  auto dis = make_buffered_dispatcher(kring, buf, buf, policy::any_order);
+  auto k = kring.get(K2O_CTREF(void_procedure));
+
+  bool flag = false;
+  dis.replace<2>([&]() { flag = true; });
+
+  k() >> kbuf;
+  TEST_ASSERT_EQUAL(packet_status::RESOLVED_PACKET, dis << kbuf);
+  dis >> kbuf;
+  TEST_ASSERT_TRUE(flag);
+}
+
+static void buffered_dispatcher_DO_insert_bytes_one_by_one() {
+  using namespace k2o;
+
+  upd::byte_t buf[16], kbuf[16];
+  auto dis = make_buffered_dispatcher(kring, buf, buf, policy::any_order);
+  auto k = kring.get(K2O_CTREF(identity));
+
+  k(64) >> kbuf;
+
+  auto *ptr = kbuf;
+
+  packet_status status = dis.read(ptr++);
+  TEST_ASSERT_EQUAL(packet_status::LOADING_PACKET, status);
+  while ((status = dis.read(ptr++)) == packet_status::LOADING_PACKET)
+    ;
+  TEST_ASSERT_EQUAL(packet_status::RESOLVED_PACKET, status);
+
+  ptr = kbuf;
+  while (dis.is_loaded())
+    dis.write(ptr++);
+  TEST_ASSERT_EQUAL(64, k << kbuf);
 }
 
 #define BUFFERED_DISPATCHER make_buffered_dispatcher(kring, BYTE_PTR, BYTE_PTR, policy::any_order)
@@ -161,5 +223,8 @@ int main() {
   RUN_TEST(buffered_dispatcher_DO_load_an_order_in_a_double_buffered_dispatcher);
   RUN_TEST(buffered_dispatcher_DO_load_an_order_in_a_double_buffered_dispatcher_while_already_loaded);
   RUN_TEST(buffered_dispatcher_DO_replace_an_order);
+  RUN_TEST(buffered_dispatcher_DO_replace_void_procedure);
+  RUN_TEST(buffered_dispatcher_DO_give_an_invalid_index);
+  RUN_TEST(buffered_dispatcher_DO_insert_bytes_one_by_one);
   return UNITY_END();
 }

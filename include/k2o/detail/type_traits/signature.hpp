@@ -111,6 +111,8 @@ struct parameters_size<R(Args...)> : sum<boost::mp11::mp_list<std::integral_cons
 //! \brief Gets the size of the return type of `F`
 template<typename F>
 struct return_type_size : std::integral_constant<std::size_t, sizeof(return_t<F>)> {};
+template<typename... Args>
+struct return_type_size<void(Args...)> : std::integral_constant<std::size_t, 0> {};
 
 K2O_DETAIL_MAKE_DETECTOR(
     has_signature_impl,

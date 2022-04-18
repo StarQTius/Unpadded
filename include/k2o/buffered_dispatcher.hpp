@@ -36,6 +36,14 @@ using needed_output_buffer_size = detail::max<detail::map<typename Keyring::sign
 
 }; // namespace detail
 
+//! \brief Enumerates the possible status of a loading packet
+//!
+//! - `LOADING_PACKET`: The packet is currently being loaded and is not yet complete
+//! - `DROPPED_PACKET`: The packet loading has been canceled before completion
+//! - `RESOLVED_PACKET`: The packet loading has been completed and the corresponding order called
+//!
+enum class packet_status { LOADING_PACKET, DROPPED_PACKET, RESOLVED_PACKET };
+
 //! \brief Dispatcher with input / output storage
 //!
 //! Instances of this class may store input and output byte sequences as they are received / sent. This allows the
@@ -56,7 +64,7 @@ using needed_output_buffer_size = detail::max<detail::map<typename Keyring::sign
 //! \tparam Output_Iterator Type of the iterator to the output buffer
 template<typename Dispatcher, typename Input_Iterator, typename Output_Iterator>
 class buffered_dispatcher
-    : public detail::reader<buffered_dispatcher<Dispatcher, Input_Iterator, Output_Iterator>, void>,
+    : public detail::reader<buffered_dispatcher<Dispatcher, Input_Iterator, Output_Iterator>, packet_status>,
       public detail::writer<buffered_dispatcher<Dispatcher, Input_Iterator, Output_Iterator>> {
   using this_t = buffered_dispatcher<Dispatcher, Input_Iterator, Output_Iterator>;
 
@@ -81,50 +89,64 @@ public:
   //! \return true if and only if the next call to `write` or `write_all` will have a visible effect
   bool is_loaded() const { return m_obuf_next != m_obuf_bottom; }
 
-  using detail::immediate_reader<this_t, void>::read_all;
+  using detail::immediate_reader<this_t, packet_status>::read_all;
 
   //! \brief Put bytes into the input buffer until a full order request is stored
   //! \copydoc ImmediateReader_CRTP
   //! \param src Input functor to a byte sequence
+  //! \return one of the following :
+  //!   - `DROPPED_PACKET`: the received index was invalid and the input buffer content was therefore discarded
+  //!   - `RESOLVED_PACKET`: the packet was fully loaded and the associated order has been called (the input buffer is
+  //!   empty and the output buffer contains the result of the order invocation)
   template<typename Src, REQUIREMENT(input_invocable, Src)>
-  void read_all(Src &&src) {
-    while (!m_is_index_loaded)
-      read(src);
+  packet_status read_all(Src &&src) {
+    packet_status status = packet_status::LOADING_PACKET;
+    while (!m_is_index_loaded && status == packet_status::LOADING_PACKET)
+      status = read(src);
     while (m_is_index_loaded)
-      read(src);
+      status = read(src);
+    return status;
   }
 
   K2O_SFINAE_FAILURE_MEMBER(read_all, K2O_ERROR_NOT_INPUT(src))
 
-  using detail::reader<this_t, void>::read;
+  using detail::reader<this_t, packet_status>::read;
 
   //! \brief Put one byte into the input buffer
   //! \copydoc Reader_CRTP
   //! \param src Input functor to a byte sequence
+  //! \return one of the following :
+  //!   - `LOADING_PACKET`: the packet is not yet fully loaded
+  //!   - `DROPPED_PACKET`: the received index was invalid and the input buffer content was therefore discarded
+  //!   - `RESOLVED_PACKET`: the packet was fully loaded and the associated order has been called (the input buffer is
+  //!   empty and the output buffer contains the result of the order invocation)
   template<typename Src, REQUIREMENT(input_invocable, Src)>
-  void read(Src &&src) {
+  packet_status read(Src &&src) {
     *m_ibuf_next++ = FWD(src)();
-    if (--m_load_count == 0) {
+
+    if (--m_load_count > 0)
+      return packet_status::LOADING_PACKET;
+
+    if (m_is_index_loaded) {
+      call();
+      return packet_status::RESOLVED_PACKET;
+    } else {
       auto ibuf_it = m_ibuf_begin;
-      auto get_index_byte = [&]() { return *ibuf_it++; };
-      if (m_is_index_loaded) {
-        m_obuf_bottom = m_obuf_begin;
-        m_obuf_next = m_obuf_begin;
+      auto index = get_index([&]() { return *ibuf_it++; });
+      if (index < m_dispatcher.size) {
+        m_load_count = m_dispatcher[index].input_size();
+        m_is_index_loaded = true;
 
-        auto index = get_index(get_index_byte);
-        if (index < m_dispatcher.size) {
-          m_dispatcher[index]([&]() { return *ibuf_it++; }, [&](upd::byte_t byte) { *m_obuf_bottom++ = byte; });
+        if (m_load_count == 0) {
+          call();
+          return packet_status::RESOLVED_PACKET;
+        } else {
+          return packet_status::LOADING_PACKET;
         }
-
-        m_is_index_loaded = false;
+      } else {
         m_load_count = sizeof(index_t);
         m_ibuf_next = m_ibuf_begin;
-      } else {
-        auto index = get_index(get_index_byte);
-        if (index < m_dispatcher.size) {
-          m_is_index_loaded = true;
-          m_load_count = m_dispatcher[index].input_size();
-        }
+        return packet_status::DROPPED_PACKET;
       }
     }
   }
@@ -178,6 +200,21 @@ public:
   }
 
 private:
+  //! \brief Provided that the input buffer does contain a full order request, invoke the corresponding order
+  //! \warning If the input buffer does not contain a valid order request, the behavior is undefined.
+  void call() {
+    m_obuf_bottom = m_obuf_begin;
+    m_obuf_next = m_obuf_begin;
+
+    auto ibuf_it = m_ibuf_begin;
+    auto index = get_index([&]() { return *ibuf_it++; });
+    m_dispatcher[index]([&]() { return *ibuf_it++; }, [&](upd::byte_t byte) { *m_obuf_bottom++ = byte; });
+
+    m_is_index_loaded = false;
+    m_load_count = sizeof(index_t);
+    m_ibuf_next = m_ibuf_begin;
+  }
+
   //! \copydoc dispatcher::get_index
   template<typename Src>
   index_t get_index(Src &&fetch_byte) const {

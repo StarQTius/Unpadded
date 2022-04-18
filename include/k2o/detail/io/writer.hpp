@@ -27,31 +27,31 @@ public:
   //! @{
 
   void write(volatile upd::byte_t &reg) {
-    derived().write([&]() { return reg; });
+    derived().write([&](upd::byte_t byte) { reg = byte; });
   }
 
   void write(volatile upd::byte_t &reg) const {
-    derived().write([&]() { return reg; });
+    derived().write([&](upd::byte_t byte) { reg = byte; });
   }
 
   using immediate_writer<D>::operator>>;
 
   void operator>>(volatile upd::byte_t &reg) {
-    derived().write([&]() { return reg; });
+    derived().write([&](upd::byte_t byte) { reg = byte; });
   }
 
   void operator>>(volatile upd::byte_t &reg) const {
-    derived().write([&]() { return reg; });
+    derived().write([&](upd::byte_t byte) { reg = byte; });
   }
 
   template<typename It, detail::require_byte_iterator<It> = 0>
   void write(It it) {
-    derived().write([&]() { return *it; });
+    derived().write([&](upd::byte_t byte) { *it = byte; });
   }
 
   template<typename It, detail::require_byte_iterator<It> = 0>
   void write(It it) const {
-    derived().write([&]() { return *it; });
+    derived().write([&](upd::byte_t byte) { *it = byte; });
   }
 
   // @}

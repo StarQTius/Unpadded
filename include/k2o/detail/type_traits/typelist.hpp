@@ -8,6 +8,9 @@
 #include <boost/mp11/algorithm.hpp>
 #include <boost/mp11/detail/mp_list.hpp> // IWYU pragma: export
 #include <boost/mp11/function.hpp>
+#include <boost/mp11/list.hpp>
+
+#include "ternary.hpp"
 
 // IWYU pragma: no_include "boost/mp11/detail/mp_min_element.hpp"
 // IWYU pragma: no_include "boost/mp11/detail/mp_list.hpp"
@@ -112,7 +115,9 @@ constexpr auto sum_impl(tlist_t<Ts...>) {
 #define K2O_MAX_IMPL(L) boost::mp11::mp_max_element<L, boost::mp11::mp_less>;
 #define K2O_FIND_IMPL(L, V) boost::mp11::mp_find<L, V>;
 #define K2O_SUM_IMPL(L)                                                                                                \
-  boost::mp11::mp_back<boost::mp11::mp_partial_sum<L, boost::mp11::mp_int<0>, boost::mp11::mp_plus>>
+  boost::mp11::mp_back<ternary_t<(boost::mp11::mp_size<L>::value > 0),                                                 \
+                                 boost::mp11::mp_partial_sum<L, boost::mp11::mp_int<0>, boost::mp11::mp_plus>,         \
+                                 boost::mp11::mp_list_c<int, 0>>>;
 //! }@
 
 #endif // __cplusplus >= 201703L
