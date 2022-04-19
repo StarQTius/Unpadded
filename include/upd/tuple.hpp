@@ -18,7 +18,7 @@
 #include <boost/type_traits/is_reference.hpp>
 #include <boost/type_traits/is_volatile.hpp>
 
-#include "detail/sfinae.hpp"
+#include "detail/type_traits/require.hpp"
 #include "detail/type_traits/signature.hpp"
 #include "format.hpp"
 #include "serialization.hpp"
@@ -27,12 +27,6 @@
 
 #include "detail/def.hpp"
 
-template<size_t I, typename T, upd::sfinae::fail<T> = 0>
-void get(T &&);
-
-template<size_t I, typename T, typename U, upd::sfinae::fail<T> = 0>
-void set(T &&, U &&);
-
 namespace upd {
 
 template<typename, endianess, signed_mode, typename...>
@@ -40,12 +34,23 @@ class tuple_view;
 
 namespace detail {
 
+template<typename, endianess, signed_mode, typename...>
+class tuple_base;
+
+} // namespace detail
+
+template<size_t I, typename D, endianess Endianess, signed_mode Signed_Mode, typename... Ts>
+decltype(boost::declval<detail::tuple_base<D, Endianess, Signed_Mode, Ts...>>().template get<I>())
+get(const detail::tuple_base<D, Endianess, Signed_Mode, Ts...> &);
+
+namespace detail {
+
 //! \brief Return the size in bytes occupied by the serialization of instances of the provided type (if serializable)
-template<typename T, sfinae::require_is_serializable<T> = 0>
+template<typename T, detail::require_is_serializable<T> = 0>
 constexpr size_t serialization_size_impl(...) {
   return sizeof(T);
 }
-template<typename T, sfinae::require_is_user_serializable<T> = 0>
+template<typename T, detail::require_is_user_serializable<T> = 0>
 constexpr size_t serialization_size_impl(int) {
   return decltype(make_view_for<endianess::BUILTIN, signed_mode::BUILTIN>(
       (byte_t *)nullptr, examine_invocable<decltype(upd_extension((T *)nullptr).unserialize)>{}))::size;
@@ -56,18 +61,6 @@ template<typename T>
 struct serialization_size {
   constexpr static auto value = serialization_size_impl<T>(0);
 };
-
-//! \brief Used to disambiguate the function and the member function 'get'
-template<size_t I, typename T>
-auto call_getter(T &&t) -> decltype(get<I>(FWD(t))) {
-  return get<I>(FWD(t));
-}
-
-//! \brief Used to disambiguate the function and the member function 'set'
-template<size_t I, typename T, typename U>
-auto call_setter(T &&t, U &&value) -> decltype(get<I>(FWD(t), FWD(value))) {
-  return set<I>(FWD(t), FWD(value));
-}
 
 //! \brief Make a tuple view according to a typelist
 template<endianess Endianess, signed_mode Signed_Mode, typename It, typename... Ts>
@@ -95,7 +88,7 @@ class tuple_base {
                                                  !boost::is_reference<Ts>::value)>...>::value,
       "Type parameters cannot be cv-qualified or ref-qualified.");
 
-  static_assert(boost::conjunction<sfinae::is_serializable<Ts>...>::value,
+  static_assert(boost::conjunction<detail::is_serializable<Ts>...>::value,
                 "Some of the provided types are not serializable (serializable types are integer types, types with "
                 "user-defined extension and array types of any of these)");
 
@@ -174,7 +167,9 @@ protected:
   //! \brief Lay the element of a tuple-like object into the content
   template<size_t... Is, typename T>
   void lay_tuple(boost::mp11::index_sequence<Is...> is, T &&t) {
-    lay(is, call_getter<Is>(FWD(t))...);
+    using upd::get;
+
+    lay(is, get<Is>(FWD(t))...);
   }
 
   //! \brief Unserialize the tuple content and forward it as parameters to the provided functor

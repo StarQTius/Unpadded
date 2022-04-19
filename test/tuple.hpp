@@ -73,7 +73,7 @@ void tuple_DO_set_array_EXPECT_same_value_with_get() {
 
 template<upd::endianess Endianess,
          upd::signed_mode Signed_Mode,
-         upd::sfinae::require<Endianess == upd::endianess::BUILTIN> = 0>
+         upd::detail::require<Endianess == upd::endianess::BUILTIN> = 0>
 void tuple_DO_iterate_throught_content_EXPECT_correct_raw_data() {
   using namespace upd;
 
@@ -93,7 +93,7 @@ void tuple_DO_iterate_throught_content_EXPECT_correct_raw_data() {
 
 template<upd::endianess Endianess,
          upd::signed_mode Signed_Mode,
-         upd::sfinae::require<Endianess == upd::endianess::LITTLE> = 0>
+         upd::detail::require<Endianess == upd::endianess::LITTLE> = 0>
 void tuple_DO_iterate_throught_content_EXPECT_correct_raw_data() {
   using namespace upd;
 
@@ -107,7 +107,7 @@ void tuple_DO_iterate_throught_content_EXPECT_correct_raw_data() {
 
 template<upd::endianess Endianess,
          upd::signed_mode Signed_Mode,
-         upd::sfinae::require<Endianess == upd::endianess::BIG> = 0>
+         upd::detail::require<Endianess == upd::endianess::BIG> = 0>
 void tuple_DO_iterate_throught_content_EXPECT_correct_raw_data() {
   using namespace upd;
 
@@ -121,7 +121,7 @@ void tuple_DO_iterate_throught_content_EXPECT_correct_raw_data() {
 
 template<upd::endianess Endianess,
          upd::signed_mode Signed_Mode,
-         upd::sfinae::require<Endianess == upd::endianess::BUILTIN> = 0>
+         upd::detail::require<Endianess == upd::endianess::BUILTIN> = 0>
 void tuple_DO_access_like_array_EXPECT_correct_raw_values() {
   using namespace upd;
 
@@ -145,7 +145,7 @@ void tuple_DO_access_like_array_EXPECT_correct_raw_values() {
 
 template<upd::endianess Endianess,
          upd::signed_mode Signed_Mode,
-         upd::sfinae::require<Endianess == upd::endianess::LITTLE> = 0>
+         upd::detail::require<Endianess == upd::endianess::LITTLE> = 0>
 void tuple_DO_access_like_array_EXPECT_correct_raw_values() {
   using namespace upd;
 
@@ -163,7 +163,7 @@ void tuple_DO_access_like_array_EXPECT_correct_raw_values() {
 
 template<upd::endianess Endianess,
          upd::signed_mode Signed_Mode,
-         upd::sfinae::require<Endianess == upd::endianess::BIG> = 0>
+         upd::detail::require<Endianess == upd::endianess::BIG> = 0>
 void tuple_DO_access_like_array_EXPECT_correct_raw_values() {
   using namespace upd;
 

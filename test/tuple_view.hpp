@@ -46,9 +46,9 @@ inline void tuple_view_DO_bind_to_a_forward_list_EXPECT_correct_behavior() {
 
   struct iterator {
     using difference_type = size_t;
-    using value_type = node;
-    using pointer = node *;
-    using reference = node &;
+    using value_type = byte_t;
+    using pointer = byte_t *;
+    using reference = byte_t &;
     using iterator_category = std::forward_iterator_tag;
 
     iterator(node *ptr) : ptr{ptr} {}

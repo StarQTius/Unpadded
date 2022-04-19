@@ -8,9 +8,17 @@
 #include "../../type.hpp"
 #include "is_keyring.hpp"
 #include "is_tuple.hpp"
+#include "is_user_serializable.hpp"
 #include "signature.hpp"
 
 namespace upd {
+
+enum class endianess;
+enum class signed_mode;
+
+template<endianess Endianess, signed_mode Signed_Mode, typename... Ts>
+struct tuple; // IWYU pragma: keep
+
 namespace detail {
 
 template<typename... Args>
@@ -66,6 +74,34 @@ using require_byte_iterator =
 //! \brief Require `T` to be invocable
 template<typename T, typename U = int>
 using require_invocable = require<is_invocable<T>::value>;
+
+//! \brief Require the provided type to be an unsigned integer type
+template<typename T, typename U = int>
+using require_unsigned_integer = require<std::is_unsigned<T>::value, U>;
+
+//! \brief Require the provided type to be a signed integer type
+template<typename T, typename U = int>
+using require_signed_integer = require<std::is_signed<T>::value, U>;
+
+//! \brief Require the provided type to be an bounded array type
+template<typename T, typename U = int>
+using require_array = require<std::is_array<T>::value, U>;
+
+//! \brief Require the provided type not to be an bounded array type
+template<typename T, typename U = int>
+using require_not_array = require<!std::is_array<T>::value, U>;
+
+//! \brief Require the provided type not to be a pointer type
+template<typename T, typename U = int>
+using require_not_pointer = require<!std::is_pointer<T>::value, U>;
+
+//! \brief Require the provided pack not to be empty
+template<typename... Ts>
+using require_not_empty_pack = require<sizeof...(Ts) != 0, int>;
+
+//! \brief Require the provided type to have an user-defined extension
+template<typename T, typename U = int>
+using require_is_user_serializable = require<is_user_serializable<T>::value, U>;
 
 } // namespace detail
 } // namespace upd

@@ -107,7 +107,7 @@ unaligned_data<N, Endianess, Signed_Mode> make_unaligned_data(const byte_t (&raw
 //! \param offset Start of the part of the content to be interpreted
 //! \return A copy of the value represented by the content at the given offset
 template<typename T, size_t N, endianess Endianess, signed_mode Signed_Mode>
-detail::return_t<decltype(read_as<T, Endianess, Signed_Mode>)>
+decltype(std::declval<unaligned_data<N, Endianess, Signed_Mode>>().template read_as<T>(0))
 read_as(const unaligned_data<N, Endianess, Signed_Mode> &input_unaligned_data, size_t offset) {
   return input_unaligned_data.template read_as<T>(offset);
 }

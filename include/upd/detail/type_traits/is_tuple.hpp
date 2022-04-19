@@ -5,9 +5,15 @@
 #include <type_traits>
 
 #include "../../format.hpp"
-#include "../../tuple.hpp"
 
 namespace upd {
+
+enum class endianess;
+enum class signed_mode;
+
+template<endianess Endianess, signed_mode Signed_Mode, typename... Ts>
+struct tuple; // IWYU pragma: keep
+
 namespace detail {
 
 //! \name
