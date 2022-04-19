@@ -1,5 +1,4 @@
 //! \file
-//! \brief Value representation through type
 
 #pragma once
 

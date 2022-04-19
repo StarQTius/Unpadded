@@ -1,5 +1,4 @@
 //! \file
-//! \brief Utility types for portability
 
 #pragma once
 

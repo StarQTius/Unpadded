@@ -1,5 +1,4 @@
 //! \file
-//! \brief Definition of the unaligned_data class
 
 #pragma once
 

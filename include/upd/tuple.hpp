@@ -1,5 +1,4 @@
 //! \file
-//! \brief Definition of the tuple class
 
 #pragma once
 

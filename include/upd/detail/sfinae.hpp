@@ -1,5 +1,4 @@
 //! \file
-//! \brief SFINAE utilities
 
 #pragma once
 

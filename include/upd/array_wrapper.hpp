@@ -1,5 +1,4 @@
 //! \file
-//! \brief Definition of the array_wrapper class
 
 #pragma once
 

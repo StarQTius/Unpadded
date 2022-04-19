@@ -1,5 +1,4 @@
 //! \file
-//! \brief Signed representation portability support
 
 #pragma once
 

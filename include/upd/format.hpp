@@ -1,5 +1,4 @@
 //! \file
-//! \brief Definitions for specifying data format
 
 #pragma once
 

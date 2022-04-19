@@ -1,5 +1,4 @@
 //! \file
-//! \brief Endianess portability support
 
 #pragma once
 
