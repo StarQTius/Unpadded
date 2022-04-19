@@ -3,10 +3,10 @@
 #pragma once
 
 #include <cstring>
+#include <type_traits>
 
 #include <boost/type_traits/declval.hpp>
 
-#include "detail/type_traits/signature.hpp"
 #include "format.hpp"
 #include "serialization.hpp"
 #include "type.hpp"

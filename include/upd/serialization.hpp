@@ -3,7 +3,6 @@
 #include <iterator> // IWYU pragma: keep
 
 #include <boost/type_traits/declval.hpp>
-#include <boost/type_traits/integral_constant.hpp>
 #include <boost/type_traits/remove_reference.hpp>
 
 #include "array_wrapper.hpp"
@@ -176,4 +175,4 @@ using require_is_serializable = require<is_serializable<T>::value, U>;
 } // namespace detail
 } // namespace upd
 
-#include "detail/undef.hpp"
+#include "detail/undef.hpp" // IWYU pragma: keep

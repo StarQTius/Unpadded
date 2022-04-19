@@ -4,8 +4,6 @@
 
 #include <type_traits>
 
-#include "../../format.hpp"
-
 namespace upd {
 
 enum class endianess;

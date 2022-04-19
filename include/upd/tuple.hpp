@@ -35,7 +35,7 @@ class tuple_view;
 namespace detail {
 
 template<typename, endianess, signed_mode, typename...>
-class tuple_base;
+class tuple_base; // IWYU pragma: keep
 
 } // namespace detail
 
