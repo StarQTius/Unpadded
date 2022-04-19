@@ -5,7 +5,6 @@ set(UNPADDED_HEADERS
     array_wrapper.hpp
     buffered_dispatcher.hpp
     dispatcher.hpp
-    detail/any_function.hpp
     detail/def.hpp
     detail/endianess.hpp
     detail/io/immediate_process.hpp
