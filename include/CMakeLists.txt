@@ -13,9 +13,9 @@ set(UNPADDED_HEADERS
     detail/io/reader.hpp
     detail/io/writer.hpp
     detail/serialized_message.hpp
-    detail/type_traits/require.hpp
     detail/signed_representation.hpp
     detail/static_error.hpp
+    detail/type_traits/require.hpp
     detail/type_traits/conjunction.hpp
     detail/type_traits/detector.hpp
     detail/type_traits/flatten_tuple.hpp
