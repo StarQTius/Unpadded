@@ -19,7 +19,6 @@
 #include "format.hpp"
 #include "serialization.hpp"
 #include "type.hpp"
-#include "unaligned_data.hpp"
 
 #include "detail/def.hpp"
 
@@ -318,10 +317,10 @@ public:
 
   //! \name Iterability
   //! @{
-  byte_t *begin() { return m_storage.begin(); }
-  byte_t *end() { return m_storage.end(); }
-  const byte_t *begin() const { return m_storage.begin(); }
-  const byte_t *end() const { return m_storage.end(); }
+  byte_t *begin() { return m_storage; }
+  byte_t *end() { return m_storage + base_t::size; }
+  const byte_t *begin() const { return m_storage; }
+  const byte_t *end() const { return m_storage + base_t::size; }
   //! @}
 
   //! \brief Access the object content
@@ -371,7 +370,7 @@ public:
   }
 
 private:
-  unaligned_data<base_t::size, Endianess, Signed_Mode> m_storage;
+  upd::byte_t m_storage[base_t::size];
 };
 template<endianess Endianess, signed_mode Signed_Mode>
 class tuple<Endianess, Signed_Mode> : public detail::tuple_base<tuple<Endianess, Signed_Mode>, Endianess, Signed_Mode> {

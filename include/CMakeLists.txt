@@ -35,7 +35,6 @@ set(UNPADDED_HEADERS
     serialization.hpp
     tuple.hpp
     type.hpp
-    unaligned_data.hpp
     unevaluated.hpp)
 
 add_library(Unpadded INTERFACE)

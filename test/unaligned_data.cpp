@@ -1,57 +1,36 @@
-#include <upd/unaligned_data.hpp>
+#include <upd/serialization.hpp>
 
 #include "utility.hpp"
 
 template<typename Int, Int V, upd::endianess Endianess, upd::signed_mode Signed_Mode, upd::byte_t... Expected_Bytes>
 static void unaligned_data_DO_serialize_data_EXPECT_correct_raw_data() {
-  constexpr upd::byte_t expected_data[] = {Expected_Bytes...};
+  using namespace upd;
 
-  upd::unaligned_data<4 * sizeof(Int), Endianess, Signed_Mode> unaligned_data;
-  unaligned_data.write_as(V, sizeof(Int));
+  byte_t expected_data[] = {Expected_Bytes...}, buf[4 * sizeof(Int)];
 
-  TEST_ASSERT_EQUAL_HEX8_ARRAY(expected_data, unaligned_data.begin() + sizeof(Int), sizeof(Int));
+  write_as<Endianess, Signed_Mode>(V, buf + sizeof(Int));
+
+  TEST_ASSERT_EQUAL_HEX8_ARRAY(expected_data, buf + sizeof(Int), sizeof(Int));
 }
 
 template<upd::endianess Endianess, upd::signed_mode Signed_Mode>
 static void unaligned_data_DO_serialize_data_EXPECT_correct_value_when_unserializing() {
-  const char error_format[] = "endianess = %i, signed mode = %i";
-  char error_msg[sizeof(error_format)];
-
-  upd::unaligned_data<4 * sizeof(int), Endianess, Signed_Mode> unaligned_data;
-  unaligned_data.write_as(-0xabc, sizeof(int));
-
-  snprintf(error_msg, sizeof(error_msg), error_format, static_cast<int>(Endianess), static_cast<int>(Signed_Mode));
-  TEST_ASSERT_EQUAL_HEX64_MESSAGE(-0xabc, unaligned_data.template read_as<int>(sizeof(int)), error_msg);
-}
-
-template<upd::endianess Endianess, upd::signed_mode Signed_Mode>
-static void unaligned_data_DO_iterate_throught_content_EXPECT_correct_raw_data() {
   using namespace upd;
 
-  uint8_t raw_data[]{0xaa, 0xbb, 0xcc};
-  unaligned_data<sizeof(raw_data), Endianess, Signed_Mode> unaligned_data{raw_data};
-  TEST_ASSERT_TRUE(unaligned_data.begin() != unaligned_data.end());
-  std::size_t i = 0;
-  for (auto byte : unaligned_data)
-    TEST_ASSERT_EQUAL_HEX16(raw_data[i++], byte);
+  const char error_format[] = "endianess = %i, signed mode = %i";
+  char error_msg[sizeof(error_format)];
+  byte_t buf[4 * sizeof(int)];
+
+  write_as<Endianess, Signed_Mode>(-0xabc, buf + sizeof(int));
+
+  snprintf(error_msg, sizeof(error_msg), error_format, static_cast<int>(Endianess), static_cast<int>(Signed_Mode));
+  TEST_ASSERT_EQUAL_HEX64_MESSAGE(-0xabc, (read_as<int, Endianess, Signed_Mode>(buf + sizeof(int))), error_msg);
 }
 
 MAKE_MULTIOPT(unaligned_data_DO_serialize_data_EXPECT_correct_value_when_unserializing)
-MAKE_MULTIOPT(unaligned_data_DO_iterate_throught_content_EXPECT_correct_raw_data)
 
 int main() {
   using namespace upd;
-
-  // Template instantiation check
-  {
-    byte_t raw_data[16]{};
-
-    unaligned_data<16, endianess::LITTLE, signed_mode::TWO_COMPLEMENT>{};
-    unaligned_data<16>{};
-
-    make_unaligned_data<endianess::LITTLE, signed_mode::TWO_COMPLEMENT>(raw_data);
-    make_unaligned_data(raw_data);
-  }
 
   // Check every combination of endianess and signed representation
   UNITY_BEGIN();
@@ -153,6 +132,5 @@ int main() {
                                                                      0x44>));
 
   unaligned_data_DO_serialize_data_EXPECT_correct_value_when_unserializing_multiopt(every_options);
-  unaligned_data_DO_iterate_throught_content_EXPECT_correct_raw_data_multiopt(every_options);
   return UNITY_END();
 }
