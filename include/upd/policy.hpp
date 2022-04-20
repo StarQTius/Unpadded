@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <type_traits>
+#include "unevaluated.hpp"
 
 namespace upd {
 
@@ -12,7 +12,7 @@ enum class action_features { STATIC_STORAGE_DURATION_ONLY, ANY };
 //! \brief Value holder to help deduce action features
 //! \tparam Action_Features Features to hold
 template<action_features Action_Features>
-using action_features_h = std::integral_constant<action_features, Action_Features>;
+using action_features_h = unevaluated<action_features, Action_Features>;
 
 namespace policy {
 

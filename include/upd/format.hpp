@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "detail/value_h.hpp"
+#include "unevaluated.hpp"
 
 namespace upd {
 
@@ -14,11 +14,11 @@ enum class signed_mode { BUILTIN, SIGNED_MAGNITUDE, ONE_COMPLEMENT, TWO_COMPLEME
 
 //! \brief
 template<endianess Endianess>
-struct endianess_h : detail::value_h<endianess, Endianess> {};
+struct endianess_h : unevaluated<endianess, Endianess> {};
 
 //! \brief
 template<signed_mode Signed_Mode>
-struct signed_mode_h : detail::value_h<signed_mode, Signed_Mode> {};
+struct signed_mode_h : unevaluated<signed_mode, Signed_Mode> {};
 
 //! \brief Token associated with 'endianess::BUILTIN'
 constexpr endianess_h<endianess::BUILTIN> builtin_endianess;

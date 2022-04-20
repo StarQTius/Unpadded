@@ -27,7 +27,6 @@ set(UNPADDED_HEADERS
     detail/type_traits/signature.hpp
     detail/type_traits/typelist.hpp
     detail/undef.hpp
-    detail/value_h.hpp
     flist.hpp
     format.hpp
     key.hpp
