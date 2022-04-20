@@ -74,7 +74,7 @@ detail::array_t<T> read_as(const byte_t *sequence) {
   using element_t = boost::remove_reference_t<decltype(retval[0])>;
   constexpr auto size = retval.size();
 
-  for (size_t i = 0; i < size; i++)
+  for (std::size_t i = 0; i < size; i++)
     retval[i] = read_as<element_t, Endianess, Signed_Mode>(sequence + i * sizeof(element_t));
 
   return retval;
@@ -103,10 +103,10 @@ decltype(read_as<T, Endianess, Signed_Mode>(boost::declval<byte_t *>())) read_as
 //! \return A copy of the value represented by the byte sequence
 #ifdef DOXYGEN
 template<typename T, endianess Endianess, signed_mode Signed_Mode, typename It>
-auto read_as(const It &begin, size_t offset)
+auto read_as(const It &begin, std::size_t offset)
 #else
 template<typename T, endianess Endianess, signed_mode Signed_Mode, typename It, detail::require_byte_iterator<It> = 0>
-decltype(read_as<T, Endianess, Signed_Mode>(boost::declval<byte_t *>())) read_as(const It &begin, size_t offset) {
+decltype(read_as<T, Endianess, Signed_Mode>(boost::declval<byte_t *>())) read_as(const It &begin, std::size_t offset) {
   return read_as<T, Endianess, Signed_Mode>(std::next(begin, offset));
 }
 #endif
@@ -135,7 +135,7 @@ template<endianess Endianess, signed_mode Signed_Mode, typename T, detail::requi
 void write_as(const T &array, byte_t *sequence) {
   using element_t = decltype(*array);
   constexpr auto array_size = sizeof(array) / sizeof(*array);
-  for (size_t i = 0; i < array_size; i++)
+  for (std::size_t i = 0; i < array_size; i++)
     write_as<Endianess, Signed_Mode>(array[i], sequence + i * sizeof(element_t));
 }
 template<endianess Endianess, signed_mode Signed_Mode, typename T, detail::require_is_user_serializable<T> = 0>
@@ -162,12 +162,12 @@ void write_as(const T &value, It it) {
 //! \param offset offset from the start of the byte sequence to write at
 #ifdef DOXYGEN
 template<endianess Endianess, signed_mode Signed_Mode, typename T, typename It>
-void write_as(const T &value, const It &begin, size_t offset) {
+void write_as(const T &value, const It &begin, std::size_t offset) {
   write_as<Endianess, Signed_Mode>(begin + offset);
 }
 #else
 template<endianess Endianess, signed_mode Signed_Mode, typename T, typename It, detail::require_byte_iterator<It> = 0>
-void write_as(const T &value, const It &begin, size_t offset) {
+void write_as(const T &value, const It &begin, std::size_t offset) {
   write_as<Endianess, Signed_Mode>(value, std::next(begin, offset));
 }
 #endif

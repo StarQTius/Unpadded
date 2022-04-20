@@ -9,7 +9,7 @@
 inline void tuple_view_DO_bind_to_buffer_EXPECT_reading_correct_value() {
   using namespace upd;
 
-  constexpr size_t size = sizeof(short) + sizeof(int) + sizeof(long);
+  constexpr std::size_t size = sizeof(short) + sizeof(int) + sizeof(long);
 
   byte_t buf[size];
   auto tview = make_view<short, int, long>(builtin_endianess, builtin_signed_mode, (byte_t *)buf);
@@ -22,7 +22,7 @@ inline void tuple_view_DO_bind_to_buffer_EXPECT_reading_correct_value() {
 inline void tuple_view_DO_set_value_EXPECT_reading_same_value() {
   using namespace upd;
 
-  constexpr size_t size = sizeof(short) + sizeof(int) + sizeof(long);
+  constexpr std::size_t size = sizeof(short) + sizeof(int) + sizeof(long);
 
   byte_t buf[size];
   auto tview = make_view<short, int, long>(builtin_endianess, builtin_signed_mode, (byte_t *)buf);
@@ -45,7 +45,7 @@ inline void tuple_view_DO_bind_to_a_forward_list_EXPECT_correct_behavior() {
   };
 
   struct iterator {
-    using difference_type = size_t;
+    using difference_type = std::size_t;
     using value_type = byte_t;
     using pointer = byte_t *;
     using reference = byte_t &;

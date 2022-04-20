@@ -33,7 +33,7 @@ void unaligned_data_DO_iterate_throught_content_EXPECT_correct_raw_data() {
   uint8_t raw_data[]{0xaa, 0xbb, 0xcc};
   unaligned_data<sizeof(raw_data), Endianess, Signed_Mode> unaligned_data{raw_data};
   TEST_ASSERT_TRUE(unaligned_data.begin() != unaligned_data.end());
-  size_t i = 0;
+  std::size_t i = 0;
   for (auto byte : unaligned_data)
     TEST_ASSERT_EQUAL_HEX16(raw_data[i++], byte);
 }

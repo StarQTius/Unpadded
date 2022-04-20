@@ -7,7 +7,7 @@ int main() {
 
   // Template instantiation check
   {
-    constexpr size_t size = sizeof(short) + sizeof(int) + sizeof(long);
+    constexpr std::size_t size = sizeof(short) + sizeof(int) + sizeof(long);
 
     byte_t buf[size];
 

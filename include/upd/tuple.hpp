@@ -59,7 +59,7 @@ T &&normalize(T &&x) {
 
 } // namespace detail
 
-template<size_t I, typename D, endianess Endianess, signed_mode Signed_Mode, typename... Ts>
+template<std::size_t I, typename D, endianess Endianess, signed_mode Signed_Mode, typename... Ts>
 decltype(boost::declval<detail::tuple_base<D, Endianess, Signed_Mode, Ts...>>().template get<I>())
 get(const detail::tuple_base<D, Endianess, Signed_Mode, Ts...> &);
 
@@ -67,11 +67,11 @@ namespace detail {
 
 //! \brief Return the size in bytes occupied by the serialization of instances of the provided type (if serializable)
 template<typename T, detail::require_is_serializable<T> = 0>
-constexpr size_t serialization_size_impl(...) {
+constexpr std::size_t serialization_size_impl(...) {
   return sizeof(T);
 }
 template<typename T, detail::require_is_user_serializable<T> = 0>
-constexpr size_t serialization_size_impl(int) {
+constexpr std::size_t serialization_size_impl(int) {
   return decltype(make_view_for<endianess::BUILTIN, signed_mode::BUILTIN>(
       (byte_t *)nullptr, examine_invocable<decltype(upd_extension((T *)nullptr).unserialize)>{}))::size;
 }
@@ -115,7 +115,7 @@ class tuple_base {
 public:
   //! \brief Type of one of the serialized values
   //! \tparam I Index of the requested value's type
-  template<size_t I>
+  template<std::size_t I>
   using arg_t = boost::mp11::mp_at_c<typelist, I>;
 
   //! \brief Storage size in byte
@@ -141,10 +141,10 @@ public:
   //! \tparam I Index of the requested value
   //! \return A copy of the serialized value or an array if I designate an array type
 #ifdef DOXYGEN
-  template<size_t I>
+  template<std::size_t I>
   auto get() const;
 #else
-  template<size_t I>
+  template<std::size_t I>
   decltype(read_as<arg_t<I>, Endianess, Signed_Mode>(nullptr)) get() const {
     using namespace boost::mp11;
     constexpr auto offset = mp_fold<mp_take_c<type_sizes, I>, mp_size_t<0>, mp_plus>::value;
@@ -156,7 +156,7 @@ public:
   //! \brief Set one of the value held by the object
   //! \tparam I Index of the value which will be set
   //! \param value Value to be copied from
-  template<size_t I>
+  template<std::size_t I>
   void set(const arg_t<I> &value) {
     using namespace boost::mp11;
     constexpr auto offset = mp_fold<mp_take_c<type_sizes, I>, mp_size_t<0>, mp_plus>::value;
@@ -178,14 +178,14 @@ public:
 
 protected:
   //! \brief Serialize values into the object content
-  template<size_t... Is, typename... Args>
+  template<std::size_t... Is, typename... Args>
   void lay(boost::mp11::index_sequence<Is...>, const Args &...args) {
     using discard = int[];
     discard{0, (set<Is>(args), 0)...};
   }
 
   //! \brief Lay the element of a tuple-like object into the content
-  template<size_t... Is, typename T>
+  template<std::size_t... Is, typename T>
   void lay_tuple(boost::mp11::index_sequence<Is...> is, T &&t) {
     using upd::get;
 
@@ -194,7 +194,7 @@ protected:
 
   //! \brief Unserialize the tuple content and forward it as parameters to the provided functor
 private:
-  template<typename F, size_t... Is>
+  template<typename F, std::size_t... Is>
   detail::return_t<F> invoke_impl(F &&ftor, boost::mp11::index_sequence<Is...>) const {
     return FWD(ftor)(detail::normalize(get<Is>())...);
   }
@@ -205,7 +205,7 @@ private:
 //! \brief Call the member function 'tuple_base::get'
 //! \details This function create a coherent interface 'std::tuple' for the sake of genericity
 //! \param t Tuple to get a value from
-template<size_t I, typename D, endianess Endianess, signed_mode Signed_Mode, typename... Ts>
+template<std::size_t I, typename D, endianess Endianess, signed_mode Signed_Mode, typename... Ts>
 decltype(boost::declval<detail::tuple_base<D, Endianess, Signed_Mode, Ts...>>().template get<I>())
 get(const detail::tuple_base<D, Endianess, Signed_Mode, Ts...> &t) {
   return t.template get<I>();
@@ -215,7 +215,7 @@ get(const detail::tuple_base<D, Endianess, Signed_Mode, Ts...> &t) {
 //! \details This function create a coherent interface 'std::tuple' for the sake of genericity
 //! \param t Tuple to set a value in
 //! \param value Value to set
-template<size_t I, typename D, endianess Endianess, signed_mode Signed_Mode, typename... Ts, typename U>
+template<std::size_t I, typename D, endianess Endianess, signed_mode Signed_Mode, typename... Ts, typename U>
 void set(detail::tuple_base<D, Endianess, Signed_Mode, Ts...> &t, U &&value) {
   return t.template set<I>(FWD(value));
 }
@@ -284,12 +284,12 @@ tuple_view<It, endianess::BUILTIN, signed_mode::BUILTIN, Ts...> make_view(const 
 //! \return a tuple view including every elements in the given range
 
 //! \copydoc MakeView_Tuple
-template<size_t I, size_t L, endianess Endianess, signed_mode Signed_Mode, typename... Ts>
+template<std::size_t I, std::size_t L, endianess Endianess, signed_mode Signed_Mode, typename... Ts>
 auto make_view(tuple<Endianess, Signed_Mode, Ts...> &tuple) -> decltype(tuple.template view<I, L>()) {
   return tuple.template view<I, L>();
 }
 //! \copydoc MakeView_Tuple
-template<size_t I, size_t L, endianess Endianess, signed_mode Signed_Mode, typename... Ts>
+template<std::size_t I, std::size_t L, endianess Endianess, signed_mode Signed_Mode, typename... Ts>
 auto make_view(const tuple<Endianess, Signed_Mode, Ts...> &tuple) -> decltype(tuple.template view<I, L>()) {
   return tuple.template view<I, L>();
 }
@@ -332,12 +332,12 @@ public:
   //! \brief Access the object content
   //! \details There is no bound check performed.
   //! \param i Index of the accessed byte
-  byte_t &operator[](size_t i) { return m_storage[i]; }
+  byte_t &operator[](std::size_t i) { return m_storage[i]; }
 
   //! \brief Access the object content
   //! \details There is no bound check performed.
   //! \param i Index of the accessed byte
-  const byte_t &operator[](size_t i) const { return m_storage[i]; }
+  const byte_t &operator[](std::size_t i) const { return m_storage[i]; }
 
 #if __cplusplus >= 201703L
   //! \brief (C++17) Serialize the provided values
@@ -356,7 +356,7 @@ public:
   //! \tparam I First element in the view
   //! \tparam L Number of elements in the view
   //! \return a tuple view including every elements in the given range
-  template<size_t I, size_t L>
+  template<std::size_t I, std::size_t L>
   decltype(detail::make_view_from_typelist<Endianess, Signed_Mode>(
       (byte_t *)nullptr, boost::mp11::mp_take_c<boost::mp11::mp_drop_c<typelist, I>, L>{}))
   view() {
@@ -365,7 +365,7 @@ public:
     return detail::make_view_from_typelist<Endianess, Signed_Mode>(begin() + offset,
                                                                    mp_take_c<mp_drop_c<typelist, I>, L>{});
   }
-  template<size_t I, size_t L>
+  template<std::size_t I, std::size_t L>
   decltype(detail::make_view_from_typelist<Endianess, Signed_Mode>(
       (const byte_t *)nullptr, boost::mp11::mp_take_c<boost::mp11::mp_drop_c<typelist, I>, L>{}))
   view() const {
@@ -440,7 +440,7 @@ struct std::tuple_size<upd::tuple<Endianess, Signed_Mode, Ts...>> {
 //! \brief Partial specialization of 'std::tuple_element' for 'tuple'
 //! \detail
 //!   This specialization enables to use structured binding with 'tuple'
-template<size_t I, upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Ts>
+template<std::size_t I, upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Ts>
 struct std::tuple_element<I, upd::tuple<Endianess, Signed_Mode, Ts...>> {
   using type = decltype(boost::declval<upd::tuple<Endianess, Signed_Mode, Ts...>>().template get<I>());
 };

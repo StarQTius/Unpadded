@@ -19,7 +19,7 @@ static void dispatcher_DO_call_action_EXPECT_calling_correct_action() {
   auto function16_index = upd::make_tuple(uint16_t{1});
   auto output = upd::make_tuple<int>();
 
-  size_t i = 0, j = 0;
+  std::size_t i = 0, j = 0;
   dispatcher([&]() { return function16_index[i++]; }, [&](upd::byte_t byte) { output[j++] = byte; });
 
   TEST_ASSERT_EQUAL_UINT(16, output.get<0>());
@@ -32,7 +32,7 @@ static void dispatcher_DO_get_action_EXPECT_correct_index() {
   auto function16_index = upd::make_tuple(uint16_t{1});
   auto output = upd::make_tuple<int>();
 
-  size_t i = 0, j = 0;
+  std::size_t i = 0, j = 0;
   auto input_f = [&]() { return function16_index[i++]; };
   auto output_f = [&](upd::byte_t byte) { output[j++] = byte; };
 
@@ -52,7 +52,7 @@ static void dispatcher_DO_call_no_storage_action_EXPECT_correct_behavior() {
   auto function16_index = upd::make_tuple(uint16_t{1});
   auto output = upd::make_tuple<int>();
 
-  size_t i = 0, j = 0;
+  std::size_t i = 0, j = 0;
   dispatcher([&]() { return function16_index[i++]; }, [&](upd::byte_t byte) { output[j++] = byte; });
 
   TEST_ASSERT_EQUAL_UINT(16, output.get<0>());
@@ -66,7 +66,7 @@ static void dispatcher_DO_replace_an_action_EXPECT_changed_action() {
   auto function16_index = upd::make_tuple(uint16_t{1});
   auto output = upd::make_tuple<int>();
 
-  size_t i = 0, j = 0;
+  std::size_t i = 0, j = 0;
   dispatcher([&]() { return function16_index[i++]; }, [&](upd::byte_t byte) { output[j++] = byte; });
 
   TEST_ASSERT_EQUAL_UINT(16, output.get<0>());
@@ -86,7 +86,7 @@ static void dispatcher_DO_replace_a_no_storage_action_EXPECT_changed_action() {
   auto function16_index = upd::make_tuple(uint16_t{1});
   auto output = upd::make_tuple<int>();
 
-  size_t i = 0, j = 0;
+  std::size_t i = 0, j = 0;
   dispatcher([&]() { return function16_index[i++]; }, [&](upd::byte_t byte) { output[j++] = byte; });
 
   TEST_ASSERT_EQUAL_UINT(16, output.get<0>());

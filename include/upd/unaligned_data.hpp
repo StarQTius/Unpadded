@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstring>
 #include <type_traits>
 
@@ -24,7 +25,7 @@ namespace upd {
 //! \tparam N Size of the content in bytes
 //! \tparam Endianess endianess of the stored data
 //! \tparam Signed_Mode signed mode of the stored data
-template<size_t N, endianess Endianess = endianess::BUILTIN, signed_mode Signed_Mode = signed_mode::BUILTIN>
+template<std::size_t N, endianess Endianess = endianess::BUILTIN, signed_mode Signed_Mode = signed_mode::BUILTIN>
 class unaligned_data {
 public:
   //! \brief Storage size in byte
@@ -55,12 +56,12 @@ public:
   //! \brief Access the object content
   //! \details There is no bound check performed.
   //! \param i Index of the accessed byte
-  byte_t &operator[](size_t i) { return m_raw_data[i]; }
+  byte_t &operator[](std::size_t i) { return m_raw_data[i]; }
 
   //! \brief Access the object content
   //! \details There is no bound check performed.
   //! \param i Index of the accessed byte
-  const byte_t &operator[](size_t i) const { return m_raw_data[i]; }
+  const byte_t &operator[](std::size_t i) const { return m_raw_data[i]; }
 
   //! \brief Interpret a part of a object content as a value of the given type
   //! \details
@@ -69,7 +70,8 @@ public:
   //! \param offset Start of the part of the content to be interpreted
   //! \return A copy of the value represented by the content at the given offset
   template<typename T>
-  auto read_as(size_t offset) const -> decltype(upd::read_as<T, Endianess, Signed_Mode>(boost::declval<byte_t *>())) {
+  auto read_as(std::size_t offset) const
+      -> decltype(upd::read_as<T, Endianess, Signed_Mode>(boost::declval<byte_t *>())) {
     return upd::read_as<T, Endianess, Signed_Mode>(m_raw_data + offset);
   }
 
@@ -80,7 +82,7 @@ public:
   //! \param value Value to be serialized
   //! \param offset Start of the part of the content to be written
   template<typename T>
-  void write_as(const T &value, size_t offset) {
+  void write_as(const T &value, std::size_t offset) {
     upd::write_as<Endianess, Signed_Mode>(value, m_raw_data + offset);
   }
 
@@ -94,7 +96,7 @@ private:
 //! \tparam Signed_Mode Target signed mode for serialization
 //! \param raw_data Array used to initiliaze the return value
 //! \return A unaligned_data object which content is equal to raw_data
-template<endianess Endianess = endianess::BUILTIN, signed_mode Signed_Mode = signed_mode::BUILTIN, size_t N>
+template<endianess Endianess = endianess::BUILTIN, signed_mode Signed_Mode = signed_mode::BUILTIN, std::size_t N>
 unaligned_data<N, Endianess, Signed_Mode> make_unaligned_data(const byte_t (&raw_data)[N]) {
   return unaligned_data<N, Endianess, Signed_Mode>{raw_data};
 }
@@ -106,9 +108,9 @@ unaligned_data<N, Endianess, Signed_Mode> make_unaligned_data(const byte_t (&raw
 //! \param input_unaligned_data 'unaligned_data' object to read from
 //! \param offset Start of the part of the content to be interpreted
 //! \return A copy of the value represented by the content at the given offset
-template<typename T, size_t N, endianess Endianess, signed_mode Signed_Mode>
+template<typename T, std::size_t N, endianess Endianess, signed_mode Signed_Mode>
 decltype(std::declval<unaligned_data<N, Endianess, Signed_Mode>>().template read_as<T>(0))
-read_as(const unaligned_data<N, Endianess, Signed_Mode> &input_unaligned_data, size_t offset) {
+read_as(const unaligned_data<N, Endianess, Signed_Mode> &input_unaligned_data, std::size_t offset) {
   return input_unaligned_data.template read_as<T>(offset);
 }
 
@@ -119,8 +121,8 @@ read_as(const unaligned_data<N, Endianess, Signed_Mode> &input_unaligned_data, s
 //! \param value Value to be serialized
 //! \param input_unaligned_data 'unaligned_data' object to write into
 //! \param offset Start of the part of the content to be written
-template<typename T, size_t N, endianess Endianess, signed_mode Signed_Mode>
-void write_as(const T &value, unaligned_data<N, Endianess, Signed_Mode> &input_unaligned_data, size_t offset) {
+template<typename T, std::size_t N, endianess Endianess, signed_mode Signed_Mode>
+void write_as(const T &value, unaligned_data<N, Endianess, Signed_Mode> &input_unaligned_data, std::size_t offset) {
   return input_unaligned_data.template write_as(value, offset);
 }
 

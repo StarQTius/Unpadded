@@ -21,7 +21,7 @@ static void action_DO_give_then_return_argument_from_action_EXPECT_unaltered_val
   auto serialized_return_value = upd::make_tuple(int{0});
   action return_argument{[](int value) { return value; }};
 
-  size_t i = 0, j = 0;
+  std::size_t i = 0, j = 0;
   return_argument([&]() { return serialized_argument[i++]; },
                   [&](upd::byte_t byte) { serialized_return_value[j++] = byte; });
 

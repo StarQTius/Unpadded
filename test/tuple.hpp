@@ -86,7 +86,7 @@ void tuple_DO_iterate_throught_content_EXPECT_correct_raw_data() {
 
   tuple<Endianess, Signed_Mode, uint8_t, uint16_t, uint32_t> tuple{0xaa, 0xbbcc, 0xddeeff00};
   TEST_ASSERT_TRUE(tuple.begin() != tuple.end());
-  size_t i = 0;
+  std::size_t i = 0;
   for (auto byte : tuple)
     TEST_ASSERT_EQUAL_HEX16(raw_data[i++], byte);
 }
@@ -100,7 +100,7 @@ void tuple_DO_iterate_throught_content_EXPECT_correct_raw_data() {
   uint8_t raw_data[]{0xaa, 0xcc, 0xbb, 0x00, 0xff, 0xee, 0xdd};
   tuple<Endianess, Signed_Mode, uint8_t, uint16_t, uint32_t> tuple{0xaa, 0xbbcc, 0xddeeff00};
   TEST_ASSERT_TRUE(tuple.begin() != tuple.end());
-  size_t i = 0;
+  std::size_t i = 0;
   for (auto byte : tuple)
     TEST_ASSERT_EQUAL_HEX16(raw_data[i++], byte);
 }
@@ -114,7 +114,7 @@ void tuple_DO_iterate_throught_content_EXPECT_correct_raw_data() {
   uint8_t raw_data[]{0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x00};
   tuple<Endianess, Signed_Mode, uint8_t, uint16_t, uint32_t> tuple{0xaa, 0xbbcc, 0xddeeff00};
   TEST_ASSERT_TRUE(tuple.begin() != tuple.end());
-  size_t i = 0;
+  std::size_t i = 0;
   for (auto byte : tuple)
     TEST_ASSERT_EQUAL_HEX16(raw_data[i++], byte);
 }

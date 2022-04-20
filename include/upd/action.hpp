@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <memory>
 
 #include "format.hpp"
@@ -86,8 +87,8 @@ struct action_concept {
   virtual ~action_concept() = default;
   virtual void operator()(src_t &&, dest_t &&) = 0;
 
-  size_t input_size;
-  size_t output_size;
+  std::size_t input_size;
+  std::size_t output_size;
 };
 
 //! \brief Derived class used for setting up type erasure in the `action` class
@@ -162,11 +163,11 @@ public:
 
   //! \brief Get the size in bytes of the payload needed to invoke the wrapped object
   //! \return The size of the payload in bytes
-  size_t input_size() const { return m_concept_uptr->input_size; }
+  std::size_t input_size() const { return m_concept_uptr->input_size; }
 
   //! \brief Get the size in bytes of the payload representing the return value of the wrapped invocable object
   //! \return The size of the payload in bytes
-  size_t output_size() const { return m_concept_uptr->output_size; }
+  std::size_t output_size() const { return m_concept_uptr->output_size; }
 
 private:
   std::unique_ptr<detail::action_concept> m_concept_uptr;

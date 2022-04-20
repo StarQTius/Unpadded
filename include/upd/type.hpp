@@ -11,9 +11,4 @@ namespace upd {
 //! Types - cppreference</a>).
 using byte_t = unsigned char;
 
-//!  \brief Definition of size_t as specified by the standard
-//!  \details
-//!    For further information : <a href="https://en.cppreference.com/w/cpp/types/size_t">std::size_t, cppreference</a>.
-using size_t = decltype(sizeof(0));
-
 } // namespace upd
