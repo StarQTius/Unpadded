@@ -31,7 +31,7 @@ static void action_DO_give_then_return_argument_from_action_EXPECT_unaltered_val
 static void action_DO_instantiate_action_with_functor_taking_arguments_EXPECT_input_and_output_sizes_correct() {
   using namespace upd;
 
-  action f([](int, int(&)[16], char) -> int { return 0; });
+  action f([](int, const int(&)[16], char) -> int { return 0; });
 
   TEST_ASSERT_EQUAL_INT(sizeof(int) + 16 * sizeof(int) + sizeof(char), f.input_size());
   TEST_ASSERT_EQUAL_INT(sizeof(int), f.output_size());

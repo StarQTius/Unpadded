@@ -68,7 +68,7 @@ void tuple_DO_set_array_EXPECT_same_value_with_get() {
   tuple.template set<0>(array);
 
   snprintf(error_msg, sizeof(error_msg), error_format, static_cast<int>(Endianess), static_cast<int>(Signed_Mode));
-  TEST_ASSERT_EQUAL_INT_ARRAY_MESSAGE(array, tuple.template get<0>().content, sizeof array / sizeof(int), error_msg);
+  TEST_ASSERT_EQUAL_INT_ARRAY_MESSAGE(array, tuple.template get<0>().data(), sizeof array / sizeof(int), error_msg);
 }
 
 template<upd::endianess Endianess,
@@ -260,17 +260,6 @@ void tuple_DO_make_empty_tuple_EXPECT_valid_object() {
   TEST_ASSERT_EQUAL_INT_MESSAGE(0, empty_tuple.size, error_msg);
 }
 
-inline void tuple_DO_convert_to_array_EXPECT_same_content() {
-  using namespace upd;
-
-  {
-    array_wrapper<int[16]> awrapper;
-    int(&a)[16] = awrapper;
-
-    TEST_ASSERT_EQUAL_INT_ARRAY(awrapper.content, a, sizeof a / sizeof *a);
-  }
-}
-
 inline void tuple_DO_construct_tuple_with_ctad_EXPECT_tuple_holds_correct_values_cpp17() {
 #if __cplusplus >= 201703L
   using namespace upd;
@@ -293,7 +282,7 @@ inline void tuple_DO_bind_names_to_tuple_element_EXPECT_getting_same_values_cpp1
 
   auto [a, b, c, d] = t;
   TEST_ASSERT_EQUAL_INT(64, a);
-  TEST_ASSERT_EQUAL_INT_ARRAY(array, b, sizeof array / sizeof *array);
+  TEST_ASSERT_EQUAL_INT_ARRAY(array, b.data(), sizeof array / sizeof *array);
   TEST_ASSERT_EQUAL_INT(16, c);
   TEST_ASSERT_EQUAL_INT(8, d);
 #endif // __cplusplus >= 201703L

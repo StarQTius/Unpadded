@@ -37,6 +37,26 @@ namespace detail {
 template<typename, endianess, signed_mode, typename...>
 class tuple_base; // IWYU pragma: keep
 
+//! \name
+//! \brief Normalize some type before being passed to a function
+//!
+//! For now, the only types to normalize are `std::array` instances (to their corresponding plain array-type)
+// \warning Be careful when using these functions as they do not extent the lifetime of their parameter.
+//!
+//! @{
+
+template<typename T, std::size_t N>
+auto normalize(std::array<T, N> &&array) -> T(&&)[N] {
+  return reinterpret_cast<T(&&)[N]>(*array.data());
+}
+template<typename T,
+         require<std::is_same<decltype(read_as<T, endianess::BUILTIN, signed_mode::BUILTIN>(nullptr)), T>::value> = 0>
+T &&normalize(T &&x) {
+  return FWD(x);
+}
+
+//! @}
+
 } // namespace detail
 
 template<size_t I, typename D, endianess Endianess, signed_mode Signed_Mode, typename... Ts>
@@ -119,7 +139,7 @@ public:
 
   //! \brief Unserialize one of the value held by the object
   //! \tparam I Index of the requested value
-  //! \return A copy of the serialized value or an array_wrapper if I designate an array type
+  //! \return A copy of the serialized value or an array if I designate an array type
 #ifdef DOXYGEN
   template<size_t I>
   auto get() const;
@@ -176,7 +196,7 @@ protected:
 private:
   template<typename F, size_t... Is>
   detail::return_t<F> invoke_impl(F &&ftor, boost::mp11::index_sequence<Is...>) const {
-    return FWD(ftor)(get<Is>()...);
+    return FWD(ftor)(detail::normalize(get<Is>())...);
   }
 };
 

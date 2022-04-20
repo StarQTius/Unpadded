@@ -2,7 +2,6 @@ FetchContent_MakeAvailable(Boost)
 
 set(UNPADDED_HEADERS
     action.hpp
-    array_wrapper.hpp
     buffered_dispatcher.hpp
     dispatcher.hpp
     detail/def.hpp

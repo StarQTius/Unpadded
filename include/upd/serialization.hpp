@@ -1,11 +1,12 @@
 #pragma once
 
+#include <array>
+#include <cstddef>
 #include <iterator> // IWYU pragma: keep
 
 #include <boost/type_traits/declval.hpp>
 #include <boost/type_traits/remove_reference.hpp>
 
-#include "array_wrapper.hpp"
 #include "detail/endianess.hpp"
 #include "detail/signed_representation.hpp"
 #include "detail/type_traits/detector.hpp"
@@ -28,6 +29,21 @@ template<endianess Endianess, signed_mode Signed_Mode, typename It, typename... 
 tuple_view<It, Endianess, Signed_Mode, Args...> make_view_for(const It &it, signature<R(Args...)>) {
   return tuple_view<It, Endianess, Signed_Mode, Args...>{it};
 }
+
+//! \name
+//! \brief Get the `std::array` corresponding to the array type `T`
+//! @{
+
+template<typename T>
+struct array_t_impl;
+template<typename T, std::size_t N>
+struct array_t_impl<T[N]> {
+  using type = std::array<T, N>;
+};
+template<typename T>
+using array_t = typename array_t_impl<T>::type;
+
+//! @}
 
 } // namespace detail
 
@@ -52,11 +68,11 @@ T read_as(const byte_t *sequence) {
   return detail::from_signed_mode<T, Signed_Mode>(tmp);
 }
 template<typename T, endianess Endianess, signed_mode Signed_Mode, detail::require_array<T> = 0>
-array_wrapper<T> read_as(const byte_t *sequence) {
-  array_wrapper<T> retval;
+detail::array_t<T> read_as(const byte_t *sequence) {
+  detail::array_t<T> retval;
 
-  using element_t = boost::remove_reference_t<decltype(*retval)>;
-  constexpr auto size = retval.size;
+  using element_t = boost::remove_reference_t<decltype(retval[0])>;
+  constexpr auto size = retval.size();
 
   for (size_t i = 0; i < size; i++)
     retval[i] = read_as<element_t, Endianess, Signed_Mode>(sequence + i * sizeof(element_t));
