@@ -5,7 +5,7 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/tool)
 
 include(FetchContent)
 
-set(UNPADDED_BOOST_MODULES mp11 config type_traits static_assert)
+set(UNPADDED_BOOST_MODULES mp11 config static_assert)
 set(UNPADDED_BOOST_LIBRARIES_DIRECTORY ${UNPADDED_BOOST_MODULES})
 list(TRANSFORM UNPADDED_BOOST_LIBRARIES_DIRECTORY PREPEND libs/)
 FetchContent_Declare(

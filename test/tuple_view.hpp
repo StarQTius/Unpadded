@@ -2,8 +2,6 @@
 
 #include <upd/tuple.hpp>
 
-#include <boost/type_traits/is_same.hpp>
-
 #include "utility.hpp"
 
 inline void tuple_view_DO_bind_to_buffer_EXPECT_reading_correct_value() {
@@ -93,7 +91,7 @@ inline void tuple_view_DO_assign_to_a_tuple_EXPECT_correct_behavior() {
   auto lhs = make_tuple(int{}, char{}, bool{}), rhs = make_tuple(int{0xa}, char{0xb}, bool{true});
   auto result = (lhs = make_view<int, char, bool>(rhs.begin()));
 
-  static_assert(boost::is_same<decltype(result), decltype(lhs)>::value);
+  static_assert(std::is_same<decltype(result), decltype(lhs)>::value);
   TEST_ASSERT_EQUAL_INT(get<0>(lhs), 0xa);
   TEST_ASSERT_EQUAL_CHAR(get<1>(lhs), 0xb);
   TEST_ASSERT_TRUE(get<2>(lhs));

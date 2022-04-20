@@ -6,8 +6,6 @@
 #include <cstring>
 #include <type_traits>
 
-#include <boost/type_traits/declval.hpp>
-
 #include "format.hpp"
 #include "serialization.hpp"
 #include "type.hpp"
@@ -71,7 +69,7 @@ public:
   //! \return A copy of the value represented by the content at the given offset
   template<typename T>
   auto read_as(std::size_t offset) const
-      -> decltype(upd::read_as<T, Endianess, Signed_Mode>(boost::declval<byte_t *>())) {
+      -> decltype(upd::read_as<T, Endianess, Signed_Mode>(std::declval<byte_t *>())) {
     return upd::read_as<T, Endianess, Signed_Mode>(m_raw_data + offset);
   }
 

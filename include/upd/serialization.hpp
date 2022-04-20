@@ -3,9 +3,7 @@
 #include <array>
 #include <cstddef>
 #include <iterator> // IWYU pragma: keep
-
-#include <boost/type_traits/declval.hpp>
-#include <boost/type_traits/remove_reference.hpp>
+#include <type_traits>
 
 #include "detail/endianess.hpp"
 #include "detail/signed_representation.hpp"
@@ -71,7 +69,7 @@ template<typename T, endianess Endianess, signed_mode Signed_Mode, detail::requi
 detail::array_t<T> read_as(const byte_t *sequence) {
   detail::array_t<T> retval;
 
-  using element_t = boost::remove_reference_t<decltype(retval[0])>;
+  using element_t = typename std::remove_reference<decltype(retval[0])>::type;
   constexpr auto size = retval.size();
 
   for (std::size_t i = 0; i < size; i++)
@@ -86,7 +84,7 @@ T read_as(const byte_t *sequence) {
   return view.invoke(upd_extension(static_cast<T *>(nullptr)).unserialize);
 }
 template<typename T, endianess Endianess, signed_mode Signed_Mode, typename It, detail::require_not_pointer<It> = 0>
-decltype(read_as<T, Endianess, Signed_Mode>(boost::declval<byte_t *>())) read_as(It it) {
+decltype(read_as<T, Endianess, Signed_Mode>(std::declval<byte_t *>())) read_as(It it) {
   byte_t buf[sizeof(T)];
   for (byte_t &byte : buf)
     byte = *it++;
@@ -106,7 +104,7 @@ template<typename T, endianess Endianess, signed_mode Signed_Mode, typename It>
 auto read_as(const It &begin, std::size_t offset)
 #else
 template<typename T, endianess Endianess, signed_mode Signed_Mode, typename It, detail::require_byte_iterator<It> = 0>
-decltype(read_as<T, Endianess, Signed_Mode>(boost::declval<byte_t *>())) read_as(const It &begin, std::size_t offset) {
+decltype(read_as<T, Endianess, Signed_Mode>(std::declval<byte_t *>())) read_as(const It &begin, std::size_t offset) {
   return read_as<T, Endianess, Signed_Mode>(std::next(begin, offset));
 }
 #endif
@@ -174,11 +172,11 @@ void write_as(const T &value, const It &begin, std::size_t offset) {
 
 namespace detail {
 
-K2O_DETAIL_MAKE_DETECTOR(
-    is_serializable_impl,
-    PACK(typename T),
-    PACK(typename = decltype(write_as<endianess::BUILTIN, signed_mode::BUILTIN>(boost::declval<T>(), nullptr),
-                             read_as<T, endianess::BUILTIN, signed_mode::BUILTIN>(nullptr))))
+K2O_DETAIL_MAKE_DETECTOR(is_serializable_impl,
+                         PACK(typename T),
+                         PACK(typename = decltype(write_as<endianess::BUILTIN, signed_mode::BUILTIN>(std::declval<T>(),
+                                                                                                     nullptr),
+                                                  read_as<T, endianess::BUILTIN, signed_mode::BUILTIN>(nullptr))))
 
 //! \brief Indicate if the provided type is serializable
 template<typename T>

@@ -12,12 +12,8 @@
 #include <boost/mp11/detail/mp_plus.hpp>
 #include <boost/mp11/integer_sequence.hpp>
 #include <boost/mp11/integral.hpp>
-#include <boost/type_traits/conjunction.hpp>
-#include <boost/type_traits/declval.hpp>
-#include <boost/type_traits/is_const.hpp>
-#include <boost/type_traits/is_reference.hpp>
-#include <boost/type_traits/is_volatile.hpp>
 
+#include "detail/type_traits/conjunction.hpp"
 #include "detail/type_traits/require.hpp"
 #include "detail/type_traits/signature.hpp"
 #include "format.hpp"
@@ -60,7 +56,7 @@ T &&normalize(T &&x) {
 } // namespace detail
 
 template<std::size_t I, typename D, endianess Endianess, signed_mode Signed_Mode, typename... Ts>
-decltype(boost::declval<detail::tuple_base<D, Endianess, Signed_Mode, Ts...>>().template get<I>())
+decltype(std::declval<detail::tuple_base<D, Endianess, Signed_Mode, Ts...>>().template get<I>())
 get(const detail::tuple_base<D, Endianess, Signed_Mode, Ts...> &);
 
 namespace detail {
@@ -102,13 +98,12 @@ class tuple_base {
   using typelist = boost::mp11::mp_list<Ts...>;
   using type_sizes = boost::mp11::mp_list<boost::mp11::mp_size_t<serialization_size<Ts>::value>...>;
 
-  static_assert(
-      boost::conjunction<std::integral_constant<bool,
-                                                (!boost::is_const<Ts>::value && !boost::is_volatile<Ts>::value &&
-                                                 !boost::is_reference<Ts>::value)>...>::value,
-      "Type parameters cannot be cv-qualified or ref-qualified.");
+  static_assert(detail::conjunction<std::integral_constant<bool,
+                                                           (!std::is_const<Ts>::value && !std::is_volatile<Ts>::value &&
+                                                            !std::is_reference<Ts>::value)>...>::value,
+                "Type parameters cannot be cv-qualified or ref-qualified.");
 
-  static_assert(boost::conjunction<detail::is_serializable<Ts>...>::value,
+  static_assert(detail::conjunction<detail::is_serializable<Ts>...>::value,
                 "Some of the provided types are not serializable (serializable types are integer types, types with "
                 "user-defined extension and array types of any of these)");
 
@@ -206,7 +201,7 @@ private:
 //! \details This function create a coherent interface 'std::tuple' for the sake of genericity
 //! \param t Tuple to get a value from
 template<std::size_t I, typename D, endianess Endianess, signed_mode Signed_Mode, typename... Ts>
-decltype(boost::declval<detail::tuple_base<D, Endianess, Signed_Mode, Ts...>>().template get<I>())
+decltype(std::declval<detail::tuple_base<D, Endianess, Signed_Mode, Ts...>>().template get<I>())
 get(const detail::tuple_base<D, Endianess, Signed_Mode, Ts...> &t) {
   return t.template get<I>();
 }
@@ -442,7 +437,7 @@ struct std::tuple_size<upd::tuple<Endianess, Signed_Mode, Ts...>> {
 //!   This specialization enables to use structured binding with 'tuple'
 template<std::size_t I, upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Ts>
 struct std::tuple_element<I, upd::tuple<Endianess, Signed_Mode, Ts...>> {
-  using type = decltype(boost::declval<upd::tuple<Endianess, Signed_Mode, Ts...>>().template get<I>());
+  using type = decltype(std::declval<upd::tuple<Endianess, Signed_Mode, Ts...>>().template get<I>());
 };
 
 #include "detail/undef.hpp" // IWYU pragma: keep
