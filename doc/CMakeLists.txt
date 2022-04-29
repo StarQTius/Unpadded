@@ -1,9 +1,9 @@
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/conf.py.in
-               ${CMAKE_CURRENT_BINARY_DIR}/conf.py @ONLY)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in
-               ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/index.rst.in
-               ${CMAKE_CURRENT_BINARY_DIR}/index.rst @ONLY)
+set(TEMPLATE_FILES conf.py Doxyfile index.rst shared.rst caller.rst callee.rst)
+
+foreach(TEMPLATE_FILE IN LISTS TEMPLATE_FILES)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${TEMPLATE_FILE}.in
+                 ${CMAKE_CURRENT_BINARY_DIR}/${TEMPLATE_FILE} @ONLY)
+endforeach()
 
 add_custom_target(
   Doxygen-xml
