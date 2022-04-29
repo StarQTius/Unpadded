@@ -6,6 +6,10 @@
 #include <cstdint>
 #include <type_traits>
 
+#if __cplusplus >= 201703L
+#include "index_sequence.hpp"
+#endif // __cplusplus >= 201703L
+
 #include "ternary.hpp"
 
 namespace upd {
