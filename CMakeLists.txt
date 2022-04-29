@@ -5,14 +5,6 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/tool)
 
 include(FetchContent)
 
-set(UNPADDED_BOOST_MODULES mp11 config static_assert)
-set(UNPADDED_BOOST_LIBRARIES_DIRECTORY ${UNPADDED_BOOST_MODULES})
-list(TRANSFORM UNPADDED_BOOST_LIBRARIES_DIRECTORY PREPEND libs/)
-FetchContent_Declare(
-  Boost
-  GIT_REPOSITORY https://github.com/boostorg/boost
-  GIT_SUBMODULES ${UNPADDED_BOOST_LIBRARIES_DIRECTORY} tools/cmake)
-
 FetchContent_Declare(Unity
                      GIT_REPOSITORY https://github.com/ThrowTheSwitch/Unity)
 

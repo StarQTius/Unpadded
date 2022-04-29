@@ -6,19 +6,15 @@
 #include <cstddef>
 #include <type_traits>
 
-#include <boost/mp11/algorithm.hpp>
-#include <boost/mp11/detail/mp_fold.hpp>
-#include <boost/mp11/detail/mp_list.hpp>
-#include <boost/mp11/detail/mp_plus.hpp>
-#include <boost/mp11/integer_sequence.hpp>
-#include <boost/mp11/integral.hpp>
-
 #include "detail/type_traits/conjunction.hpp"
+#include "detail/type_traits/index_sequence.hpp"
 #include "detail/type_traits/require.hpp"
 #include "detail/type_traits/signature.hpp"
+#include "detail/type_traits/typelist.hpp"
 #include "format.hpp"
 #include "serialization.hpp"
 #include "type.hpp"
+#include "typelist.hpp"
 
 #include "detail/def.hpp"
 
@@ -79,7 +75,7 @@ struct serialization_size {
 
 //! \brief Make a tuple view according to a typelist
 template<endianess Endianess, signed_mode Signed_Mode, typename It, typename... Ts>
-auto make_view_from_typelist(const It &it, boost::mp11::mp_list<Ts...>)
+auto make_view_from_typelist(const It &it, detail::tlist_t<Ts...>)
     -> decltype(tuple_view<It, Endianess, Signed_Mode, Ts...>{it}) {
   return tuple_view<It, Endianess, Signed_Mode, Ts...>{it};
 }
@@ -94,9 +90,6 @@ class tuple_base {
   D &derived() { return static_cast<D &>(*this); }
   const D &derived() const { return static_cast<const D &>(*this); }
 
-  using typelist = boost::mp11::mp_list<Ts...>;
-  using type_sizes = boost::mp11::mp_list<boost::mp11::mp_size_t<serialization_size<Ts>::value>...>;
-
   static_assert(detail::conjunction<std::integral_constant<bool,
                                                            (!std::is_const<Ts>::value && !std::is_volatile<Ts>::value &&
                                                             !std::is_reference<Ts>::value)>...>::value,
@@ -107,13 +100,19 @@ class tuple_base {
                 "user-defined extension and array types of any of these)");
 
 public:
+  //! \brief Typelist holding `Ts...`
+  using types_t = upd::typelist_t<Ts...>;
+
+  //! \brief Typelist holding the sizes in byte of each type of `Ts...` when serialized
+  using sizes_t = upd::typelist_t<serialization_size<Ts>...>;
+
   //! \brief Type of one of the serialized values
-  //! \tparam I Index of the requested value's type
+  //! \tparam I Index of the requested type in `Ts...`
   template<std::size_t I>
-  using arg_t = boost::mp11::mp_at_c<typelist, I>;
+  using arg_t = detail::at<types_t, I>;
 
   //! \brief Storage size in byte
-  constexpr static auto size = boost::mp11::mp_fold<type_sizes, boost::mp11::mp_size_t<0>, boost::mp11::mp_plus>::value;
+  constexpr static auto size = detail::sum<sizes_t>::value;
 
   //! \brief Equals the endianess given as template parameter
   constexpr static auto storage_endianess = Endianess;
@@ -125,9 +124,7 @@ public:
   //! \param t Tuple-like object to copy from
   template<typename T>
   D &operator=(T &&t) {
-    using boost::mp11::index_sequence_for;
-
-    lay_tuple(index_sequence_for<Ts...>{}, FWD(t));
+    lay_tuple(make_index_sequence<sizeof...(Ts)>{}, FWD(t));
     return derived();
   }
 
@@ -140,9 +137,10 @@ public:
 #else
   template<std::size_t I>
   decltype(read_as<arg_t<I>, Endianess, Signed_Mode>(nullptr)) get() const {
-    using namespace boost::mp11;
-    constexpr auto offset = mp_fold<mp_take_c<type_sizes, I>, mp_size_t<0>, mp_plus>::value;
+    using detail::clip;
+    using detail::sum;
 
+    constexpr auto offset = sum<clip<sizes_t, 0, I>>::value;
     return read_as<arg_t<I>, Endianess, Signed_Mode>(derived().src(), offset);
   }
 #endif
@@ -152,8 +150,10 @@ public:
   //! \param value Value to be copied from
   template<std::size_t I>
   void set(const arg_t<I> &value) {
-    using namespace boost::mp11;
-    constexpr auto offset = mp_fold<mp_take_c<type_sizes, I>, mp_size_t<0>, mp_plus>::value;
+    using detail::clip;
+    using detail::sum;
+
+    constexpr auto offset = sum<clip<sizes_t, 0, I>>::value;
     write_as<Endianess, Signed_Mode>(value, derived().src(), offset);
   }
 
@@ -166,30 +166,30 @@ public:
 #else
   template<typename F>
   detail::return_t<F> invoke(F &&ftor) const {
-    return invoke_impl(FWD(ftor), boost::mp11::index_sequence_for<Ts...>{});
+    return invoke_impl(FWD(ftor), make_index_sequence<sizeof...(Ts)>{});
   }
 #endif
 
 protected:
   //! \brief Serialize values into the object content
   template<std::size_t... Is, typename... Args>
-  void lay(boost::mp11::index_sequence<Is...>, const Args &...args) {
+  void lay(detail::index_sequence<Is...>, const Args &...args) {
     using discard = int[];
     discard{0, (set<Is>(args), 0)...};
   }
 
   //! \brief Lay the element of a tuple-like object into the content
   template<std::size_t... Is, typename T>
-  void lay_tuple(boost::mp11::index_sequence<Is...> is, T &&t) {
+  void lay_tuple(detail::index_sequence<Is...> is, T &&t) {
     using upd::get;
 
     lay(is, get<Is>(FWD(t))...);
   }
 
-  //! \brief Unserialize the tuple content and forward it as parameters to the provided functor
 private:
+  //! \brief Unserialize the tuple content and forward it as parameters to the provided functor
   template<typename F, std::size_t... Is>
-  detail::return_t<F> invoke_impl(F &&ftor, boost::mp11::index_sequence<Is...>) const {
+  detail::return_t<F> invoke_impl(F &&ftor, detail::index_sequence<Is...>) const {
     return FWD(ftor)(detail::normalize(get<Is>())...);
   }
 };
@@ -298,8 +298,8 @@ auto make_view(const tuple<Endianess, Signed_Mode, Ts...> &tuple) -> decltype(tu
 template<endianess Endianess = endianess::BUILTIN, signed_mode Signed_Mode = signed_mode::BUILTIN, typename... Ts>
 class tuple : public detail::tuple_base<tuple<Endianess, Signed_Mode, Ts...>, Endianess, Signed_Mode, Ts...> {
   using base_t = detail::tuple_base<tuple<Endianess, Signed_Mode, Ts...>, Endianess, Signed_Mode, Ts...>;
-  using typelist = boost::mp11::mp_list<Ts...>;
-  using type_sizes = boost::mp11::mp_list<boost::mp11::mp_size_t<detail::serialization_size<Ts>::value>...>;
+  using types_t = typename base_t::types_t;
+  using sizes_t = typename base_t::sizes_t;
 
 public:
   using base_t::operator=;
@@ -310,10 +310,7 @@ public:
   //! \brief Serialize the provided values
   //! \tparam Args... Serialized values types
   //! \param args... Values to be serialized
-  explicit tuple(const Ts &...args) {
-    using boost::mp11::index_sequence_for;
-    base_t::lay(index_sequence_for<Ts...>{}, args...);
-  }
+  explicit tuple(const Ts &...args) { base_t::lay(detail::make_index_sequence<sizeof...(Ts)>{}, args...); }
 
   //! \name Iterability
   //! @{
@@ -351,27 +348,29 @@ public:
   //! \tparam L Number of elements in the view
   //! \return a tuple view including every elements in the given range
   template<std::size_t I, std::size_t L>
-  decltype(detail::make_view_from_typelist<Endianess, Signed_Mode>(
-      (byte_t *)nullptr, boost::mp11::mp_take_c<boost::mp11::mp_drop_c<typelist, I>, L>{}))
+  decltype(detail::make_view_from_typelist<Endianess, Signed_Mode>((byte_t *)nullptr, detail::clip<types_t, I, L>{}))
   view() {
-    using namespace boost::mp11;
-    constexpr auto offset = mp_fold<mp_take_c<type_sizes, I>, mp_size_t<0>, mp_plus>::value;
-    return detail::make_view_from_typelist<Endianess, Signed_Mode>(begin() + offset,
-                                                                   mp_take_c<mp_drop_c<typelist, I>, L>{});
+    using detail::clip;
+    using detail::sum;
+    constexpr auto offset = sum<clip<sizes_t, 0, I>>::value;
+    return detail::make_view_from_typelist<Endianess, Signed_Mode>(begin() + offset, clip<types_t, I, L>{});
   }
+
+  //! \copydoc view
   template<std::size_t I, std::size_t L>
-  decltype(detail::make_view_from_typelist<Endianess, Signed_Mode>(
-      (const byte_t *)nullptr, boost::mp11::mp_take_c<boost::mp11::mp_drop_c<typelist, I>, L>{}))
+  decltype(detail::make_view_from_typelist<Endianess, Signed_Mode>((const byte_t *)nullptr,
+                                                                   detail::clip<types_t, I, L>{}))
   view() const {
-    using namespace boost::mp11;
-    constexpr auto offset = mp_fold<mp_take_c<type_sizes, I>, mp_size_t<0>, mp_plus>::value;
-    return detail::make_view_from_typelist<Endianess, Signed_Mode>(begin() + offset,
-                                                                   mp_take_c<mp_drop_c<typelist, I>, L>{});
+    using detail::clip;
+    using detail::sum;
+    constexpr auto offset = sum<clip<sizes_t, 0, I>>::value;
+    return detail::make_view_from_typelist<Endianess, Signed_Mode>(begin() + offset, clip<types_t, I, L>{});
   }
 
 private:
   upd::byte_t m_storage[base_t::size];
 };
+
 template<endianess Endianess, signed_mode Signed_Mode>
 class tuple<Endianess, Signed_Mode> : public detail::tuple_base<tuple<Endianess, Signed_Mode>, Endianess, Signed_Mode> {
 public:

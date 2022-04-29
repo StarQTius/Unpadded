@@ -14,7 +14,7 @@
 #include "detail/static_error.hpp"
 #include "detail/type_traits/is_byte_iterator.hpp"
 #include "detail/type_traits/require.hpp"
-#include "detail/type_traits/signature.hpp"
+#include "detail/type_traits/signature.hpp" // IWYU pragma: keep
 #include "detail/type_traits/typelist.hpp"
 #include "dispatcher.hpp" // IWYU pragma: keep
 #include "policy.hpp"
@@ -22,17 +22,19 @@
 
 #include "detail/def.hpp"
 
+// IWYU pragma: no_forward_declare upd::detail::map_parameters_size
+
 namespace upd {
 namespace detail {
 
 template<typename Keyring>
 using needed_input_buffer_size =
     std::integral_constant<std::size_t,
-                           detail::max<detail::map<typename Keyring::signatures_t, detail::parameters_size>>::value +
+                           detail::max<detail::map_parameters_size<typename Keyring::signatures_t::type>>::value +
                                sizeof(typename Keyring::index_t)>;
 
 template<typename Keyring>
-using needed_output_buffer_size = detail::max<detail::map<typename Keyring::signatures_t, detail::return_type_size>>;
+using needed_output_buffer_size = detail::max<detail::map_parameters_size<typename Keyring::signatures_t::type>>;
 
 }; // namespace detail
 

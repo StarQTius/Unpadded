@@ -104,7 +104,18 @@ struct is_invocable : decltype(is_invocable_impl<F>(0)) {};
 template<typename F>
 struct parameters_size : parameters_size<signature_t<F>> {};
 template<typename R, typename... Args>
-struct parameters_size<R(Args...)> : sum<boost::mp11::mp_list<std::integral_constant<std::size_t, sizeof(Args)>...>> {};
+struct parameters_size<R(Args...)> : sum<detail::tlist_t<std::integral_constant<std::size_t, sizeof(Args)>...>> {};
+
+//! @}
+
+//! \name
+//! \brief Map `parameters_size` over a typelist of invocable type
+//! @{
+
+template<typename>
+struct map_parameters_size;
+template<typename... Fs>
+struct map_parameters_size<tlist_t<Fs...>> : tlist_t<parameters_size<Fs>...> {};
 
 //! @}
 

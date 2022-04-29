@@ -3,16 +3,12 @@
 #pragma once
 
 #include "format.hpp"
-#include <boost/mp11.hpp> // IWYU pragma: keep
 
-// IWYU pragma: no_include "boost/mp11/detail/mp_list.hpp"
-
-#include "detail/type_traits/conjunction.hpp"
 #include "detail/type_traits/signature.hpp"
 #include "detail/type_traits/smallest.hpp"
 #include "detail/type_traits/typelist.hpp"
-#include "flist.hpp"
 #include "key.hpp"
+#include "typelist.hpp"
 #include "unevaluated.hpp" // IWYU pragma: keep
 
 // IWYU pragma: no_forward_declare unevaluated
@@ -44,15 +40,12 @@ template<endianess Endianess, signed_mode Signed_Mode, typename... Fs, Fs... Fun
 class keyring<Endianess, Signed_Mode, unevaluated<Fs, Functions>...>
 #endif // DOXYGEN
 {
-  static_assert((detail::conjunction<detail::is_invocable<Fs>...>::value),
-                "Keyrings only accepts callable objects as template parameters");
-
 public:
   //! \brief Typelist containing unevaluated references to the functions
   using flist_t = upd::flist_t<unevaluated<Fs, Functions>...>;
 
   //! \brief Typelist containing the signatures of the functions
-  using signatures_t = boost::mp11::mp_list<detail::signature_t<Fs>...>;
+  using signatures_t = typelist_t<detail::signature_t<Fs>...>;
 
   //! \brief Type of the index prepended to the payload when sending a packet to the slave
   using index_t = detail::smallest_unsigned_t<sizeof...(Fs)>;

@@ -1,5 +1,3 @@
-FetchContent_MakeAvailable(Boost)
-
 set(UNPADDED_HEADERS
     action.hpp
     buffered_dispatcher.hpp
@@ -17,6 +15,7 @@ set(UNPADDED_HEADERS
     detail/type_traits/conjunction.hpp
     detail/type_traits/detector.hpp
     detail/type_traits/flatten_tuple.hpp
+    detail/type_traits/index_sequence.hpp
     detail/type_traits/input_tuple.hpp
     detail/type_traits/is_byte_iterator.hpp
     detail/type_traits/is_keyring.hpp
@@ -27,7 +26,6 @@ set(UNPADDED_HEADERS
     detail/type_traits/signature.hpp
     detail/type_traits/typelist.hpp
     detail/undef.hpp
-    flist.hpp
     format.hpp
     key.hpp
     keyring.hpp
@@ -35,11 +33,11 @@ set(UNPADDED_HEADERS
     serialization.hpp
     tuple.hpp
     type.hpp
+    typelist.hpp
     unevaluated.hpp)
 
 add_library(Unpadded INTERFACE)
 target_include_directories(Unpadded INTERFACE ${PROJECT_SOURCE_DIR}/include)
-target_link_libraries(Unpadded INTERFACE Boost::mp11)
 if(Unpadded_IS_TOP_LEVEL AND DEFINED CMAKE_CXX_INCLUDE_WHAT_YOU_USE)
   include(Unpadded)
 
