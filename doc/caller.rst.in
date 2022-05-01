@@ -147,3 +147,12 @@ In non-blocking mode, the ``action`` class must be used to store a callback for 
 
 
 ``action`` is non-templated, so it is suitable for storage.
+
+API References
+--------------
+
+.. doxygenclass:: upd::key
+  :members:
+
+.. doxygenstruct:: upd::action
+  :members:
