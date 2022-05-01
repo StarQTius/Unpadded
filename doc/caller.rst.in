@@ -154,5 +154,5 @@ API References
 .. doxygenclass:: upd::key
   :members:
 
-.. doxygenstruct:: upd::action
+.. doxygenclass:: upd::action
   :members:

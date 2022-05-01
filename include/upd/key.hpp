@@ -20,7 +20,7 @@ namespace upd {
 
 template<typename Index_T, Index_T Index, typename F, endianess Endianess, signed_mode Signed_Mode>
 class key : public key<Index_T, Index, detail::signature_t<F>, Endianess, Signed_Mode> {
-  static_assert(detail::is_invocable<F>::value, K2O_ERROR_NOT_INVOCABLE(F));
+  static_assert(detail::is_invocable<F>::value, UPD_ERROR_NOT_INVOCABLE(F));
 };
 
 //! \brief Packet generator for invoking an action on a slave device
@@ -120,7 +120,7 @@ public:
     return retval.template get<0>();
   }
 
-  K2O_SFINAE_FAILURE_MEMBER(read_all, K2O_ERROR_NOT_INPUT(src))
+  UPD_SFINAE_FAILURE_MEMBER(read_all, UPD_ERROR_NOT_INPUT(src))
 
   //! \brief Plan an action to perform when a packet resulting from the execution of the action is received
   //! \param ftor Callback which will carry out the action
@@ -148,7 +148,7 @@ public:
   }
 #endif // __cplusplus >= 201703L
 
-  K2O_SFINAE_FAILURE_MEMBER(with_hook, K2O_ERROR_NOT_INVOCABLE(F))
+  UPD_SFINAE_FAILURE_MEMBER(with_hook, UPD_ERROR_NOT_INVOCABLE(F))
 };
 
 template<typename Index_T, Index_T Index, endianess Endianess, signed_mode Signed_Mode>

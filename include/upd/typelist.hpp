@@ -26,8 +26,8 @@ struct flist_t;
 //! \tparam Functions Invocable objects bound by reference
 template<typename... Fs, Fs... Functions>
 struct flist_t<unevaluated<Fs, Functions>...> : typelist_t<unevaluated<Fs, Functions>...> {
-  static_assert(detail::conjunction<detail::is_invocable<Fs>...>::value, K2O_ERROR_NOT_ALL_INVOCABLE(Functions));
-  static_assert(detail::conjunction<std::is_lvalue_reference<Fs>...>::value, K2O_ERROR_NOT_ALL_LVALUE(Functions));
+  static_assert(detail::conjunction<detail::is_invocable<Fs>...>::value, UPD_ERROR_NOT_ALL_INVOCABLE(Functions));
+  static_assert(detail::conjunction<std::is_lvalue_reference<Fs>...>::value, UPD_ERROR_NOT_ALL_LVALUE(Functions));
 };
 
 #if __cplusplus >= 201703L
@@ -36,7 +36,8 @@ struct flist_t<unevaluated<Fs, Functions>...> : typelist_t<unevaluated<Fs, Funct
 template<typename... Ts>
 constexpr typelist_t<Ts...> typelist;
 
-//! \copydoc flist_t
+//! \brief Typelist holding references to objects with static storage duration
+//! \tparam Functions Invocable objects bound by reference
 template<auto &...Functions>
 constexpr flist_t<unevaluated<decltype(Functions), Functions>...> flist;
 #endif // __cplusplus >= 201703L

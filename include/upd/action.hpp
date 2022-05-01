@@ -138,7 +138,7 @@ public:
   template<typename F, REQUIREMENT(invocable, F)>
   explicit action(F &&ftor) : action{FWD(ftor), builtin_endianess, builtin_signed_mode} {}
 
-  K2O_SFINAE_FAILURE_CTOR(action, K2O_ERROR_NOT_INVOCABLE(ftor))
+  UPD_SFINAE_FAILURE_CTOR(action, UPD_ERROR_NOT_INVOCABLE(ftor))
 
   using detail::immediate_process<action, void>::operator();
 
@@ -152,7 +152,7 @@ public:
     return (*m_concept_uptr)(detail::make_function_reference(src), detail::make_function_reference(dest));
   }
 
-  K2O_SFINAE_FAILURE_MEMBER(operator(), K2O_ERROR_NOT_INPUT(src) " OR " K2O_ERROR_NOT_OUTPUT(dest))
+  UPD_SFINAE_FAILURE_MEMBER(operator(), UPD_ERROR_NOT_INPUT(src) " OR " UPD_ERROR_NOT_OUTPUT(dest))
 
   //! \copybrief operator()
   //! \param input Input byte sequence
@@ -213,7 +213,7 @@ public:
     wrapper(detail::make_function_reference(src), detail::make_function_reference(dest));
   }
 
-  K2O_SFINAE_FAILURE_MEMBER(operator(), K2O_ERROR_NOT_INPUT(src) " OR " K2O_ERROR_NOT_OUTPUT(dest))
+  UPD_SFINAE_FAILURE_MEMBER(operator(), UPD_ERROR_NOT_INPUT(src) " OR " UPD_ERROR_NOT_OUTPUT(dest))
 
 private:
   void (*wrapper)(detail::src_t &&, detail::dest_t &&);

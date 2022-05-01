@@ -14,7 +14,7 @@ int identity(int x) { return x; }
 void void_procedure() {}
 
 constexpr auto kring =
-    upd::make_keyring(upd::make_flist(K2O_CTREF(check_64), K2O_CTREF(identity), K2O_CTREF(void_procedure)));
+    upd::make_keyring(upd::make_flist(UPD_CTREF(check_64), UPD_CTREF(identity), UPD_CTREF(void_procedure)));
 
 static void buffered_dispatcher_DO_load_an_action_EXPECT_correct_action_loaded_cpp17() {
 #if __cplusplus >= 201703L
@@ -36,7 +36,7 @@ static void buffered_dispatcher_DO_load_an_action_in_a_single_buffered_dispatche
 
   upd::byte_t kbuf[64];
   int result = 0;
-  auto k = kring.get(K2O_CTREF(identity));
+  auto k = kring.get(UPD_CTREF(identity));
   auto dis = make_single_buffered_dispatcher(kring, policy::any_action);
 
   static_assert(dis.buffer_size == sizeof(int) + sizeof(decltype(dis)::index_t));
@@ -53,7 +53,7 @@ static void buffered_dispatcher_DO_load_an_action_in_a_double_buffered_dispatche
 
   upd::byte_t kbuf[64];
   int result = 0;
-  auto k = kring.get(K2O_CTREF(identity));
+  auto k = kring.get(UPD_CTREF(identity));
   auto dis = make_double_buffered_dispatcher(kring, policy::any_action);
 
   static_assert(dis.input_buffer_size == sizeof(int) + sizeof(decltype(dis)::index_t));
@@ -71,7 +71,7 @@ static void buffered_dispatcher_DO_load_an_action_in_a_double_buffered_dispatche
 
   upd::byte_t kbuf[64];
   int result = 0;
-  auto k = kring.get(K2O_CTREF(identity));
+  auto k = kring.get(UPD_CTREF(identity));
   auto dis = make_double_buffered_dispatcher(kring, policy::any_action);
 
   static_assert(dis.input_buffer_size == sizeof(int) + sizeof(decltype(dis)::index_t));
@@ -103,7 +103,7 @@ static void buffered_dispatcher_DO_replace_an_action() {
 
   upd::byte_t buf[16], kbuf[16];
   auto dis = make_buffered_dispatcher(kring, buf, buf, policy::any_action);
-  auto k = kring.get(K2O_CTREF(identity));
+  auto k = kring.get(UPD_CTREF(identity));
 
   dis.replace<1>([](int x) {
     TEST_ASSERT_EQUAL(x, 64);
@@ -120,7 +120,7 @@ static void buffered_dispatcher_DO_give_an_invalid_index() {
 
   upd::byte_t buf[16], kbuf[16];
   auto dis = make_buffered_dispatcher(kring, buf, buf, policy::any_action);
-  auto k = kring.get(K2O_CTREF(identity));
+  auto k = kring.get(UPD_CTREF(identity));
 
   k(64) >> kbuf;
   kbuf[0] = 0xff;
@@ -140,7 +140,7 @@ static void buffered_dispatcher_DO_replace_void_procedure() {
 
   upd::byte_t buf[16], kbuf[16];
   auto dis = make_buffered_dispatcher(kring, buf, buf, policy::any_action);
-  auto k = kring.get(K2O_CTREF(void_procedure));
+  auto k = kring.get(UPD_CTREF(void_procedure));
 
   bool flag = false;
   dis.replace<2>([&]() { flag = true; });
@@ -156,7 +156,7 @@ static void buffered_dispatcher_DO_insert_bytes_one_by_one() {
 
   upd::byte_t buf[16], kbuf[16];
   auto dis = make_buffered_dispatcher(kring, buf, buf, policy::any_action);
-  auto k = kring.get(K2O_CTREF(identity));
+  auto k = kring.get(UPD_CTREF(identity));
 
   k(64) >> kbuf;
 
@@ -197,7 +197,7 @@ int main() {
          BUFFERED_DISPATCHER >> BYTE_PTR,
          BUFFERED_DISPATCHER >> WRITABLE,
          BUFFERED_DISPATCHER >> REGISTRY,
-         BUFFERED_DISPATCHER.replace<0>(K2O_CTREF(FUNCTOR)),
+         BUFFERED_DISPATCHER.replace<0>(UPD_CTREF(FUNCTOR)),
          BUFFERED_DISPATCHER.replace<0>(FUNCTOR),
          BUFFERED_DISPATCHER_STATIC.read_all(BYTE_PTR),
          BUFFERED_DISPATCHER_STATIC.read_all(READABLE),
@@ -215,7 +215,7 @@ int main() {
          BUFFERED_DISPATCHER_STATIC >> BYTE_PTR,
          BUFFERED_DISPATCHER_STATIC >> WRITABLE,
          BUFFERED_DISPATCHER_STATIC >> REGISTRY,
-         BUFFERED_DISPATCHER_STATIC.replace<0>(K2O_CTREF(FUNCTOR)));
+         BUFFERED_DISPATCHER_STATIC.replace<0>(UPD_CTREF(FUNCTOR)));
 
   UNITY_BEGIN();
   RUN_TEST(buffered_dispatcher_DO_load_an_action_EXPECT_correct_action_loaded_cpp17);

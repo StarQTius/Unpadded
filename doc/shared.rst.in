@@ -154,7 +154,7 @@ Here is what it would look like:
     upd::two_complement
   );
 
-If you find this to verbose, the ``K2O_CTREF`` macro can ease your pain:
+If you find this to verbose, the ``UPD_CTREF`` macro can ease your pain:
 
 .. code-block:: cpp
   :caption: motion_keyring.hpp
@@ -172,9 +172,9 @@ If you find this to verbose, the ``K2O_CTREF`` macro can ease your pain:
 
   constexpr auto motion_keyring = upd::make_keyring(
     upd::flist_t<
-      K2O_CTREF(set_forward_speed),
-      K2O_CTREF(set_left_steering_speed),
-      K2O_CTREF(set_right_steering_speed)
+      UPD_CTREF(set_forward_speed),
+      UPD_CTREF(set_left_steering_speed),
+      UPD_CTREF(set_right_steering_speed)
     >{},
     upd::little_endian,
     upd::two_complement
@@ -188,3 +188,10 @@ API References
 
 .. doxygenstruct:: upd::unevaluated
   :members:
+
+.. doxygendefine:: UPD_CTREF
+
+.. doxygenstruct:: upd::flist_t< unevaluated< Fs, Functions >... >
+  :members:
+
+.. doxygenvariable:: upd::flist

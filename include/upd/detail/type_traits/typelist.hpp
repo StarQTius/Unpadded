@@ -155,19 +155,19 @@ constexpr auto clip_impl(tlist_t<Ts...> tl, index_sequence<Ns...>) {
 }
 
 //! \brief Expands to the element resulting in the call of `IMPL` on `LIST` converted to `tlist_t`
-#define K2O_TLIST_FUNCTION(IMPL, LIST, ...) typename decltype(IMPL<__VA_ARGS__>(LIST{}))::type
+#define UPD_TLIST_FUNCTION(IMPL, LIST, ...) typename decltype(IMPL<__VA_ARGS__>(LIST{}))::type
 
 //! \brief Wraps the value of `IMPL` invoked on `LIST` converted to `tlist_t`
-#define K2O_TLIST_WRAPPED_VALUE(IMPL, LIST, ...)                                                                       \
+#define UPD_TLIST_WRAPPED_VALUE(IMPL, LIST, ...)                                                                       \
   std::integral_constant<decltype(IMPL<__VA_ARGS__>(LIST{})), IMPL<__VA_ARGS__>(LIST{})>
 
 //! \name C++17 implementations
 //! @{
-#define K2O_AT_IMPL(L, I) K2O_TLIST_FUNCTION(at_impl, L, I)
-#define K2O_MAX_IMPL(L) K2O_TLIST_WRAPPED_VALUE(max_impl, L)
-#define K2O_FIND_IMPL(L, V) K2O_TLIST_FUNCTION(find_impl, L, V)
-#define K2O_SUM_IMPL(L) K2O_TLIST_FUNCTION(sum_impl, L)
-#define K2O_CLIP_IMPL(L, I, N) decltype(clip_impl<I>(L{}, make_index_sequence<N>{}))
+#define UPD_AT_IMPL(L, I) UPD_TLIST_FUNCTION(at_impl, L, I)
+#define UPD_MAX_IMPL(L) UPD_TLIST_WRAPPED_VALUE(max_impl, L)
+#define UPD_FIND_IMPL(L, V) UPD_TLIST_FUNCTION(find_impl, L, V)
+#define UPD_SUM_IMPL(L) UPD_TLIST_FUNCTION(sum_impl, L)
+#define UPD_CLIP_IMPL(L, I, N) decltype(clip_impl<I>(L{}, make_index_sequence<N>{}))
 //! }@
 
 #else // __cplusplus >= 201703L
@@ -217,38 +217,38 @@ struct clip_impl<0, 0, L, Retval> {
   using type = Retval;
 };
 
-#define K2O_GET_TYPE(...) typename __VA_ARGS__::type
+#define UPD_GET_TYPE(...) typename __VA_ARGS__::type
 
 //! \name Default implementations
 //! @{*
-#define K2O_AT_IMPL(L, I) K2O_GET_TYPE(at_impl<I, typename L::type>)
-#define K2O_MAX_IMPL(L) K2O_GET_TYPE(max_impl<typename L::type>)
-#define K2O_FIND_IMPL(L, V) K2O_GET_TYPE(find_impl<V, 0, typename L::type>)
-#define K2O_SUM_IMPL(L) K2O_GET_TYPE(sum_impl<std::integral_constant<std::uint8_t, 0>, typename L::type>)
-#define K2O_CLIP_IMPL(L, I, N) K2O_GET_TYPE(clip_impl<I, N, typename L::type, tlist_t<>>)
+#define UPD_AT_IMPL(L, I) UPD_GET_TYPE(at_impl<I, typename L::type>)
+#define UPD_MAX_IMPL(L) UPD_GET_TYPE(max_impl<typename L::type>)
+#define UPD_FIND_IMPL(L, V) UPD_GET_TYPE(find_impl<V, 0, typename L::type>)
+#define UPD_SUM_IMPL(L) UPD_GET_TYPE(sum_impl<std::integral_constant<std::uint8_t, 0>, typename L::type>)
+#define UPD_CLIP_IMPL(L, I, N) UPD_GET_TYPE(clip_impl<I, N, typename L::type, tlist_t<>>)
 //! }@
 
 #endif // __cplusplus >= 201703L
 
 //! \copydoc at_impl
 template<typename L, std::size_t I>
-using at = K2O_AT_IMPL(L, I);
+using at = UPD_AT_IMPL(L, I);
 
 //! \copydoc max_impl
 template<typename L>
-using max = K2O_MAX_IMPL(L);
+using max = UPD_MAX_IMPL(L);
 
 //! \copydoc find_impl
 template<typename L, typename V>
-using find = K2O_FIND_IMPL(L, V);
+using find = UPD_FIND_IMPL(L, V);
 
 //! \copydoc sum_impl
 template<typename L>
-using sum = K2O_SUM_IMPL(L);
+using sum = UPD_SUM_IMPL(L);
 
 //! \copydoc clip_impl
 template<typename L, std::size_t I, std::size_t N>
-using clip = K2O_CLIP_IMPL(L, I, N);
+using clip = UPD_CLIP_IMPL(L, I, N);
 
 //! \copydoc max
 template<typename... Ts>

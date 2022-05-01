@@ -18,18 +18,18 @@ extern callable<int, int> ftor1;
 extern callable<int, long> ftor2;
 extern callable<void, int> ftor3;
 
-constexpr auto ftor_list = upd::make_flist(K2O_CTREF(ftor3),
-                                           K2O_CTREF(function1),
-                                           K2O_CTREF(function2),
-                                           K2O_CTREF(ftor1),
-                                           K2O_CTREF(function3),
-                                           K2O_CTREF(ftor2));
+constexpr auto ftor_list = upd::make_flist(UPD_CTREF(ftor3),
+                                           UPD_CTREF(function1),
+                                           UPD_CTREF(function2),
+                                           UPD_CTREF(ftor1),
+                                           UPD_CTREF(function3),
+                                           UPD_CTREF(ftor2));
 
 static void keyring_DO_get_an_ikey_EXPECT_correct_index() {
   using namespace upd;
 
-  constexpr auto kring = make_keyring(make_flist(K2O_CTREF(function1), K2O_CTREF(function2), K2O_CTREF(function3)));
-  auto k = kring.get(K2O_CTREF(function2));
+  constexpr auto kring = make_keyring(make_flist(UPD_CTREF(function1), UPD_CTREF(function2), UPD_CTREF(function3)));
+  auto k = kring.get(UPD_CTREF(function2));
 
   TEST_ASSERT_EQUAL_UINT(1, k.index);
 }
@@ -38,7 +38,7 @@ static void keyring_DO_use_make_keyring_EXPECT_correct_behavior() {
   using namespace upd;
 
   constexpr auto kring = make_keyring(ftor_list);
-  auto k = kring.get(K2O_CTREF(function2));
+  auto k = kring.get(UPD_CTREF(function2));
 
   TEST_ASSERT_EQUAL_UINT(2, k.index);
 }

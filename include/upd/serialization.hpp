@@ -172,7 +172,7 @@ void write_as(const T &value, const It &begin, std::size_t offset) {
 
 namespace detail {
 
-K2O_DETAIL_MAKE_DETECTOR(is_serializable_impl,
+UPD_DETAIL_MAKE_DETECTOR(is_serializable_impl,
                          PACK(typename T),
                          PACK(typename = decltype(write_as<endianess::BUILTIN, signed_mode::BUILTIN>(std::declval<T>(),
                                                                                                      nullptr),

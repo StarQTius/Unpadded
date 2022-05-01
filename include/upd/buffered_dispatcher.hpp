@@ -70,8 +70,8 @@ class buffered_dispatcher
       public detail::writer<buffered_dispatcher<Dispatcher, Input_Iterator, Output_Iterator>> {
   using this_t = buffered_dispatcher<Dispatcher, Input_Iterator, Output_Iterator>;
 
-  static_assert(detail::is_byte_iterator<Input_Iterator>::value, K2O_ERROR_NOT_BYTE_ITERATOR(Input_Iterator));
-  static_assert(detail::is_byte_iterator<Output_Iterator>::value, K2O_ERROR_NOT_BYTE_ITERATOR(Output_Iterator));
+  static_assert(detail::is_byte_iterator<Input_Iterator>::value, UPD_ERROR_NOT_BYTE_ITERATOR(Input_Iterator));
+  static_assert(detail::is_byte_iterator<Output_Iterator>::value, UPD_ERROR_NOT_BYTE_ITERATOR(Output_Iterator));
 
 public:
   //! \copydoc dispatcher::index_t
@@ -110,7 +110,7 @@ public:
     return status;
   }
 
-  K2O_SFINAE_FAILURE_MEMBER(read_all, K2O_ERROR_NOT_INPUT(src))
+  UPD_SFINAE_FAILURE_MEMBER(read_all, UPD_ERROR_NOT_INPUT(src))
 
   using detail::reader<this_t, packet_status>::read;
 
@@ -153,7 +153,7 @@ public:
     }
   }
 
-  K2O_SFINAE_FAILURE_MEMBER(read, K2O_ERROR_NOT_INPUT(src))
+  UPD_SFINAE_FAILURE_MEMBER(read, UPD_ERROR_NOT_INPUT(src))
 
   using detail::immediate_writer<this_t>::write_all;
 
@@ -166,7 +166,7 @@ public:
       write(dest);
   }
 
-  K2O_SFINAE_FAILURE_MEMBER(write_all, K2O_ERROR_NOT_OUTPUT(dest))
+  UPD_SFINAE_FAILURE_MEMBER(write_all, UPD_ERROR_NOT_OUTPUT(dest))
 
   using detail::writer<this_t>::write;
 
@@ -179,7 +179,7 @@ public:
       FWD(dest)(*m_obuf_next++);
   }
 
-  K2O_SFINAE_FAILURE_MEMBER(write, K2O_ERROR_NOT_OUTPUT(dest))
+  UPD_SFINAE_FAILURE_MEMBER(write, UPD_ERROR_NOT_OUTPUT(dest))
 
   //! \copydoc dispatcher::replace(unevaluated<F,Ftor>)
   template<index_t Index, typename F, F Ftor>

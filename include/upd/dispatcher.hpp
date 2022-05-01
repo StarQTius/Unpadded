@@ -79,7 +79,7 @@ struct actions {
 //! \tparam Action_Features Restriction on stored actions
 template<typename Keyring, action_features Action_Features>
 class dispatcher : public detail::immediate_process<dispatcher<Keyring, Action_Features>, typename Keyring::index_t> {
-  static_assert(detail::is_keyring<Keyring>::value, K2O_ERROR_NOT_KEYRING(Keyring));
+  static_assert(detail::is_keyring<Keyring>::value, UPD_ERROR_NOT_KEYRING(Keyring));
 
 public:
   //! \copydoc keyring::signatures_t
@@ -151,9 +151,9 @@ public:
   //! \tparam Ftor Invocable with static storage duration
   template<index_t Index, typename F, F Ftor>
   void replace(unevaluated<F, Ftor>) {
-    static_assert(Index < size, K2O_ERROR_OUT_OF_BOUND(Index));
+    static_assert(Index < size, UPD_ERROR_OUT_OF_BOUND(Index));
     static_assert(std::is_same<detail::at<signatures_t, Index>, detail::signature_t<F>>::value,
-                  K2O_ERROR_SIGNATURE_MISMATCH(Ftor));
+                  UPD_ERROR_SIGNATURE_MISMATCH(Ftor));
 
     m_actions.content[Index] = detail::make_action<Action_Features, F, Ftor, endianess, signed_mode>();
   }
@@ -164,9 +164,9 @@ public:
   //! \tparam Ftor Invocable with static storage duration
   template<index_t Index, auto &Ftor>
   void replace() {
-    static_assert(Index < size, K2O_ERROR_OUT_OF_BOUND(Index));
+    static_assert(Index < size, UPD_ERROR_OUT_OF_BOUND(Index));
     static_assert(std::is_same<detail::at<signatures_t, Index>, detail::signature_t<decltype(Ftor)>>::value,
-                  K2O_ERROR_SIGNATURE_MISMATCH(Ftor));
+                  UPD_ERROR_SIGNATURE_MISMATCH(Ftor));
 
     replace<Index>(unevaluated<decltype(Ftor) &, Ftor>{});
   }
@@ -177,9 +177,9 @@ public:
   //! \param ftor Invocable of any kind
   template<index_t Index, typename F, REQUIRE_CLASS(Action_Features == action_features::ANY)>
   void replace(F &&ftor) {
-    static_assert(Index < size, K2O_ERROR_OUT_OF_BOUND(Index));
+    static_assert(Index < size, UPD_ERROR_OUT_OF_BOUND(Index));
     static_assert(std::is_same<detail::at<signatures_t, Index>, detail::signature_t<F>>::value,
-                  K2O_ERROR_SIGNATURE_MISMATCH(ftor));
+                  UPD_ERROR_SIGNATURE_MISMATCH(ftor));
 
     m_actions.content[Index] = action{FWD(ftor), endianess_h<endianess>{}, signed_mode_h<signed_mode>{}};
   }

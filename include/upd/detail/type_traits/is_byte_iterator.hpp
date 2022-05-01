@@ -10,7 +10,7 @@
 namespace upd {
 namespace detail {
 
-K2O_DETAIL_MAKE_DETECTOR(is_byte_iterator_impl, PACK(typename T), PACK(require_byte_iterator<T> = 0))
+UPD_DETAIL_MAKE_DETECTOR(is_byte_iterator_impl, PACK(typename T), PACK(require_byte_iterator<T> = 0))
 
 //! \brief Indicates if `T` is an iterator to a byte sequence
 template<typename T>

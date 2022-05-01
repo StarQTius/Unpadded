@@ -88,7 +88,7 @@ using signature_t = typename examine_invocable<F>::type;
 template<typename F>
 using return_t = typename examine_invocable<F>::return_type;
 
-K2O_DETAIL_MAKE_DETECTOR(
+UPD_DETAIL_MAKE_DETECTOR(
     is_invocable_impl,
     PACK(typename F),
     PACK(typename = typename std::enable_if<!std::is_convertible<examine_invocable<F>, no_signature>::value>::type))
@@ -125,7 +125,7 @@ struct return_type_size : std::integral_constant<std::size_t, sizeof(return_t<F>
 template<typename... Args>
 struct return_type_size<void(Args...)> : std::integral_constant<std::size_t, 0> {};
 
-K2O_DETAIL_MAKE_DETECTOR(
+UPD_DETAIL_MAKE_DETECTOR(
     has_signature_impl,
     PACK(typename F, typename R, typename... Args),
     PACK(typename = typename std::enable_if<

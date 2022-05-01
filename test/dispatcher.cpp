@@ -9,7 +9,7 @@ int get_16() { return 16; }
 int get_32() { return 32; }
 int identity(int x) { return x; }
 
-constexpr auto ftor_list = upd::make_flist(K2O_CTREF(get_8), K2O_CTREF(get_16), K2O_CTREF(get_32), K2O_CTREF(identity));
+constexpr auto ftor_list = upd::make_flist(UPD_CTREF(get_8), UPD_CTREF(get_16), UPD_CTREF(get_32), UPD_CTREF(identity));
 
 static void dispatcher_DO_call_action_EXPECT_calling_correct_action() {
   using namespace upd;
@@ -92,7 +92,7 @@ static void dispatcher_DO_replace_a_no_storage_action_EXPECT_changed_action() {
   TEST_ASSERT_EQUAL_UINT(16, output.get<0>());
 
   i = 0, j = 0;
-  dispatcher.replace<1>(K2O_CTREF(get_32));
+  dispatcher.replace<1>(UPD_CTREF(get_32));
   dispatcher([&]() { return function16_index[i++]; }, [&](upd::byte_t byte) { output[j++] = byte; });
 
   TEST_ASSERT_EQUAL_UINT(32, output.get<0>());
@@ -108,13 +108,13 @@ int main() {
          DISPATCHER(READABLE, BYTE_PTR),
          DISPATCHER(BYTE_PTR, WRITABLE),
          DISPATCHER(BYTE_PTR, BYTE_PTR),
-         DISPATCHER.replace<0>(K2O_CTREF(FUNCTOR)),
+         DISPATCHER.replace<0>(UPD_CTREF(FUNCTOR)),
          DISPATCHER.replace<0>(FUNCTOR),
          DISPATCHER_STATIC(READABLE, WRITABLE),
          DISPATCHER_STATIC(READABLE, BYTE_PTR),
          DISPATCHER_STATIC(BYTE_PTR, WRITABLE),
          DISPATCHER_STATIC(BYTE_PTR, BYTE_PTR),
-         DISPATCHER_STATIC.replace<0>(K2O_CTREF(FUNCTOR)));
+         DISPATCHER_STATIC.replace<0>(UPD_CTREF(FUNCTOR)));
 
   UNITY_BEGIN();
   RUN_TEST(dispatcher_DO_call_action_EXPECT_calling_correct_action);

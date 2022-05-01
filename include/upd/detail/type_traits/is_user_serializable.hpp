@@ -9,7 +9,7 @@
 namespace upd {
 namespace detail {
 
-K2O_DETAIL_MAKE_DETECTOR(is_user_serializable_impl,
+UPD_DETAIL_MAKE_DETECTOR(is_user_serializable_impl,
                          PACK(typename T),
                          PACK(typename = decltype(upd_extension((T *)nullptr))))
 

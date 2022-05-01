@@ -3,7 +3,7 @@
 #pragma once
 
 //! \brief Bind an object with static storage duration to a compile-time reference
-#define K2O_CTREF(VALUE)                                                                                               \
+#define UPD_CTREF(VALUE)                                                                                               \
   ::upd::unevaluated<decltype(VALUE) &, VALUE> {}
 
 namespace upd {
