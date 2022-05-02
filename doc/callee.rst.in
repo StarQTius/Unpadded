@@ -1,5 +1,173 @@
 Implementing callee side
 ========================
 
+@PROJECT_NAME@ provides tools for receiving and processing incoming packet from the caller. Depending on your needs, there are several options available, especially for embedded platforms.
+
+The following sections will assume these functions to be defined by the master device:
+
+.. code-block:: cpp
+
+  void write_byte_to_master(upd::byte_t);
+  upd::byte_t read_byte_from_master();
+
 Basics : fulfiling incoming request with dispatchers
 ----------------------------------------------------
+
+.. warning Dispatchers are NOT thread-safe.
+
+Processing incoming invocation requests and sending back the result of this invocation to the caller is done with the dispatcher classes. There are four of them:
+
+- ``dispatcher``, the most basic one, which provide no internal buffer;
+- ``buffered_dispatcher``, which use user-provided buffers;
+- ``single_buffered_dispatcher``, which use a single internal buffer for both receiving and sending;
+- ``double_buffered_dispatcher``, which use two separate internal buffers: one for receiving and one for sending;
+
+Receiving a packet and sending back a response packet is pretty straightforward:
+
+.. code-block:: cpp
+
+  // We assume that a `keyring` object has been defined and both the caller and the callee use this keyring
+
+  // We create a dispatcher which can handle request for the invocables managed by ``keyring``
+  // The second argument will be discussed later
+  static upd::dispatcher dispatcher{keyring, upd::policy::any_action};
+
+  // Let's assume this function is invoked when the input buffer contains a full request
+  void processing_request() {
+    // And, that's it ! With this single line, the dispatcher will automatically extract the bytes from the input buffer and write the response to the output buffer
+    dispatcher(read_byte_from_master, write_byte_to_master);
+  }
+
+Buffered dispatchers vs. non-buffered dispatchers
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Both kind of dispatchers use callbacks to read and write the bytes of the packets. However:
+
+- Non-buffered dispatchers will immediately read all the bytes needed for a full packet, regardless of whether these bytes have actually all been receive at this point. In other words, the provided invocable which is used to get the bytes one by one will be called reapetedly, and it is up to you to implement the correct behavior. For example, you may block until at least one byte is available. The most sensible solution would be to call the dispatcher only when enough bytes have been received.
+- Buffered dispatchers use buffers which allow you to store incomplete packets. That means that you may receive a part of the packet, then do something else to finally receive the rest later.
+
+Non buffered dispatcher may be a viable option when you can afford to block the execuction of your program. It may be also be useful if you have specific needs and want to implement your own dispatcher, since it is the most basic form of dispatcher.
+
+Buffered dispatchers are best used when you can't afford to waste machine cycles. For example, on most embedded system, the microcontroller can only store one byte in a register. Therefore, you must immediately process every byte on they are receive, or store them in a buffer. Same goes with sending. In that case, buffered dispatchers are suitable, since they provide the aforesaid buffer.
+
+Single buffered dispatchers vs. double buffered dispatchers
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Single buffered dispatchers only have a single internal buffer, which is use to store both incoming packets and packets to send back. However, you can't receive any packets as long as you have a packet to send in the buffer. Only one packet in the buffer.
+
+Double buffered dispatchers, on the other hand, use separate buffers for input and output. That means that you can receive an incoming request and sending a response packet at the same time. Only one packet can fit in both buffers.
+
+You can implement your owm kind of buffered dispatcher using the ``buffered_dispatcher`` class. On the other hand, ``single_buffered_dispatcher`` and ``double_buffered_dispatcher`` come with their owm internal buffers, whose sizes are optimized to handle packets no larger than what you should receive or send. These sizes are deduced at compile-time with CTAD (or template argument deduction is you are using ``make_single_buffered_dispatcher`` or ``make_double_buffered_dispatcher``) using the provided keyring.
+
+Example
+~~~~~~~
+
+In the follwing example, we assume that ``on_byte_received`` is invoked whenever a byte has been received from master (which can be retrieved using ``read_byte_from_master``) and ``on_byte_sent`` is invoked whenever a byte has been fully sent to master with the function ``write_byte_to_master``.
+
+.. code-block:: cpp
+  :caption: motion_keyring.hpp
+
+  #pragma once
+
+  #include <cstdint>
+
+  #include <upd/keyring.hpp>
+  #include <upd/typelist.hpp>
+
+  void set_forward_speed(std::uint32_t);
+  void set_left_steering_speed(std::uint32_t);
+  void set_right_steering_speed(std::uint32_t);
+
+  constexpr upd::keyring motion_keyring{
+    upd::flist<set_forward_speed, set_left_steering_speed, set_right_steering_speed>,
+    upd::little_endian,
+    upd::two_complement
+  };
+
+.. code-block:: cpp
+  :caption: slave.cpp
+
+  #include <upd/buffered_dispatcher.hpp>
+  #include <upd/action.hpp>
+
+  #include "motion_keyring.hpp"
+
+  static upd::double_buffered_dispatcher dispatcher{keyring, upd::policy::any_action};
+
+  void set_forward_speed(std::uint32_t speed) {
+    // function implementation
+  }
+
+  void set_left_steering_speed(std::uint32_t speed) {
+    // function implementation
+  }
+
+  void set_right_steering_speed(std::uint32_t speed) {
+    // function implementation
+  }
+
+  void on_byte_received() {
+    // We read the incoming byte
+    auto status = dispatcher.read(read_byte_from_master);
+
+    switch (status) {
+    // If a packet has been fully received, then the request has been fulfilled and the output buffer contains a response packet
+    case packet_status::RESOLVED_PACKET:
+      // We thus start to send the response packet to the master
+      dispatcher.write(write_byte_to_master)
+      break;
+    // If a packet has been dropped, that means the received index is out of bound
+    // At this point, the input buffer is empty
+    // In that case, it is up to you to handle the issue, but it might be wise to stop reading the date in order to prevent the dispatcher from reading garbage
+    case packet_status::DROPPED_PACKET:
+      // Handling the error here
+      break;
+    default:
+      break;
+    }
+  }
+
+  void interrupt_byte_sent() {
+    // We keep sending the bytes of the response packet to the master
+    // If the packet has been completely sent already, then this line has no effect
+    dispatcher.write(write_byte_to_master);
+  }
+
+  int main() {
+    while (true);
+    return 0;
+  }
+
+Hot swapping callbacks
+----------------------
+
+You can replace what callback will invoked after your dispatcher has been created with the ``replace`` member function. However, it must be invocable in the same way (ie. it must be invocable on the same parameter as the replaced callback, and it must return a value of the same type). Depending on the storage policy, you can even replace the callbacks with callback of any storage duration.
+
+Storage policy
+--------------
+
+Depending on what you can afford to do, you will want your invocables to be stored differently. There is two available policy at the moment:
+
+- Allowing any kind of callback to be stored with the ``any_action`` policy. It means that the dispatcher is responsible for the life cycle of the callbacks, and it therefore uses dynamic allocation.
+- Allowing callback with static storage duration only with the ``static_storage_duration_only`` policy. In that case, the dispatcher doesn't need to manage the life cycle of the callbacks and only static storage allocation is used.
+
+The latter policy is more appropriate for embedding devices.
+
+API References
+--------------
+
+.. doxygenclass:: upd::dispatcher
+  :members:
+
+.. doxygenclass:: upd::buffered_dispatcher
+  :members:
+
+.. doxygenclass:: upd::single_buffered_dispatcher
+  :members:
+
+.. doxygenclass:: upd::double_buffered_dispatcher
+  :members:
+
+.. doxygenvariable:: upd::policy::any_action
+
+.. doxygenvariable:: upd::policy::static_storage_duration_only
