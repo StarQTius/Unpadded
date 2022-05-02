@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Implementing callee side &mdash; Python  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Implementing caller side" href="caller.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> Python
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="shared.html">Sharing RPC convention</a></li>
+<li class="toctree-l1"><a class="reference internal" href="caller.html">Implementing caller side</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Implementing callee side</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#basics-fulfiling-incoming-request-with-dispatchers">Basics : fulfiling incoming request with dispatchers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#buffered-dispatchers-vs-non-buffered-dispatchers">Buffered dispatchers vs. non-buffered dispatchers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#single-buffered-dispatchers-vs-double-buffered-dispatchers">Single buffered dispatchers vs. double buffered dispatchers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#example">Example</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#hot-swapping-callbacks">Hot swapping callbacks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#storage-policy">Storage policy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#api-references">API References</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Python</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Implementing callee side</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/callee.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="implementing-callee-side">
+<h1>Implementing callee side<a class="headerlink" href="#implementing-callee-side" title="Permalink to this headline"></a></h1>
+<p>Unpadded provides tools for receiving and processing incoming packet from the caller. Depending on your needs, there are several options available, especially for embedded platforms.</p>
+<p>The following sections will assume these functions to be defined by the master device:</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="nf">write_byte_to_master</span><span class="p">(</span><span class="n">upd</span><span class="o">::</span><span class="n">byte_t</span><span class="p">);</span>
+<span class="n">upd</span><span class="o">::</span><span class="n">byte_t</span> <span class="n">read_byte_from_master</span><span class="p">();</span>
+</pre></div>
+</div>
+<section id="basics-fulfiling-incoming-request-with-dispatchers">
+<h2>Basics : fulfiling incoming request with dispatchers<a class="headerlink" href="#basics-fulfiling-incoming-request-with-dispatchers" title="Permalink to this headline"></a></h2>
+<p>Processing incoming invocation requests and sending back the result of this invocation to the caller is done with the dispatcher classes. There are four of them:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">dispatcher</span></code>, the most basic one, which provide no internal buffer;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">buffered_dispatcher</span></code>, which use user-provided buffers;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">single_buffered_dispatcher</span></code>, which use a single internal buffer for both receiving and sending;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">double_buffered_dispatcher</span></code>, which use two separate internal buffers: one for receiving and one for sending;</p></li>
+</ul>
+<p>Receiving a packet and sending back a response packet is pretty straightforward:</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="c1">// We assume that a `keyring` object has been defined and both the caller and the callee use this keyring</span>
+
+<span class="c1">// We create a dispatcher which can handle request for the invocables managed by ``keyring``</span>
+<span class="c1">// The second argument will be discussed later</span>
+<span class="k">static</span> <span class="n">upd</span><span class="o">::</span><span class="n">dispatcher</span> <span class="n">dispatcher</span><span class="p">{</span><span class="n">keyring</span><span class="p">,</span> <span class="n">upd</span><span class="o">::</span><span class="n">policy</span><span class="o">::</span><span class="n">any_action</span><span class="p">};</span>
+
+<span class="c1">// Let&#39;s assume this function is invoked when the input buffer contains a full request</span>
+<span class="kt">void</span> <span class="nf">processing_request</span><span class="p">()</span> <span class="p">{</span>
+  <span class="c1">// And, that&#39;s it ! With this single line, the dispatcher will automatically extract the bytes from the input buffer and write the response to the output buffer</span>
+  <span class="n">dispatcher</span><span class="p">(</span><span class="n">read_byte_from_master</span><span class="p">,</span> <span class="n">write_byte_to_master</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<section id="buffered-dispatchers-vs-non-buffered-dispatchers">
+<h3>Buffered dispatchers vs. non-buffered dispatchers<a class="headerlink" href="#buffered-dispatchers-vs-non-buffered-dispatchers" title="Permalink to this headline"></a></h3>
+<p>Both kind of dispatchers use callbacks to read and write the bytes of the packets. However:</p>
+<ul class="simple">
+<li><p>Non-buffered dispatchers will immediately read all the bytes needed for a full packet, regardless of whether these bytes have actually all been receive at this point. In other words, the provided invocable which is used to get the bytes one by one will be called reapetedly, and it is up to you to implement the correct behavior. For example, you may block until at least one byte is available. The most sensible solution would be to call the dispatcher only when enough bytes have been received.</p></li>
+<li><p>Buffered dispatchers use buffers which allow you to store incomplete packets. That means that you may receive a part of the packet, then do something else to finally receive the rest later.</p></li>
+</ul>
+<p>Non buffered dispatcher may be a viable option when you can afford to block the execuction of your program. It may be also be useful if you have specific needs and want to implement your own dispatcher, since it is the most basic form of dispatcher.</p>
+<p>Buffered dispatchers are best used when you can’t afford to waste machine cycles. For example, on most embedded system, the microcontroller can only store one byte in a register. Therefore, you must immediately process every byte on they are receive, or store them in a buffer. Same goes with sending. In that case, buffered dispatchers are suitable, since they provide the aforesaid buffer.</p>
+</section>
+<section id="single-buffered-dispatchers-vs-double-buffered-dispatchers">
+<h3>Single buffered dispatchers vs. double buffered dispatchers<a class="headerlink" href="#single-buffered-dispatchers-vs-double-buffered-dispatchers" title="Permalink to this headline"></a></h3>
+<p>Single buffered dispatchers only have a single internal buffer, which is use to store both incoming packets and packets to send back. However, you can’t receive any packets as long as you have a packet to send in the buffer. Only one packet in the buffer.</p>
+<p>Double buffered dispatchers, on the other hand, use separate buffers for input and output. That means that you can receive an incoming request and sending a response packet at the same time. Only one packet can fit in both buffers.</p>
+<p>You can implement your owm kind of buffered dispatcher using the <code class="docutils literal notranslate"><span class="pre">buffered_dispatcher</span></code> class. On the other hand, <code class="docutils literal notranslate"><span class="pre">single_buffered_dispatcher</span></code> and <code class="docutils literal notranslate"><span class="pre">double_buffered_dispatcher</span></code> come with their owm internal buffers, whose sizes are optimized to handle packets no larger than what you should receive or send. These sizes are deduced at compile-time with CTAD (or template argument deduction is you are using <code class="docutils literal notranslate"><span class="pre">make_single_buffered_dispatcher</span></code> or <code class="docutils literal notranslate"><span class="pre">make_double_buffered_dispatcher</span></code>) using the provided keyring.</p>
+</section>
+<section id="example">
+<h3>Example<a class="headerlink" href="#example" title="Permalink to this headline"></a></h3>
+<p>In the follwing example, we assume that <code class="docutils literal notranslate"><span class="pre">on_byte_received</span></code> is invoked whenever a byte has been received from master (which can be retrieved using <code class="docutils literal notranslate"><span class="pre">read_byte_from_master</span></code>) and <code class="docutils literal notranslate"><span class="pre">on_byte_sent</span></code> is invoked whenever a byte has been fully sent to master with the function <code class="docutils literal notranslate"><span class="pre">write_byte_to_master</span></code>.</p>
+<div class="literal-block-wrapper docutils container" id="id1">
+<div class="code-block-caption"><span class="caption-text">motion_keyring.hpp</span><a class="headerlink" href="#id1" title="Permalink to this code"></a></div>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#pragma once</span>
+
+<span class="cp">#include</span> <span class="cpf">&lt;cstdint&gt;</span><span class="cp"></span>
+
+<span class="cp">#include</span> <span class="cpf">&lt;upd/keyring.hpp&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;upd/typelist.hpp&gt;</span><span class="cp"></span>
+
+<span class="kt">void</span> <span class="nf">set_forward_speed</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">uint32_t</span><span class="p">);</span>
+<span class="kt">void</span> <span class="nf">set_left_steering_speed</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">uint32_t</span><span class="p">);</span>
+<span class="kt">void</span> <span class="nf">set_right_steering_speed</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">uint32_t</span><span class="p">);</span>
+
+<span class="k">constexpr</span> <span class="n">upd</span><span class="o">::</span><span class="n">keyring</span> <span class="n">motion_keyring</span><span class="p">{</span>
+  <span class="n">upd</span><span class="o">::</span><span class="n">flist</span><span class="o">&lt;</span><span class="n">set_forward_speed</span><span class="p">,</span> <span class="n">set_left_steering_speed</span><span class="p">,</span> <span class="n">set_right_steering_speed</span><span class="o">&gt;</span><span class="p">,</span>
+  <span class="n">upd</span><span class="o">::</span><span class="n">little_endian</span><span class="p">,</span>
+  <span class="n">upd</span><span class="o">::</span><span class="n">two_complement</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+</div>
+<div class="literal-block-wrapper docutils container" id="id2">
+<div class="code-block-caption"><span class="caption-text">slave.cpp</span><a class="headerlink" href="#id2" title="Permalink to this code"></a></div>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;upd/buffered_dispatcher.hpp&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;upd/action.hpp&gt;</span><span class="cp"></span>
+
+<span class="cp">#include</span> <span class="cpf">&quot;motion_keyring.hpp&quot;</span><span class="cp"></span>
+
+<span class="k">static</span> <span class="n">upd</span><span class="o">::</span><span class="n">double_buffered_dispatcher</span> <span class="n">dispatcher</span><span class="p">{</span><span class="n">keyring</span><span class="p">,</span> <span class="n">upd</span><span class="o">::</span><span class="n">policy</span><span class="o">::</span><span class="n">any_action</span><span class="p">};</span>
+
+<span class="kt">void</span> <span class="nf">set_forward_speed</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">uint32_t</span> <span class="n">speed</span><span class="p">)</span> <span class="p">{</span>
+  <span class="c1">// function implementation</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="nf">set_left_steering_speed</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">uint32_t</span> <span class="n">speed</span><span class="p">)</span> <span class="p">{</span>
+  <span class="c1">// function implementation</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="nf">set_right_steering_speed</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">uint32_t</span> <span class="n">speed</span><span class="p">)</span> <span class="p">{</span>
+  <span class="c1">// function implementation</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="nf">on_byte_received</span><span class="p">()</span> <span class="p">{</span>
+  <span class="c1">// We read the incoming byte</span>
+  <span class="k">auto</span> <span class="n">status</span> <span class="o">=</span> <span class="n">dispatcher</span><span class="p">.</span><span class="n">read</span><span class="p">(</span><span class="n">read_byte_from_master</span><span class="p">);</span>
+
+  <span class="k">switch</span> <span class="p">(</span><span class="n">status</span><span class="p">)</span> <span class="p">{</span>
+  <span class="c1">// If a packet has been fully received, then the request has been fulfilled and the output buffer contains a response packet</span>
+  <span class="k">case</span> <span class="n">packet_status</span><span class="o">::</span><span class="nl">RESOLVED_PACKET</span><span class="p">:</span>
+    <span class="c1">// We thus start to send the response packet to the master</span>
+    <span class="n">dispatcher</span><span class="p">.</span><span class="n">write</span><span class="p">(</span><span class="n">write_byte_to_master</span><span class="p">)</span>
+    <span class="k">break</span><span class="p">;</span>
+  <span class="c1">// If a packet has been dropped, that means the received index is out of bound</span>
+  <span class="c1">// At this point, the input buffer is empty</span>
+  <span class="c1">// In that case, it is up to you to handle the issue, but it might be wise to stop reading the date in order to prevent the dispatcher from reading garbage</span>
+  <span class="k">case</span> <span class="n">packet_status</span><span class="o">::</span><span class="nl">DROPPED_PACKET</span><span class="p">:</span>
+    <span class="c1">// Handling the error here</span>
+    <span class="k">break</span><span class="p">;</span>
+  <span class="k">default</span><span class="o">:</span>
+    <span class="k">break</span><span class="p">;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="nf">interrupt_byte_sent</span><span class="p">()</span> <span class="p">{</span>
+  <span class="c1">// We keep sending the bytes of the response packet to the master</span>
+  <span class="c1">// If the packet has been completely sent already, then this line has no effect</span>
+  <span class="n">dispatcher</span><span class="p">.</span><span class="n">write</span><span class="p">(</span><span class="n">write_byte_to_master</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+  <span class="k">while</span> <span class="p">(</span><span class="nb">true</span><span class="p">);</span>
+  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</section>
+</section>
+<section id="hot-swapping-callbacks">
+<h2>Hot swapping callbacks<a class="headerlink" href="#hot-swapping-callbacks" title="Permalink to this headline"></a></h2>
+<p>You can replace what callback will invoked after your dispatcher has been created with the <code class="docutils literal notranslate"><span class="pre">replace</span></code> member function. However, it must be invocable in the same way (ie. it must be invocable on the same parameter as the replaced callback, and it must return a value of the same type). Depending on the storage policy, you can even replace the callbacks with callback of any storage duration.</p>
+</section>
+<section id="storage-policy">
+<h2>Storage policy<a class="headerlink" href="#storage-policy" title="Permalink to this headline"></a></h2>
+<p>Depending on what you can afford to do, you will want your invocables to be stored differently. There is two available policy at the moment:</p>
+<ul class="simple">
+<li><p>Allowing any kind of callback to be stored with the <code class="docutils literal notranslate"><span class="pre">any_action</span></code> policy. It means that the dispatcher is responsible for the life cycle of the callbacks, and it therefore uses dynamic allocation.</p></li>
+<li><p>Allowing callback with static storage duration only with the <code class="docutils literal notranslate"><span class="pre">static_storage_duration_only</span></code> policy. In that case, the dispatcher doesn’t need to manage the life cycle of the callbacks and only static storage allocation is used.</p></li>
+</ul>
+<p>The latter policy is more appropriate for embedding devices.</p>
+</section>
+<section id="api-references">
+<h2>API References<a class="headerlink" href="#api-references" title="Permalink to this headline"></a></h2>
+<dl class="cpp class">
+<dt class="sig sig-object cpp" id="_CPPv4I0_15action_featuresEN3upd10dispatcherE">
+<span id="_CPPv3I0_15action_featuresEN3upd10dispatcherE"></span><span id="_CPPv2I0_15action_featuresEN3upd10dispatcherE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Keyring</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">action_features</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Action_Features</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classupd_1_1dispatcher"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-prename descclassname"><span class="n"><span class="pre">upd</span></span><span class="p"><span class="pre">::</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">dispatcher</span></span></span><span class="w"> </span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="k"><span class="pre">public</span></span><span class="w"> </span><span class="n"><span class="pre">upd</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">detail</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">immediate_process</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0_15action_featuresEN3upd10dispatcherE" title="upd::dispatcher"><span class="n"><span class="pre">dispatcher</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0_15action_featuresEN3upd10dispatcherE" title="upd::dispatcher::Keyring"><span class="n"><span class="pre">Keyring</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_15action_featuresEN3upd10dispatcherE" title="upd::dispatcher::Action_Features"><span class="n"><span class="pre">Action_Features</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_15action_featuresEN3upd10dispatcherE" title="upd::dispatcher::Keyring"><span class="n"><span class="pre">Keyring</span></span></a><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">index_t</span></span><span class="p"><span class="pre">&gt;</span></span><a class="headerlink" href="#_CPPv4I0_15action_featuresEN3upd10dispatcherE" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Action containers able to unserialize byte sequence serialized by an key. </p>
+<p>A dispatcher is constructed from a keyring and is able to unserialize a payload serialized by an key created from the same keyring. When it happens, the dispatcher calls the function associated with the key, forwarding the arguments from the payload to the function. The functions are internally held as <code class="docutils literal notranslate"><span class="pre">action</span></code> objects.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Keyring</strong> – Keyring describing the actions to manage </p></li>
+<li><p><strong>Action_Features</strong> – Restriction on stored actions </p></li>
+</ul>
+</dd>
+</dl>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-types">Public Types</p>
+<dl class="cpp type">
+<dt class="sig sig-object cpp" id="_CPPv4N3upd10dispatcher12signatures_tE">
+<span id="_CPPv3N3upd10dispatcher12signatures_tE"></span><span id="_CPPv2N3upd10dispatcher12signatures_tE"></span><span class="target" id="classupd_1_1dispatcher_1ada727126fedc23dd5b52f9e86f989f5b"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">signatures_t</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_15action_featuresEN3upd10dispatcherE" title="upd::dispatcher::Keyring"><span class="n"><span class="pre">Keyring</span></span></a><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">signatures_t</span></span><a class="headerlink" href="#_CPPv4N3upd10dispatcher12signatures_tE" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Typelist containing the signatures of the functions. </p>
+</dd></dl>
+
+<dl class="cpp type">
+<dt class="sig sig-object cpp" id="_CPPv4N3upd10dispatcher7index_tE">
+<span id="_CPPv3N3upd10dispatcher7index_tE"></span><span id="_CPPv2N3upd10dispatcher7index_tE"></span><span class="target" id="classupd_1_1dispatcher_1abd74e4aeb5af4fcdb5d0bcca77f57f2c"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">index_t</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_15action_featuresEN3upd10dispatcherE" title="upd::dispatcher::Keyring"><span class="n"><span class="pre">Keyring</span></span></a><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">index_t</span></span><a class="headerlink" href="#_CPPv4N3upd10dispatcher7index_tE" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Type of the index prepended to the payload when sending a packet to the slave. </p>
+</dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N3upd10dispatcher10dispatcherE7Keyring17action_features_hI15Action_FeaturesE">
+<span id="_CPPv3N3upd10dispatcher10dispatcherE7Keyring17action_features_hI15Action_FeaturesE"></span><span id="_CPPv2N3upd10dispatcher10dispatcherE7Keyring17action_features_hI15Action_FeaturesE"></span><span id="upd::dispatcher::dispatcher__Keyring.action_features_h:Action_Features:"></span><span class="target" id="classupd_1_1dispatcher_1a78b97747e23c9485a4d215d9c14c9bd0"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">explicit</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">dispatcher</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0_15action_featuresEN3upd10dispatcherE" title="upd::dispatcher::Keyring"><span class="n"><span class="pre">Keyring</span></span></a>, <span class="n"><span class="pre">action_features_h</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0_15action_featuresEN3upd10dispatcherE" title="upd::dispatcher::Action_Features"><span class="n"><span class="pre">Action_Features</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N3upd10dispatcher10dispatcherE7Keyring17action_features_hI15Action_FeaturesE" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Construct the object from the provided keyring. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I00EN3upd10dispatcherclE7index_tRR3SrcRR4Dest">
+<span id="_CPPv3I00EN3upd10dispatcherclERR3SrcRR4Dest"></span><span id="_CPPv2I00EN3upd10dispatcherclERR3SrcRR4Dest"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Src</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Dest</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classupd_1_1dispatcher_1ae81b26648d0ead9221c5980524e7faed"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N3upd10dispatcher7index_tE" title="upd::dispatcher::index_t"><span class="n"><span class="pre">index_t</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">()</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I00EN3upd10dispatcherclE7index_tRR3SrcRR4Dest" title="upd::dispatcher::operator()::Src"><span class="n"><span class="pre">Src</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">src</span></span>, <a class="reference internal" href="#_CPPv4I00EN3upd10dispatcherclE7index_tRR3SrcRR4Dest" title="upd::dispatcher::operator()::Dest"><span class="n"><span class="pre">Dest</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">dest</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I00EN3upd10dispatcherclE7index_tRR3SrcRR4Dest" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Extract an index from a byte sequence then invoke the action with that index. </p>
+<p>The parameters for the action call are extracted from <code class="docutils literal notranslate"><span class="pre">src</span></code> and the return value is inserted into <code class="docutils literal notranslate"><span class="pre">dest</span></code>.</p>
+<p>The following member functions are also defined through CRTP. <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">auto</span> <span class="n">operator</span><span class="p">()(</span><span class="n">Input</span> <span class="o">&amp;&amp;</span><span class="p">,</span> <span class="n">Output</span> <span class="o">&amp;&amp;</span><span class="p">);</span>
+<span class="n">auto</span> <span class="n">operator</span><span class="p">()(</span><span class="n">Input</span> <span class="o">&amp;&amp;</span><span class="p">,</span> <span class="n">Output</span> <span class="o">&amp;&amp;</span><span class="p">)</span> <span class="n">const</span><span class="p">;</span>
+</pre></div>
+</div>
+ All these functions work the same way as <code class="docutils literal notranslate"><a class="reference internal" href="#classupd_1_1dispatcher_1ae81b26648d0ead9221c5980524e7faed"><span class="std std-ref"><span class="pre">operator()(Src</span> <span class="pre">&amp;&amp;,</span> <span class="pre">Dest</span> <span class="pre">&amp;&amp;)</span></span></a></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Input</strong> – An input functor type or an input iterator type </p></li>
+<li><p><strong>Output</strong> – An output functor type or an output iterator type</p></li>
+</ul>
+</dd>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>src</strong> – Input invocable </p></li>
+<li><p><strong>dest</strong> – Output invocable </p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>the index of the called action </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I0EN3upd10dispatcher10get_actionEP8action_tRR3Src">
+<span id="_CPPv3I0EN3upd10dispatcher10get_actionERR3Src"></span><span id="_CPPv2I0EN3upd10dispatcher10get_actionERR3Src"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Src</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classupd_1_1dispatcher_1a387b1165a27aa48fb35fd33145bd80da"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">action_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_action</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN3upd10dispatcher10get_actionEP8action_tRR3Src" title="upd::dispatcher::get_action::Src"><span class="n"><span class="pre">Src</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">src</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN3upd10dispatcher10get_actionEP8action_tRR3Src" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Extract an index from a byte sequence and get the action with that index. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>src</strong> – Input invocable </p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Either a reference to the action if it exists or <code class="docutils literal notranslate"><span class="pre">nullptr</span></code> </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I0ENK3upd10dispatcher9get_indexE7index_tRR3Src">
+<span id="_CPPv3I0ENK3upd10dispatcher9get_indexERR3Src"></span><span id="_CPPv2I0ENK3upd10dispatcher9get_indexERR3Src"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Src</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classupd_1_1dispatcher_1a73974225d79a05517a5e2828d5a1f569"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N3upd10dispatcher7index_tE" title="upd::dispatcher::index_t"><span class="n"><span class="pre">index_t</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_index</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0ENK3upd10dispatcher9get_indexE7index_tRR3Src" title="upd::dispatcher::get_index::Src"><span class="n"><span class="pre">Src</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">src</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4I0ENK3upd10dispatcher9get_indexE7index_tRR3Src" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Extract an index from a byte sequence. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>src</strong> – Input invocable </p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The extracted index </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I_7index_t0_1FEN3upd10dispatcher7replaceEv11unevaluatedI1F4FtorE">
+<span id="_CPPv3I_7index_t0_1FEN3upd10dispatcher7replaceE11unevaluatedI1F4FtorE"></span><span id="_CPPv2I_7index_t0_1FEN3upd10dispatcher7replaceE11unevaluatedI1F4FtorE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4N3upd10dispatcher7index_tE" title="upd::dispatcher::index_t"><span class="n"><span class="pre">index_t</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Index</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">F</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I_7index_t0_1FEN3upd10dispatcher7replaceEv11unevaluatedI1F4FtorE" title="upd::dispatcher::replace::F"><span class="n"><span class="pre">F</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Ftor</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classupd_1_1dispatcher_1a367dcd67b9352c89aaee452201ad49be"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">replace</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="shared.html#_CPPv4I0_1TEN3upd11unevaluatedE" title="upd::unevaluated"><span class="n"><span class="pre">unevaluated</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I_7index_t0_1FEN3upd10dispatcher7replaceEv11unevaluatedI1F4FtorE" title="upd::dispatcher::replace::F"><span class="n"><span class="pre">F</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I_7index_t0_1FEN3upd10dispatcher7replaceEv11unevaluatedI1F4FtorE" title="upd::dispatcher::replace::Ftor"><span class="n"><span class="pre">Ftor</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_7index_t0_1FEN3upd10dispatcher7replaceEv11unevaluatedI1F4FtorE" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Replace with an invocable with static storage duration. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Index</strong> – Index of the action to replace </p></li>
+<li><p><strong>Ftor</strong> – Invocable with static storage duration </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I_7index_t_RDaEN3upd10dispatcher7replaceEvv">
+<span id="_CPPv3I_7index_t_RDaEN3upd10dispatcher7replaceEv"></span><span id="_CPPv2I_7index_t_RDaEN3upd10dispatcher7replaceEv"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4N3upd10dispatcher7index_tE" title="upd::dispatcher::index_t"><span class="n"><span class="pre">index_t</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Index</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">Ftor</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classupd_1_1dispatcher_1a1ab87d42d537e11e3d9d8cab30a45cc4"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">replace</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_7index_t_RDaEN3upd10dispatcher7replaceEvv" title="Permalink to this definition"></a><br /></dt>
+<dd><p>(C++17) Replace with an invocable with static storage duration </p>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Index</strong> – Index of the action to replace </p></li>
+<li><p><strong>Ftor</strong> – Invocable with static storage duration </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I_7index_t0EN3upd10dispatcher7replaceEvRR1F">
+<span id="_CPPv3I_7index_t0EN3upd10dispatcher7replaceERR1F"></span><span id="_CPPv2I_7index_t0EN3upd10dispatcher7replaceERR1F"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4N3upd10dispatcher7index_tE" title="upd::dispatcher::index_t"><span class="n"><span class="pre">index_t</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Index</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">F</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classupd_1_1dispatcher_1a1c7c1f9232c2d9d988554393f745fcab"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">replace</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I_7index_t0EN3upd10dispatcher7replaceEvRR1F" title="upd::dispatcher::replace::F"><span class="n"><span class="pre">F</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">ftor</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_7index_t0EN3upd10dispatcher7replaceEvRR1F" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Replace with an invocable of any kind. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters</dt>
+<dd class="field-odd"><p><strong>Index</strong> – Index of the action to replace </p>
+</dd>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><p><strong>ftor</strong> – Invocable of any kind </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N3upd10dispatcherixE7index_t">
+<span id="_CPPv3N3upd10dispatcherixE7index_t"></span><span id="_CPPv2N3upd10dispatcherixE7index_t"></span><span id="upd::dispatcher::subscript-operator__index_t"></span><span class="target" id="classupd_1_1dispatcher_1a8de24bac6ee305561dfc3accd1cb4131"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">action_t</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">[]</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4N3upd10dispatcher7index_tE" title="upd::dispatcher::index_t"><span class="n"><span class="pre">index_t</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">index</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N3upd10dispatcherixE7index_t" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Get one of the stored actions. </p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>No bound check is performed. </p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>index</strong> – Index of an action </p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the action associated with that index </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK3upd10dispatcherixE7index_t">
+<span id="_CPPv3NK3upd10dispatcherixE7index_t"></span><span id="_CPPv2NK3upd10dispatcherixE7index_t"></span><span id="upd::dispatcher::subscript-operator__index_tC"></span><span class="target" id="classupd_1_1dispatcher_1a5ee731fbdfbf19e075b21626349adb0d"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">action_t</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">[]</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4N3upd10dispatcher7index_tE" title="upd::dispatcher::index_t"><span class="n"><span class="pre">index_t</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">index</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK3upd10dispatcherixE7index_t" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Get one of the stored actions. </p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>No bound check is performed. </p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>index</strong> – Index of an action </p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the action associated with that index </p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-static-attributes">Public Static Attributes</p>
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N3upd10dispatcher4sizeE">
+<span id="_CPPv3N3upd10dispatcher4sizeE"></span><span id="_CPPv2N3upd10dispatcher4sizeE"></span><span id="upd::dispatcher::size__auto"></span><span class="target" id="classupd_1_1dispatcher_1a329eb1db2c3a3986132b689437043742"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">size</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_15action_featuresEN3upd10dispatcherE" title="upd::dispatcher::Keyring"><span class="n"><span class="pre">Keyring</span></span></a><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size</span></span><a class="headerlink" href="#_CPPv4N3upd10dispatcher4sizeE" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Number of managed functions. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N3upd10dispatcher9endianessE">
+<span id="_CPPv3N3upd10dispatcher9endianessE"></span><span id="_CPPv2N3upd10dispatcher9endianessE"></span><span id="upd::dispatcher::endianess__auto"></span><span class="target" id="classupd_1_1dispatcher_1ac094df4786f8dd781b457177cc5ed625"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">endianess</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_15action_featuresEN3upd10dispatcherE" title="upd::dispatcher::Keyring"><span class="n"><span class="pre">Keyring</span></span></a><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">endianess</span></span><a class="headerlink" href="#_CPPv4N3upd10dispatcher9endianessE" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Endianess of the data in the packets built by the keys. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N3upd10dispatcher11signed_modeE">
+<span id="_CPPv3N3upd10dispatcher11signed_modeE"></span><span id="_CPPv2N3upd10dispatcher11signed_modeE"></span><span id="upd::dispatcher::signed_mode__auto"></span><span class="target" id="classupd_1_1dispatcher_1a54ded499e22548771c43c6425d5899df"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">signed_mode</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_15action_featuresEN3upd10dispatcherE" title="upd::dispatcher::Keyring"><span class="n"><span class="pre">Keyring</span></span></a><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">signed_mode</span></span><a class="headerlink" href="#_CPPv4N3upd10dispatcher11signed_modeE" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Signed number representation of the data in the packets built by the keys. </p>
+</dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-related">Related</p>
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4I0_15action_featuresEN3upd10dispatcher15make_dispatcherE">
+<span id="_CPPv3I0_15action_featuresEN3upd10dispatcher15make_dispatcherE"></span><span id="_CPPv2I0_15action_featuresEN3upd10dispatcher15make_dispatcherE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Keyring</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">action_features</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Action_Features</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classupd_1_1dispatcher_1a86a91f275cb722325ef291c567aa2409"></span><a class="reference internal" href="#_CPPv4I0_15action_featuresEN3upd10dispatcherE" title="upd::dispatcher"><span class="n"><span class="pre">dispatcher</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0_15action_featuresEN3upd10dispatcher15make_dispatcherE" title="upd::dispatcher::make_dispatcher::Keyring"><span class="n"><span class="pre">Keyring</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_15action_featuresEN3upd10dispatcher15make_dispatcherE" title="upd::dispatcher::make_dispatcher::Action_Features"><span class="n"><span class="pre">Action_Features</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">make_dispatcher</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0_15action_featuresEN3upd10dispatcher15make_dispatcherE" title="upd::dispatcher::make_dispatcher::Keyring"><span class="n"><span class="pre">Keyring</span></span></a>, <span class="n"><span class="pre">action_features_h</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0_15action_featuresEN3upd10dispatcher15make_dispatcherE" title="upd::dispatcher::make_dispatcher::Action_Features"><span class="n"><span class="pre">Action_Features</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0_15action_featuresEN3upd10dispatcher15make_dispatcherE" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Make a dispatcher. </p>
+</dd></dl>
+
+</div>
+</dd></dl>
+
+<dl class="cpp class">
+<dt class="sig sig-object cpp" id="_CPPv4I000EN3upd19buffered_dispatcherE">
+<span id="_CPPv3I000EN3upd19buffered_dispatcherE"></span><span id="_CPPv2I000EN3upd19buffered_dispatcherE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Dispatcher</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Input_Iterator</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Output_Iterator</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classupd_1_1buffered__dispatcher"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-prename descclassname"><span class="n"><span class="pre">upd</span></span><span class="p"><span class="pre">::</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">buffered_dispatcher</span></span></span><span class="w"> </span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="k"><span class="pre">public</span></span><span class="w"> </span><span class="n"><span class="pre">upd</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">detail</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">reader</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I000EN3upd19buffered_dispatcherE" title="upd::buffered_dispatcher"><span class="n"><span class="pre">buffered_dispatcher</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I000EN3upd19buffered_dispatcherE" title="upd::buffered_dispatcher::Dispatcher"><span class="n"><span class="pre">Dispatcher</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I000EN3upd19buffered_dispatcherE" title="upd::buffered_dispatcher::Input_Iterator"><span class="n"><span class="pre">Input_Iterator</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I000EN3upd19buffered_dispatcherE" title="upd::buffered_dispatcher::Output_Iterator"><span class="n"><span class="pre">Output_Iterator</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">packet_status</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">public</span></span><span class="w"> </span><span class="n"><span class="pre">upd</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">detail</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">writer</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I000EN3upd19buffered_dispatcherE" title="upd::buffered_dispatcher"><span class="n"><span class="pre">buffered_dispatcher</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I000EN3upd19buffered_dispatcherE" title="upd::buffered_dispatcher::Dispatcher"><span class="n"><span class="pre">Dispatcher</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I000EN3upd19buffered_dispatcherE" title="upd::buffered_dispatcher::Input_Iterator"><span class="n"><span class="pre">Input_Iterator</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I000EN3upd19buffered_dispatcherE" title="upd::buffered_dispatcher::Output_Iterator"><span class="n"><span class="pre">Output_Iterator</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><a class="headerlink" href="#_CPPv4I000EN3upd19buffered_dispatcherE" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Dispatcher with input / output storage. </p>
+<p>Instances of this class may store input and output byte sequences as they are received / sent. This allows the user to load and unload the dispatcher byte after byte, whereas plain dispatchers cannot buffer their input and ouput, therefore they must receive and send byte sequences all at once. Buffered dispatchers do not own their buffers directly. They must be provided through iterators. A buffered dispatcher state goes through the following states:<ol class="loweralpha simple">
+<li><p>The input buffer is empty, ready to load an action request in the input buffer.</p></li>
+<li><p>Once a full action request has been received, it is immediately fulfilled and the result is written in the output buffer. The input buffer is reset, thus it may receive a new request while the output buffer is unloaded.</p></li>
+<li><p>Once the output buffer is empty, it may be written again. </p></li>
+</ol>
+</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Input buffer reset is soft, in other word, its content is not erased. As a result, it is possible to use a single buffer as input and output as long as byte sequence reading and writting does not occur at the same time. For that purpose, <code class="docutils literal notranslate"><span class="pre">is_loaded</span></code> will indicate whether the output buffer is empty or not.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Dispatcher</strong> – Number of stored actions </p></li>
+<li><p><strong>Input_Iterator</strong> – Type of the iterator to the input buffer </p></li>
+<li><p><strong>Output_Iterator</strong> – Type of the iterator to the output buffer </p></li>
+</ul>
+</dd>
+</dl>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-types">Public Types</p>
+<dl class="cpp type">
+<dt class="sig sig-object cpp" id="_CPPv4N3upd19buffered_dispatcher7index_tE">
+<span id="_CPPv3N3upd19buffered_dispatcher7index_tE"></span><span id="_CPPv2N3upd19buffered_dispatcher7index_tE"></span><span class="target" id="classupd_1_1buffered__dispatcher_1aae22ff914a96159d1e23d84d0196ea79"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">index_t</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I000EN3upd19buffered_dispatcherE" title="upd::buffered_dispatcher::Dispatcher"><span class="n"><span class="pre">Dispatcher</span></span></a><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">index_t</span></span><a class="headerlink" href="#_CPPv4N3upd19buffered_dispatcher7index_tE" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Type of the index prepended to the payload when sending a packet to the slave. </p>
+</dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I0_15action_featuresEN3upd19buffered_dispatcher19buffered_dispatcherE7Keyring14Input_Iterator15Output_Iterator17action_features_hI15Action_FeaturesE">
+<span id="_CPPv3I0_15action_featuresEN3upd19buffered_dispatcher19buffered_dispatcherE7Keyring14Input_Iterator15Output_Iterator17action_features_hI15Action_FeaturesE"></span><span id="_CPPv2I0_15action_featuresEN3upd19buffered_dispatcher19buffered_dispatcherE7Keyring14Input_Iterator15Output_Iterator17action_features_hI15Action_FeaturesE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Keyring</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">action_features</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Action_Features</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classupd_1_1buffered__dispatcher_1a86203a393d895ff2b89fc11338fca2cf"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">buffered_dispatcher</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0_15action_featuresEN3upd19buffered_dispatcher19buffered_dispatcherE7Keyring14Input_Iterator15Output_Iterator17action_features_hI15Action_FeaturesE" title="upd::buffered_dispatcher::buffered_dispatcher::Keyring"><span class="n"><span class="pre">Keyring</span></span></a>, <a class="reference internal" href="#_CPPv4I000EN3upd19buffered_dispatcherE" title="upd::buffered_dispatcher::Input_Iterator"><span class="n"><span class="pre">Input_Iterator</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">input_it</span></span>, <a class="reference internal" href="#_CPPv4I000EN3upd19buffered_dispatcherE" title="upd::buffered_dispatcher::Output_Iterator"><span class="n"><span class="pre">Output_Iterator</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">output_it</span></span>, <span class="n"><span class="pre">action_features_h</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0_15action_featuresEN3upd19buffered_dispatcher19buffered_dispatcherE7Keyring14Input_Iterator15Output_Iterator17action_features_hI15Action_FeaturesE" title="upd::buffered_dispatcher::buffered_dispatcher::Action_Features"><span class="n"><span class="pre">Action_Features</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0_15action_featuresEN3upd19buffered_dispatcher19buffered_dispatcherE7Keyring14Input_Iterator15Output_Iterator17action_features_hI15Action_FeaturesE" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Initialize the underlying plain dispatcher with a keyring and hold iterators to the buffers. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters</dt>
+<dd class="field-odd"><p><strong>Keyring</strong> – Type of the keyring </p>
+</dd>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>input_it</strong> – Start of the input buffer </p></li>
+<li><p><strong>output_it</strong> – Start of the output buffer </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK3upd19buffered_dispatcher9is_loadedEv">
+<span id="_CPPv3NK3upd19buffered_dispatcher9is_loadedEv"></span><span id="_CPPv2NK3upd19buffered_dispatcher9is_loadedEv"></span><span id="upd::buffered_dispatcher::is_loadedC"></span><span class="target" id="classupd_1_1buffered__dispatcher_1a03e9d835df9ecf947f83a8c89f4c995b"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">is_loaded</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK3upd19buffered_dispatcher9is_loadedEv" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Indicates whether the output buffer contains data to send. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>true if and only if the next call to <code class="docutils literal notranslate"><span class="pre">write</span></code> or <code class="docutils literal notranslate"><span class="pre">write_all</span></code> will have a visible effect </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I0EN3upd19buffered_dispatcher8read_allE13packet_statusRR3Src">
+<span id="_CPPv3I0EN3upd19buffered_dispatcher8read_allERR3Src"></span><span id="_CPPv2I0EN3upd19buffered_dispatcher8read_allERR3Src"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Src</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classupd_1_1buffered__dispatcher_1a5f079f7608ee1b194f573c35c73b26e1"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">packet_status</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">read_all</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN3upd19buffered_dispatcher8read_allE13packet_statusRR3Src" title="upd::buffered_dispatcher::read_all::Src"><span class="n"><span class="pre">Src</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">src</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN3upd19buffered_dispatcher8read_allE13packet_statusRR3Src" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Put bytes into the input buffer until a full action request is stored. </p>
+<p>The following member functions are also defined through CRTP. <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">auto</span> <span class="n">operator</span><span class="o">&lt;&lt;</span><span class="p">(</span><span class="n">Src</span> <span class="o">&amp;&amp;</span><span class="p">);</span>
+<span class="n">auto</span> <span class="n">operator</span><span class="o">&lt;&lt;</span><span class="p">(</span><span class="n">Src</span> <span class="o">&amp;&amp;</span><span class="p">)</span> <span class="n">const</span><span class="p">;</span>
+<span class="n">auto</span> <span class="n">read_all</span><span class="p">(</span><span class="n">It</span><span class="p">);</span>
+<span class="n">auto</span> <span class="n">read_all</span><span class="p">(</span><span class="n">It</span><span class="p">)</span> <span class="n">const</span><span class="p">;</span>
+<span class="n">auto</span> <span class="n">operator</span><span class="o">&lt;&lt;</span><span class="p">(</span><span class="n">It</span><span class="p">);</span>
+<span class="n">auto</span> <span class="n">operator</span><span class="o">&lt;&lt;</span><span class="p">(</span><span class="n">It</span><span class="p">)</span> <span class="n">const</span><span class="p">;</span>
+</pre></div>
+</div>
+ All these functions work the same way as <code class="docutils literal notranslate"><a class="reference internal" href="#classupd_1_1buffered__dispatcher_1a5f079f7608ee1b194f573c35c73b26e1"><span class="std std-ref"><span class="pre">read_all(Src</span> <span class="pre">&amp;&amp;)</span></span></a></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Src</strong> – Input functor type </p></li>
+<li><p><strong>It</strong> – Input iterator type </p></li>
+</ul>
+</dd>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><p><strong>src</strong> – Input functor to a byte sequence </p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>one of the following :<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">DROPPED_PACKET</span></code>: the received index was invalid and the input buffer content was therefore discarded</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">RESOLVED_PACKET</span></code>: the packet was fully loaded and the associated action has been called (the input buffer is empty and the output buffer contains the result of the action invocation) </p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I0EN3upd19buffered_dispatcher4readE13packet_statusRR3Src">
+<span id="_CPPv3I0EN3upd19buffered_dispatcher4readERR3Src"></span><span id="_CPPv2I0EN3upd19buffered_dispatcher4readERR3Src"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Src</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classupd_1_1buffered__dispatcher_1ac7e29c263af1340d4893d492854ae753"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">packet_status</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">read</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN3upd19buffered_dispatcher4readE13packet_statusRR3Src" title="upd::buffered_dispatcher::read::Src"><span class="n"><span class="pre">Src</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">src</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN3upd19buffered_dispatcher4readE13packet_statusRR3Src" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Put one byte into the input buffer. </p>
+<p>The following member functions are also defined through CRTP. <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">R</span> <span class="n">read</span><span class="p">(</span><span class="n">const</span> <span class="n">volatile</span> <span class="n">byte_t</span> <span class="o">&amp;</span><span class="p">);</span>
+<span class="n">R</span> <span class="n">read</span><span class="p">(</span><span class="n">const</span> <span class="n">volatile</span> <span class="n">byte_t</span> <span class="o">&amp;</span><span class="p">)</span> <span class="n">const</span><span class="p">;</span>
+<span class="n">R</span> <span class="n">operator</span><span class="o">&lt;&lt;</span><span class="p">(</span><span class="n">const</span> <span class="n">volatile</span> <span class="n">byte_t</span> <span class="o">&amp;</span><span class="p">);</span>
+<span class="n">R</span> <span class="n">operator</span><span class="o">&lt;&lt;</span><span class="p">(</span><span class="n">const</span> <span class="n">volatile</span> <span class="n">byte_t</span> <span class="o">&amp;</span><span class="p">)</span> <span class="n">const</span><span class="p">;</span>
+<span class="n">R</span> <span class="n">read</span><span class="p">(</span><span class="n">It</span> <span class="n">it</span><span class="p">);</span>
+<span class="n">R</span> <span class="n">read</span><span class="p">(</span><span class="n">It</span> <span class="n">it</span><span class="p">)</span> <span class="n">const</span><span class="p">;</span>
+</pre></div>
+</div>
+ All these functions work the same way as <code class="docutils literal notranslate"><a class="reference internal" href="#classupd_1_1buffered__dispatcher_1ac7e29c263af1340d4893d492854ae753"><span class="std std-ref"><span class="pre">read(Src</span> <span class="pre">&amp;&amp;)</span></span></a></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters</dt>
+<dd class="field-odd"><p><strong>It</strong> – Input iterator type </p>
+</dd>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><p><strong>src</strong> – Input functor to a byte sequence </p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>one of the following :<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">LOADING_PACKET</span></code>: the packet is not yet fully loaded</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">DROPPED_PACKET</span></code>: the received index was invalid and the input buffer content was therefore discarded</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">RESOLVED_PACKET</span></code>: the packet was fully loaded and the associated action has been called (the input buffer is empty and the output buffer contains the result of the action invocation) </p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I0EN3upd19buffered_dispatcher9write_allEvRR4Dest">
+<span id="_CPPv3I0EN3upd19buffered_dispatcher9write_allERR4Dest"></span><span id="_CPPv2I0EN3upd19buffered_dispatcher9write_allERR4Dest"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Dest</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classupd_1_1buffered__dispatcher_1a8d4b283cc2a9b0aa7f32a740f81001d2"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">write_all</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN3upd19buffered_dispatcher9write_allEvRR4Dest" title="upd::buffered_dispatcher::write_all::Dest"><span class="n"><span class="pre">Dest</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">dest</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN3upd19buffered_dispatcher9write_allEvRR4Dest" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Completely output the output buffer content. </p>
+<p>The following member functions are also defined through CRTP. <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">void</span> <span class="n">operator</span><span class="o">&gt;&gt;</span><span class="p">(</span><span class="n">Dest</span> <span class="o">&amp;&amp;</span><span class="p">);</span>
+<span class="n">void</span> <span class="n">operator</span><span class="o">&gt;&gt;</span><span class="p">(</span><span class="n">Dest</span> <span class="o">&amp;&amp;</span><span class="p">)</span> <span class="n">const</span><span class="p">;</span>
+<span class="n">void</span> <span class="n">write_all</span><span class="p">(</span><span class="n">It</span><span class="p">);</span>
+<span class="n">void</span> <span class="n">write_all</span><span class="p">(</span><span class="n">It</span><span class="p">)</span> <span class="n">const</span><span class="p">;</span>
+<span class="n">void</span> <span class="n">operator</span><span class="o">&gt;&gt;</span><span class="p">(</span><span class="n">It</span><span class="p">);</span>
+<span class="n">void</span> <span class="n">operator</span><span class="o">&gt;&gt;</span><span class="p">(</span><span class="n">It</span><span class="p">)</span> <span class="n">const</span><span class="p">;</span>
+</pre></div>
+</div>
+ All these functions work the same way as <code class="docutils literal notranslate"><a class="reference internal" href="#classupd_1_1buffered__dispatcher_1a8d4b283cc2a9b0aa7f32a740f81001d2"><span class="std std-ref"><span class="pre">write_all(Dest</span> <span class="pre">&amp;&amp;)</span></span></a></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Dest</strong> – Output functor type </p></li>
+<li><p><strong>It</strong> – Output iterator type </p></li>
+</ul>
+</dd>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><p><strong>dest</strong> – Output functor for writing byte sequences </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I0EN3upd19buffered_dispatcher5writeEvRR4Dest">
+<span id="_CPPv3I0EN3upd19buffered_dispatcher5writeERR4Dest"></span><span id="_CPPv2I0EN3upd19buffered_dispatcher5writeERR4Dest"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Dest</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classupd_1_1buffered__dispatcher_1a177a512d09cbbba649cffe0234c9adbe"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">write</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN3upd19buffered_dispatcher5writeEvRR4Dest" title="upd::buffered_dispatcher::write::Dest"><span class="n"><span class="pre">Dest</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">dest</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN3upd19buffered_dispatcher5writeEvRR4Dest" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Output one byte from the output buffer. </p>
+<p>The following member functions are also defined through CRTP. <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">void</span> <span class="n">write</span><span class="p">(</span><span class="n">volatile</span> <span class="n">byte_t</span> <span class="o">&amp;</span><span class="p">);</span>
+<span class="n">void</span> <span class="n">write</span><span class="p">(</span><span class="n">volatile</span> <span class="n">byte_t</span> <span class="o">&amp;</span><span class="p">)</span> <span class="n">const</span><span class="p">;</span>
+<span class="n">void</span> <span class="n">operator</span><span class="o">&gt;&gt;</span><span class="p">(</span><span class="n">volatile</span> <span class="n">byte_t</span> <span class="o">&amp;</span><span class="p">);</span>
+<span class="n">void</span> <span class="n">operator</span><span class="o">&gt;&gt;</span><span class="p">(</span><span class="n">volatile</span> <span class="n">byte_t</span> <span class="o">&amp;</span><span class="p">)</span> <span class="n">const</span><span class="p">;</span>
+<span class="n">void</span> <span class="n">write</span><span class="p">(</span><span class="n">It</span><span class="p">);</span>
+<span class="n">void</span> <span class="n">write</span><span class="p">(</span><span class="n">It</span><span class="p">)</span> <span class="n">const</span><span class="p">;</span>
+</pre></div>
+</div>
+ All these functions work the same way as <code class="docutils literal notranslate"><a class="reference internal" href="#classupd_1_1buffered__dispatcher_1a177a512d09cbbba649cffe0234c9adbe"><span class="std std-ref"><span class="pre">write(Dest</span> <span class="pre">&amp;&amp;)</span></span></a></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters</dt>
+<dd class="field-odd"><p><strong>It</strong> – Output iterator type </p>
+</dd>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><p><strong>dest</strong> – Output functor for writing byte sequences </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I_7index_t0_1FEN3upd19buffered_dispatcher7replaceEv11unevaluatedI1F4FtorE">
+<span id="_CPPv3I_7index_t0_1FEN3upd19buffered_dispatcher7replaceE11unevaluatedI1F4FtorE"></span><span id="_CPPv2I_7index_t0_1FEN3upd19buffered_dispatcher7replaceE11unevaluatedI1F4FtorE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4N3upd19buffered_dispatcher7index_tE" title="upd::buffered_dispatcher::index_t"><span class="n"><span class="pre">index_t</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Index</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">F</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I_7index_t0_1FEN3upd19buffered_dispatcher7replaceEv11unevaluatedI1F4FtorE" title="upd::buffered_dispatcher::replace::F"><span class="n"><span class="pre">F</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Ftor</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classupd_1_1buffered__dispatcher_1a27edd662de81d598a17ded54e7e496f5"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">replace</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="shared.html#_CPPv4I0_1TEN3upd11unevaluatedE" title="upd::unevaluated"><span class="n"><span class="pre">unevaluated</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I_7index_t0_1FEN3upd19buffered_dispatcher7replaceEv11unevaluatedI1F4FtorE" title="upd::buffered_dispatcher::replace::F"><span class="n"><span class="pre">F</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I_7index_t0_1FEN3upd19buffered_dispatcher7replaceEv11unevaluatedI1F4FtorE" title="upd::buffered_dispatcher::replace::Ftor"><span class="n"><span class="pre">Ftor</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_7index_t0_1FEN3upd19buffered_dispatcher7replaceEv11unevaluatedI1F4FtorE" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Replace with an invocable with static storage duration. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Index</strong> – Index of the action to replace </p></li>
+<li><p><strong>Ftor</strong> – Invocable with static storage duration </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I_7index_t_RDaEN3upd19buffered_dispatcher7replaceEvv">
+<span id="_CPPv3I_7index_t_RDaEN3upd19buffered_dispatcher7replaceEv"></span><span id="_CPPv2I_7index_t_RDaEN3upd19buffered_dispatcher7replaceEv"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4N3upd19buffered_dispatcher7index_tE" title="upd::buffered_dispatcher::index_t"><span class="n"><span class="pre">index_t</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Index</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">Ftor</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classupd_1_1buffered__dispatcher_1a94898c97dbd21b0b71350b129d10d571"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">replace</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_7index_t_RDaEN3upd19buffered_dispatcher7replaceEvv" title="Permalink to this definition"></a><br /></dt>
+<dd><p>(C++17) Replace with an invocable with static storage duration </p>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Index</strong> – Index of the action to replace </p></li>
+<li><p><strong>Ftor</strong> – Invocable with static storage duration </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I_7index_t0EN3upd19buffered_dispatcher7replaceEvRR1F">
+<span id="_CPPv3I_7index_t0EN3upd19buffered_dispatcher7replaceERR1F"></span><span id="_CPPv2I_7index_t0EN3upd19buffered_dispatcher7replaceERR1F"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4N3upd19buffered_dispatcher7index_tE" title="upd::buffered_dispatcher::index_t"><span class="n"><span class="pre">index_t</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Index</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">F</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classupd_1_1buffered__dispatcher_1afc78a6412a0dce7c0e3cc3f244301a9e"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">replace</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I_7index_t0EN3upd19buffered_dispatcher7replaceEvRR1F" title="upd::buffered_dispatcher::replace::F"><span class="n"><span class="pre">F</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">ftor</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_7index_t0EN3upd19buffered_dispatcher7replaceEvRR1F" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Replace with an invocable of any kind. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters</dt>
+<dd class="field-odd"><p><strong>Index</strong> – Index of the action to replace </p>
+</dd>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><p><strong>ftor</strong> – Invocable of any kind </p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-related">Related</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I000_15action_featuresEN3upd19buffered_dispatcher24make_buffered_dispatcherE19buffered_dispatcherI10dispatcherI7Keyring15Action_FeaturesE14Input_Iterator15Output_IteratorE7Keyring14Input_Iterator15Output_Iterator17action_features_hI15Action_FeaturesE">
+<span id="_CPPv3I000_15action_featuresEN3upd19buffered_dispatcher24make_buffered_dispatcherE7Keyring14Input_Iterator15Output_Iterator17action_features_hI15Action_FeaturesE"></span><span id="_CPPv2I000_15action_featuresEN3upd19buffered_dispatcher24make_buffered_dispatcherE7Keyring14Input_Iterator15Output_Iterator17action_features_hI15Action_FeaturesE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Keyring</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Input_Iterator</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Output_Iterator</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">action_features</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Action_Features</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classupd_1_1buffered__dispatcher_1a34d59941164cb1ddda13d782b4ce0418"></span><a class="reference internal" href="#_CPPv4I000EN3upd19buffered_dispatcherE" title="upd::buffered_dispatcher"><span class="n"><span class="pre">buffered_dispatcher</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0_15action_featuresEN3upd10dispatcherE" title="upd::dispatcher"><span class="n"><span class="pre">dispatcher</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I000_15action_featuresEN3upd19buffered_dispatcher24make_buffered_dispatcherE19buffered_dispatcherI10dispatcherI7Keyring15Action_FeaturesE14Input_Iterator15Output_IteratorE7Keyring14Input_Iterator15Output_Iterator17action_features_hI15Action_FeaturesE" title="upd::buffered_dispatcher::make_buffered_dispatcher::Keyring"><span class="n"><span class="pre">Keyring</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I000_15action_featuresEN3upd19buffered_dispatcher24make_buffered_dispatcherE19buffered_dispatcherI10dispatcherI7Keyring15Action_FeaturesE14Input_Iterator15Output_IteratorE7Keyring14Input_Iterator15Output_Iterator17action_features_hI15Action_FeaturesE" title="upd::buffered_dispatcher::make_buffered_dispatcher::Action_Features"><span class="n"><span class="pre">Action_Features</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I000_15action_featuresEN3upd19buffered_dispatcher24make_buffered_dispatcherE19buffered_dispatcherI10dispatcherI7Keyring15Action_FeaturesE14Input_Iterator15Output_IteratorE7Keyring14Input_Iterator15Output_Iterator17action_features_hI15Action_FeaturesE" title="upd::buffered_dispatcher::make_buffered_dispatcher::Input_Iterator"><span class="n"><span class="pre">Input_Iterator</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I000_15action_featuresEN3upd19buffered_dispatcher24make_buffered_dispatcherE19buffered_dispatcherI10dispatcherI7Keyring15Action_FeaturesE14Input_Iterator15Output_IteratorE7Keyring14Input_Iterator15Output_Iterator17action_features_hI15Action_FeaturesE" title="upd::buffered_dispatcher::make_buffered_dispatcher::Output_Iterator"><span class="n"><span class="pre">Output_Iterator</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">make_buffered_dispatcher</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I000_15action_featuresEN3upd19buffered_dispatcher24make_buffered_dispatcherE19buffered_dispatcherI10dispatcherI7Keyring15Action_FeaturesE14Input_Iterator15Output_IteratorE7Keyring14Input_Iterator15Output_Iterator17action_features_hI15Action_FeaturesE" title="upd::buffered_dispatcher::make_buffered_dispatcher::Keyring"><span class="n"><span class="pre">Keyring</span></span></a>, <a class="reference internal" href="#_CPPv4I000_15action_featuresEN3upd19buffered_dispatcher24make_buffered_dispatcherE19buffered_dispatcherI10dispatcherI7Keyring15Action_FeaturesE14Input_Iterator15Output_IteratorE7Keyring14Input_Iterator15Output_Iterator17action_features_hI15Action_FeaturesE" title="upd::buffered_dispatcher::make_buffered_dispatcher::Input_Iterator"><span class="n"><span class="pre">Input_Iterator</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">input_it</span></span>, <a class="reference internal" href="#_CPPv4I000_15action_featuresEN3upd19buffered_dispatcher24make_buffered_dispatcherE19buffered_dispatcherI10dispatcherI7Keyring15Action_FeaturesE14Input_Iterator15Output_IteratorE7Keyring14Input_Iterator15Output_Iterator17action_features_hI15Action_FeaturesE" title="upd::buffered_dispatcher::make_buffered_dispatcher::Output_Iterator"><span class="n"><span class="pre">Output_Iterator</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">output_it</span></span>, <span class="n"><span class="pre">action_features_h</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I000_15action_featuresEN3upd19buffered_dispatcher24make_buffered_dispatcherE19buffered_dispatcherI10dispatcherI7Keyring15Action_FeaturesE14Input_Iterator15Output_IteratorE7Keyring14Input_Iterator15Output_Iterator17action_features_hI15Action_FeaturesE" title="upd::buffered_dispatcher::make_buffered_dispatcher::Action_Features"><span class="n"><span class="pre">Action_Features</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I000_15action_featuresEN3upd19buffered_dispatcher24make_buffered_dispatcherE19buffered_dispatcherI10dispatcherI7Keyring15Action_FeaturesE14Input_Iterator15Output_IteratorE7Keyring14Input_Iterator15Output_Iterator17action_features_hI15Action_FeaturesE" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Make a buffered dispatcher. </p>
+</dd></dl>
+
+</div>
+</dd></dl>
+
+<dl class="cpp class">
+<dt class="sig sig-object cpp" id="_CPPv4I0_NSt6size_tEEN3upd26single_buffered_dispatcherE">
+<span id="_CPPv3I0_NSt6size_tEEN3upd26single_buffered_dispatcherE"></span><span id="_CPPv2I0_NSt6size_tEEN3upd26single_buffered_dispatcherE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Dispatcher</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Buffer_Size</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classupd_1_1single__buffered__dispatcher"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-prename descclassname"><span class="n"><span class="pre">upd</span></span><span class="p"><span class="pre">::</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">single_buffered_dispatcher</span></span></span><span class="w"> </span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="k"><span class="pre">public</span></span><span class="w"> </span><span class="n"><span class="pre">upd</span></span><span class="p"><span class="pre">::</span></span><a class="reference internal" href="#_CPPv4I000EN3upd19buffered_dispatcherE" title="upd::buffered_dispatcher"><span class="n"><span class="pre">buffered_dispatcher</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0_NSt6size_tEEN3upd26single_buffered_dispatcherE" title="upd::single_buffered_dispatcher::Dispatcher"><span class="n"><span class="pre">Dispatcher</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">byte_t</span></span><span class="p"><span class="pre">*</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">byte_t</span></span><span class="p"><span class="pre">*</span></span><span class="p"><span class="pre">&gt;</span></span><a class="headerlink" href="#_CPPv4I0_NSt6size_tEEN3upd26single_buffered_dispatcherE" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Implements a dispatcher using a single buffer for input and output. </p>
+<p>The buffer is allocated statically as a plain array. If created using CTAD or <code class="docutils literal notranslate"><span class="pre">make_single_buffered_dispatcher</span></code>, its size is as small as possible for holding any action request and any action response. </p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>It is not possible to read a request and write a response at the same time. If you need that, use <code class="docutils literal notranslate"><a class="reference internal" href="#classupd_1_1double__buffered__dispatcher"><span class="std std-ref"><span class="pre">double_buffered_dispatcher</span></span></a></code> instead.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Dispatcher</strong> – Underlying dispatcher type </p></li>
+<li><p><strong>Buffer_Size</strong> – Size of the internal buffer </p></li>
+</ul>
+</dd>
+</dl>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I0_15action_featuresEN3upd26single_buffered_dispatcher26single_buffered_dispatcherE7Keyring17action_features_hI15Action_FeaturesE">
+<span id="_CPPv3I0_15action_featuresEN3upd26single_buffered_dispatcher26single_buffered_dispatcherE7Keyring17action_features_hI15Action_FeaturesE"></span><span id="_CPPv2I0_15action_featuresEN3upd26single_buffered_dispatcher26single_buffered_dispatcherE7Keyring17action_features_hI15Action_FeaturesE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Keyring</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">action_features</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Action_Features</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classupd_1_1single__buffered__dispatcher_1a1fbe6c45f1b4e900b6f33c5b8b388811"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">explicit</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">single_buffered_dispatcher</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0_15action_featuresEN3upd26single_buffered_dispatcher26single_buffered_dispatcherE7Keyring17action_features_hI15Action_FeaturesE" title="upd::single_buffered_dispatcher::single_buffered_dispatcher::Keyring"><span class="n"><span class="pre">Keyring</span></span></a>, <span class="n"><span class="pre">action_features_h</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0_15action_featuresEN3upd26single_buffered_dispatcher26single_buffered_dispatcherE7Keyring17action_features_hI15Action_FeaturesE" title="upd::single_buffered_dispatcher::single_buffered_dispatcher::Action_Features"><span class="n"><span class="pre">Action_Features</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0_15action_featuresEN3upd26single_buffered_dispatcher26single_buffered_dispatcherE7Keyring17action_features_hI15Action_FeaturesE" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Initialize the underlying dispatcher. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Keyring</strong> – Keyring which holds the actions to be managed by the dispatcher </p></li>
+<li><p><strong>Action_Features</strong> – Features of the actions managed by the dispatcher </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-static-attributes">Public Static Attributes</p>
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N3upd26single_buffered_dispatcher11buffer_sizeE">
+<span id="_CPPv3N3upd26single_buffered_dispatcher11buffer_sizeE"></span><span id="_CPPv2N3upd26single_buffered_dispatcher11buffer_sizeE"></span><span id="upd::single_buffered_dispatcher::buffer_size__auto"></span><span class="target" id="classupd_1_1single__buffered__dispatcher_1a75cb7ca48003c653f623dae4910d5cd2"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">buffer_size</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_NSt6size_tEEN3upd26single_buffered_dispatcherE" title="upd::single_buffered_dispatcher::Buffer_Size"><span class="n"><span class="pre">Buffer_Size</span></span></a><a class="headerlink" href="#_CPPv4N3upd26single_buffered_dispatcher11buffer_sizeE" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Equals the <code class="docutils literal notranslate"><span class="pre">Buffer_Size</span></code> template parameter. </p>
+</dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-related">Related</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I0_15action_featuresEN3upd26single_buffered_dispatcher31make_single_buffered_dispatcherEDa7Keyring17action_features_hI15Action_FeaturesE">
+<span id="_CPPv3I0_15action_featuresEN3upd26single_buffered_dispatcher31make_single_buffered_dispatcherE7Keyring17action_features_hI15Action_FeaturesE"></span><span id="_CPPv2I0_15action_featuresEN3upd26single_buffered_dispatcher31make_single_buffered_dispatcherE7Keyring17action_features_hI15Action_FeaturesE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Keyring</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">action_features</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Action_Features</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classupd_1_1single__buffered__dispatcher_1a6852483cce1af1c090bb0263f2c37eea"></span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">make_single_buffered_dispatcher</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0_15action_featuresEN3upd26single_buffered_dispatcher31make_single_buffered_dispatcherEDa7Keyring17action_features_hI15Action_FeaturesE" title="upd::single_buffered_dispatcher::make_single_buffered_dispatcher::Keyring"><span class="n"><span class="pre">Keyring</span></span></a>, <span class="n"><span class="pre">action_features_h</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0_15action_featuresEN3upd26single_buffered_dispatcher31make_single_buffered_dispatcherEDa7Keyring17action_features_hI15Action_FeaturesE" title="upd::single_buffered_dispatcher::make_single_buffered_dispatcher::Action_Features"><span class="n"><span class="pre">Action_Features</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0_15action_featuresEN3upd26single_buffered_dispatcher31make_single_buffered_dispatcherEDa7Keyring17action_features_hI15Action_FeaturesE" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Make a single buffered dispatcher. </p>
+</dd></dl>
+
+</div>
+</dd></dl>
+
+<dl class="cpp class">
+<dt class="sig sig-object cpp" id="_CPPv4I0_NSt6size_tE_NSt6size_tEEN3upd26double_buffered_dispatcherE">
+<span id="_CPPv3I0_NSt6size_tE_NSt6size_tEEN3upd26double_buffered_dispatcherE"></span><span id="_CPPv2I0_NSt6size_tE_NSt6size_tEEN3upd26double_buffered_dispatcherE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Dispatcher</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Input_Buffer_Size</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Output_Buffer_Size</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classupd_1_1double__buffered__dispatcher"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-prename descclassname"><span class="n"><span class="pre">upd</span></span><span class="p"><span class="pre">::</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">double_buffered_dispatcher</span></span></span><span class="w"> </span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="k"><span class="pre">public</span></span><span class="w"> </span><span class="n"><span class="pre">upd</span></span><span class="p"><span class="pre">::</span></span><a class="reference internal" href="#_CPPv4I000EN3upd19buffered_dispatcherE" title="upd::buffered_dispatcher"><span class="n"><span class="pre">buffered_dispatcher</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0_NSt6size_tE_NSt6size_tEEN3upd26double_buffered_dispatcherE" title="upd::double_buffered_dispatcher::Dispatcher"><span class="n"><span class="pre">Dispatcher</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">byte_t</span></span><span class="p"><span class="pre">*</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">byte_t</span></span><span class="p"><span class="pre">*</span></span><span class="p"><span class="pre">&gt;</span></span><a class="headerlink" href="#_CPPv4I0_NSt6size_tE_NSt6size_tEEN3upd26double_buffered_dispatcherE" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Implements a dispatcher using separate buffers for input and output. </p>
+<p>The buffers are allocated statically as plain arrays. If created using CTAD or <code class="docutils literal notranslate"><span class="pre">make_double_buffered_dispatcher</span></code>, their sizes are as small as possible for holding any action request and any action response. </p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you would rather having a single buffer and do not mind reading and writing at different moment, consider using <code class="docutils literal notranslate"><a class="reference internal" href="#classupd_1_1single__buffered__dispatcher"><span class="std std-ref"><span class="pre">single_buffered_dispatcher</span></span></a></code> instead.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Dispatcher</strong> – Underlying dispatcher type </p></li>
+<li><p><strong>Input_Buffer_Size</strong> – Size of the input internal buffer </p></li>
+<li><p><strong>Output_Buffer_Size</strong> – Size of the output internal buffer </p></li>
+</ul>
+</dd>
+</dl>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I0_15action_featuresEN3upd26double_buffered_dispatcher26double_buffered_dispatcherE7Keyring17action_features_hI15Action_FeaturesE">
+<span id="_CPPv3I0_15action_featuresEN3upd26double_buffered_dispatcher26double_buffered_dispatcherE7Keyring17action_features_hI15Action_FeaturesE"></span><span id="_CPPv2I0_15action_featuresEN3upd26double_buffered_dispatcher26double_buffered_dispatcherE7Keyring17action_features_hI15Action_FeaturesE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Keyring</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">action_features</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Action_Features</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classupd_1_1double__buffered__dispatcher_1ae2a6387c9010d9b1394562211589b5fd"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">explicit</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">double_buffered_dispatcher</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0_15action_featuresEN3upd26double_buffered_dispatcher26double_buffered_dispatcherE7Keyring17action_features_hI15Action_FeaturesE" title="upd::double_buffered_dispatcher::double_buffered_dispatcher::Keyring"><span class="n"><span class="pre">Keyring</span></span></a>, <span class="n"><span class="pre">action_features_h</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0_15action_featuresEN3upd26double_buffered_dispatcher26double_buffered_dispatcherE7Keyring17action_features_hI15Action_FeaturesE" title="upd::double_buffered_dispatcher::double_buffered_dispatcher::Action_Features"><span class="n"><span class="pre">Action_Features</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0_15action_featuresEN3upd26double_buffered_dispatcher26double_buffered_dispatcherE7Keyring17action_features_hI15Action_FeaturesE" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Initialize the underlying dispatcher. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Keyring</strong> – Keyring which holds the actions to be managed by the dispatcher </p></li>
+<li><p><strong>Action_Features</strong> – Features of the actions managed by the dispatcher </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-static-attributes">Public Static Attributes</p>
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N3upd26double_buffered_dispatcher17input_buffer_sizeE">
+<span id="_CPPv3N3upd26double_buffered_dispatcher17input_buffer_sizeE"></span><span id="_CPPv2N3upd26double_buffered_dispatcher17input_buffer_sizeE"></span><span id="upd::double_buffered_dispatcher::input_buffer_size__auto"></span><span class="target" id="classupd_1_1double__buffered__dispatcher_1ac7bac30b440a9699351cceba980a8fc5"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">input_buffer_size</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_NSt6size_tE_NSt6size_tEEN3upd26double_buffered_dispatcherE" title="upd::double_buffered_dispatcher::Input_Buffer_Size"><span class="n"><span class="pre">Input_Buffer_Size</span></span></a><a class="headerlink" href="#_CPPv4N3upd26double_buffered_dispatcher17input_buffer_sizeE" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Equals the <code class="docutils literal notranslate"><span class="pre">Input_Buffer_Size</span></code> template parameter. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N3upd26double_buffered_dispatcher18output_buffer_sizeE">
+<span id="_CPPv3N3upd26double_buffered_dispatcher18output_buffer_sizeE"></span><span id="_CPPv2N3upd26double_buffered_dispatcher18output_buffer_sizeE"></span><span id="upd::double_buffered_dispatcher::output_buffer_size__auto"></span><span class="target" id="classupd_1_1double__buffered__dispatcher_1ad16490835ee2f3123ed381abe0486e51"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">output_buffer_size</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_NSt6size_tE_NSt6size_tEEN3upd26double_buffered_dispatcherE" title="upd::double_buffered_dispatcher::Output_Buffer_Size"><span class="n"><span class="pre">Output_Buffer_Size</span></span></a><a class="headerlink" href="#_CPPv4N3upd26double_buffered_dispatcher18output_buffer_sizeE" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Equals the <code class="docutils literal notranslate"><span class="pre">Output_Buffer_Size</span></code> template parameter. </p>
+</dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-related">Related</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I0_15action_featuresEN3upd26double_buffered_dispatcher31make_double_buffered_dispatcherEDa7Keyring17action_features_hI15Action_FeaturesE">
+<span id="_CPPv3I0_15action_featuresEN3upd26double_buffered_dispatcher31make_double_buffered_dispatcherE7Keyring17action_features_hI15Action_FeaturesE"></span><span id="_CPPv2I0_15action_featuresEN3upd26double_buffered_dispatcher31make_double_buffered_dispatcherE7Keyring17action_features_hI15Action_FeaturesE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Keyring</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">action_features</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Action_Features</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classupd_1_1double__buffered__dispatcher_1ad6b081dbbfb511089c61a5570feb2616"></span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">make_double_buffered_dispatcher</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0_15action_featuresEN3upd26double_buffered_dispatcher31make_double_buffered_dispatcherEDa7Keyring17action_features_hI15Action_FeaturesE" title="upd::double_buffered_dispatcher::make_double_buffered_dispatcher::Keyring"><span class="n"><span class="pre">Keyring</span></span></a>, <span class="n"><span class="pre">action_features_h</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0_15action_featuresEN3upd26double_buffered_dispatcher31make_double_buffered_dispatcherEDa7Keyring17action_features_hI15Action_FeaturesE" title="upd::double_buffered_dispatcher::make_double_buffered_dispatcher::Action_Features"><span class="n"><span class="pre">Action_Features</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0_15action_featuresEN3upd26double_buffered_dispatcher31make_double_buffered_dispatcherEDa7Keyring17action_features_hI15Action_FeaturesE" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Make a double buffered dispatcher. </p>
+</dd></dl>
+
+</div>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N3upd6policy10any_actionE">
+<span id="_CPPv3N3upd6policy10any_actionE"></span><span id="_CPPv2N3upd6policy10any_actionE"></span><span id="upd::policy::any_action__action_features_h:action_features::ANY:"></span><span class="target" id="policy_8hpp_1af76a7ac8cdb65196d8f1cce97f417555"></span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="n"><span class="pre">action_features_h</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">action_features</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">ANY</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-prename descclassname"><span class="n"><span class="pre">upd</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">policy</span></span><span class="p"><span class="pre">::</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">any_action</span></span></span><a class="headerlink" href="#_CPPv4N3upd6policy10any_actionE" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Allows any kind of action to be stored. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N3upd6policy28static_storage_duration_onlyE">
+<span id="_CPPv3N3upd6policy28static_storage_duration_onlyE"></span><span id="_CPPv2N3upd6policy28static_storage_duration_onlyE"></span><span id="upd::policy::static_storage_duration_only__action_features_h:action_features::STATIC_STORAGE_DURATION_ONLY:"></span><span class="target" id="policy_8hpp_1a6ab83748fad3332fba29fd988c8840db"></span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="n"><span class="pre">action_features_h</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">action_features</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">STATIC_STORAGE_DURATION_ONLY</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-prename descclassname"><span class="n"><span class="pre">upd</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">policy</span></span><span class="p"><span class="pre">::</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">static_storage_duration_only</span></span></span><a class="headerlink" href="#_CPPv4N3upd6policy28static_storage_duration_onlyE" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Ensures that stored actions have static storage duration. </p>
+<p>In that case, the containing object may refer to the actions callbacks rather than managing memory space for them. </p>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="caller.html" class="btn btn-neutral float-left" title="Implementing caller side" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Unpadded &mdash; Python  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Sharing RPC convention" href="shared.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="#" class="icon icon-home"> Python
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="shared.html">Sharing RPC convention</a></li>
+<li class="toctree-l1"><a class="reference internal" href="caller.html">Implementing caller side</a></li>
+<li class="toctree-l1"><a class="reference internal" href="callee.html">Implementing callee side</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">Python</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home"></a> &raquo;</li>
+      <li>Unpadded</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="unpadded">
+<h1>Unpadded<a class="headerlink" href="#unpadded" title="Permalink to this headline"></a></h1>
+<p>Unpadded is a header-only RPC library appropriate for embedded software and compatible with C++11 (with syntactic sugar with C++17).</p>
+<p>Unpadded does not require code generation, so it is easy to integrate in any project. Using metaprogramming, the library has been designed to be as close as possible to equivalent C code.</p>
+<section id="quick-example-with-arduino">
+<h2>Quick example with Arduino<a class="headerlink" href="#quick-example-with-arduino" title="Permalink to this headline"></a></h2>
+<p>Do note that many Arduino framework do not come with a standard library implementation which is needed to compile Unpadded, so the following example should be taken as proof of concept rather than a functional implementation.</p>
+<p>In the following example, we have an Arduino board connected through I2C to another Arduino board. The latter is managing a traffic light with its GPIOs.</p>
+<section id="shared-hpp">
+<h3>shared.hpp<a class="headerlink" href="#shared-hpp" title="Permalink to this headline"></a></h3>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#pragma once</span>
+
+<span class="cp">#include</span> <span class="cpf">&lt;cstdint&gt;</span><span class="cp"></span>
+
+<span class="cp">#include</span> <span class="cpf">&lt;upd/keyring.hpp&gt;</span><span class="cp"></span>
+
+<span class="kt">void</span> <span class="nf">Set_Green_Light</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">uint8_t</span><span class="p">);</span>
+<span class="kt">void</span> <span class="nf">Set_Yellow_Light</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">uint8_t</span><span class="p">);</span>
+<span class="kt">void</span> <span class="nf">Set_Red_Light</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">uint8_t</span><span class="p">);</span>
+
+<span class="n">upd</span><span class="o">::</span><span class="n">keyring</span> <span class="n">keyring</span><span class="p">{</span>
+  <span class="n">upd</span><span class="o">::</span><span class="n">flist</span><span class="o">&lt;</span><span class="n">Set_Green_Light</span><span class="p">,</span> <span class="n">Set_Yellow_Light</span><span class="p">,</span> <span class="n">Set_Red_Light</span><span class="o">&gt;</span><span class="p">,</span>
+  <span class="n">upd</span><span class="o">::</span><span class="n">little_endian</span><span class="p">,</span>
+  <span class="n">upd</span><span class="o">::</span><span class="n">two_complement</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+</section>
+<section id="caller-cpp">
+<h3>caller.cpp<a class="headerlink" href="#caller-cpp" title="Permalink to this headline"></a></h3>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;Wire.h&gt;</span><span class="cp"></span>
+
+<span class="cp">#include</span> <span class="cpf">&quot;shared.hpp&quot;</span><span class="cp"></span>
+
+<span class="kt">void</span> <span class="nf">setup</span><span class="p">()</span> <span class="p">{</span>
+  <span class="n">Wire</span><span class="p">.</span><span class="n">begin</span><span class="p">();</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="nf">loop</span><span class="p">()</span> <span class="p">{</span>
+  <span class="k">auto</span> <span class="n">gkey</span> <span class="o">=</span> <span class="n">keyring</span><span class="p">.</span><span class="n">get</span><span class="o">&lt;</span><span class="n">Set_Green_Light</span><span class="o">&gt;</span><span class="p">();</span>
+  <span class="k">auto</span> <span class="n">ykey</span> <span class="o">=</span> <span class="n">keyring</span><span class="p">.</span><span class="n">get</span><span class="o">&lt;</span><span class="n">Set_Yellow_Light</span><span class="o">&gt;</span><span class="p">();</span>
+  <span class="k">auto</span> <span class="n">rkey</span> <span class="o">=</span> <span class="n">keyring</span><span class="p">.</span><span class="n">get</span><span class="o">&lt;</span><span class="n">Set_Red_Light</span><span class="o">&gt;</span><span class="p">();</span>
+
+  <span class="k">auto</span> <span class="n">write_byte</span> <span class="o">=</span> <span class="p">[](</span><span class="n">upd</span><span class="o">::</span><span class="n">byte_t</span> <span class="n">x</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">Wire</span><span class="p">.</span><span class="n">write</span><span class="p">(</span><span class="n">x</span><span class="p">);</span>
+  <span class="p">};</span>
+
+  <span class="n">Wire</span><span class="p">.</span><span class="n">beginTransmission</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+  <span class="n">gkey</span><span class="p">(</span><span class="nb">true</span><span class="p">).</span><span class="n">write_all</span><span class="p">(</span><span class="n">write_byte</span><span class="p">);</span>
+  <span class="n">delay</span><span class="p">(</span><span class="mi">500</span><span class="p">);</span>
+  <span class="n">Wire</span><span class="p">.</span><span class="n">endTransmission</span><span class="p">();</span>
+
+  <span class="n">Wire</span><span class="p">.</span><span class="n">beginTransmission</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+  <span class="n">ykey</span><span class="p">(</span><span class="nb">true</span><span class="p">).</span><span class="n">write_all</span><span class="p">(</span><span class="n">write_byte</span><span class="p">);</span>
+  <span class="n">delay</span><span class="p">(</span><span class="mi">500</span><span class="p">);</span>
+  <span class="n">Wire</span><span class="p">.</span><span class="n">endTransmission</span><span class="p">();</span>
+
+  <span class="n">Wire</span><span class="p">.</span><span class="n">beginTransmission</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+  <span class="n">rkey</span><span class="p">(</span><span class="nb">true</span><span class="p">).</span><span class="n">write_all</span><span class="p">(</span><span class="n">write_byte</span><span class="p">);</span>
+  <span class="n">delay</span><span class="p">(</span><span class="mi">500</span><span class="p">);</span>
+  <span class="n">Wire</span><span class="p">.</span><span class="n">endTransmission</span><span class="p">();</span>
+
+  <span class="n">Wire</span><span class="p">.</span><span class="n">beginTransmission</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+  <span class="n">gkey</span><span class="p">(</span><span class="nb">false</span><span class="p">).</span><span class="n">write_all</span><span class="p">(</span><span class="n">write_byte</span><span class="p">);</span>
+  <span class="n">delay</span><span class="p">(</span><span class="mi">500</span><span class="p">);</span>
+  <span class="n">Wire</span><span class="p">.</span><span class="n">endTransmission</span><span class="p">();</span>
+
+  <span class="n">Wire</span><span class="p">.</span><span class="n">beginTransmission</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+  <span class="n">ykey</span><span class="p">(</span><span class="nb">false</span><span class="p">).</span><span class="n">write_all</span><span class="p">(</span><span class="n">write_byte</span><span class="p">);</span>
+  <span class="n">delay</span><span class="p">(</span><span class="mi">500</span><span class="p">);</span>
+  <span class="n">Wire</span><span class="p">.</span><span class="n">endTransmission</span><span class="p">();</span>
+
+  <span class="n">Wire</span><span class="p">.</span><span class="n">beginTransmission</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+  <span class="n">rkey</span><span class="p">(</span><span class="nb">false</span><span class="p">).</span><span class="n">write_all</span><span class="p">(</span><span class="n">write_byte</span><span class="p">);</span>
+  <span class="n">delay</span><span class="p">(</span><span class="mi">500</span><span class="p">);</span>
+  <span class="n">Wire</span><span class="p">.</span><span class="n">endTransmission</span><span class="p">();</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="callee-cpp">
+<h3>callee.cpp<a class="headerlink" href="#callee-cpp" title="Permalink to this headline"></a></h3>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;Wire.h&gt;</span><span class="cp"></span>
+
+<span class="cp">#include</span> <span class="cpf">&lt;upd/buffered_dispatcher.hpp&gt;</span><span class="cp"></span>
+
+<span class="cp">#include</span> <span class="cpf">&quot;shared.hpp&quot;</span><span class="cp"></span>
+
+<span class="k">static</span> <span class="n">upd</span><span class="o">::</span><span class="n">single_buffered_dispatcher</span> <span class="n">dispatcher</span><span class="p">{</span><span class="n">keyring</span><span class="p">,</span> <span class="n">upd</span><span class="o">::</span><span class="n">any_action</span><span class="p">};</span>
+
+<span class="kt">void</span> <span class="nf">Set_Green_Light</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">uint8_t</span> <span class="n">state</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">digitalWrite</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">state</span> <span class="o">?</span> <span class="nl">HIGH</span> <span class="p">:</span> <span class="n">LOW</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="nf">Set_Yellow_Light</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">uint8_t</span> <span class="n">state</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">digitalWrite</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">state</span> <span class="o">?</span> <span class="nl">HIGH</span> <span class="p">:</span> <span class="n">LOW</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="nf">Set_Red_Light</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">uint8_t</span> <span class="n">state</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">digitalWrite</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">state</span> <span class="o">?</span> <span class="nl">HIGH</span> <span class="p">:</span> <span class="n">LOW</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="nf">setup</span><span class="p">()</span> <span class="p">{</span>
+  <span class="n">pinMode</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">OUTPUT</span><span class="p">);</span>
+  <span class="n">pinMode</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">OUTPUT</span><span class="p">);</span>
+  <span class="n">pinMode</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">OUTPUT</span><span class="p">);</span>
+  <span class="n">Wire</span><span class="p">.</span><span class="n">onReceive</span><span class="p">([](</span><span class="kt">int</span> <span class="n">n</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">upd</span><span class="o">::</span><span class="n">packet_status</span> <span class="n">status</span><span class="p">;</span>
+    <span class="k">do</span> <span class="p">{</span>
+      <span class="n">status</span> <span class="o">=</span> <span class="n">dispatcher</span><span class="p">.</span><span class="n">read</span><span class="p">([]()</span> <span class="p">{</span> <span class="k">return</span> <span class="n">Wire</span><span class="p">.</span><span class="n">read</span><span class="p">();</span> <span class="p">});</span>
+    <span class="p">}</span> <span class="k">while</span><span class="p">(</span><span class="o">--</span><span class="n">n</span> <span class="o">&amp;&amp;</span> <span class="n">status</span> <span class="o">!=</span> <span class="n">upd</span><span class="o">::</span><span class="n">packet_status</span><span class="o">::</span><span class="n">DROPPED_PACKET</span><span class="p">);</span>
+  <span class="p">});</span>
+  <span class="n">Wire</span><span class="p">.</span><span class="n">begin</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="nf">loop</span><span class="p">()</span> <span class="p">{}</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="shared.html">Sharing RPC convention</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="shared.html#basics-defining-a-keyring">Basics : defining a keyring</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="shared.html#template-lvalue-reference-parameters-trick">Template lvalue reference parameters trick</a></li>
+<li class="toctree-l3"><a class="reference internal" href="shared.html#defining-a-keyring">Defining a keyring</a></li>
+<li class="toctree-l3"><a class="reference internal" href="shared.html#example">Example</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="shared.html#binding-lambda-expressions-and-invocable-objects-to-a-keyring">Binding lambda expressions and invocable objects to a keyring</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="shared.html#id1">Example</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="shared.html#pre-c-17-support">Pre C++17 support</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="shared.html#id2">Example</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="shared.html#api-references">API References</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="caller.html">Implementing caller side</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="caller.html#basics-sending-request-with-keys">Basics : sending request with keys</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="caller.html#example">Example</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="caller.html#handling-the-callee-response">Handling the callee response</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="caller.html#blocking-mode">Blocking mode</a></li>
+<li class="toctree-l3"><a class="reference internal" href="caller.html#non-blocking-mode">Non-blocking mode</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="caller.html#api-references">API References</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="callee.html">Implementing callee side</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="callee.html#basics-fulfiling-incoming-request-with-dispatchers">Basics : fulfiling incoming request with dispatchers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="callee.html#buffered-dispatchers-vs-non-buffered-dispatchers">Buffered dispatchers vs. non-buffered dispatchers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="callee.html#single-buffered-dispatchers-vs-double-buffered-dispatchers">Single buffered dispatchers vs. double buffered dispatchers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="callee.html#example">Example</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="callee.html#hot-swapping-callbacks">Hot swapping callbacks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="callee.html#storage-policy">Storage policy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="callee.html#api-references">API References</a></li>
+</ul>
+</li>
+</ul>
+</div>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="shared.html" class="btn btn-neutral float-right" title="Sharing RPC convention" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

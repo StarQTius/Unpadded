@@ -1,0 +1,197 @@
+Sharing RPC convention
+======================
+
+Unpadded has been designed in such a way that you don't need to generate code to make it works. All the information needed to define the RPC convention for your project can be contained in a single header file. That header file must be included in both the caller and the callee codes.
+
+For example, if you are working with git, you may have a repository dedicated to contain your RPC convention headers. This repository is then added as a submodule to the caller and the callee repositories. With this approach, the two repositories can be conveniently synchronized just by updating the RPC repository to its latest version.
+
+In this page, it will be explained what to put in the RPC headers.
+
+Basics : defining a keyring
+---------------------------
+
+Template lvalue reference parameters trick
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. note::
+  Keyrings can deal with anything invocable, like lambda expressions and function objects, but for the sake of clarity, this section will only deal with keyrings and plain functions. For binding lamnda expressions and functions objects, see the next section :ref:`any-binding`.
+
+Keyrings rely on a small trick with C++ template reference parameters. When instanciating a template with a reference to a function or a variable, this function or variable ought not to be defined if you don't need it to be defined when instanciating the template. Take the following example:
+
+.. code-block:: cpp
+
+  #include <iostream>
+
+  extern uint64_t x;
+
+  template<auto &X>
+  auto f() {
+      return sizeof X;
+  }
+
+  int main() {
+    std::cout << "Size of `x`: " << f<x>() << std::endl;
+    return 0;
+  }
+
+.. code-block::
+
+  Size of `x`: 8
+
+``x`` has only been declared, and might never be defined. But that's okay, we don't need it to be defined. We only need its size, which can be deduced from its type. Therefore, the compiler won't complain about ``x`` being undefined.
+
+Defining a keyring
+~~~~~~~~~~~~~~~~~~
+
+Keyrings use the same feature, by holding a list of references to the functions available for RPC. These functions don't need to be defined, since only two things need to be known to establish the RPC convention:
+
+  - The indices associated with each function, which can be deduced from the position of each function in the list (simply put, the first function in the list has the index ``0``, the second has the index ``1``, etc.)
+  - The signature of each function, used by the caller to know which parameters the callee expects and what the type of the value sent back by the callee is.
+
+Example
+~~~~~~~
+
+Imagine you've got a toy car with a master device and a slave device. The latter handles the wheels. In pratice, this is how a (naive) keyring would be defined.
+
+.. code-block:: cpp
+  :caption: motion_keyring.hpp
+
+  #pragma once
+
+  #include <cstdint>
+
+  #include <upd/keyring.hpp>
+  #include <upd/typelist.hpp>
+
+  void set_forward_speed(std::uint32_t);
+  void set_left_steering_speed(std::uint32_t);
+  void set_right_steering_speed(std::uint32_t);
+
+  constexpr upd::keyring motion_keyring{
+    upd::flist<set_forward_speed, set_left_steering_speed, set_right_steering_speed>,
+    upd::little_endian,
+    upd::two_complement
+  };
+
+.. warning::
+  For obvious compatibility reasons between the master device and the slave device, please use `fixed-width integer types <https://en.cppreference.com/w/cpp/types/integer>`_.
+
+``motion_keyring.hpp`` must then be included both in the code of the master and in the code of the slave. Furthermore, the slave must obviously define ``set_forward_speed``, ``set_left_steering_speed``, ``set_right_steering_speed``, but not the master, since it will never execute these functions itself.
+
+.. _any-binding:
+
+Binding lambda expressions and invocable objects to a keyring
+-------------------------------------------------------------
+
+Altought the previous section showed examples with function references, keyrings also accept functors. Just add them as you would add a function in the list.
+
+Example
+~~~~~~~
+
+We are just replacing some of the functions in the previous example by functors.
+
+.. code-block:: cpp
+  :caption: motion_keyring.hpp
+
+  #pragma once
+
+  #include <cstdint>
+
+  #include <upd/keyring.hpp>
+  #include <upd/typelist.hpp>
+
+  struct my_callable {
+    double factor;
+
+    explicit my_callable(double factor): factor{factor} {}
+
+    void operator()(std::uint32_t);
+  };
+
+  void set_forward_speed(std::uint32_t);
+  auto set_left_steering_speed = [](std::uint32_t x) { /** implementation **/ };
+  extern my_callable set_right_steering_speed{1.5};
+
+  constexpr upd::keyring motion_keyring{
+    upd::flist<set_forward_speed, set_left_steering_speed, set_right_steering_speed>,
+    upd::little_endian,
+    upd::two_complement
+  };
+
+In that case, ``set_left_steering_speed`` needs to be defined because it is a lambda expression, but ``my_callable`` constructor doesn't. It has been done in this example for the sake of clarity.
+
+Pre C++17 support
+-----------------
+
+You might have noticed that since automatic type deduction of template non-type parameter is not available until C++17, the previous examples won't compile in C++11 or C++14. If you can't afford to compile with C++17 or above, Unpadded provides a (rather ugly) workaround with the ``unevaluated`` class template and the ``make_keyring`` template function.
+
+Example
+~~~~~~~
+
+Here is what it would look like:
+
+.. code-block:: cpp
+  :caption: motion_keyring.hpp
+
+  #pragma once
+
+  #include <cstdint>
+
+  #include <upd/keyring.hpp>
+  #include <upd/typelist.hpp>
+
+  void set_forward_speed(std::uint32_t);
+  void set_left_steering_speed(std::uint32_t);
+  void set_right_steering_speed(std::uint32_t);
+
+  constexpr auto motion_keyring = upd::make_keyring(
+    upd::flist_t<
+      unevaluated<decltype(set_forward_speed), set_forward_speed>,
+      unevaluated<decltype(set_left_steering_speed), set_left_steering_speed>,
+      unevaluated<decltype(set_right_steering_speed), set_right_steering_speed>
+    >{},
+    upd::little_endian,
+    upd::two_complement
+  );
+
+If you find this to verbose, the ``UPD_CTREF`` macro can ease your pain:
+
+.. code-block:: cpp
+  :caption: motion_keyring.hpp
+
+  #pragma once
+
+  #include <cstdint>
+
+  #include <upd/keyring.hpp>
+  #include <upd/typelist.hpp>
+
+  void set_forward_speed(std::uint32_t);
+  void set_left_steering_speed(std::uint32_t);
+  void set_right_steering_speed(std::uint32_t);
+
+  constexpr auto motion_keyring = upd::make_keyring(
+    upd::flist_t<
+      UPD_CTREF(set_forward_speed),
+      UPD_CTREF(set_left_steering_speed),
+      UPD_CTREF(set_right_steering_speed)
+    >{},
+    upd::little_endian,
+    upd::two_complement
+  );
+
+API References
+--------------
+
+.. doxygenclass:: upd::keyring
+  :members:
+
+.. doxygenstruct:: upd::unevaluated
+  :members:
+
+.. doxygendefine:: UPD_CTREF
+
+.. doxygenstruct:: upd::flist_t< unevaluated< Fs, Functions >... >
+  :members:
+
+.. doxygenvariable:: upd::flist
