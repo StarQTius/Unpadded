@@ -1,0 +1,15 @@
+name: Build Doc
+on:
+  push:
+    branches: v1
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release
+    - run: cmake --build ${{github.workspace}/build -t doc
+    - uses: amesIves/github-pages-deploy-action@v4.3.3
+      with:
+        branch: gh-pages
+        folder: ${{github.workspace}}/build/Unpadded
