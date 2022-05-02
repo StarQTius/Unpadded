@@ -1,4 +1,7 @@
+.. include:: /@PROJECT_SOURCE_DIR@/README.md
+  :parser: myst_parser.sphinx_
+
 .. toctree::
-   shared
-   caller
-   callee
+  shared
+  caller
+  callee

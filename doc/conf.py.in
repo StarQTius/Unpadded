@@ -1,4 +1,4 @@
-extensions = [ "breathe" ]
+extensions = [ "breathe", "myst_parser" ]
 breathe_projects = { "@PROJECT_NAME@": "@CMAKE_CURRENT_BINARY_DIR@/xml" }
 breathe_default_project = "@PROJECT_NAME@"
 html_theme = "sphinx_rtd_theme"
