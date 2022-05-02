@@ -33,7 +33,6 @@ upd::keyring keyring{
 ### caller.cpp
 
 ```cpp
-
 #include <Wire.h>
 
 #include "shared.hpp"
@@ -81,13 +80,11 @@ void loop() {
   delay(500);
   Wire.endTransmission();
 }
-
 ```
 
 ### callee.cpp
 
 ```cpp
-
 #include <Wire.h>
 
 #include <upd/buffered_dispatcher.hpp>
@@ -96,7 +93,22 @@ void loop() {
 
 static upd::single_buffered_dispatcher dispatcher{keyring, upd::any_action};
 
+void Set_Green_Light(std::uint8_t state) {
+  digitalWrite(2, state ? HIGH : LOW);
+}
+
+void Set_Yellow_Light(std::uint8_t state) {
+  digitalWrite(3, state ? HIGH : LOW);
+}
+
+void Set_Red_Light(std::uint8_t state) {
+  digitalWrite(4, state ? HIGH : LOW);
+}
+
 void setup() {
+  pinMode(2, OUTPUT);
+  pinMode(3, OUTPUT);
+  pinMode(4, OUTPUT);
   Wire.onReceive([](int n) {
     upd::packet_status status;
     do {
@@ -107,5 +119,4 @@ void setup() {
 }
 
 void loop() {}
-
 ```
