@@ -1,15 +1,22 @@
 name: Build Doc
 on:
   push:
-    branches: v1
+    branches:
+      - v1
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - run: sudo apt install doxygen
+    - run: pip install sphinx
+    - run: pip install breathe
+    - run: pip install myst_parser
+    - run: pip install sphinx_rtd_theme
     - run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release
-    - run: cmake --build ${{github.workspace}/build -t doc
-    - uses: amesIves/github-pages-deploy-action@v4.3.3
+    - run: cmake --build ${{github.workspace}}/build -t doc
+    - run: touch ${{github.workspace}}/build/Unpadded/.nojekyll
+    - uses: JamesIves/github-pages-deploy-action@v4.3.3
       with:
         branch: gh-pages
         folder: ${{github.workspace}}/build/Unpadded
