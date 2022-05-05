@@ -1,0 +1,28 @@
+// We assume that a `keyring` object has been defined and holds a function `f` of signature `std::uint8_t(std::uint16_t)`
+
+static upd::action action;
+
+void send_request() {
+  auto key = keyring.get<f>();
+
+  // We send the request...
+  key(64).write_all(write_byte_to_slave);
+
+  // ...and then, we save our callback for later
+  action = key.with_hook(my_callback);
+}
+
+void process_response() {
+  // Our callback is called !
+  action(read_byte_from_slave);
+}
+
+int main() {
+  send_request();
+
+  // Meanwhile, we do other stuff...
+
+  process_response();
+
+  return 0;
+}

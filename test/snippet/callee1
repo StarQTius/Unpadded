@@ -1,0 +1,2 @@
+void write_byte_to_master(upd::byte_t);
+upd::byte_t read_byte_from_master();

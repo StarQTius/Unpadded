@@ -33,3 +33,5 @@ add_cpp11_and_cpp17_test(action)
 add_cpp11_and_cpp17_test(tuple_view)
 add_cpp11_and_cpp17_test(tuple)
 add_cpp11_and_cpp17_test(unaligned_data)
+
+add_subdirectory(snippet)

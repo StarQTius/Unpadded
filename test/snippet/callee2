@@ -1,0 +1,11 @@
+// We assume that a `keyring` object has been defined and both the caller and the callee use this keyring
+
+// We create a dispatcher which can handle request for the invocables managed by `keyring`
+// The second argument will be discussed later
+static upd::dispatcher dispatcher{keyring, upd::policy::any_action};
+
+// Let's assume this function is invoked when the input buffer contains a full request
+void processing_request() {
+  // And, that's it ! With this single line, the dispatcher will automatically extract the bytes from the input buffer and write the response to the output buffer
+  dispatcher(read_byte_from_master, write_byte_to_master);
+}

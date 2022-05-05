@@ -1,0 +1,6 @@
+std::uint8_t array[] = {0x00, 0x11, 0x22};
+auto key = keyring.get<f>();
+
+// What are you doing ?
+//      vvvvv
+key(16, array).write_all(write_byte_to_master);

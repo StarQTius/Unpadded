@@ -5,10 +5,8 @@ Implementing callee side
 
 The following sections will assume these functions to be defined by the master device:
 
-.. code-block:: cpp
-
-  void write_byte_to_master(upd::byte_t);
-  upd::byte_t read_byte_from_master();
+.. literalinclude:: /@PROJECT_SOURCE_DIR@/test/snippet/callee1
+  :language: cpp
 
 Basics : fulfiling incoming request with dispatchers
 ----------------------------------------------------
@@ -24,19 +22,8 @@ Processing incoming invocation requests and sending back the result of this invo
 
 Receiving a packet and sending back a response packet is pretty straightforward:
 
-.. code-block:: cpp
-
-  // We assume that a `keyring` object has been defined and both the caller and the callee use this keyring
-
-  // We create a dispatcher which can handle request for the invocables managed by ``keyring``
-  // The second argument will be discussed later
-  static upd::dispatcher dispatcher{keyring, upd::policy::any_action};
-
-  // Let's assume this function is invoked when the input buffer contains a full request
-  void processing_request() {
-    // And, that's it ! With this single line, the dispatcher will automatically extract the bytes from the input buffer and write the response to the output buffer
-    dispatcher(read_byte_from_master, write_byte_to_master);
-  }
+.. literalinclude:: /@PROJECT_SOURCE_DIR@/test/snippet/callee2
+  :language: cpp
 
 Buffered dispatchers vs. non-buffered dispatchers
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -64,79 +51,13 @@ Example
 
 In the follwing example, we assume that ``on_byte_received`` is invoked whenever a byte has been received from master (which can be retrieved using ``read_byte_from_master``) and ``on_byte_sent`` is invoked whenever a byte has been fully sent to master with the function ``write_byte_to_master``.
 
-.. code-block:: cpp
+.. literalinclude:: /@PROJECT_SOURCE_DIR@/test/snippet/motion_keyring1.hpp
+  :language: cpp
   :caption: motion_keyring.hpp
 
-  #pragma once
-
-  #include <cstdint>
-
-  #include <upd/keyring.hpp>
-  #include <upd/typelist.hpp>
-
-  void set_forward_speed(std::uint32_t);
-  void set_left_steering_speed(std::uint32_t);
-  void set_right_steering_speed(std::uint32_t);
-
-  constexpr upd::keyring motion_keyring{
-    upd::flist<set_forward_speed, set_left_steering_speed, set_right_steering_speed>,
-    upd::little_endian,
-    upd::two_complement
-  };
-
-.. code-block:: cpp
+.. literalinclude:: /@PROJECT_SOURCE_DIR@/test/snippet/slave1.cpp
+  :language: cpp
   :caption: slave.cpp
-
-  #include <upd/buffered_dispatcher.hpp>
-  #include <upd/action.hpp>
-
-  #include "motion_keyring.hpp"
-
-  static upd::double_buffered_dispatcher dispatcher{keyring, upd::policy::any_action};
-
-  void set_forward_speed(std::uint32_t speed) {
-    // function implementation
-  }
-
-  void set_left_steering_speed(std::uint32_t speed) {
-    // function implementation
-  }
-
-  void set_right_steering_speed(std::uint32_t speed) {
-    // function implementation
-  }
-
-  void on_byte_received() {
-    // We read the incoming byte
-    auto status = dispatcher.read(read_byte_from_master);
-
-    switch (status) {
-    // If a packet has been fully received, then the request has been fulfilled and the output buffer contains a response packet
-    case packet_status::RESOLVED_PACKET:
-      // We thus start to send the response packet to the master
-      dispatcher.write(write_byte_to_master)
-      break;
-    // If a packet has been dropped, that means the received index is out of bound
-    // At this point, the input buffer is empty
-    // In that case, it is up to you to handle the issue, but it might be wise to stop reading the date in order to prevent the dispatcher from reading garbage
-    case packet_status::DROPPED_PACKET:
-      // Handling the error here
-      break;
-    default:
-      break;
-    }
-  }
-
-  void interrupt_byte_sent() {
-    // We keep sending the bytes of the response packet to the master
-    // If the packet has been completely sent already, then this line has no effect
-    dispatcher.write(write_byte_to_master);
-  }
-
-  int main() {
-    while (true);
-    return 0;
-  }
 
 Hot swapping callbacks
 ----------------------

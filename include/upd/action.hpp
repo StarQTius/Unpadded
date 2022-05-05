@@ -123,7 +123,7 @@ private:
 //! key to obtain the return value.
 class action : public detail::immediate_process<action, void> {
 public:
-  action() = delete;
+  action() = default;
 
   //! \brief Wrap a copy of the provided invocable object
   //! \tparam Endianess Byte order of the integers in the generated packets
@@ -149,7 +149,8 @@ public:
   //! \param dest Output invocable object
   template<typename Src, typename Dest, REQUIREMENT(input_invocable, Src), REQUIREMENT(output_invocable, Dest)>
   void operator()(Src &&src, Dest &&dest) const {
-    return (*m_concept_uptr)(detail::make_function_reference(src), detail::make_function_reference(dest));
+    if (m_concept_uptr)
+      (*m_concept_uptr)(detail::make_function_reference(src), detail::make_function_reference(dest));
   }
 
   UPD_SFINAE_FAILURE_MEMBER(operator(), UPD_ERROR_NOT_INPUT(src) " OR " UPD_ERROR_NOT_OUTPUT(dest))

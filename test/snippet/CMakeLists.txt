@@ -1,0 +1,35 @@
+add_executable(run_callee2 detail/callee2.cpp)
+set_target_properties(run_callee2 PROPERTIES CXX_STANDARD 17)
+target_link_libraries(run_callee2 PRIVATE ${PROJECT_NAME})
+add_test(NAME callee2 COMMAND run_callee2)
+
+add_executable(run_caller2 detail/caller2.cpp)
+set_target_properties(run_caller2 PROPERTIES CXX_STANDARD 17)
+target_link_libraries(run_caller2 PRIVATE ${PROJECT_NAME})
+add_test(NAME caller2 COMMAND run_caller2)
+
+add_executable(run_caller4 detail/caller4.cpp)
+set_target_properties(run_caller4 PROPERTIES CXX_STANDARD 17)
+target_link_libraries(run_caller4 PRIVATE ${PROJECT_NAME})
+add_test(NAME caller4 COMMAND run_caller4)
+
+add_executable(run_caller5 detail/caller5.cpp)
+set_target_properties(run_caller5 PROPERTIES CXX_STANDARD 17)
+target_link_libraries(run_caller5 PRIVATE ${PROJECT_NAME})
+add_test(NAME caller5 COMMAND run_caller5)
+
+add_executable(run_master1 master1.cpp)
+set_target_properties(run_master1 PROPERTIES CXX_STANDARD 17)
+target_link_libraries(run_master1 PRIVATE ${PROJECT_NAME})
+add_test(NAME master1 COMMAND run_master1)
+
+add_executable(run_shared1 shared1.cpp)
+set_target_properties(run_shared1 PROPERTIES CXX_STANDARD 17)
+target_link_libraries(run_shared1 PRIVATE ${PROJECT_NAME})
+add_test(NAME shared1 COMMAND run_shared1)
+
+add_executable(run_slave1 slave1.cpp)
+set_target_properties(run_slave1 PROPERTIES CXX_STANDARD 17)
+target_link_libraries(run_slave1 PRIVATE ${PROJECT_NAME})
+target_compile_definitions(run_slave1 PRIVATE CALLEE)
+add_test(NAME slave1 COMMAND run_slave1)
