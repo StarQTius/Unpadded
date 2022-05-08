@@ -113,6 +113,35 @@ private:
   impl_t m_impl;
 };
 
+//! \name
+//! \brief Wrap a callback with static storage duration in a plain-function as template reference argument
+//! @{
+template<upd::endianess Endianess,
+         upd::signed_mode Signed_Mode,
+         typename F,
+         F Ftor,
+         detail::require_is_void<detail::return_t<F>> = 0>
+void static_storage_duration_callback_wrapper(detail::src_t &&src, detail::dest_t &&dest) {
+  detail::input_tuple<Endianess, Signed_Mode, F> parameters_tuple;
+  for (auto &byte : parameters_tuple)
+    byte = src();
+  parameters_tuple.invoke(Ftor);
+}
+template<upd::endianess Endianess,
+         upd::signed_mode Signed_Mode,
+         typename F,
+         F Ftor,
+         detail::require_not_void<detail::return_t<F>> = 0>
+void static_storage_duration_callback_wrapper(detail::src_t &&src, detail::dest_t &&dest) {
+  detail::input_tuple<Endianess, Signed_Mode, F> parameters_tuple;
+  for (auto &byte : parameters_tuple)
+    byte = src();
+  auto return_tuple = make_tuple(endianess_h<Endianess>{}, signed_mode_h<Signed_Mode>{}, parameters_tuple.invoke(Ftor));
+  for (auto byte : return_tuple)
+    dest(byte);
+}
+//! @}
+
 } // namespace detail
 
 //! \brief Wrapper around an invocable object which serialize / unserialize parameters and return value
@@ -188,15 +217,8 @@ public:
   //! \tparam Signed_Mode Representation of signed integers in the generated packets
   template<typename F, F Ftor, endianess Endianess, signed_mode Signed_Mode>
   explicit no_storage_action(unevaluated<F, Ftor>, endianess_h<Endianess>, signed_mode_h<Signed_Mode>)
-      : wrapper{+[](detail::src_t &&src, detail::dest_t &&dest) {
-          detail::input_tuple<Endianess, Signed_Mode, F> parameters_tuple;
-          for (auto &byte : parameters_tuple)
-            byte = src();
-          auto return_tuple =
-              make_tuple(endianess_h<Endianess>{}, signed_mode_h<Signed_Mode>{}, parameters_tuple.invoke(Ftor));
-          for (auto byte : return_tuple)
-            dest(byte);
-        }} {}
+      : m_wrapper{detail::static_storage_duration_callback_wrapper<Endianess, Signed_Mode, F, Ftor>},
+        m_input_size{detail::parameters_size<F>::value}, m_output_size{detail::return_type_size<F>::value} {}
 
   //! \copybrief no_storage_action::no_storage_action
   //! \tparam Ftor Reference to an invocable object with static storage duration
@@ -211,13 +233,22 @@ public:
   //! \param dest Output invocable object
   template<typename Src, typename Dest, REQUIREMENT(input_invocable, Src), REQUIREMENT(output_invocable, Dest)>
   void operator()(Src &&src, Dest &&dest) const {
-    wrapper(detail::make_function_reference(src), detail::make_function_reference(dest));
+    m_wrapper(detail::make_function_reference(src), detail::make_function_reference(dest));
   }
+
+  //! \brief Get the size in bytes of the payload needed to invoke the wrapped object
+  //! \return The size of the payload in bytes
+  std::size_t input_size() const { return m_input_size; }
+
+  //! \brief Get the size in bytes of the payload representing the return value of the wrapped invocable object
+  //! \return The size of the payload in bytes
+  std::size_t output_size() const { return m_output_size; }
 
   UPD_SFINAE_FAILURE_MEMBER(operator(), UPD_ERROR_NOT_INPUT(src) " OR " UPD_ERROR_NOT_OUTPUT(dest))
 
 private:
-  void (*wrapper)(detail::src_t &&, detail::dest_t &&);
+  void (*m_wrapper)(detail::src_t &&, detail::dest_t &&);
+  std::size_t m_input_size, m_output_size;
 };
 } // namespace upd
 

@@ -174,6 +174,23 @@ static void buffered_dispatcher_DO_insert_bytes_one_by_one() {
   TEST_ASSERT_EQUAL(64, k << kbuf);
 }
 
+static void buffered_dispatcher_DO_create_double_buffered_dispatcher_with_no_storage_action() {
+  using namespace upd;
+
+  upd::byte_t kbuf[64];
+  int result = 0;
+  auto k = kring.get(UPD_CTREF(identity));
+  auto dis = make_single_buffered_dispatcher(kring, policy::static_storage_duration_only);
+
+  static_assert(dis.buffer_size == sizeof(int) + sizeof(decltype(dis)::index_t));
+
+  k(64).write_all(kbuf);
+  TEST_ASSERT_EQUAL(packet_status::RESOLVED_PACKET, dis.read_all(kbuf));
+  dis.write_all(reinterpret_cast<upd::byte_t *>(&result));
+
+  TEST_ASSERT_EQUAL(64, result);
+}
+
 #define BUFFERED_DISPATCHER make_buffered_dispatcher(kring, BYTE_PTR, BYTE_PTR, policy::any_action)
 #define BUFFERED_DISPATCHER_STATIC                                                                                     \
   make_buffered_dispatcher(kring, BYTE_PTR, BYTE_PTR, policy::static_storage_duration_only)
@@ -226,5 +243,6 @@ int main() {
   RUN_TEST(buffered_dispatcher_DO_replace_void_procedure);
   RUN_TEST(buffered_dispatcher_DO_give_an_invalid_index);
   RUN_TEST(buffered_dispatcher_DO_insert_bytes_one_by_one);
+  RUN_TEST(buffered_dispatcher_DO_create_double_buffered_dispatcher_with_no_storage_action);
   return UNITY_END();
 }

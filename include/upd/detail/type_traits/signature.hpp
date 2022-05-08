@@ -121,7 +121,9 @@ struct map_parameters_size<tlist_t<Fs...>> : tlist_t<parameters_size<Fs>...> {};
 
 //! \brief Gets the size of the return type of `F`
 template<typename F>
-struct return_type_size : std::integral_constant<std::size_t, sizeof(return_t<F>)> {};
+struct return_type_size : return_type_size<detail::signature_t<F>> {};
+template<typename R, typename... Args>
+struct return_type_size<R(Args...)> : std::integral_constant<std::size_t, sizeof(R)> {};
 template<typename... Args>
 struct return_type_size<void(Args...)> : std::integral_constant<std::size_t, 0> {};
 

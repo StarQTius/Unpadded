@@ -11,11 +11,17 @@ template<typename>
 struct abstract_function;
 
 //! \brief Abstract class defining a functor interface
+//!
+//! This class defines no virtual constructor on purpose, because of <a
+//! href="https://stackoverflow.com/questions/31686508/why-is-delete-operator-required-for-virtual-destructors">this</a>.
+//! It should not be a problem anyway since it is not part of the public API. Nonetheless, caution should be taken when
+//! using this class. A class deriving from this should never be allocated dynamically, because it would not be
+//! deallocated properly (only the destructor of the base class would be called).
+//!
 //! \tparam R return value of the functor
 //! \tparam Args... types of the functor parameters
 template<typename R, typename... Args>
 struct abstract_function<R(Args...)> {
-  virtual ~abstract_function() = default;
   virtual R operator()(Args...) = 0;
 };
 
