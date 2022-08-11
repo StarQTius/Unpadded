@@ -8,7 +8,7 @@ include(FetchContent)
 FetchContent_Declare(Unity
                      GIT_REPOSITORY https://github.com/ThrowTheSwitch/Unity)
 
-if(${PROJECT_NAME}_IS_TOP_LEVEL AND DEFINED CMAKE_CXX_INCLUDE_WHAT_YOU_USE)
+if(${PROJECT_NAME}_IS_TOP_LEVEL)
   set(FETCHCONTENT_FULLY_DISCONNECTED ON)
 endif()
 

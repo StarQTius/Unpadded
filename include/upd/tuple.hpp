@@ -5,6 +5,7 @@
 #include <array>
 #include <cstddef>
 #include <type_traits>
+#include <utility>
 
 #include "detail/type_traits/conjunction.hpp"
 #include "detail/type_traits/index_sequence.hpp"
@@ -37,7 +38,7 @@ class tuple_base; // IWYU pragma: keep
 //! @{
 
 template<typename T, std::size_t N>
-auto normalize(std::array<T, N> &&array) -> T(&&)[N] {
+auto normalize(std::array<T, N> &&array) -> T (&&)[N] {
   return reinterpret_cast<T(&&)[N]>(*array.data());
 }
 template<typename T,

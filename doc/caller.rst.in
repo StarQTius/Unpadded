@@ -23,7 +23,7 @@ If argument types does not match, the compiler will tell you.
 .. literalinclude:: /@PROJECT_SOURCE_DIR@/test/snippet/caller3
   :language: cpp
 
-Once sent, the packet must be received by a dispatcher. See :ref:`receive-request`.
+Once sent, the packet must be received by a dispatcher.
 
 Example
 ~~~~~~~
@@ -56,7 +56,7 @@ Non-blocking mode
 
 In non-blocking mode, the ``action`` class must be used to store a callback for later.
 
-.. literalinclude:: /@PROJECT_SOURCE_DIR@/test/snippet/caller5.cpp
+.. literalinclude:: /@PROJECT_SOURCE_DIR@/test/snippet/caller5
   :language: cpp
 
 ``action`` is non-templated, so it is suitable for storage.

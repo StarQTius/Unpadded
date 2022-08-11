@@ -5,10 +5,6 @@
 
 #include "product.hpp"
 
-#ifdef FWD
-#error "Private macros have leaked"
-#endif
-
 #define PACK(...) __VA_ARGS__
 #define DECLVAL(...) std::declval<PACK(__VA_ARGS__)>()
 #define DETECT(...) decltype(__VA_ARGS__, DECLVAL(int)){};

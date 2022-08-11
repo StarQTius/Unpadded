@@ -8,6 +8,8 @@
 #include "format.hpp"
 #include "tuple.hpp"
 #include "type.hpp"
+#include "unevaluated.hpp"
+#include "upd.hpp"
 
 #include "detail/function_reference.hpp"
 #include "detail/io/immediate_process.hpp"
@@ -16,23 +18,20 @@
 #include "detail/type_traits/input_tuple.hpp"
 #include "detail/type_traits/require.hpp"
 #include "detail/type_traits/signature.hpp"
-#include "unevaluated.hpp"
-
-#include "detail/def.hpp"
 
 // IWYU pragma: no_include "upd/detail/value_h.hpp"
 
 namespace upd {
 namespace detail {
 
-//! \brief Input invocable erased type
+//! \brief Input invocable with erased type
 using src_t = abstract_function<byte_t()>;
 
-//! \brief Output invocable erased type
+//! \brief Output invocable with erased type
 using dest_t = abstract_function<void(byte_t)>;
 
 //! \brief Serialize `value` as a sequence of byte then call `dest` on every byte of that sequence
-template<endianess Endianess, signed_mode Signed_Mode, typename T, REQUIREMENT(not_tuple, T)>
+template<endianess Endianess, signed_mode Signed_Mode, typename T, UPD_REQUIREMENT(not_tuple, T)>
 void insert(dest_t &dest, const T &value) {
   using namespace upd;
 
@@ -41,7 +40,7 @@ void insert(dest_t &dest, const T &value) {
     dest(byte);
 }
 
-//! \brief Invoke `ftor` on the unserialized arguments from `src`
+//! \brief Invoke `ftor` on the unserialized arguments from `src` and write the serialized return value to `dest`
 template<typename Tuple, typename F>
 void call(src_t &src, F &&ftor) {
   Tuple input_args;
@@ -51,7 +50,7 @@ void call(src_t &src, F &&ftor) {
 }
 
 //! \copydoc call
-template<typename Tuple, typename F, REQUIREMENT(is_void, detail::return_t<F>)>
+template<typename Tuple, typename F, UPD_REQUIREMENT(is_void, detail::return_t<F>)>
 void call(src_t &src, dest_t &, F &&ftor) {
   Tuple input_args;
   for (auto &byte : input_args)
@@ -60,7 +59,7 @@ void call(src_t &src, dest_t &, F &&ftor) {
 }
 
 //! \copydoc call
-template<typename Tuple, typename F, REQUIREMENT(not_void, detail::return_t<F>)>
+template<typename Tuple, typename F, UPD_REQUIREMENT(not_void, detail::return_t<F>)>
 void call(src_t &src, dest_t &dest, F &&ftor) {
   Tuple input_args;
   for (auto &byte : input_args)
@@ -93,9 +92,13 @@ struct action_concept {
 
 //! \brief Derived class used for setting up type erasure in the `action` class
 //!
-//! This class is derived from the `action_concept` as a the "Model" class in the type erasure pattern.
-//! This implementation of `action_concept` uses the `src_t` and `dest_t` functors to fetch the arguments for calling
-//! the functor as a byte sequence and serialize the expression resulting from that call.
+//! This class is derived from the `action_concept` structure and act as the "Model" class in the type erasure pattern.
+//! This class along with the `action_concept` class are internals and meant only to be used within the `action` class
+//! from the public API. When an `action` instance is called, the underlying `action_model` instance calls the managed
+//! callback. The input and output byte streams which the parameters and the return value will be read from or written
+//! to are wrapped into `abstract_function` instances (because virtual functions cannot be templated). Do note however
+//! that unlike `std::function`, constructing `abstract_function` instances do not make use of dynamic allocation and so
+//! does an `action` instance call.
 template<typename F, endianess Endianess, signed_mode Signed_Mode>
 class action_model : public action_concept {
   using impl_t = action_model_impl<F, Endianess, Signed_Mode>;
@@ -113,70 +116,71 @@ private:
   impl_t m_impl;
 };
 
-//! \name
-//! \brief Wrap a callback with static storage duration in a plain-function as template reference argument
 //! @{
-template<upd::endianess Endianess,
-         upd::signed_mode Signed_Mode,
-         typename F,
-         F Ftor,
-         detail::require_is_void<detail::return_t<F>> = 0>
-void static_storage_duration_callback_wrapper(detail::src_t &&src, detail::dest_t &&dest) {
-  detail::input_tuple<Endianess, Signed_Mode, F> parameters_tuple;
+//! \brief Wrap a callback with static storage duration or a free function into another free function
+
+//! This overload accepts any callback returning `void`.
+template<endianess Endianess, signed_mode Signed_Mode, typename F, F Ftor, UPD_REQUIREMENT(is_void, return_t<F>)>
+void static_storage_duration_callback_wrapper(src_t &&src, dest_t &&dest) {
+  input_tuple<Endianess, Signed_Mode, F> parameters_tuple;
   for (auto &byte : parameters_tuple)
     byte = src();
   parameters_tuple.invoke(Ftor);
 }
-template<upd::endianess Endianess,
-         upd::signed_mode Signed_Mode,
-         typename F,
-         F Ftor,
-         detail::require_not_void<detail::return_t<F>> = 0>
-void static_storage_duration_callback_wrapper(detail::src_t &&src, detail::dest_t &&dest) {
-  detail::input_tuple<Endianess, Signed_Mode, F> parameters_tuple;
+
+//! This overload accepts any callback not returning `void`.
+template<endianess Endianess, signed_mode Signed_Mode, typename F, F Ftor, UPD_REQUIREMENT(not_void, return_t<F>)>
+void static_storage_duration_callback_wrapper(src_t &&src, dest_t &&dest) {
+  input_tuple<Endianess, Signed_Mode, F> parameters_tuple;
   for (auto &byte : parameters_tuple)
     byte = src();
   auto return_tuple = make_tuple(endianess_h<Endianess>{}, signed_mode_h<Signed_Mode>{}, parameters_tuple.invoke(Ftor));
   for (auto byte : return_tuple)
     dest(byte);
 }
+
 //! @}
 
 } // namespace detail
 
-//! \brief Wrapper around an invocable object which serialize / unserialize parameters and return value
+//! \brief Wrapper around a callback which serialize / unserialize parameters and return values
 //!
-//! Given a byte sequence generated by a key, an action of same signature (i.e. whose underlying invocable object has
-//! the same signature as the aforesaid key) is able to unserialize the parameters from that byte sequence, call the
-//! underlying invocable object and serialize the return value as a byte sequence which can later be unserialized the
-//! key to obtain the return value.
+//! Given a byte sequence generated by a `key` instance, an `action` instance (whose underlying callback has the same
+//! signature as the aforesaid `key` instance) is able to unserialize the parameters from that byte sequence, invoke the
+//! underlying callback and serialize the return value as a byte sequence (which can later be unserialized by the same
+//! `key` instance to obtain the return value).
 class action : public detail::immediate_process<action, void> {
 public:
   action() = default;
 
-  //! \brief Wrap a copy of the provided invocable object
-  //! \tparam Endianess Byte order of the integers in the generated packets
-  //! \tparam Signed_Mode Representation of signed integers in the generated packets
-  //! \param ftor Invocable object to be wrapped
-  template<endianess Endianess, signed_mode Signed_Mode, typename F, REQUIREMENT(invocable, F)>
+  //! @{
+  //! \brief Wrap a copy of a provided callback
+
+  //! \tparam Endianess, Signed_Mode Serialization parameters
+  //! \param ftor Callback to be wrapped
+  template<endianess Endianess, signed_mode Signed_Mode, typename F, UPD_REQUIREMENT(invocable, F)>
   explicit action(F &&ftor, endianess_h<Endianess>, signed_mode_h<Signed_Mode>)
       : m_concept_uptr{new detail::action_model<F, Endianess, Signed_Mode>{FWD(ftor)}} {}
 
-  //! \copybrief action::action
   //! \param ftor Invocable object to be wrapped
-  template<typename F, REQUIREMENT(invocable, F)>
+  template<typename F, UPD_REQUIREMENT(invocable, F)>
   explicit action(F &&ftor) : action{FWD(ftor), builtin_endianess, builtin_signed_mode} {}
+
+  // @}
 
   UPD_SFINAE_FAILURE_CTOR(action, UPD_ERROR_NOT_INVOCABLE(ftor))
 
   using detail::immediate_process<action, void>::operator();
 
-  //! \brief Invoke the held invocable object and serialize / unserialize the parameters / return value
-  //! \copydoc ImmediateProcess_CRTP
+  //! @{
+  //! \brief Invoke the managed callback
+
+  //! The parameters are unserialized from the input byte sequence from `src`. After the callback invocation, the result
+  //! is serialized into `dest`. \copydoc ImmediateProcess_CRTP
   //!
-  //! \param src Input invocable object
-  //! \param dest Output invocable object
-  template<typename Src, typename Dest, REQUIREMENT(input_invocable, Src), REQUIREMENT(output_invocable, Dest)>
+  //! \param src Input invocable
+  //! \param dest Output invocable
+  template<typename Src, typename Dest, UPD_REQUIREMENT(input_invocable, Src), UPD_REQUIREMENT(output_invocable, Dest)>
   void operator()(Src &&src, Dest &&dest) const {
     if (m_concept_uptr)
       (*m_concept_uptr)(detail::make_function_reference(src), detail::make_function_reference(dest));
@@ -184,12 +188,13 @@ public:
 
   UPD_SFINAE_FAILURE_MEMBER(operator(), UPD_ERROR_NOT_INPUT(src) " OR " UPD_ERROR_NOT_OUTPUT(dest))
 
-  //! \copybrief operator()
   //! \param input Input byte sequence
   template<typename Input>
   void operator()(Input &&input) const {
     operator()(FWD(input), [](byte_t) {});
   }
+
+  //! @}
 
   //! \brief Get the size in bytes of the payload needed to invoke the wrapped object
   //! \return The size of the payload in bytes
@@ -205,33 +210,36 @@ private:
 
 //! \brief Action which does not manage storage for its underlying functor
 //!
-//! Actions without storage must be given plain function or invocable with static storage duration. On the other hand,
-//! they do not rely on dynamic allocation and are lighter than standard actions.
+//! `no_storage_action` instances must be given a free function or a callback with static storage duration, which makes
+//! them less permissive than `action` instances. On the other hand, they do not rely on dynamic allocation, which can
+//! be useful for embedded software.
 class no_storage_action : public detail::immediate_process<no_storage_action, void> {
 public:
   using detail::immediate_process<no_storage_action, void>::operator();
 
-  //! \brief Create an action holding the provided invocable object
-  //! \tparam Ftor Reference to an invocable object with static storage duration
-  //! \tparam Endianess Byte order of the integers in the generated packets
-  //! \tparam Signed_Mode Representation of signed integers in the generated packets
+  //! @{
+  //! \brief Create an action holding the provided callback
+
+  //! \tparam Ftor Free function or callback with static storage duration
+  //! \tparam Endianess, Signed_Mode Serialization parameters
   template<typename F, F Ftor, endianess Endianess, signed_mode Signed_Mode>
   explicit no_storage_action(unevaluated<F, Ftor>, endianess_h<Endianess>, signed_mode_h<Signed_Mode>)
       : m_wrapper{detail::static_storage_duration_callback_wrapper<Endianess, Signed_Mode, F, Ftor>},
         m_input_size{detail::parameters_size<F>::value}, m_output_size{detail::return_type_size<F>::value} {}
 
-  //! \copybrief no_storage_action::no_storage_action
-  //! \tparam Ftor Reference to an invocable object with static storage duration
+  //! \tparam Ftor Free function or callback with static storage duration
   template<typename F, F Ftor>
   explicit no_storage_action(unevaluated<F, Ftor>)
       : no_storage_action{unevaluated<F, Ftor>{}, builtin_endianess, builtin_signed_mode} {}
 
-  //! \brief Invoke the held invocable object and serialize / unserialize the parameters / return value
+  //! @}
+
+  //! \brief Invoke the managed callback
   //! \copydoc ImmediateProcess_CRTP
   //!
-  //! \param src Input invocable object
-  //! \param dest Output invocable object
-  template<typename Src, typename Dest, REQUIREMENT(input_invocable, Src), REQUIREMENT(output_invocable, Dest)>
+  //! \param src Input invocable
+  //! \param dest Output invocable
+  template<typename Src, typename Dest, UPD_REQUIREMENT(input_invocable, Src), UPD_REQUIREMENT(output_invocable, Dest)>
   void operator()(Src &&src, Dest &&dest) const {
     m_wrapper(detail::make_function_reference(src), detail::make_function_reference(dest));
   }
@@ -251,5 +259,3 @@ private:
   std::size_t m_input_size, m_output_size;
 };
 } // namespace upd
-
-#include "detail/undef.hpp" // IWYU pragma: keep

@@ -3,14 +3,14 @@
 #pragma once
 
 #include <cstddef>
-#include <cstdint>
+#include <cstdint> // IWYU pragma: keep
 #include <type_traits>
+
+#include "ternary.hpp" // IWYU pragma: keep
 
 #if __cplusplus >= 201703L
 #include "index_sequence.hpp"
 #endif // __cplusplus >= 201703L
-
-#include "ternary.hpp"
 
 namespace upd {
 namespace detail {
@@ -54,7 +54,7 @@ struct tlist_t_impl<index_sequence<Is...>, Ts...> : itype<Is, Ts>... {
 
 //! \brief Allows efficient operations on template parameter packs
 template<typename... Ts>
-struct tlist_t : tlist_t_impl<decltype(std::integer_sequence{make_index_sequence<sizeof...(Ts)>{}}), Ts...> {
+struct tlist_t : tlist_t_impl<make_index_sequence<sizeof...(Ts)>, Ts...> {
   using type = tlist_t<Ts...>;
 };
 

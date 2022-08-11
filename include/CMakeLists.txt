@@ -38,11 +38,10 @@ set(UNPADDED_HEADERS
 
 add_library(Unpadded INTERFACE)
 target_include_directories(Unpadded INTERFACE ${PROJECT_SOURCE_DIR}/include)
-if(Unpadded_IS_TOP_LEVEL AND DEFINED CMAKE_CXX_INCLUDE_WHAT_YOU_USE)
+if(Unpadded_IS_TOP_LEVEL)
   include(Unpadded)
 
   foreach(HEADER IN LISTS UNPADDED_HEADERS)
-    message(${HEADER})
     add_iwyu_target(upd/${HEADER} Unpadded)
   endforeach()
 endif()

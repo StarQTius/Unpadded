@@ -4,6 +4,7 @@
 
 #include "format.hpp"
 
+#include "detail/type_traits/is_keyring.hpp"
 #include "detail/type_traits/signature.hpp"
 #include "detail/type_traits/smallest.hpp"
 #include "detail/type_traits/typelist.hpp"
@@ -16,7 +17,7 @@
 namespace upd {
 
 template<endianess, signed_mode, typename...>
-class keyring;
+class keyring; // IWYU pragma: keep
 
 //! \brief Holds a set of functions and index them at compile-time
 //!
