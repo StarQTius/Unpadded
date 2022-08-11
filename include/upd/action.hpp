@@ -55,7 +55,7 @@ void call(src_t &src, dest_t &, F &&ftor) {
   Tuple input_args;
   for (auto &byte : input_args)
     byte = src();
-  input_args.invoke(FWD(ftor));
+  input_args.invoke(UPD_FWD(ftor));
 }
 
 //! \copydoc call
@@ -65,7 +65,7 @@ void call(src_t &src, dest_t &dest, F &&ftor) {
   for (auto &byte : input_args)
     byte = src();
 
-  return insert<Tuple::storage_endianess, Tuple::storage_signed_mode>(dest, input_args.invoke(FWD(ftor)));
+  return insert<Tuple::storage_endianess, Tuple::storage_signed_mode>(dest, input_args.invoke(UPD_FWD(ftor)));
 }
 
 //! \brief Implementation of the `action` class behaviour
@@ -76,7 +76,7 @@ template<typename F, endianess Endianess, signed_mode Signed_Mode>
 struct action_model_impl {
   using tuple_t = input_tuple<Endianess, Signed_Mode, F>;
 
-  explicit action_model_impl(F &&ftor) : ftor{FWD(ftor)} {}
+  explicit action_model_impl(F &&ftor) : ftor{UPD_FWD(ftor)} {}
 
   F ftor;
 };
@@ -105,12 +105,12 @@ class action_model : public action_concept {
   using tuple_t = typename impl_t::tuple_t;
 
 public:
-  explicit action_model(F &&ftor) : m_impl{FWD(ftor)} {
+  explicit action_model(F &&ftor) : m_impl{UPD_FWD(ftor)} {
     action_model::input_size = tuple_t::size;
     action_model::output_size = flatten_tuple_t<Endianess, Signed_Mode, return_t<F>>::size;
   }
 
-  void operator()(src_t &&src, dest_t &&dest) final { return detail::call<tuple_t>(src, dest, FWD(m_impl.ftor)); }
+  void operator()(src_t &&src, dest_t &&dest) final { return detail::call<tuple_t>(src, dest, UPD_FWD(m_impl.ftor)); }
 
 private:
   impl_t m_impl;
@@ -160,11 +160,11 @@ public:
   //! \param ftor Callback to be wrapped
   template<endianess Endianess, signed_mode Signed_Mode, typename F, UPD_REQUIREMENT(invocable, F)>
   explicit action(F &&ftor, endianess_h<Endianess>, signed_mode_h<Signed_Mode>)
-      : m_concept_uptr{new detail::action_model<F, Endianess, Signed_Mode>{FWD(ftor)}} {}
+      : m_concept_uptr{new detail::action_model<F, Endianess, Signed_Mode>{UPD_FWD(ftor)}} {}
 
   //! \param ftor Invocable object to be wrapped
   template<typename F, UPD_REQUIREMENT(invocable, F)>
-  explicit action(F &&ftor) : action{FWD(ftor), builtin_endianess, builtin_signed_mode} {}
+  explicit action(F &&ftor) : action{UPD_FWD(ftor), builtin_endianess, builtin_signed_mode} {}
 
   // @}
 
@@ -191,7 +191,7 @@ public:
   //! \param input Input byte sequence
   template<typename Input>
   void operator()(Input &&input) const {
-    operator()(FWD(input), [](byte_t) {});
+    operator()(UPD_FWD(input), [](byte_t) {});
   }
 
   //! @}
