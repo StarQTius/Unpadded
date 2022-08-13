@@ -8,15 +8,11 @@ include(FetchContent)
 FetchContent_Declare(Unity
                      GIT_REPOSITORY https://github.com/ThrowTheSwitch/Unity)
 
-if(${PROJECT_NAME}_IS_TOP_LEVEL)
-  set(FETCHCONTENT_FULLY_DISCONNECTED ON)
-endif()
-
 add_subdirectory(include)
-add_subdirectory(doc)
+add_subdirectory(doc EXCLUDE_FROM_ALL)
 
-if(${PROJECT_NAME}_IS_TOP_LEVEL AND BUILD_TESTING)
+if(${PROJECT_NAME}_IS_TOP_LEVEL)
   include(CTest)
 
-  add_subdirectory(test)
+  add_subdirectory(test EXCLUDE_FROM_ALL)
 endif()
