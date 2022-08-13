@@ -116,9 +116,8 @@ private:
   impl_t m_impl;
 };
 
-//! @{
 //! \brief Wrap a callback with static storage duration or a free function into another free function
-
+//!
 //! This overload accepts any callback returning `void`.
 template<endianess Endianess, signed_mode Signed_Mode, typename F, F Ftor, UPD_REQUIREMENT(is_void, return_t<F>)>
 void static_storage_duration_callback_wrapper(src_t &&src, dest_t &&dest) {
@@ -128,6 +127,8 @@ void static_storage_duration_callback_wrapper(src_t &&src, dest_t &&dest) {
   parameters_tuple.invoke(Ftor);
 }
 
+//! \copybrief static_storage_duration_callback_wrapper
+//!
 //! This overload accepts any callback not returning `void`.
 template<endianess Endianess, signed_mode Signed_Mode, typename F, F Ftor, UPD_REQUIREMENT(not_void, return_t<F>)>
 void static_storage_duration_callback_wrapper(src_t &&src, dest_t &&dest) {
@@ -138,8 +139,6 @@ void static_storage_duration_callback_wrapper(src_t &&src, dest_t &&dest) {
   for (auto byte : return_tuple)
     dest(byte);
 }
-
-//! @}
 
 } // namespace detail
 
@@ -153,28 +152,23 @@ class action : public detail::immediate_process<action, void> {
 public:
   action() = default;
 
-  //! @{
   //! \brief Wrap a copy of a provided callback
-
   //! \tparam Endianess, Signed_Mode Serialization parameters
   //! \param ftor Callback to be wrapped
   template<endianess Endianess, signed_mode Signed_Mode, typename F, UPD_REQUIREMENT(invocable, F)>
   explicit action(F &&ftor, endianess_h<Endianess>, signed_mode_h<Signed_Mode>)
       : m_concept_uptr{new detail::action_model<F, Endianess, Signed_Mode>{UPD_FWD(ftor)}} {}
 
-  //! \param ftor Invocable object to be wrapped
+  //! \copybrief action(F&&,endianess_h<Endianess>,signed_mode_h<Signed_Mode>)
+  //! \param ftor Callback to be wrapped
   template<typename F, UPD_REQUIREMENT(invocable, F)>
   explicit action(F &&ftor) : action{UPD_FWD(ftor), builtin_endianess, builtin_signed_mode} {}
-
-  // @}
 
   UPD_SFINAE_FAILURE_CTOR(action, UPD_ERROR_NOT_INVOCABLE(ftor))
 
   using detail::immediate_process<action, void>::operator();
 
-  //! @{
   //! \brief Invoke the managed callback
-
   //! The parameters are unserialized from the input byte sequence from `src`. After the callback invocation, the result
   //! is serialized into `dest`. \copydoc ImmediateProcess_CRTP
   //!
@@ -188,13 +182,12 @@ public:
 
   UPD_SFINAE_FAILURE_MEMBER(operator(), UPD_ERROR_NOT_INPUT(src) " OR " UPD_ERROR_NOT_OUTPUT(dest))
 
+  //! \brief Invoke the managed callback
   //! \param input Input byte sequence
   template<typename Input>
   void operator()(Input &&input) const {
     operator()(UPD_FWD(input), [](byte_t) {});
   }
-
-  //! @}
 
   //! \brief Get the size in bytes of the payload needed to invoke the wrapped object
   //! \return The size of the payload in bytes
@@ -217,9 +210,7 @@ class no_storage_action : public detail::immediate_process<no_storage_action, vo
 public:
   using detail::immediate_process<no_storage_action, void>::operator();
 
-  //! @{
   //! \brief Create an action holding the provided callback
-
   //! \tparam Ftor Free function or callback with static storage duration
   //! \tparam Endianess, Signed_Mode Serialization parameters
   template<typename F, F Ftor, endianess Endianess, signed_mode Signed_Mode>
@@ -227,12 +218,11 @@ public:
       : m_wrapper{detail::static_storage_duration_callback_wrapper<Endianess, Signed_Mode, F, Ftor>},
         m_input_size{detail::parameters_size<F>::value}, m_output_size{detail::return_type_size<F>::value} {}
 
-  //! \tparam Ftor Free function or callback with static storage duration
+  //! \copybrief no_storage_action::no_storage_action(unevaluated<F, Ftor>, endianess_h<Endianess>,
+  //! signed_mode_h<Signed_Mode>) \tparam Ftor Free function or callback with static storage duration
   template<typename F, F Ftor>
   explicit no_storage_action(unevaluated<F, Ftor>)
       : no_storage_action{unevaluated<F, Ftor>{}, builtin_endianess, builtin_signed_mode} {}
-
-  //! @}
 
   //! \brief Invoke the managed callback
   //! \copydoc ImmediateProcess_CRTP
