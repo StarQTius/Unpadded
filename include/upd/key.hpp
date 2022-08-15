@@ -2,8 +2,7 @@
 
 #pragma once
 
-#include "format.hpp"
-#include "tuple.hpp"
+#include <type_traits>
 
 #include "action.hpp"
 #include "detail/io/immediate_reader.hpp"
@@ -12,6 +11,8 @@
 #include "detail/type_traits/remove_cv_ref.hpp"
 #include "detail/type_traits/require.hpp"
 #include "detail/type_traits/signature.hpp"
+#include "format.hpp"
+#include "tuple.hpp"
 #include "unevaluated.hpp"
 
 #include "detail/def.hpp"
@@ -87,6 +88,9 @@ public:
   //! \brief Equals the `Signed_Mode` template parameter
   constexpr static auto signed_mode = Signed_Mode;
 
+  //! \brief Equals the length in bytes of an action request produced by this key
+  constexpr static auto payload_length = sizeof(Index_T) + detail::parameters_size<R(Args...)>::value;
+
   //! \brief Generate a packet ready to be sent
   //!
   //! This allows the following syntax : `key(x1, x2, x3, ...) >> dest` (with `dest` being an output invocable).
@@ -111,7 +115,7 @@ public:
   //!
   //! \param src Input invocable to the packet
   //! \return the unserialized value
-  template<typename Src, REQUIREMENT(input_invocable, Src)>
+  template<typename Src, REQUIREMENT(input_invocable, Src), REQUIRE_CLASS(!std::is_void<return_t>::value)>
   return_t read_all(Src &&src) const {
     tuple<Endianess, Signed_Mode, detail::remove_cv_ref_t<R>> retval;
     for (auto &byte : retval)
@@ -119,6 +123,10 @@ public:
 
     return retval.template get<0>();
   }
+
+  //! \copydoc read_all
+  template<typename Src, REQUIREMENT(input_invocable, Src), REQUIRE_CLASS(std::is_void<return_t>::value)>
+  void read_all(Src &&) const {}
 
   UPD_SFINAE_FAILURE_MEMBER(read_all, UPD_ERROR_NOT_INPUT(src))
 

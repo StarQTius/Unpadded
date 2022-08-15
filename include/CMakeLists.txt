@@ -30,6 +30,7 @@ set(UNPADDED_HEADERS
     key.hpp
     keyring.hpp
     policy.hpp
+    python.hpp
     serialization.hpp
     tuple.hpp
     type.hpp

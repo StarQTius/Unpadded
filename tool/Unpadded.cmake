@@ -1,3 +1,5 @@
+FetchContent_MakeAvailable(pybind11)
+
 if(NOT TARGET iwyu)
   find_program(IWYU_PROGRAM include-what-you-use)
   if(NOT IWYU_PROGRAM)
@@ -30,8 +32,8 @@ function(add_iwyu_target FILE_PATH DEPENDENCY)
               ${PROJECT_SOURCE_DIR}/tool/.imp
       COMMAND touch ${CMAKE_BINARY_DIR}/${TARGET_NAME}.iwyu
       COMMAND
-        for INCLUDE_PATH in
-        $<TARGET_PROPERTY:${DEPENDENCY},INCLUDE_DIRECTORIES>\\\; do
+        for INCLUDE_PATH in $<TARGET_PROPERTY:${DEPENDENCY},INCLUDE_DIRECTORIES>
+        ${pybind11_INCLUDE_DIRS} \\\; do
         INCLUDE_PATH_OPTION=\"$$INCLUDE_PATH_OPTION -isystem$$INCLUDE_PATH\"\\\;
         done\\\; ${IWYU_COMMAND} -I${CMAKE_CURRENT_SOURCE_DIR}
         $$INCLUDE_PATH_OPTION $$COMPILE_DEF_OPTION

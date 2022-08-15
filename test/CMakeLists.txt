@@ -1,7 +1,5 @@
 FetchContent_MakeAvailable(Unity)
 
-add_custom_target(check COMMAND ctest -L check --output-on-failure)
-
 function(add_cpp11_and_cpp17_test TEST_NAME)
   add_executable(run_${TEST_NAME}_cpp11 ${TEST_NAME}.cpp)
   set_target_properties(run_${TEST_NAME}_cpp11 PROPERTIES CXX_STANDARD 11)
@@ -26,6 +24,13 @@ target_compile_options(
             -fcolor-diagnostics>)
 target_link_libraries(unit_testing INTERFACE unity::framework ${PROJECT_NAME})
 
+add_subdirectory(py)
+add_subdirectory(snippet)
+
+add_custom_target(
+  check
+  COMMAND ctest -L check --output-on-failure
+  DEPENDS module)
 add_cpp11_and_cpp17_test(buffered_dispatcher)
 add_cpp11_and_cpp17_test(dispatcher)
 add_cpp11_and_cpp17_test(key)
@@ -34,5 +39,3 @@ add_cpp11_and_cpp17_test(action)
 add_cpp11_and_cpp17_test(tuple_view)
 add_cpp11_and_cpp17_test(tuple)
 add_cpp11_and_cpp17_test(unaligned_data)
-
-add_subdirectory(snippet)
