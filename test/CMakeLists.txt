@@ -24,13 +24,14 @@ target_compile_options(
             -fcolor-diagnostics>)
 target_link_libraries(unit_testing INTERFACE unity::framework ${PROJECT_NAME})
 
-add_subdirectory(py)
-add_subdirectory(snippet)
-
 add_custom_target(
   check
   COMMAND ctest -L check --output-on-failure
   DEPENDS module)
+
+add_subdirectory(py)
+add_subdirectory(snippet)
+
 add_cpp11_and_cpp17_test(buffered_dispatcher)
 add_cpp11_and_cpp17_test(dispatcher)
 add_cpp11_and_cpp17_test(key)
