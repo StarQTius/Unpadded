@@ -1,5 +1,15 @@
 from module import *
+from asyncio import get_event_loop
+import unpadded as upd
 import pytest
+
+pytest_plugins = ('pytest_asyncio',)
+
+class MockClient(upd.Client):
+    def new_request(self, payload):
+        future = get_event_loop().create_future()
+        future.set_result((2 * payload[1]).to_bytes(1, 'little') if len(payload) > 1 else b'')
+        return future
 
 def test_encode_and_decode():
     assert f1.encode() == b'\x00'
@@ -15,3 +25,8 @@ def test_encode_and_decode():
     assert f4.decode(b'\xff') == 0xff
     assert f5.decode(b'') is None
     assert f6.decode(b'') is None
+
+@pytest.mark.asyncio
+async def test_asynchronous_key():
+    client = MockClient()
+    assert await client.call(f4, 16) == 32
