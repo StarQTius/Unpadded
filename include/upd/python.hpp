@@ -92,6 +92,15 @@ auto bind(pybind11::module &pymodule, Keyring keyring) {
   std::sregex_iterator begin{name.begin(), name.end(), callback_name_re}, end;
   std::vector matches(begin, end);
 
+  if (matches.size() != keyring.size) {
+    std::string msg{"Some callback identifiers could not have been extracted from `Keyring` demangled identifier or "
+                    "too many of them were found. The found identifiers were : \n"};
+    for (auto &match : matches)
+      msg += (std::string) "- " + match[1].str() + ";\n";
+
+    throw std::invalid_argument(msg);
+  }
+
   detail::define_pykeys(pymodule, keyring, matches, std::make_index_sequence<Keyring::size>{});
 }
 

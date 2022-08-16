@@ -8,6 +8,12 @@ void f2(std::uint8_t);
 void f3();
 std::uint8_t f4(std::uint8_t);
 
-constexpr upd::keyring keyring{upd::flist<f1, f2, f3, f4>, upd::little_endian, upd::two_complement};
+struct {
+  void operator()(std::uint8_t){};
+} f5;
+
+auto f6 = [](std::uint8_t) {};
+
+constexpr upd::keyring keyring{upd::flist<f1, f2, f3, f4, f5, f6>, upd::little_endian, upd::two_complement};
 
 PYBIND11_MODULE(module, pymodule) { upd::py::bind(pymodule, keyring); }
