@@ -30,3 +30,7 @@ def test_encode_and_decode():
 async def test_asynchronous_key():
     client = MockClient()
     assert await client.call(f4, 16) == 32
+
+def test_dispatcher():
+    dispatcher = Dispatcher()
+    assert dispatcher.resolve(b'\x01\x10\x00') == b'\x20\00'

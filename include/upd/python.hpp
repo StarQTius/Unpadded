@@ -14,11 +14,13 @@
 #include <pybind11/pytypes.h>
 
 #include "detail/type_traits/require.hpp"
+#include "detail/type_traits/typelist.hpp"
+#include "dispatcher.hpp"
+#include "format.hpp"
 #include "key.hpp"
+#include "policy.hpp"
+#include "type.hpp"
 #include "upd.hpp"
-#include "upd/detail/type_traits/typelist.hpp"
-#include "upd/format.hpp"
-#include "upd/type.hpp"
 
 #if !defined(UPD_IDENTIFIER_LENGTH_LIMIT)
 #define UPD_IDENTIFIER_LENGTH_LIMIT 64
@@ -86,7 +88,7 @@ void define_pykeys(pybind11::module &pymodule, Keyring keyring, const Vector &ma
 } // namespace detail
 
 template<typename Keyring, UPD_REQUIREMENT(is_keyring, Keyring)>
-auto bind(pybind11::module &pymodule, Keyring keyring) {
+void unpack_keyring(pybind11::module &pymodule, Keyring keyring) {
   auto name = boost::core::demangle(typeid(keyring).name());
   std::regex callback_name_re{"upd::unevaluated<[^,]*,\\s(\\w+)[^>]*>"};
   std::sregex_iterator begin{name.begin(), name.end(), callback_name_re}, end;
@@ -102,6 +104,29 @@ auto bind(pybind11::module &pymodule, Keyring keyring) {
   }
 
   detail::define_pykeys(pymodule, keyring, matches, std::make_index_sequence<Keyring::size>{});
+}
+
+template<typename Keyring, UPD_REQUIREMENT(is_keyring, Keyring)>
+void declare_dispatcher(pybind11::module &pymodule, const char *name, Keyring keyring) {
+  using dispatcher_t = dispatcher<Keyring, action_features::ANY>;
+
+  pybind11::class_<dispatcher_t>{pymodule, name}
+      .def(pybind11::init([]() {
+        return dispatcher_t{{}, {}};
+      }))
+      .def("resolve", [](dispatcher_t &self, pybind11::object bytes) {
+        std::string retval;
+        auto it = bytes.begin();
+
+        self(
+            [&]() {
+              ++it;
+              return it->cast<byte_t>();
+            },
+            [&](byte_t b) { retval.push_back(reinterpret_cast<char &>(b)); });
+
+        return pybind11::bytes(retval);
+      });
 }
 
 } // namespace py
