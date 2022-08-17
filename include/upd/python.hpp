@@ -100,6 +100,8 @@ void unpack_keyring(pybind11::module &pymodule, Keyring keyring) {
     for (auto &match : matches)
       msg += (std::string) "- " + match[1].str() + ";\n";
 
+    msg += (std::string) "The `Keyring` identifier was : " + name;
+
     throw std::invalid_argument(msg);
   }
 
