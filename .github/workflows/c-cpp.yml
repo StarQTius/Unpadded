@@ -5,6 +5,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - run: pip install pytest
     - run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release
     - run: cmake --build ${{github.workspace}}/build -t check
     - working-directory: ${{github.workspace}}/build
