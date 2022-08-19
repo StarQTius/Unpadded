@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.21)
 project(Unpadded LANGUAGES CXX)
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/tool)
 
+include(GNUInstallDirs)
 include(FetchContent)
 
 FetchContent_Declare(Unity
@@ -25,3 +26,14 @@ if(${PROJECT_NAME}_IS_TOP_LEVEL)
 
   add_subdirectory(test EXCLUDE_FROM_ALL)
 endif()
+
+install(
+  TARGETS ${PROJECT_NAME}
+  EXPORT ${PROJECT_NAME}Targets
+  PUBLIC_HEADER DESTINATION include COMPONENT Development)
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/upd DESTINATION include)
+install(
+  EXPORT ${PROJECT_NAME}Targets
+  FILE ${PROJECT_NAME}Config.cmake
+  NAMESPACE Unpadded::
+  DESTINATION lib/cmake/${PROJECT_NAME})

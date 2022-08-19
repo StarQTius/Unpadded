@@ -1,4 +1,4 @@
-set(UNPADDED_HEADERS
+set(HEADERS
     action.hpp
     buffered_dispatcher.hpp
     dispatcher.hpp
@@ -37,12 +37,14 @@ set(UNPADDED_HEADERS
     typelist.hpp
     unevaluated.hpp)
 
-add_library(Unpadded INTERFACE)
-target_include_directories(Unpadded INTERFACE ${PROJECT_SOURCE_DIR}/include)
-if(Unpadded_IS_TOP_LEVEL)
+add_library(${PROJECT_NAME} INTERFACE)
+target_include_directories(
+  ${PROJECT_NAME} INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+                            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIRS}>)
+if(${PROJECT_NAME}_IS_TOP_LEVEL)
   include(Unpadded)
 
-  foreach(HEADER IN LISTS UNPADDED_HEADERS)
-    add_iwyu_target(upd/${HEADER} Unpadded)
+  foreach(HEADER IN LISTS HEADERS)
+    add_iwyu_target(upd/${HEADER} ${PROJECT_NAME})
   endforeach()
 endif()
