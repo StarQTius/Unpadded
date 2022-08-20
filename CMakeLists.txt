@@ -14,11 +14,6 @@ if(NOT ${PROJECT_NAME}_INSTALL)
     pybind11
     GIT_REPOSITORY https://github.com/pybind/pybind11
     GIT_TAG v2.10.0)
-  FetchContent_Declare(
-    Boost
-    GIT_REPOSITORY https://github.com/boostorg/boost
-    GIT_SUBMODULES libs/core libs/assert libs/config libs/static_assert
-                   libs/throw_exception tools/cmake)
 endif()
 
 add_subdirectory(include)

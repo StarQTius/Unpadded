@@ -1,6 +1,8 @@
 #pragma once
 
+#include <cstdlib>
 #include <cstring>
+#include <cxxabi.h>
 #include <regex>
 #include <stdexcept>
 #include <string>
@@ -8,7 +10,6 @@
 #include <utility>
 #include <vector>
 
-#include <boost/core/demangle.hpp>
 #include <pybind11/cast.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
@@ -89,7 +90,15 @@ void define_pykeys(pybind11::module &pymodule, Keyring keyring, const Vector &ma
 
 template<typename Keyring, UPD_REQUIREMENT(is_keyring, Keyring)>
 void unpack_keyring(pybind11::module &pymodule, Keyring keyring) {
-  auto name = boost::core::demangle(typeid(keyring).name());
+  int status;
+  auto *cstr_name = abi::__cxa_demangle(typeid(keyring).name(), NULL, NULL, &status);
+
+  if (!cstr_name)
+    throw std::runtime_error{"`Keyring` identifier couldn't be demangled"};
+
+  std::string name{cstr_name};
+  free(cstr_name);
+
   std::regex callback_name_re{"upd::unevaluated<[^,]*,\\s(\\w+)[^>]*>"};
   std::sregex_iterator begin{name.begin(), name.end(), callback_name_re}, end;
   std::vector matches(begin, end);
