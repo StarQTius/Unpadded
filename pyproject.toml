@@ -6,5 +6,8 @@ build-backend = "setuptools.build_meta"
 name = "unpadded"
 version = "0.0"
 
+[tool.setuptools]
+include-package-data = true
+
 [tool.setuptools.packages.find]
 where = ["py"]
