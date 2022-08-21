@@ -139,6 +139,8 @@ void declare_dispatcher(pybind11::module &pymodule, const char *name, Keyring ke
 
         return pybind11::bytes(retval);
       });
+
+  unpack_keyring(pymodule, keyring);
 }
 
 } // namespace py
