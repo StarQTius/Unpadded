@@ -11,3 +11,7 @@ include-package-data = true
 
 [tool.setuptools.packages.find]
 where = ["py"]
+
+[tool.isort]
+profile = "black"
+
