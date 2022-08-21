@@ -6,7 +6,5 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - run: pip install pytest pytest-asyncio cppimport
-    - run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=g++-10
+    - run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=gcc-10 -DCMAKE_CXX_COMPILER=g++-10
     - run: cmake --build ${{github.workspace}}/build -t check
-    - working-directory: ${{github.workspace}}/build
-      run: ctest

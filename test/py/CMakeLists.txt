@@ -8,5 +8,10 @@ add_test(
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/py)
 
 set_tests_properties(
-  python_test PROPERTIES LABELS check ENVIRONMENT
-                         "PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}")
+  python_test
+  PROPERTIES
+    LABELS
+    check
+    ENVIRONMENT
+    "PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR};CC=${CMAKE_C_COMPILER};CXX=${CMAKE_CXX_COMPILER}"
+)

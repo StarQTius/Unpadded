@@ -46,7 +46,7 @@ class Hook:
 def setup_unpadded(cfg):
     setup_pybind11(cfg)
     cfg["include_dirs"] += [INCLUDE_DIRECTORY] + _extra_include_dirs
-    cfg['extra_compile_args'] = ['-std=c++17']
+    cfg["extra_compile_args"] += ["-std=c++17"]
 
 def set_extra_include_dirs(include_dirs):
     global _extra_include_dirs

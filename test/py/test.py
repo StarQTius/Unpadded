@@ -1,6 +1,7 @@
 from asyncio import get_event_loop
 import unpadded as upd
 import pytest
+import os
 
 upd.set_extra_include_dirs(["../../include"])
 

@@ -94,7 +94,8 @@ void unpack_keyring(pybind11::module &pymodule, Keyring keyring) {
   auto *cstr_name = abi::__cxa_demangle(typeid(keyring).name(), NULL, NULL, &status);
 
   if (!cstr_name)
-    throw std::runtime_error{"`Keyring` identifier couldn't be demangled"};
+    throw std::runtime_error{(std::string) "`Keyring` identifier (" + typeid(keyring).name() +
+                             ") couldn't be demangled"};
 
   std::string name{cstr_name};
   free(cstr_name);
