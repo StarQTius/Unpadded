@@ -24,10 +24,7 @@ target_compile_options(
             -fcolor-diagnostics>)
 target_link_libraries(unit_testing INTERFACE unity::framework ${PROJECT_NAME})
 
-add_custom_target(
-  check
-  COMMAND ctest -L check --output-on-failure
-  DEPENDS module)
+add_custom_target(check COMMAND ctest -L check --output-on-failure)
 
 add_subdirectory(py)
 add_subdirectory(snippet)

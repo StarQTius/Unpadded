@@ -1,7 +1,10 @@
-from module import *
 from asyncio import get_event_loop
 import unpadded as upd
 import pytest
+
+upd.set_extra_include_dirs(["../../include"])
+
+from module import *
 
 pytest_plugins = ('pytest_asyncio',)
 

@@ -14,9 +14,10 @@ import logging
 import sys
 import traceback
 
-logger = logging.getLogger(__name__)
-
 INCLUDE_DIRECTORY = str(Path(__file__).parent.absolute()) + "/include"
+
+_extra_include_dirs = []
+_logger = logging.getLogger(__name__)
 
 class Hook:
     def __init__(self):
@@ -38,12 +39,17 @@ class Hook:
             load_module(module_data)
             return module_data["module"]
         except ImportError:
-            logger.debug(traceback.format_exc())
+            _logger.debug(traceback.format_exc())
         finally:
             self._running = False
 
 def setup_unpadded(cfg):
     setup_pybind11(cfg)
-    cfg["include_dirs"] += [INCLUDE_DIRECTORY]
+    cfg["include_dirs"] += [INCLUDE_DIRECTORY] + _extra_include_dirs
+    cfg['extra_compile_args'] = ['-std=c++17']
+
+def set_extra_include_dirs(include_dirs):
+    global _extra_include_dirs
+    _extra_include_dirs = include_dirs
 
 sys.meta_path.insert(0, Hook())

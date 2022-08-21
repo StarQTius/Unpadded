@@ -1,7 +1,7 @@
+// cppimport
+
 #include <upd/keyring.hpp>
 #include <upd/python.hpp>
-
-#include "../utility.hpp"
 
 std::uint8_t f1();
 void f2(std::uint8_t);
@@ -25,3 +25,5 @@ PYBIND11_MODULE(module, pymodule) {
   upd::py::unpack_keyring(pymodule, keyring);
   upd::py::declare_dispatcher(pymodule, "Dispatcher", dispatcher_keyring);
 }
+
+<% setup_unpadded(cfg) %>

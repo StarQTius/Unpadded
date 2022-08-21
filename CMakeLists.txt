@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 3.21)
 
-include(GNUInstallDirs)
-include(FetchContent)
-
 project(Unpadded LANGUAGES CXX)
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/tool)
 option(${PROJECT_NAME}_INSTALL "Only make what is needed for installing" OFF)
+
+include(GNUInstallDirs)
+include(FetchContent)
 
 if(NOT ${PROJECT_NAME}_INSTALL)
   FetchContent_Declare(Unity
