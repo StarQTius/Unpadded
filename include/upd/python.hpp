@@ -14,6 +14,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
 
+#include "action.hpp"
 #include "detail/type_traits/require.hpp"
 #include "detail/type_traits/typelist.hpp"
 #include "dispatcher.hpp"
@@ -67,12 +68,23 @@ void define_pykey(pybind11::module &pymodule, const std::string &name, Keyring, 
              k(args...).write_all(buf);
              return pybind11::bytes{reinterpret_cast<char *>(buf), sizeof buf};
            })
-      .def("decode", [](key_t k, pybind11::object &pybytes) {
-        auto it = pybytes.begin();
-        return k.read_all([&]() {
-          ++it;
-          return it->cast<byte_t>();
-        });
+      .def("decode",
+           [](key_t k, pybind11::object &pybytes) {
+             auto it = pybytes.begin();
+             return k.read_all([&]() {
+               ++it;
+               return it->cast<byte_t>();
+             });
+           })
+      .def("index", [](key_t) { return I; })
+      .def("__make_action", [](key_t, pybind11::function pyfunction) {
+        return action{[pyfunction](const Args &...args) {
+          if constexpr (std::is_void_v<R>) {
+            pyfunction(args...);
+          } else {
+            return pyfunction(args...).template cast<R>();
+          }
+        }};
       });
 
   pymodule.attr(pyclass_name + 2) = k;
@@ -84,6 +96,12 @@ void define_pykeys(pybind11::module &pymodule, Keyring keyring, const Vector &ma
 
   using discard = int[];
   discard{0, (define_pykey(pymodule, matches[Is][1], keyring, keyring.get(upd::detail::at<flist_t, Is>{})), 0)...};
+}
+
+template<typename T>
+void ensure_class(pybind11::module &pymodule, const char *name) {
+  if (!pybind11::hasattr(pymodule, name))
+    pybind11::class_<T>{pymodule, name};
 }
 
 } // namespace detail
@@ -122,22 +140,28 @@ template<typename Keyring, UPD_REQUIREMENT(is_keyring, Keyring)>
 void declare_dispatcher(pybind11::module &pymodule, const char *name, Keyring keyring) {
   using dispatcher_t = dispatcher<Keyring, action_features::ANY>;
 
+  detail::ensure_class<action>(pymodule, "_Action");
+
   pybind11::class_<dispatcher_t>{pymodule, name}
       .def(pybind11::init([]() {
         return dispatcher_t{{}, {}};
       }))
-      .def("resolve", [](dispatcher_t &self, pybind11::object bytes) {
-        std::string retval;
-        auto it = bytes.begin();
+      .def("resolve",
+           [](dispatcher_t &self, pybind11::object bytes) {
+             std::string retval;
+             auto it = bytes.begin();
 
-        self(
-            [&]() {
-              ++it;
-              return it->cast<byte_t>();
-            },
-            [&](byte_t b) { retval.push_back(reinterpret_cast<char &>(b)); });
+             self(
+                 [&]() {
+                   ++it;
+                   return it->cast<byte_t>();
+                 },
+                 [&](byte_t b) { retval.push_back(reinterpret_cast<char &>(b)); });
 
-        return pybind11::bytes(retval);
+             return pybind11::bytes(retval);
+           })
+      .def("replace", [](dispatcher_t &self, pybind11::object pykey, pybind11::function pyfunction) {
+        self[pykey.attr("index")().cast<std::size_t>()] = pykey.attr("__make_action")(pyfunction).cast<action>();
       });
 
   unpack_keyring(pymodule, keyring);
