@@ -18,15 +18,6 @@ pytest_plugins = ("pytest_asyncio",)
 from module import *
 
 
-class MockClient(upd.Client):
-    def new_request(self, payload):
-        future = get_event_loop().create_future()
-        future.set_result(
-            (2 * payload[1]).to_bytes(1, "little") if len(payload) > 1 else b""
-        )
-        return future
-
-
 def test_encode_and_decode():
     assert f1.encode() == b"\x00"
     assert f2.encode(0x10) == b"\x01\x10"
@@ -45,6 +36,14 @@ def test_encode_and_decode():
 
 @pytest.mark.asyncio
 async def test_asynchronous_key():
+    class MockClient(upd.Client):
+        def new_request(self, payload):
+            future = get_event_loop().create_future()
+            future.set_result(
+                (2 * payload[1]).to_bytes(1, "little") if len(payload) > 1 else b""
+            )
+            return future
+
     client = MockClient()
     assert await client.call(f4, 16) == 32
 
@@ -61,3 +60,17 @@ def test_dispatcher_replace_with_pyfunction():
     assert dispatcher.resolve(b"\x01" + n.to_bytes(2, "little")) == (3 * n).to_bytes(
         2, "little"
     )
+
+
+@pytest.mark.asyncio
+async def test_fill_future_with_non_bytes():
+    expected_result = getrandbits(8)
+
+    class MockClient(upd.Client):
+        def new_request(self, payload):
+            future = get_event_loop().create_future()
+            future.set_result(expected_result)
+            return future
+
+    client = MockClient()
+    assert await client.call(f4, 0) == expected_result

@@ -3,4 +3,9 @@ class Client:
         raise NotImplemented()
 
     async def call(self, key, *args):
-        return key.decode(await self.new_request(key.encode(*args)))
+        response = await self.new_request(key.encode(*args))
+
+        if type(response) == bytes:
+            return key.decode(response)
+        else:
+            return response
