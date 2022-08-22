@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstdlib>
-#include <cstring>
 #include <cxxabi.h>
 #include <regex>
 #include <stdexcept>
@@ -24,34 +23,17 @@
 #include "type.hpp"
 #include "upd.hpp"
 
-#if !defined(UPD_IDENTIFIER_LENGTH_LIMIT)
-#define UPD_IDENTIFIER_LENGTH_LIMIT 64
-#endif
-
 namespace upd {
 namespace py {
 namespace detail {
 
-constexpr std::size_t identifier_length_limit = UPD_IDENTIFIER_LENGTH_LIMIT;
 constexpr char pykey_prefix[] = "__";
 
 template<typename Keyring, std::size_t I>
 const char *cstr_name(const std::string &name) {
-  static bool is_name_set;
-  static char cstr_name[identifier_length_limit];
+  static std::string static_name{pykey_prefix + name};
 
-  if (!is_name_set) {
-    if (!(name.size() < identifier_length_limit - sizeof pykey_prefix))
-      throw std::length_error(
-          (std::string) "Identifier `" + name + "` length is above the supported limit (" +
-          std::to_string(identifier_length_limit) +
-          "). If you need longer identifier, increase the limit by setting the `UPD_IDENTIFIER_LENGTH_LIMIT` macro");
-    std::strcpy(cstr_name, pykey_prefix);
-    std::strcpy(cstr_name + sizeof pykey_prefix - 1, name.c_str());
-    is_name_set = true;
-  }
-
-  return cstr_name;
+  return static_name.c_str();
 }
 
 template<typename Keyring, typename Index_T, Index_T I, typename R, typename... Args, endianess E, signed_mode S>
