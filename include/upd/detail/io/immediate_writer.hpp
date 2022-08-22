@@ -13,7 +13,7 @@ namespace detail {
 //! \brief CRTP base class used to define immediate writing members functions
 //! \details
 //!   Immediate writers are able to write a byte sequence completely.
-//!   Derived classes must define a 'write_all' invocable on an input functor.
+//!   Derived classes must define a `write_to` invocable on an input functor.
 template<typename D>
 class immediate_writer {
   D &derived() { return reinterpret_cast<D &>(*this); }
@@ -21,39 +21,39 @@ class immediate_writer {
 
 public:
   //! \name Immediate writing functions
-  //! \brief Call the 'write_all' member function of the derived class
+  //! \brief Call the `write_to` member function of the derived class
   //! \details
   //!   These functions may be invoked on hardware registers and output functors and iterators
   //! @{
 
   template<typename Dest_F, detail::require_output_invocable<Dest_F> = 0>
   void operator>>(Dest_F &&dest) {
-    derived().write_all(FWD(dest));
+    derived().write_to(FWD(dest));
   }
 
   template<typename Dest_F, detail::require_output_invocable<Dest_F> = 0>
   void operator>>(Dest_F &&dest) const {
-    derived().write_all(FWD(dest));
+    derived().write_to(FWD(dest));
   }
 
   template<typename It, detail::require_byte_iterator<It> = 0>
-  void write_all(It it) {
-    derived().write_all([&](byte_t byte) { *it++ = byte; });
+  void write_to(It it) {
+    derived().write_to([&](byte_t byte) { *it++ = byte; });
   }
 
   template<typename It, detail::require_byte_iterator<It> = 0>
-  void write_all(It it) const {
-    derived().write_all([&](byte_t byte) { *it++ = byte; });
+  void write_to(It it) const {
+    derived().write_to([&](byte_t byte) { *it++ = byte; });
   }
 
   template<typename It, detail::require_byte_iterator<It> = 0>
   void operator>>(It src) {
-    write_all(src);
+    write_to(src);
   }
 
   template<typename It, detail::require_byte_iterator<It> = 0>
   void operator>>(It src) const {
-    write_all(src);
+    write_to(src);
   }
 
   //! @}
@@ -65,12 +65,12 @@ public:
 //! \code
 //! void operator>>(Dest &&);
 //! void operator>>(Dest &&) const;
-//! void write_all(It);
-//! void write_all(It) const;
+//! void write_to(It);
+//! void write_to(It) const;
 //! void operator>>(It);
 //! void operator>>(It) const;
 //! \endcode
-//! All these functions work the same way as `write_all(Dest &&)`.
+//! All these functions work the same way as `write_to(Dest &&)`.
 //!
 //! \tparam Dest Output functor type
 //! \tparam It Output iterator type

@@ -14,7 +14,7 @@ constexpr upd::byte_t to_slave[] = {0,
                                     (10000 >> 16) & 0xff,
                                     (10000 >> 24) & 0xff};
 
-static void write_byte_to_master(upd::byte_t byte) { assert(false); }
+static void write_byte_to_master(upd::byte_t) {}
 
 static upd::byte_t read_byte_from_master() {
   static const upd::byte_t *p = to_slave;
@@ -28,7 +28,7 @@ static void write_byte_to_slave(upd::byte_t byte) {
   assert(*p++ == byte);
 }
 
-static upd::byte_t read_byte_from_slave() { assert(false); }
+static upd::byte_t read_byte_from_slave() { return {}; }
 
 #if defined(CALLEE)
 

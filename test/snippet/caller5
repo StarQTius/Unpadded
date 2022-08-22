@@ -6,7 +6,7 @@ void send_request() {
   auto key = keyring.get<f>();
 
   // We send the request...
-  key(64).write_all(write_byte_to_slave);
+  key(64).write_to(write_byte_to_slave);
 
   // ...and then, we save our callback for later
   action = key.with_hook(my_callback);

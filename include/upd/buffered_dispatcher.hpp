@@ -13,8 +13,6 @@
 
 #include "detail/io/immediate_reader.hpp"
 #include "detail/io/immediate_writer.hpp"
-#include "detail/io/reader.hpp"
-#include "detail/io/writer.hpp"
 #include "detail/static_error.hpp"
 #include "detail/type_traits/is_byte_iterator.hpp"
 #include "detail/type_traits/require.hpp"
@@ -66,8 +64,8 @@ enum class packet_status { LOADING_PACKET, DROPPED_PACKET, RESOLVED_PACKET };
 //! \tparam Output_Iterator Type of the iterator to the output buffer
 template<typename Dispatcher, typename Input_Iterator, typename Output_Iterator>
 class buffered_dispatcher
-    : public detail::reader<buffered_dispatcher<Dispatcher, Input_Iterator, Output_Iterator>, packet_status>,
-      public detail::writer<buffered_dispatcher<Dispatcher, Input_Iterator, Output_Iterator>> {
+    : public detail::immediate_reader<buffered_dispatcher<Dispatcher, Input_Iterator, Output_Iterator>, packet_status>,
+      public detail::immediate_writer<buffered_dispatcher<Dispatcher, Input_Iterator, Output_Iterator>> {
   using this_t = buffered_dispatcher<Dispatcher, Input_Iterator, Output_Iterator>;
 
   static_assert(detail::is_byte_iterator<Input_Iterator>::value, UPD_ERROR_NOT_BYTE_ITERATOR(Input_Iterator));
@@ -91,7 +89,7 @@ public:
   //! \return `true` if and only if the next call to `write` or `write_all` will have a visible effect
   bool is_loaded() const { return m_obuf_next != m_obuf_bottom; }
 
-  using detail::immediate_reader<this_t, packet_status>::read_all;
+  using detail::immediate_reader<this_t, packet_status>::read_from;
 
   //! \brief Put bytes into the input buffer until a full action request is stored
   //! \copydoc ImmediateReader_CRTP
@@ -101,30 +99,27 @@ public:
   //!   - `RESOLVED_PACKET`: the packet was fully loaded and the associated action has been called (the input buffer is
   //!   empty and the output buffer contains the result of the action invocation)
   template<typename Src, UPD_REQUIREMENT(input_invocable, Src)>
-  packet_status read_all(Src &&src) {
+  packet_status read_from(Src &&src) {
     packet_status status = packet_status::LOADING_PACKET;
     while (!m_is_index_loaded && status == packet_status::LOADING_PACKET)
-      status = read(src);
+      status = put(src());
     while (m_is_index_loaded)
-      status = read(src);
+      status = put(src());
     return status;
   }
 
-  UPD_SFINAE_FAILURE_MEMBER(read_all, UPD_ERROR_NOT_INPUT(src))
-
-  using detail::reader<this_t, packet_status>::read;
+  UPD_SFINAE_FAILURE_MEMBER(read_from, UPD_ERROR_NOT_INPUT(src))
 
   //! \brief Put one byte into the input buffer
   //! \copydoc Reader_CRTP
-  //! \param src Input invocable
+  //! \param byte Byte to put
   //! \return one of the following :
   //!   - `LOADING_PACKET`: the packet is not yet fully loaded
   //!   - `DROPPED_PACKET`: the received index was invalid and the input buffer content was therefore discarded
   //!   - `RESOLVED_PACKET`: the packet was fully loaded and the associated action has been called (the input buffer is
   //!   empty and the output buffer contains the result of the action invocation)
-  template<typename Src, UPD_REQUIREMENT(input_invocable, Src)>
-  packet_status read(Src &&src) {
-    *m_ibuf_next++ = UPD_FWD(src)();
+  packet_status put(byte_t byte) {
+    *m_ibuf_next++ = byte;
 
     if (--m_load_count > 0)
       return packet_status::LOADING_PACKET;
@@ -153,33 +148,26 @@ public:
     }
   }
 
-  UPD_SFINAE_FAILURE_MEMBER(read, UPD_ERROR_NOT_INPUT(src))
-
-  using detail::immediate_writer<this_t>::write_all;
+  using detail::immediate_writer<this_t>::write_to;
 
   //! \brief Completely output the output buffer content
   //! \copydoc ImmediateWriter_CRTP
   //! \param dest Output invocable
   template<typename Dest, UPD_REQUIREMENT(output_invocable, Dest)>
-  void write_all(Dest &&dest) {
+  void write_to(Dest &&dest) {
     while (is_loaded())
-      write(dest);
+      dest(get());
   }
 
   UPD_SFINAE_FAILURE_MEMBER(write_all, UPD_ERROR_NOT_OUTPUT(dest))
 
-  using detail::writer<this_t>::write;
-
   //! \brief Output one byte from the output buffer
+  //!
+  //! If the output buffer is empty, the function will return an arbitrary value.
+  //!
   //! \copydoc Writer_CRTP
-  //! \param dest Output invocable
-  template<typename Dest, UPD_REQUIREMENT(output_invocable, Dest)>
-  void write(Dest &&dest) {
-    if (is_loaded())
-      UPD_FWD(dest)(*m_obuf_next++);
-  }
-
-  UPD_SFINAE_FAILURE_MEMBER(write, UPD_ERROR_NOT_OUTPUT(dest))
+  //! \return the next byte in the output buffer (if it is not empty) or an arbitrary value
+  byte_t get() { return is_loaded() ? *m_obuf_next++ : byte_t{}; }
 
   //! \copydoc dispatcher::replace(unevaluated<F,Ftor>)
   template<index_t Index, typename F, F Ftor>

@@ -134,15 +134,6 @@ static void key_base_DO_hook_a_callback_EXPECT_callback_receiving_correct_argume
 int main() {
   using namespace upd;
 
-  DETECT(INTEGER = KEY.read_all(BYTE_PTR),
-         INTEGER = KEY.read_all(READABLE),
-         INTEGER = KEY << BYTE_PTR,
-         INTEGER = KEY << READABLE,
-         KEY(0).write_all(BYTE_PTR),
-         KEY(0).write_all(WRITABLE),
-         KEY(0) >> BYTE_PTR,
-         KEY(0) >> WRITABLE);
-
   UNITY_BEGIN();
   RUN_TEST(key_base_DO_serialize_arguments_EXPECT_correct_byte_sequence);
   RUN_TEST(key_base_DO_serialize_arguments_with_parameter_EXPECT_correct_byte_sequence);

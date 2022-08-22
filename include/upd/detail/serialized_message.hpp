@@ -28,11 +28,11 @@ struct serialized_message : detail::immediate_writer<serialized_message<Endianes
   serialized_message &operator=(const serialized_message &) = delete;
   serialized_message &operator=(serialized_message &&) = default;
 
-  using detail::immediate_writer<serialized_message<Endianess, Signed_Mode, Ts...>>::write_all;
+  using detail::immediate_writer<serialized_message<Endianess, Signed_Mode, Ts...>>::write_to;
 
   //! \brief Completely output the payload represented by the key
   template<typename Dest_F, REQUIREMENT(output_invocable, Dest_F)>
-  void write_all(Dest_F &&insert_byte) const {
+  void write_to(Dest_F &&insert_byte) const {
     for (auto byte : content)
       insert_byte(byte);
   }

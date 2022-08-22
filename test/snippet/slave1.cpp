@@ -19,14 +19,14 @@ void set_right_steering_speed(std::uint32_t speed) {
 
 void on_byte_received() {
   // We read the incoming byte
-  auto status = dispatcher.read(read_byte_from_master);
+  auto status = dispatcher.put(read_byte_from_master());
 
   switch (status) {
   // If a packet has been fully received, then the request has been fulfilled and the output buffer contains a response
   // packet
   case upd::packet_status::RESOLVED_PACKET:
     // We thus start to send the response packet to the master
-    dispatcher.write(write_byte_to_master);
+    write_byte_to_master(dispatcher.get());
     break;
   // If a packet has been dropped, that means the received index is out of bound
   // At this point, the input buffer is empty
@@ -43,7 +43,7 @@ void on_byte_received() {
 void on_byte_sent() {
   // We keep sending the bytes of the response packet to the master
   // If the packet has been completely sent already, then this line has no effect
-  dispatcher.write(write_byte_to_master);
+  write_byte_to_master(dispatcher.get());
 }
 
 int main() {

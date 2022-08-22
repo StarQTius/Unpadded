@@ -7,8 +7,6 @@ set(HEADERS
     detail/io/immediate_process.hpp
     detail/io/immediate_reader.hpp
     detail/io/immediate_writer.hpp
-    detail/io/reader.hpp
-    detail/io/writer.hpp
     detail/serialized_message.hpp
     detail/signed_representation.hpp
     detail/static_error.hpp

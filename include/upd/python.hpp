@@ -47,13 +47,13 @@ void define_pykey(pybind11::module &pymodule, const std::string &name, Keyring, 
            [](key_t k, const Args &...args) {
              byte_t buf[key_t::payload_length];
 
-             k(args...).write_all(buf);
+             k(args...).write_to(buf);
              return pybind11::bytes{reinterpret_cast<char *>(buf), sizeof buf};
            })
       .def("decode",
            [](key_t k, pybind11::object &pybytes) {
              auto it = pybytes.begin();
-             return k.read_all([&]() {
+             return k.read_from([&]() {
                ++it;
                return it->cast<byte_t>();
              });

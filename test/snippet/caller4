@@ -3,10 +3,10 @@
 auto key = keyring.get<f>();
 
 // First we send a request to the slave device
-key(64).write_all(write_byte_to_slave);
+key(64).write_to(write_byte_to_slave);
 
 // Let's wait a little for the slave device to completely fulfill the request
 
 // Then we receive its response
 // `x` type is `std::uint8_t`
-auto x = key.read_all(read_byte_from_slave);
+auto x = key.read_from(read_byte_from_slave);

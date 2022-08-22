@@ -3,7 +3,7 @@ auto key = keyring.get<f>();
 
 // Then we generate the packet and write every byte of it to the slave device.
 // On the remote device, ``f`` will be invoked on the arguments ``16`` and ``64``.
-key(16, 64).write_all(write_byte_to_slave);
+key(16, 64).write_to(write_byte_to_slave);
 
 // This line does the same thing, but with another syntax.
 key(16, 64) >> write_byte_to_slave;
