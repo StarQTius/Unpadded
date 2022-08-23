@@ -2,13 +2,15 @@ import os
 from asyncio import get_event_loop
 from pathlib import Path
 from random import getrandbits
+from shutil import which
 
 import pytest
 
 import unpadded as upd
 
-os.environ["CC"] = "ccache " + os.environ["CC"]
-os.environ["CXX"] = "ccache " + os.environ["CXX"]
+if which("ccache") is not None:
+    os.environ["CC"] = "ccache " + os.environ["CC"]
+    os.environ["CXX"] = "ccache " + os.environ["CXX"]
 
 upd.set_extra_include_dirs(["../../include"])
 for file in Path(__file__).parent.glob("module*.so"):
