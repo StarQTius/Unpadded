@@ -50,7 +50,7 @@ async def test_asynchronous_key():
 
 def test_dispatcher_resolve():
     dispatcher = Dispatcher()
-    assert dispatcher.resolve(b"\x01\x10\x00") == b"\x20\00"
+    assert dispatcher.resolve(b"\x01\x10\x00") == b"\x20\x00"
 
 
 def test_dispatcher_replace_with_pyfunction():
@@ -60,6 +60,22 @@ def test_dispatcher_replace_with_pyfunction():
     assert dispatcher.resolve(b"\x01" + n.to_bytes(2, "little")) == (3 * n).to_bytes(
         2, "little"
     )
+
+
+def test_fill_dispatcher_manually():
+    dispatcher = Dispatcher()
+
+    n = getrandbits(15)
+    n_bytes = n.to_bytes(2, "little")
+    expected = (2 * n).to_bytes(2, "little")
+
+    assert dispatcher.put(1) == PacketStatus.LOADING_PACKET
+    assert dispatcher.put(n_bytes[0]) == PacketStatus.LOADING_PACKET
+    assert dispatcher.put(n_bytes[1]) == PacketStatus.RESOLVED_PACKET
+
+    assert dispatcher.is_loaded() and dispatcher.get() == expected[0]
+    assert dispatcher.is_loaded() and dispatcher.get() == expected[1]
+    assert not dispatcher.is_loaded()
 
 
 @pytest.mark.asyncio

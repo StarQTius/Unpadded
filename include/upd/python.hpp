@@ -2,6 +2,8 @@
 
 #include <cstdlib>
 #include <cxxabi.h>
+#include <functional>
+#include <optional>
 #include <regex>
 #include <stdexcept>
 #include <string>
@@ -10,18 +12,22 @@
 #include <vector>
 
 #include <pybind11/cast.h>
+#include <pybind11/eval.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
+#include <pybind11/stl.h> // IWYU pragma: keep
 
 #include "action.hpp"
+#include "buffered_dispatcher.hpp"
 #include "detail/type_traits/require.hpp"
 #include "detail/type_traits/typelist.hpp"
-#include "dispatcher.hpp"
 #include "format.hpp"
 #include "key.hpp"
 #include "policy.hpp"
 #include "type.hpp"
 #include "upd.hpp"
+
+// IWYU pragma: no_include <pybind11/detail/descr.h>
 
 namespace upd {
 namespace py {
@@ -81,9 +87,13 @@ void define_pykeys(pybind11::module &pymodule, Keyring keyring, const Vector &ma
 }
 
 template<typename T>
-void ensure_class(pybind11::module &pymodule, const char *name) {
-  if (!pybind11::hasattr(pymodule, name))
-    pybind11::class_<T>{pymodule, name};
+auto ensure_class(pybind11::module &pymodule, const char *name) {
+  return !pybind11::hasattr(pymodule, name) ? std::optional{pybind11::class_<T>{pymodule, name}} : std::nullopt;
+}
+
+template<typename T>
+auto ensure_enum(pybind11::module &pymodule, const char *name) {
+  return !pybind11::hasattr(pymodule, name) ? std::optional{pybind11::enum_<T>{pymodule, name}} : std::nullopt;
 }
 
 } // namespace detail
@@ -120,17 +130,21 @@ void unpack_keyring(pybind11::module &pymodule, Keyring keyring) {
 
 template<typename Keyring, UPD_REQUIREMENT(is_keyring, Keyring)>
 void declare_dispatcher(pybind11::module &pymodule, const char *name, Keyring keyring) {
-  using dispatcher_t = dispatcher<Keyring, action_features::ANY>;
+  using namespace pybind11::literals;
+  using dispatcher_t = decltype(double_buffered_dispatcher{Keyring{}, policy::any_action});
 
   detail::ensure_class<action>(pymodule, "_Action");
+  if (auto opt = detail::ensure_enum<packet_status>(pymodule, "PacketStatus"))
+    opt.value()
+        .value("LOADING_PACKET", packet_status::LOADING_PACKET)
+        .value("DROPPED_PACKET", packet_status::DROPPED_PACKET)
+        .value("RESOLVED_PACKET", packet_status::RESOLVED_PACKET);
 
   pybind11::class_<dispatcher_t>{pymodule, name}
-      .def(pybind11::init([]() {
-        return dispatcher_t{{}, {}};
-      }))
+      .def(pybind11::init([]() { return dispatcher_t{}; }))
       .def("resolve",
-           [](dispatcher_t &self, pybind11::object bytes) {
-             std::string retval;
+           [](dispatcher_t &self, pybind11::bytes bytes) {
+             std::vector<byte_t> retval;
              auto it = bytes.begin();
 
              self(
@@ -138,10 +152,16 @@ void declare_dispatcher(pybind11::module &pymodule, const char *name, Keyring ke
                    ++it;
                    return it->cast<byte_t>();
                  },
-                 [&](byte_t b) { retval.push_back(reinterpret_cast<char &>(b)); });
+                 [&](byte_t b) { retval.push_back(b); });
 
-             return pybind11::bytes(retval);
+             // Have to perform an eval because direct conversion with `pybind11::bytes` raise a segfault
+             return pybind11::eval("bytes(retval)", pybind11::dict{"retval"_a = retval});
            })
+      .def("read_from", [](dispatcher_t &self, const std::function<byte_t()> &src) { return self.read_from(src); })
+      .def("write_to", [](dispatcher_t &self, const std::function<void(byte_t)> &dest) { self.write_to(dest); })
+      .def("put", &dispatcher_t::put)
+      .def("get", &dispatcher_t::get)
+      .def("is_loaded", &dispatcher_t::is_loaded)
       .def("replace", [](dispatcher_t &self, pybind11::object pykey, pybind11::function pyfunction) {
         self[pykey.attr("index")().cast<std::size_t>()] = pykey.attr("__make_action")(pyfunction).cast<action>();
       });

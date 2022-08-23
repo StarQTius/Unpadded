@@ -1,5 +1,5 @@
 find_package(Python3 COMPONENTS Interpreter Development)
-set(PYTEST_COMMAND ${Python3_EXECUTABLE} -B -m pytest --color=yes -p
+set(PYTEST_COMMAND ${Python3_EXECUTABLE} -B -m pytest --color=yes -s -p
                    no:cacheprovider)
 
 add_test(

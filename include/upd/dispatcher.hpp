@@ -101,9 +101,10 @@ public:
   constexpr static auto signed_mode = Keyring::signed_mode;
 
   //! \brief Construct the object from the provided keyring
-  explicit dispatcher(Keyring, action_features_h<Action_Features>)
-      : m_actions{typename Keyring::flist_t{}, endianess_h<endianess>{}, signed_mode_h<signed_mode>{}} {}
+  explicit dispatcher(Keyring, action_features_h<Action_Features>) : dispatcher{} {}
 
+  //! \copybrief dispatcher::dispatcher
+  dispatcher() : m_actions{typename Keyring::flist_t{}, endianess_h<endianess>{}, signed_mode_h<signed_mode>{}} {}
   using detail::immediate_process<dispatcher<Keyring, Action_Features>, index_t>::operator();
 
   //! \brief Extract an index from a byte sequence then invoke the action with that index

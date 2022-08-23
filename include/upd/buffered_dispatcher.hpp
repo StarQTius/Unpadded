@@ -11,6 +11,7 @@
 #include "unevaluated.hpp"
 #include "upd.hpp"
 
+#include "detail/io/immediate_process.hpp"
 #include "detail/io/immediate_reader.hpp"
 #include "detail/io/immediate_writer.hpp"
 #include "detail/static_error.hpp"
@@ -65,7 +66,9 @@ enum class packet_status { LOADING_PACKET, DROPPED_PACKET, RESOLVED_PACKET };
 template<typename Dispatcher, typename Input_Iterator, typename Output_Iterator>
 class buffered_dispatcher
     : public detail::immediate_reader<buffered_dispatcher<Dispatcher, Input_Iterator, Output_Iterator>, packet_status>,
-      public detail::immediate_writer<buffered_dispatcher<Dispatcher, Input_Iterator, Output_Iterator>> {
+      public detail::immediate_writer<buffered_dispatcher<Dispatcher, Input_Iterator, Output_Iterator>>,
+      public detail::immediate_process<buffered_dispatcher<Dispatcher, Input_Iterator, Output_Iterator>,
+                                       typename Dispatcher::index_t> {
   using this_t = buffered_dispatcher<Dispatcher, Input_Iterator, Output_Iterator>;
 
   static_assert(detail::is_byte_iterator<Input_Iterator>::value, UPD_ERROR_NOT_BYTE_ITERATOR(Input_Iterator));
@@ -75,15 +78,23 @@ public:
   //! \copydoc dispatcher::index_t
   using index_t = typename Dispatcher::index_t;
 
+  //! \copydoc dispatcher_t::action_t
+  using action_t = typename Dispatcher::action_t;
+
   //! \brief Initialize the underlying plain dispatcher with a keyring and hold iterators to the buffers
   //! \tparam Keyring Type of the keyring
   //! \param input_it Start of the input buffer
   //! \param output_it Start of the output buffer
   template<typename Keyring, action_features Action_Features>
-  buffered_dispatcher(Keyring, Input_Iterator input_it, Output_Iterator output_it, action_features_h<Action_Features>)
-      : m_dispatcher{Keyring{}, action_features_h<Action_Features>{}}, m_is_index_loaded{false},
-        m_load_count{sizeof(index_t)}, m_ibuf_begin{input_it}, m_ibuf_next{input_it}, m_obuf_begin{output_it},
-        m_obuf_next{output_it}, m_obuf_bottom{output_it} {}
+  explicit buffered_dispatcher(Keyring,
+                               Input_Iterator input_it,
+                               Output_Iterator output_it,
+                               action_features_h<Action_Features>)
+      : buffered_dispatcher{input_it, output_it} {}
+
+  explicit buffered_dispatcher(Input_Iterator input_it, Output_Iterator output_it)
+      : m_is_index_loaded{false}, m_load_count{sizeof(index_t)}, m_ibuf_begin{input_it}, m_ibuf_next{input_it},
+        m_obuf_begin{output_it}, m_obuf_next{output_it}, m_obuf_bottom{output_it} {}
 
   //! \brief Indicates whether the output buffer contains data to send
   //! \return `true` if and only if the next call to `write` or `write_all` will have a visible effect
@@ -175,6 +186,22 @@ public:
     m_dispatcher.template replace<Index>(unevaluated<F, Ftor>{});
   }
 
+  using detail::immediate_process<this_t, index_t>::operator();
+
+  //! \brief Call `read_from` then `write_to`
+  //!
+  //! \copydoc ImmediateProcess_CRTP
+  //!
+  //! \param src Input invocable
+  //! \param dest Output invocable
+  //! \return the `packet_status` instance resulting from the `read_from` call
+  template<typename Src, typename Dest, UPD_REQUIREMENT(input_invocable, Src), UPD_REQUIREMENT(output_invocable, Dest)>
+  packet_status operator()(Src &&src, Dest &&dest) {
+    auto status = read_from(UPD_FWD(src));
+    write_to(UPD_FWD(dest));
+    return status;
+  }
+
 #if __cplusplus >= 201703L
   //! \copydoc dispatcher::replace()
   template<index_t Index, auto &Ftor>
@@ -188,6 +215,12 @@ public:
   void replace(F &&ftor) {
     m_dispatcher.template replace<Index>(UPD_FWD(ftor));
   }
+
+  //! \copydoc dispatcher::operator[](index_t)
+  action_t &operator[](index_t index) { return m_dispatcher[index]; }
+
+  //! \copydoc operator[]
+  const action_t &operator[](index_t index) const { return m_dispatcher[index]; }
 
 private:
   //! \brief Provided that the input buffer does contain a full action request, invoke the corresponding action
@@ -257,8 +290,10 @@ public:
   //! \tparam Keyring Keyring which holds the actions to be managed by the dispatcher
   //! \tparam Action_Features Features of the actions managed by the dispatcher
   template<typename Keyring, action_features Action_Features>
-  explicit single_buffered_dispatcher(Keyring, action_features_h<Action_Features>)
-      : base_t{Keyring{}, m_buf, m_buf, action_features_h<Action_Features>{}} {}
+  explicit single_buffered_dispatcher(Keyring, action_features_h<Action_Features>) : single_buffered_dispatcher{} {}
+
+  //! \copybrief single_buffered_dispatcher::single_buffered_dispatcher
+  single_buffered_dispatcher() : base_t{m_buf, m_buf} {}
 
 private:
   byte_t m_buf[buffer_size];
@@ -315,8 +350,10 @@ public:
   //! \tparam Keyring Keyring which holds the actions to be managed by the dispatcher
   //! \tparam Action_Features Features of the actions managed by the dispatcher
   template<typename Keyring, action_features Action_Features>
-  explicit double_buffered_dispatcher(Keyring, action_features_h<Action_Features>)
-      : base_t{Keyring{}, m_ibuf, m_obuf, action_features_h<Action_Features>{}} {}
+  explicit double_buffered_dispatcher(Keyring, action_features_h<Action_Features>) : double_buffered_dispatcher{} {}
+
+  //! \copybrief double_buffered_dispatcher::double_buffered_dispatcher
+  double_buffered_dispatcher() : base_t{m_ibuf, m_obuf} {}
 
 private:
   byte_t m_ibuf[input_buffer_size], m_obuf[output_buffer_size];
