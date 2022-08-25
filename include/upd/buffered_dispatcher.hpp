@@ -211,6 +211,33 @@ public:
     m_dispatcher.template replace<Index>(UPD_FWD(ftor));
   }
 
+  //! \brief Forward the content of the output buffer to another dispatcher
+  //!
+  //! This function send an action request to the other dispatcher, which is supposed to process directly the content of
+  //! the output buffer. The requets action must accepts a single byte buffer as argument. The content of the received
+  //! byte buffer is the same as if it was written by `write_to`, so it can be deserialized by the requested action by
+  //! using the key that was used to populate the output buffer.
+  //!
+  //! This function can only be used if the data in the output buffer is complete (i.e. if no `get` invocation has been
+  //! made since the last packet resolution) and if the requested action buffer is large enough to hold all the data to
+  //! send. When this function has finished executing, the output buffer is empty.
+  //!
+  //! \param output Output byte sequence
+  //! \param k Key of the action to request
+  //! \return `true` if and only if the content of the output buffer has been written to the output byte sequence
+  template<typename Output, typename Key>
+  bool reply(Output &&output, Key k) {
+    constexpr auto buf_size = k.payload_length - sizeof k.index;
+    if (!(m_obuf_next == 0 && m_obuf_bottom <= buf_size))
+      return false;
+
+    byte_t buf[buf_size];
+    write_to(buf);
+    k(buf).write_to(UPD_FWD(output));
+
+    return true;
+  }
+
   //! \copydoc dispatcher::operator[](index_t)
   action_t &operator[](index_t index) { return m_dispatcher[index]; }
 

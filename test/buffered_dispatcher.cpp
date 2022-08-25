@@ -2,6 +2,8 @@
 #include <upd/keyring.hpp>
 #include <upd/unevaluated.hpp>
 
+#define UPD_TEST_SETUP
+
 #include "utility.hpp"
 
 int check_64(int x) {
@@ -15,6 +17,16 @@ void void_procedure() {}
 
 constexpr auto kring =
     upd::make_keyring(upd::make_flist(UPD_CTREF(check_64), UPD_CTREF(identity), UPD_CTREF(void_procedure)));
+
+static upd::action reply_hook;
+
+void reply(const upd::byte_t (&payload)[16]) { reply_hook(std::begin(payload)); }
+
+constexpr auto reply_kring = upd::make_keyring(upd::make_flist(UPD_CTREF(reply)));
+
+extern "C" void setUp() {}
+
+extern "C" void tearDown() { reply_hook = {}; }
 
 static void buffered_dispatcher_DO_load_an_action_EXPECT_correct_action_loaded_cpp17() {
 #if __cplusplus >= 201703L
@@ -229,6 +241,26 @@ static void buffered_dispatcher_DO_create_double_buffered_dispatcher_with_no_sto
   TEST_ASSERT_EQUAL(64, result);
 }
 
+static void buffered_dispatcher_DO_reply() {
+  using namespace upd;
+
+  byte_t kbuf[64];
+  auto k = kring.get(UPD_CTREF(identity));
+  auto dis = make_single_buffered_dispatcher(kring, policy::any_action);
+  auto reply_dis = make_single_buffered_dispatcher(reply_kring, policy::any_action);
+
+  std::int64_t result;
+  reply_hook = k.with_hook([&](std::int64_t response) { result = response; });
+
+  k(0xafbe).write_to(kbuf);
+  dis.read_from(kbuf);
+  dis.reply(kbuf, reply_kring.get(UPD_CTREF(reply)));
+
+  reply_dis.read_from(kbuf);
+
+  TEST_ASSERT_EQUAL(0xafbe, result);
+}
+
 int main() {
   using namespace upd;
 
@@ -243,5 +275,6 @@ int main() {
   RUN_TEST(buffered_dispatcher_DO_move_dispatcher_during_reading_and_writing);
   RUN_TEST(buffered_dispatcher_DO_insert_bytes_one_by_one);
   RUN_TEST(buffered_dispatcher_DO_create_double_buffered_dispatcher_with_no_storage_action);
+  RUN_TEST(buffered_dispatcher_DO_reply);
   return UNITY_END();
 }

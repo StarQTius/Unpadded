@@ -40,8 +40,9 @@ constexpr auto every_options =
                                      signed_mode_token<upd::signed_mode::ONE_COMPLEMENT>,
                                      signed_mode_token<upd::signed_mode::TWO_COMPLEMENT>,
                                      signed_mode_token<upd::signed_mode::OFFSET_BINARY>>>::type{};
-
+#if !defined(UPD_TEST_SETUP)
 extern "C" void setUp() {}
 extern "C" void tearDown() {}
+#endif
 
 int undefined_function(int);
