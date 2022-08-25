@@ -15,7 +15,6 @@
 #include "detail/io/immediate_reader.hpp"
 #include "detail/io/immediate_writer.hpp"
 #include "detail/static_error.hpp"
-#include "detail/type_traits/is_byte_iterator.hpp"
 #include "detail/type_traits/require.hpp"
 #include "detail/type_traits/signature.hpp"
 #include "detail/type_traits/typelist.hpp"
@@ -36,7 +35,7 @@ using needed_input_buffer_size =
 template<typename Keyring>
 using needed_output_buffer_size = detail::max<detail::map_parameters_size<typename Keyring::signatures_t::type>>;
 
-}; // namespace detail
+} // namespace detail
 
 //! \brief Enumerates the possible status of a loading packet
 //!
@@ -50,51 +49,47 @@ enum class packet_status { LOADING_PACKET, DROPPED_PACKET, RESOLVED_PACKET };
 //!
 //! Instances of this class may store input and output byte sequences as they are received / sent. This allows the
 //! user to load and unload the dispatcher byte after byte, whereas plain dispatchers cannot buffer their input and
-//! output, therefore they must receive and send byte sequences all at once. Buffered dispatchers do not own their
-//! buffers directly. They must be provided through iterators. A buffered dispatcher state goes through the following
-//! states:
+//! output, therefore they must receive and send byte sequences all at once. A buffered dispatcher goes through the
+//! following states:
 //!   -# The input buffer is empty, ready to accept an action request.
 //!   -# Once a full action request has been received, it is immediately fulfilled and the result is written in the
 //!   output buffer. The input buffer is reset, thus it may receive a new request while the output buffer is unloaded.
 //!   -# Once the output buffer is empty, it may be written again.
 //! \note It is possible to use a single buffer as input and output as long as byte sequence reading and writting does
 //! not occur at the same time. For that purpose, `is_loaded` will indicate whether the output buffer is empty or not.
+//! This class is not self-sufficient and must be derived from according to the CRTP idiom.
 //!
-//! \tparam Dispatcher Number of stored actions
-//! \tparam Input_Iterator Type of the iterator to the input buffer
-//! \tparam Output_Iterator Type of the iterator to the output buffer
-template<typename Dispatcher, typename Input_Iterator, typename Output_Iterator>
+//! \tparam D Derived class
+//! \tparam Dispatcher Type of the underlying dispatcher
+template<typename D, typename Dispatcher>
 class buffered_dispatcher
-    : public detail::immediate_reader<buffered_dispatcher<Dispatcher, Input_Iterator, Output_Iterator>, packet_status>,
-      public detail::immediate_writer<buffered_dispatcher<Dispatcher, Input_Iterator, Output_Iterator>>,
-      public detail::immediate_process<buffered_dispatcher<Dispatcher, Input_Iterator, Output_Iterator>,
-                                       typename Dispatcher::index_t> {
-  using this_t = buffered_dispatcher<Dispatcher, Input_Iterator, Output_Iterator>;
+    : public detail::immediate_reader<buffered_dispatcher<D, Dispatcher>, packet_status>,
+      public detail::immediate_writer<buffered_dispatcher<D, Dispatcher>>,
+      public detail::immediate_process<buffered_dispatcher<D, Dispatcher>, typename Dispatcher::index_t> {
+  using this_t = buffered_dispatcher<D, Dispatcher>;
 
-  static_assert(detail::is_byte_iterator<Input_Iterator>::value, UPD_ERROR_NOT_BYTE_ITERATOR(Input_Iterator));
-  static_assert(detail::is_byte_iterator<Output_Iterator>::value, UPD_ERROR_NOT_BYTE_ITERATOR(Output_Iterator));
+  D &derived() { return reinterpret_cast<D &>(*this); }
+  const D &derived() const { return reinterpret_cast<const D &>(*this); }
 
 public:
   //! \copydoc dispatcher::index_t
   using index_t = typename Dispatcher::index_t;
 
-  //! \copydoc dispatcher_t::action_t
+  //! \copydoc dispatcher::action_t
   using action_t = typename Dispatcher::action_t;
 
-  //! \brief Initialize the underlying plain dispatcher with a keyring and hold iterators to the buffers
-  //! \tparam Keyring Type of the keyring
-  //! \param input_it Start of the input buffer
-  //! \param output_it Start of the output buffer
-  template<typename Keyring, action_features Action_Features>
-  explicit buffered_dispatcher(Keyring,
-                               Input_Iterator input_it,
-                               Output_Iterator output_it,
-                               action_features_h<Action_Features>)
-      : buffered_dispatcher{input_it, output_it} {}
+  //! \copydoc dispatcher::keyring_t
+  using keyring_t = typename Dispatcher::keyring_t;
 
-  explicit buffered_dispatcher(Input_Iterator input_it, Output_Iterator output_it)
-      : m_is_index_loaded{false}, m_load_count{sizeof(index_t)}, m_ibuf_begin{input_it}, m_ibuf_next{input_it},
-        m_obuf_begin{output_it}, m_obuf_next{output_it}, m_obuf_bottom{output_it} {}
+  //! \brief Initialize the underlying plain dispatcher with a keyring
+  //! \tparam Keyring Type of the keyring
+  //! \tparam Action_Features Allowed action features for the managed actions
+  template<typename Keyring, action_features Action_Features>
+  explicit buffered_dispatcher(Keyring, action_features_h<Action_Features>) : buffered_dispatcher{} {}
+
+  //! \copydoc buffered_dispatcher::buffered_dispatcher
+  buffered_dispatcher()
+      : m_is_index_loaded{false}, m_load_count{sizeof(index_t)}, m_ibuf_next{0}, m_obuf_next{0}, m_obuf_bottom{0} {}
 
   //! \brief Indicates whether the output buffer contains data to send
   //! \return `true` if and only if the next call to `write` or `write_all` will have a visible effect
@@ -130,7 +125,7 @@ public:
   //!   - `RESOLVED_PACKET`: the packet was fully loaded and the associated action has been called (the input buffer is
   //!   empty and the output buffer contains the result of the action invocation)
   packet_status put(byte_t byte) {
-    *m_ibuf_next++ = byte;
+    derived().ibuf_begin()[m_ibuf_next++] = byte;
 
     if (--m_load_count > 0)
       return packet_status::LOADING_PACKET;
@@ -139,8 +134,8 @@ public:
       call();
       return packet_status::RESOLVED_PACKET;
     } else {
-      auto ibuf_it = m_ibuf_begin;
-      auto index = get_index([&]() { return *ibuf_it++; });
+      auto *ibuf_ptr = derived().ibuf_begin();
+      auto index = get_index([&]() { return *ibuf_ptr++; });
       if (index < m_dispatcher.size) {
         m_load_count = m_dispatcher[index].input_size();
         m_is_index_loaded = true;
@@ -153,7 +148,7 @@ public:
         }
       } else {
         m_load_count = sizeof(index_t);
-        m_ibuf_next = m_ibuf_begin;
+        m_ibuf_next = 0;
         return packet_status::DROPPED_PACKET;
       }
     }
@@ -178,7 +173,7 @@ public:
   //!
   //! \copydoc Writer_CRTP
   //! \return the next byte in the output buffer (if it is not empty) or an arbitrary value
-  byte_t get() { return is_loaded() ? *m_obuf_next++ : byte_t{}; }
+  byte_t get() { return is_loaded() ? derived().obuf_begin()[m_obuf_next++] : byte_t{}; }
 
   //! \copydoc dispatcher::replace(unevaluated<F,Ftor>)
   template<index_t Index, typename F, F Ftor>
@@ -226,16 +221,17 @@ private:
   //! \brief Provided that the input buffer does contain a full action request, invoke the corresponding action
   //! \warning If the input buffer does not contain a valid action request, the behavior is undefined.
   void call() {
-    m_obuf_bottom = m_obuf_begin;
-    m_obuf_next = m_obuf_begin;
+    m_obuf_bottom = 0;
+    m_obuf_next = 0;
 
-    auto ibuf_it = m_ibuf_begin;
-    auto index = get_index([&]() { return *ibuf_it++; });
-    m_dispatcher[index]([&]() { return *ibuf_it++; }, [&](byte_t byte) { *m_obuf_bottom++ = byte; });
+    auto *ibuf_ptr = derived().ibuf_begin();
+    auto index = get_index([&]() { return *ibuf_ptr++; });
+    m_dispatcher[index]([&]() { return *ibuf_ptr++; },
+                        [&](byte_t byte) { derived().obuf_begin()[m_obuf_bottom++] = byte; });
 
     m_is_index_loaded = false;
     m_load_count = sizeof(index_t);
-    m_ibuf_next = m_ibuf_begin;
+    m_ibuf_next = 0;
   }
 
   //! \copydoc dispatcher::get_index
@@ -246,44 +242,30 @@ private:
 
   Dispatcher m_dispatcher;
   bool m_is_index_loaded;
-  std::size_t m_load_count;
-  Input_Iterator m_ibuf_begin, m_ibuf_next;
-  Output_Iterator m_obuf_begin, m_obuf_next, m_obuf_bottom;
+  std::size_t m_load_count, m_ibuf_next, m_obuf_next, m_obuf_bottom;
 };
-
-//! \brief Make a buffered dispatcher
-//! \related buffered_dispatcher
-template<typename Keyring, typename Input_Iterator, typename Output_Iterator, action_features Action_Features>
-buffered_dispatcher<dispatcher<Keyring, Action_Features>, Input_Iterator, Output_Iterator> make_buffered_dispatcher(
-    Keyring, Input_Iterator input_it, Output_Iterator output_it, action_features_h<Action_Features>) {
-  return buffered_dispatcher<dispatcher<Keyring, Action_Features>, Input_Iterator, Output_Iterator>(
-      Keyring{}, input_it, output_it, action_features_h<Action_Features>{});
-}
-
-#if __cplusplus >= 201703L
-
-template<typename Keyring, typename Input_Iterator, typename Output_Iterator, action_features Action_Features>
-buffered_dispatcher(Keyring, Input_Iterator, Output_Iterator, action_features_h<Action_Features>)
-    -> buffered_dispatcher<dispatcher<Keyring, Action_Features>, Input_Iterator, Output_Iterator>;
-
-#endif // __cplusplus >= 201703L
 
 //! \brief Implements a dispatcher using a single buffer for input and output
 //!
-//! The buffer is allocated statically as a plain array. If created using CTAD or `make_single_buffered_dispatcher`, its
-//! size is as small as possible for holding any action request and any action response.
-//! \warning It is not possible to read a request and write a response at the same time. If you need that, use
-//! `double_buffered_dispatcher` instead.
+//! The buffer is allocated statically as a plain array. Its size is as small as possible for holding any action request
+//! and any action response. \warning It is not possible to read a request and write a response at the same time. If you
+//! need that, use `double_buffered_dispatcher` instead.
 //!
 //! \tparam Dispatcher Underlying dispatcher type
-//! \tparam Buffer_Size Size of the internal buffer
-template<typename Dispatcher, std::size_t Buffer_Size>
-class single_buffered_dispatcher : public buffered_dispatcher<Dispatcher, byte_t *, byte_t *> {
-  using base_t = buffered_dispatcher<Dispatcher, byte_t *, byte_t *>;
+template<typename Dispatcher>
+class single_buffered_dispatcher : public buffered_dispatcher<single_buffered_dispatcher<Dispatcher>, Dispatcher> {
+  using base_t = buffered_dispatcher<single_buffered_dispatcher<Dispatcher>, Dispatcher>;
+
+  friend base_t;
+  byte_t *ibuf_begin() { return m_buf; }
+  byte_t *obuf_begin() { return m_buf; }
+
+  using keyring_t = typename base_t::keyring_t;
 
 public:
-  //! \brief Equals the `Buffer_Size` template parameter
-  constexpr static auto buffer_size = Buffer_Size;
+  //! \brief Equals the size of the buffer
+  constexpr static auto buffer_size =
+      detail::max_p<detail::needed_input_buffer_size<keyring_t>, detail::needed_output_buffer_size<keyring_t>>::value;
 
   //! \brief Initialize the underlying dispatcher
   //!
@@ -293,7 +275,7 @@ public:
   explicit single_buffered_dispatcher(Keyring, action_features_h<Action_Features>) : single_buffered_dispatcher{} {}
 
   //! \copybrief single_buffered_dispatcher::single_buffered_dispatcher
-  single_buffered_dispatcher() : base_t{m_buf, m_buf} {}
+  single_buffered_dispatcher() = default;
 
 private:
   byte_t m_buf[buffer_size];
@@ -301,9 +283,8 @@ private:
 
 #if __cplusplus >= 201703L
 template<typename Keyring, action_features Action_Features>
-single_buffered_dispatcher(Keyring, action_features_h<Action_Features>) -> single_buffered_dispatcher<
-    dispatcher<Keyring, Action_Features>,
-    detail::max_p<detail::needed_input_buffer_size<Keyring>, detail::needed_output_buffer_size<Keyring>>::value>;
+single_buffered_dispatcher(Keyring, action_features_h<Action_Features>)
+    -> single_buffered_dispatcher<dispatcher<Keyring, Action_Features>>;
 #endif // __cplusplus >= 201703L
 
 //! \brief Make a single buffered dispatcher
@@ -313,37 +294,36 @@ template<typename Keyring, action_features Action_Features>
 auto make_single_buffered_dispatcher(Keyring, action_features_h<Action_Features>);
 #else  // defined(DOXYGEN)
 template<typename Keyring, action_features Action_Features>
-single_buffered_dispatcher<
-    dispatcher<Keyring, Action_Features>,
-    detail::max_p<detail::needed_input_buffer_size<Keyring>, detail::needed_output_buffer_size<Keyring>>::value>
+single_buffered_dispatcher<dispatcher<Keyring, Action_Features>>
 make_single_buffered_dispatcher(Keyring, action_features_h<Action_Features>) {
-  return single_buffered_dispatcher<
-      dispatcher<Keyring, Action_Features>,
-      detail::max_p<detail::needed_input_buffer_size<Keyring>, detail::needed_output_buffer_size<Keyring>>::value>{
-      Keyring{}, action_features_h<Action_Features>{}};
+  return single_buffered_dispatcher<dispatcher<Keyring, Action_Features>>{Keyring{},
+                                                                          action_features_h<Action_Features>{}};
 }
 #endif // defined(DOXYGEN)
 
 //! \brief Implements a dispatcher using separate buffers for input and output
 //!
-//! The buffers are allocated statically as plain arrays. If created using CTAD or `make_double_buffered_dispatcher`,
-//! their sizes are as small as possible for holding any action request and any action response.
-//! \note If you would rather having a single buffer and do not mind reading and writing at different moment, consider
-//! using `single_buffered_dispatcher` instead.
+//! The buffers are allocated statically as plain arrays. Their sizes are as small as possible for holding any action
+//! request and any action response. \note If you would rather having a single buffer and do not mind reading and
+//! writing at different moment, consider using `single_buffered_dispatcher` instead.
 //!
 //! \tparam Dispatcher Underlying dispatcher type
-//! \tparam Input_Buffer_Size Size of the input internal buffer
-//! \tparam Output_Buffer_Size Size of the output internal buffer
-template<typename Dispatcher, std::size_t Input_Buffer_Size, std::size_t Output_Buffer_Size>
-class double_buffered_dispatcher : public buffered_dispatcher<Dispatcher, byte_t *, byte_t *> {
-  using base_t = buffered_dispatcher<Dispatcher, byte_t *, byte_t *>;
+template<typename Dispatcher>
+class double_buffered_dispatcher : public buffered_dispatcher<double_buffered_dispatcher<Dispatcher>, Dispatcher> {
+  using base_t = buffered_dispatcher<double_buffered_dispatcher<Dispatcher>, Dispatcher>;
+
+  friend base_t;
+  byte_t *ibuf_begin() { return m_ibuf; }
+  byte_t *obuf_begin() { return m_obuf; }
+
+  using keyring_t = typename base_t::keyring_t;
 
 public:
-  //! \brief Equals the `Input_Buffer_Size` template parameter
-  constexpr static auto input_buffer_size = Input_Buffer_Size;
+  //! \brief Equals the size of the input buffer
+  constexpr static auto input_buffer_size = detail::needed_input_buffer_size<keyring_t>::value;
 
-  //! \brief Equals the `Output_Buffer_Size` template parameter
-  constexpr static auto output_buffer_size = Output_Buffer_Size;
+  //! \brief Equals the size of the output buffer
+  constexpr static auto output_buffer_size = detail::needed_output_buffer_size<keyring_t>::value;
 
   //! \brief Initialize the underlying dispatcher
   //!
@@ -353,7 +333,7 @@ public:
   explicit double_buffered_dispatcher(Keyring, action_features_h<Action_Features>) : double_buffered_dispatcher{} {}
 
   //! \copybrief double_buffered_dispatcher::double_buffered_dispatcher
-  double_buffered_dispatcher() : base_t{m_ibuf, m_obuf} {}
+  double_buffered_dispatcher() = default;
 
 private:
   byte_t m_ibuf[input_buffer_size], m_obuf[output_buffer_size];
@@ -362,9 +342,7 @@ private:
 #if __cplusplus >= 201703L
 template<typename Keyring, action_features Action_Features>
 double_buffered_dispatcher(Keyring, action_features_h<Action_Features>)
-    -> double_buffered_dispatcher<dispatcher<Keyring, Action_Features>,
-                                  detail::needed_input_buffer_size<Keyring>::value,
-                                  detail::needed_output_buffer_size<Keyring>::value>;
+    -> double_buffered_dispatcher<dispatcher<Keyring, Action_Features>>;
 #endif // __cplusplus >= 201703L
 
 //! \brief Make a double buffered dispatcher
@@ -374,14 +352,10 @@ template<typename Keyring, action_features Action_Features>
 auto make_double_buffered_dispatcher(Keyring, action_features_h<Action_Features>);
 #else  // defined(DOXYGEN)
 template<typename Keyring, action_features Action_Features>
-double_buffered_dispatcher<dispatcher<Keyring, Action_Features>,
-                           detail::needed_input_buffer_size<Keyring>::value,
-                           detail::needed_output_buffer_size<Keyring>::value>
+double_buffered_dispatcher<dispatcher<Keyring, Action_Features>>
 make_double_buffered_dispatcher(Keyring, action_features_h<Action_Features>) {
-  return double_buffered_dispatcher<dispatcher<Keyring, Action_Features>,
-                                    detail::needed_input_buffer_size<Keyring>::value,
-                                    detail::needed_output_buffer_size<Keyring>::value>{
-      Keyring{}, action_features_h<Action_Features>{}};
+  return double_buffered_dispatcher<dispatcher<Keyring, Action_Features>>{Keyring{},
+                                                                          action_features_h<Action_Features>{}};
 }
 #endif // defined(DOXYGEN)
 

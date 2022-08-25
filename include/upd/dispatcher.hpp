@@ -91,6 +91,8 @@ public:
   //! \copydoc detail::action_t
   using action_t = detail::action_t<Action_Features>;
 
+  using keyring_t = Keyring;
+
   //! \copydoc keyring::size
   constexpr static auto size = Keyring::size;
 

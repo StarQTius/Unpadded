@@ -9,7 +9,7 @@ int check_64(int x) {
   return {};
 }
 
-int identity(int x) { return x; }
+std::int64_t identity(std::int64_t x) { return x; }
 
 void void_procedure() {}
 
@@ -20,9 +20,9 @@ static void buffered_dispatcher_DO_load_an_action_EXPECT_correct_action_loaded_c
 #if __cplusplus >= 201703L
   using namespace upd;
 
-  upd::byte_t kbuf[64], buf[64];
+  upd::byte_t kbuf[64];
   auto k = kring.get<check_64>();
-  buffered_dispatcher dis{kring, buf, buf, policy::any_action};
+  single_buffered_dispatcher dis{kring, policy::any_action};
 
   k(64).write_to(kbuf);
   TEST_ASSERT_EQUAL(packet_status::RESOLVED_PACKET, dis.read_from(kbuf));
@@ -39,7 +39,7 @@ static void buffered_dispatcher_DO_load_an_action_in_a_single_buffered_dispatche
   auto k = kring.get(UPD_CTREF(identity));
   auto dis = make_single_buffered_dispatcher(kring, policy::any_action);
 
-  static_assert(dis.buffer_size == sizeof(int) + sizeof(decltype(dis)::index_t));
+  static_assert(dis.buffer_size == sizeof(std::int64_t) + sizeof(decltype(dis)::index_t));
 
   k(64).write_to(kbuf);
   TEST_ASSERT_EQUAL(packet_status::RESOLVED_PACKET, dis.read_from(kbuf));
@@ -56,8 +56,8 @@ static void buffered_dispatcher_DO_load_an_action_in_a_double_buffered_dispatche
   auto k = kring.get(UPD_CTREF(identity));
   auto dis = make_double_buffered_dispatcher(kring, policy::any_action);
 
-  static_assert(dis.input_buffer_size == sizeof(int) + sizeof(decltype(dis)::index_t));
-  static_assert(dis.output_buffer_size == sizeof(int));
+  static_assert(dis.input_buffer_size == sizeof(std::int64_t) + sizeof(decltype(dis)::index_t));
+  static_assert(dis.output_buffer_size == sizeof(std::int64_t));
 
   k(64).write_to(kbuf);
   TEST_ASSERT_EQUAL(packet_status::RESOLVED_PACKET, dis.read_from(kbuf));
@@ -70,12 +70,12 @@ static void buffered_dispatcher_DO_load_an_action_in_a_double_buffered_dispatche
   using namespace upd;
 
   upd::byte_t kbuf[64];
-  int result = 0;
+  std::int64_t result = 0;
   auto k = kring.get(UPD_CTREF(identity));
   auto dis = make_double_buffered_dispatcher(kring, policy::any_action);
 
-  static_assert(dis.input_buffer_size == sizeof(int) + sizeof(decltype(dis)::index_t));
-  static_assert(dis.output_buffer_size == sizeof(int));
+  static_assert(dis.input_buffer_size == sizeof(std::int64_t) + sizeof(decltype(dis)::index_t));
+  static_assert(dis.output_buffer_size == sizeof(std::int64_t));
 
   k(64).write_to(kbuf);
   TEST_ASSERT_EQUAL(packet_status::RESOLVED_PACKET, dis.read_from(kbuf));
@@ -84,15 +84,15 @@ static void buffered_dispatcher_DO_load_an_action_in_a_double_buffered_dispatche
 
   k(32).write_to(kbuf);
   std::size_t i = 0;
-  for (; i < sizeof(decltype(dis)::index_t); ++i)
-    dis.put(*(kbuf + i));
+  for (; i < sizeof(decltype(dis)::index_t); i++)
+    dis.put(kbuf[i]);
   dis.write_to(reinterpret_cast<upd::byte_t *>(&result));
 
   TEST_ASSERT_FALSE(dis.is_loaded());
   TEST_ASSERT_EQUAL(64, result);
 
-  for (; i < sizeof(decltype(dis)::index_t) + sizeof(int); ++i)
-    dis.put(*(kbuf + i));
+  for (; i < sizeof(decltype(dis)::index_t) + sizeof(std::int64_t); i++)
+    dis.put(kbuf[i]);
   dis.write_to(reinterpret_cast<upd::byte_t *>(&result));
 
   TEST_ASSERT_EQUAL(32, result);
@@ -101,11 +101,11 @@ static void buffered_dispatcher_DO_load_an_action_in_a_double_buffered_dispatche
 static void buffered_dispatcher_DO_replace_an_action() {
   using namespace upd;
 
-  upd::byte_t buf[16], kbuf[16];
-  auto dis = make_buffered_dispatcher(kring, buf, buf, policy::any_action);
+  upd::byte_t kbuf[16];
+  auto dis = make_single_buffered_dispatcher(kring, policy::any_action);
   auto k = kring.get(UPD_CTREF(identity));
 
-  dis.replace<1>([](int x) {
+  dis.replace<1>([](std::int64_t x) -> std::int64_t {
     TEST_ASSERT_EQUAL(x, 64);
     return 32;
   });
@@ -118,8 +118,8 @@ static void buffered_dispatcher_DO_replace_an_action() {
 static void buffered_dispatcher_DO_give_an_invalid_index() {
   using namespace upd;
 
-  upd::byte_t buf[16], kbuf[16];
-  auto dis = make_buffered_dispatcher(kring, buf, buf, policy::any_action);
+  upd::byte_t kbuf[16];
+  auto dis = make_single_buffered_dispatcher(kring, policy::any_action);
   auto k = kring.get(UPD_CTREF(identity));
 
   k(64) >> kbuf;
@@ -135,11 +135,49 @@ static void buffered_dispatcher_DO_give_an_invalid_index() {
   TEST_ASSERT_EQUAL(64, k << kbuf);
 }
 
+static void buffered_dispatcher_DO_move_dispatcher_during_reading_and_writing() {
+  using namespace upd;
+
+  upd::byte_t kbuf[16] = {0};
+  auto dis1 = make_single_buffered_dispatcher(kring, policy::any_action);
+  auto k = kring.get(UPD_CTREF(identity));
+
+  k(64).write_to(kbuf);
+  std::size_t i = 0;
+  for (; i < sizeof(std::int64_t) / 2; i++)
+    TEST_ASSERT_EQUAL(packet_status::LOADING_PACKET, dis1.put(kbuf[i]));
+
+  auto dis2 = std::move(dis1);
+
+  for (; i < sizeof(std::int64_t); i++)
+    TEST_ASSERT_EQUAL(packet_status::LOADING_PACKET, dis2.put(kbuf[i]));
+
+  TEST_ASSERT_EQUAL(packet_status::RESOLVED_PACKET, dis2.put(kbuf[sizeof(std::int64_t)]));
+
+  for (i = 0; i < sizeof(std::int64_t) / 2; i++) {
+    TEST_ASSERT_TRUE(dis2.is_loaded());
+    kbuf[i] = dis2.get();
+  }
+
+  dis1 = std::move(dis2);
+
+  for (; i < sizeof(std::int64_t) - 1; i++) {
+    TEST_ASSERT_TRUE(dis1.is_loaded());
+    kbuf[i] = dis1.get();
+  }
+
+  TEST_ASSERT_TRUE(dis1.is_loaded());
+  kbuf[sizeof(std::int64_t) - 1] = dis1.get();
+  TEST_ASSERT_FALSE(dis1.is_loaded());
+
+  TEST_ASSERT_EQUAL(64, k.read_from(kbuf));
+}
+
 static void buffered_dispatcher_DO_replace_void_procedure() {
   using namespace upd;
 
-  upd::byte_t buf[16], kbuf[16];
-  auto dis = make_buffered_dispatcher(kring, buf, buf, policy::any_action);
+  upd::byte_t kbuf[16];
+  auto dis = make_single_buffered_dispatcher(kring, policy::any_action);
   auto k = kring.get(UPD_CTREF(void_procedure));
 
   bool flag = false;
@@ -154,8 +192,8 @@ static void buffered_dispatcher_DO_replace_void_procedure() {
 static void buffered_dispatcher_DO_insert_bytes_one_by_one() {
   using namespace upd;
 
-  upd::byte_t buf[16], kbuf[16];
-  auto dis = make_buffered_dispatcher(kring, buf, buf, policy::any_action);
+  upd::byte_t kbuf[16];
+  auto dis = make_single_buffered_dispatcher(kring, policy::any_action);
   auto k = kring.get(UPD_CTREF(identity));
 
   k(64) >> kbuf;
@@ -182,7 +220,7 @@ static void buffered_dispatcher_DO_create_double_buffered_dispatcher_with_no_sto
   auto k = kring.get(UPD_CTREF(identity));
   auto dis = make_single_buffered_dispatcher(kring, policy::static_storage_duration_only);
 
-  static_assert(dis.buffer_size == sizeof(int) + sizeof(decltype(dis)::index_t));
+  static_assert(dis.buffer_size == sizeof(std::int64_t) + sizeof(decltype(dis)::index_t));
 
   k(64).write_to(kbuf);
   TEST_ASSERT_EQUAL(packet_status::RESOLVED_PACKET, dis.read_from(kbuf));
@@ -202,6 +240,7 @@ int main() {
   RUN_TEST(buffered_dispatcher_DO_replace_an_action);
   RUN_TEST(buffered_dispatcher_DO_replace_void_procedure);
   RUN_TEST(buffered_dispatcher_DO_give_an_invalid_index);
+  RUN_TEST(buffered_dispatcher_DO_move_dispatcher_during_reading_and_writing);
   RUN_TEST(buffered_dispatcher_DO_insert_bytes_one_by_one);
   RUN_TEST(buffered_dispatcher_DO_create_double_buffered_dispatcher_with_no_storage_action);
   return UNITY_END();
