@@ -42,5 +42,6 @@
 #define UPD_ERROR_NOT_KEYRING(X) "`" #X "` is not a template instance of `keyring`"
 #define UPD_ERROR_OUT_OF_BOUND(X) "`" #X "` is an invalid index"
 #define UPD_ERROR_SIGNATURE_MISMATCH(X) "`" #X "` does not match the target signature"
+#define UPD_ERROR_INVALID_KEY(X) "`" #X "` is not a valid `upd::key` instance"
 
 //! @}

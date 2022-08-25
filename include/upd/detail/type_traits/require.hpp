@@ -6,6 +6,7 @@
 #include <type_traits>
 
 #include "../../type.hpp"
+#include "is_key.hpp"
 #include "is_keyring.hpp"
 #include "is_tuple.hpp"
 #include "is_user_serializable.hpp"
@@ -102,6 +103,10 @@ using require_not_empty_pack = require<sizeof...(Ts) != 0, int>;
 //! \brief Require the provided type to have an user-defined extension
 template<typename T, typename U = int>
 using require_is_user_serializable = require<is_user_serializable<T>::value, U>;
+
+//! \brief Require `T` to be a valid key
+template<typename T, typename U = int>
+using require_key = require<is_key<T>::value, U>;
 
 } // namespace detail
 } // namespace upd

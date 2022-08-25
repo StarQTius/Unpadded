@@ -225,7 +225,7 @@ public:
   //! \param output Output byte sequence
   //! \param k Key of the action to request
   //! \return `true` if and only if the content of the output buffer has been written to the output byte sequence
-  template<typename Output, typename Key>
+  template<typename Output, typename Key, UPD_REQUIREMENT(key, typename std::decay<Key>::type)>
   bool reply(Output &&output, Key k) {
     constexpr auto buf_size = k.payload_length - sizeof k.index;
     if (!(m_obuf_next == 0 && m_obuf_bottom <= buf_size))
@@ -237,6 +237,8 @@ public:
 
     return true;
   }
+
+  UPD_SFINAE_FAILURE_MEMBER(reply, UPD_ERROR_INVALID_KEY(key));
 
   //! \copydoc dispatcher::operator[](index_t)
   action_t &operator[](index_t index) { return m_dispatcher[index]; }

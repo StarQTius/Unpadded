@@ -16,6 +16,7 @@ set(HEADERS
     detail/type_traits/index_sequence.hpp
     detail/type_traits/input_tuple.hpp
     detail/type_traits/is_byte_iterator.hpp
+    detail/type_traits/is_key.hpp
     detail/type_traits/is_keyring.hpp
     detail/type_traits/is_tuple.hpp
     detail/type_traits/remove_cv_ref.hpp
