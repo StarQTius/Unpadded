@@ -62,10 +62,9 @@ enum class packet_status { LOADING_PACKET, DROPPED_PACKET, RESOLVED_PACKET };
 //! \tparam D Derived class
 //! \tparam Dispatcher Type of the underlying dispatcher
 template<typename D, typename Dispatcher>
-class buffered_dispatcher
-    : public detail::immediate_reader<buffered_dispatcher<D, Dispatcher>, packet_status>,
-      public detail::immediate_writer<buffered_dispatcher<D, Dispatcher>>,
-      public detail::immediate_process<buffered_dispatcher<D, Dispatcher>, typename Dispatcher::index_t> {
+class buffered_dispatcher : public detail::immediate_reader<buffered_dispatcher<D, Dispatcher>, packet_status>,
+                            public detail::immediate_writer<buffered_dispatcher<D, Dispatcher>>,
+                            public detail::immediate_process<buffered_dispatcher<D, Dispatcher>, packet_status> {
   using this_t = buffered_dispatcher<D, Dispatcher>;
 
   D &derived() { return reinterpret_cast<D &>(*this); }
@@ -181,10 +180,11 @@ public:
     m_dispatcher.template replace<Index>(unevaluated<F, Ftor>{});
   }
 
-  using detail::immediate_process<this_t, index_t>::operator();
+  using detail::immediate_process<this_t, packet_status>::operator();
 
   //! \brief Call `read_from` then `write_to`
   //!
+  //! `write_to` is called if and only the output buffer has been populated by `read_from`.
   //! \copydoc ImmediateProcess_CRTP
   //!
   //! \param src Input invocable
@@ -193,7 +193,8 @@ public:
   template<typename Src, typename Dest, UPD_REQUIREMENT(input_invocable, Src), UPD_REQUIREMENT(output_invocable, Dest)>
   packet_status operator()(Src &&src, Dest &&dest) {
     auto status = read_from(UPD_FWD(src));
-    write_to(UPD_FWD(dest));
+    if (status == packet_status::RESOLVED_PACKET)
+      write_to(UPD_FWD(dest));
     return status;
   }
 

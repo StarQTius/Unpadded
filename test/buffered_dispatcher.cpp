@@ -268,6 +268,18 @@ static void buffered_dispatcher_DO_reply() {
   TEST_ASSERT_EQUAL(0xcddc, result);
 }
 
+static void buffered_dispatcher_DO_use_parenthesis_operator() {
+  using namespace upd;
+
+  upd::byte_t kbuf[64];
+  auto k = kring.get(UPD_CTREF(identity));
+  auto dis = make_single_buffered_dispatcher(kring, policy::any_action);
+
+  k(64).write_to(kbuf);
+  TEST_ASSERT_EQUAL(packet_status::RESOLVED_PACKET, dis(kbuf, kbuf));
+  TEST_ASSERT_EQUAL(64, k.read_from(kbuf));
+}
+
 int main() {
   using namespace upd;
 
@@ -283,5 +295,6 @@ int main() {
   RUN_TEST(buffered_dispatcher_DO_insert_bytes_one_by_one);
   RUN_TEST(buffered_dispatcher_DO_create_double_buffered_dispatcher_with_no_storage_action);
   RUN_TEST(buffered_dispatcher_DO_reply);
+  RUN_TEST(buffered_dispatcher_DO_use_parenthesis_operator);
   return UNITY_END();
 }

@@ -142,13 +142,15 @@ void declare_dispatcher(pybind11::module &pymodule, const char *name, Keyring ke
            [](dispatcher_t &self, pybind11::bytes bytes) {
              std::string retval;
              auto it = bytes.begin();
-
-             self(
+             auto status = self(
                  [&]() {
                    ++it;
                    return it->cast<byte_t>();
                  },
                  [&](byte_t b) { retval.push_back(b); });
+
+             if (status == packet_status::DROPPED_PACKET)
+               throw std::invalid_argument{"The provided byte sequence cannot be resolved"};
 
              return pybind11::bytes{retval};
            })

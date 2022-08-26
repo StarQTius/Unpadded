@@ -98,3 +98,8 @@ def test_demangle_function_with_templated_parameters():
     import module
 
     assert hasattr(module, "f7")
+
+
+def test_feed_dispatcher_invalid_byte_sequence():
+    with pytest.raises(ValueError):
+        Dispatcher().resolve(b"\xff")
