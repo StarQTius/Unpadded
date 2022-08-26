@@ -35,20 +35,38 @@ namespace detail {
 
 constexpr char pykey_prefix[] = "__";
 
-template<typename Keyring, std::size_t I>
-const char *cstr_name(const std::string &name) {
-  static std::string static_name{pykey_prefix + name};
+template<typename T>
+std::string demangle(const T &x) {
+  int status;
+  auto *cstr_name = abi::__cxa_demangle(typeid(x).name(), NULL, NULL, &status);
+
+  if (!cstr_name)
+    throw std::runtime_error{(std::string) "Name type `" + typeid(x).name() + "` couldn't be demangled"};
+
+  std::string name{cstr_name};
+  free(cstr_name);
+
+  std::regex callback_name_re{"upd::unevaluated<.*,\\s(\\w+)(\\(.*\\))?>$"};
+  std::smatch match;
+  if (std::regex_match(name, match, callback_name_re) && match.size() == 3) {
+    return match[1];
+  } else {
+    throw std::invalid_argument{(std::string) "No callback name could have been extracted from `" + name + "`"};
+  }
+}
+
+template<typename T>
+const char *demangled_fname(const T &x) {
+  static std::string static_name{pykey_prefix + demangle(x)};
 
   return static_name.c_str();
 }
 
 template<typename Keyring, typename Index_T, Index_T I, typename R, typename... Args, endianess E, signed_mode S>
-void define_pykey(pybind11::module &pymodule, const std::string &name, Keyring, key<Index_T, I, R(Args...), E, S> k) {
+void define_pykey(pybind11::module &pymodule, const char *name, Keyring, key<Index_T, I, R(Args...), E, S> k) {
   using key_t = decltype(k);
 
-  auto *pyclass_name = cstr_name<Keyring, I>(name);
-
-  pybind11::class_<key_t>{pymodule, pyclass_name}
+  pybind11::class_<key_t>{pymodule, name}
       .def("encode",
            [](key_t k, const Args &...args) {
              byte_t buf[key_t::payload_length];
@@ -75,15 +93,20 @@ void define_pykey(pybind11::module &pymodule, const std::string &name, Keyring, 
         }};
       });
 
-  pymodule.attr(pyclass_name + 2) = k;
+  pymodule.attr(name + 2) = k;
 }
 
-template<typename Keyring, typename Vector, std::size_t... Is>
-void define_pykeys(pybind11::module &pymodule, Keyring keyring, const Vector &matches, std::index_sequence<Is...>) {
+template<typename Keyring, std::size_t... Is>
+void define_pykeys(pybind11::module &pymodule, Keyring keyring, std::index_sequence<Is...>) {
   using flist_t = typename Keyring::flist_t;
 
   using discard = int[];
-  discard{0, (define_pykey(pymodule, matches[Is][1], keyring, keyring.get(upd::detail::at<flist_t, Is>{})), 0)...};
+  discard{0,
+          (define_pykey(pymodule,
+                        demangled_fname(upd::detail::at<flist_t, Is>{}),
+                        keyring,
+                        keyring.get(upd::detail::at<flist_t, Is>{})),
+           0)...};
 }
 
 template<typename T>
@@ -100,32 +123,7 @@ auto ensure_enum(pybind11::module &pymodule, const char *name) {
 
 template<typename Keyring, UPD_REQUIREMENT(is_keyring, Keyring)>
 void unpack_keyring(pybind11::module &pymodule, Keyring keyring) {
-  int status;
-  auto *cstr_name = abi::__cxa_demangle(typeid(keyring).name(), NULL, NULL, &status);
-
-  if (!cstr_name)
-    throw std::runtime_error{(std::string) "`Keyring` identifier (" + typeid(keyring).name() +
-                             ") couldn't be demangled"};
-
-  std::string name{cstr_name};
-  free(cstr_name);
-
-  std::regex callback_name_re{"upd::unevaluated<[^,]*,\\s(\\w+)[^>]*>"};
-  std::sregex_iterator begin{name.begin(), name.end(), callback_name_re}, end;
-  std::vector matches(begin, end);
-
-  if (matches.size() != keyring.size) {
-    std::string msg{"Some callback identifiers could not have been extracted from `Keyring` demangled identifier or "
-                    "too many of them were found. The found identifiers were : \n"};
-    for (auto &match : matches)
-      msg += (std::string) "- " + match[1].str() + ";\n";
-
-    msg += (std::string) "The `Keyring` identifier was : " + name;
-
-    throw std::invalid_argument(msg);
-  }
-
-  detail::define_pykeys(pymodule, keyring, matches, std::make_index_sequence<Keyring::size>{});
+  detail::define_pykeys(pymodule, keyring, std::make_index_sequence<Keyring::size>{});
 }
 
 template<typename Keyring, UPD_REQUIREMENT(is_keyring, Keyring)>

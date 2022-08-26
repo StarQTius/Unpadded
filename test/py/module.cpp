@@ -14,11 +14,13 @@ struct {
 
 auto f6 = [](std::uint8_t) {};
 
+void f7(std::array<int, 16>, std::array<short, 32>);
+
 std::uint16_t g1() { return 0; }
 std::uint16_t g2(std::uint16_t x) { return 2 * x; }
 void g3(std::uint16_t) {}
 
-constexpr upd::keyring keyring{upd::flist<f1, f2, f3, f4, f5, f6>, upd::little_endian, upd::two_complement};
+constexpr upd::keyring keyring{upd::flist<f1, f2, f3, f4, f5, f6, f7>, upd::little_endian, upd::two_complement};
 constexpr upd::keyring dispatcher_keyring{upd::flist<g1, g2, g3>, upd::little_endian, upd::two_complement};
 
 PYBIND11_MODULE(module, pymodule) {
