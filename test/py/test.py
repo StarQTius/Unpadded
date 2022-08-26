@@ -97,5 +97,4 @@ async def test_fill_future_with_non_bytes():
 def test_demangle_function_with_templated_parameters():
     import module
 
-    print(vars(module))
     assert hasattr(module, "f7")
