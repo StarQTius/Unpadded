@@ -144,7 +144,8 @@ void declare_dispatcher(pybind11::module &pymodule, const char *name, Keyring ke
              auto it = bytes.begin();
              auto status = self(
                  [&]() {
-                   ++it;
+                   if (++it == bytes.end())
+                     throw std::out_of_range{"The provided byte sequence doesn't represent a full packet"};
                    return it->cast<byte_t>();
                  },
                  [&](byte_t b) { retval.push_back(b); });
