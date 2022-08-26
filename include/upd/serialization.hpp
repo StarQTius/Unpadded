@@ -38,6 +38,10 @@ template<typename T, std::size_t N>
 struct array_t_impl<T[N]> {
   using type = std::array<T, N>;
 };
+template<typename T, std::size_t N>
+struct array_t_impl<std::array<T, N>> {
+  using type = std::array<T, N>;
+};
 template<typename T>
 using array_t = typename array_t_impl<T>::type;
 
@@ -131,8 +135,8 @@ void write_as(const T &x, byte_t *sequence) {
 }
 template<endianess Endianess, signed_mode Signed_Mode, typename T, detail::require_array<T> = 0>
 void write_as(const T &array, byte_t *sequence) {
-  using element_t = decltype(*array);
-  constexpr auto array_size = sizeof(array) / sizeof(*array);
+  using element_t = decltype(array[0]);
+  constexpr auto array_size = sizeof(array) / sizeof(array[0]);
   for (std::size_t i = 0; i < array_size; i++)
     write_as<Endianess, Signed_Mode>(array[i], sequence + i * sizeof(element_t));
 }

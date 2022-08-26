@@ -15,6 +15,7 @@ set(HEADERS
     detail/type_traits/flatten_tuple.hpp
     detail/type_traits/index_sequence.hpp
     detail/type_traits/input_tuple.hpp
+    detail/type_traits/is_array.hpp
     detail/type_traits/is_byte_iterator.hpp
     detail/type_traits/is_key.hpp
     detail/type_traits/is_keyring.hpp

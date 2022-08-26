@@ -313,6 +313,15 @@ static void tuple_view_DO_iterate_subview_EXPECT_exact_subsequence() {
     TEST_ASSERT_EQUAL_UINT8(*e_seq++, byte);
 }
 
+static void tuple_DO_serialize_std_array() {
+  using namespace upd;
+
+  int expected[4] = {0, 1, 2, 3};
+  auto t = make_tuple(std::array<int, 4>{0, 1, 2, 3});
+
+  TEST_ASSERT_EQUAL_INT_ARRAY(expected, get<0>(t).data(), 4);
+}
+
 MAKE_MULTIOPT(tuple_DO_set_value_EXPECT_same_value_with_get)
 MAKE_MULTIOPT(tuple_DO_set_array_EXPECT_same_value_with_get)
 MAKE_MULTIOPT(tuple_DO_iterate_throught_content_EXPECT_correct_raw_data)
@@ -346,6 +355,7 @@ int main() {
   RUN_TEST(tuple_DO_construct_tuple_with_ctad_EXPECT_tuple_holds_correct_values_cpp17);
   RUN_TEST(tuple_DO_bind_names_to_tuple_element_EXPECT_getting_same_values_cpp17);
   RUN_TEST(tuple_DO_serialize_user_provided_structure_EXCEPT_correct_behavior);
+  RUN_TEST(tuple_DO_serialize_std_array);
   RUN_TEST(tuple_view_DO_iterate_subview_EXPECT_exact_subsequence);
   return UNITY_END();
 }

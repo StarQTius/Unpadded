@@ -6,6 +6,7 @@
 #include <type_traits>
 
 #include "../../type.hpp"
+#include "is_array.hpp"
 #include "is_key.hpp"
 #include "is_keyring.hpp"
 #include "is_tuple.hpp"
@@ -86,11 +87,11 @@ using require_signed_integer = require<std::is_signed<T>::value, U>;
 
 //! \brief Require the provided type to be an bounded array type
 template<typename T, typename U = int>
-using require_array = require<std::is_array<T>::value, U>;
+using require_array = require<detail::is_array<T>::value, U>;
 
 //! \brief Require the provided type not to be an bounded array type
 template<typename T, typename U = int>
-using require_not_array = require<!std::is_array<T>::value, U>;
+using require_not_array = require<!detail::is_array<T>::value, U>;
 
 //! \brief Require the provided type not to be a pointer type
 template<typename T, typename U = int>
