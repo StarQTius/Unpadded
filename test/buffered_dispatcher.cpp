@@ -21,8 +21,9 @@ constexpr auto kring =
 static upd::action reply_hook;
 
 void reply(const upd::byte_t (&payload)[16]) { reply_hook(std::begin(payload)); }
+void reply_std_array(const std::array<upd::byte_t, 16> &payload) { reply_hook(payload.data()); }
 
-constexpr auto reply_kring = upd::make_keyring(upd::make_flist(UPD_CTREF(reply)));
+constexpr auto reply_kring = upd::make_keyring(upd::make_flist(UPD_CTREF(reply), UPD_CTREF(reply_std_array)));
 
 extern "C" void setUp() {}
 
@@ -257,8 +258,14 @@ static void buffered_dispatcher_DO_reply() {
   dis.reply(kbuf, reply_kring.get(UPD_CTREF(reply)));
 
   reply_dis.read_from(kbuf);
-
   TEST_ASSERT_EQUAL(0xafbe, result);
+
+  k(0xcddc).write_to(kbuf);
+  dis.read_from(kbuf);
+  dis.reply(kbuf, reply_kring.get(UPD_CTREF(reply_std_array)));
+
+  reply_dis.read_from(kbuf);
+  TEST_ASSERT_EQUAL(0xcddc, result);
 }
 
 int main() {

@@ -231,8 +231,10 @@ public:
     if (!(m_obuf_next == 0 && m_obuf_bottom <= buf_size))
       return false;
 
-    byte_t buf[buf_size];
-    write_to(buf);
+    using buf_t = typename Key::tuple_t::template arg_t<0>;
+
+    buf_t buf;
+    write_to(std::begin(buf));
     k(buf).write_to(UPD_FWD(output));
 
     return true;

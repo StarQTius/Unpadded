@@ -16,6 +16,7 @@
 #include "serialization.hpp"
 #include "type.hpp"
 #include "typelist.hpp"
+#include "upd.hpp"
 
 #include "detail/def.hpp"
 
@@ -37,12 +38,14 @@ class tuple_base; // IWYU pragma: keep
 //!
 //! @{
 
-template<typename T, std::size_t N>
+template<typename Target_T, typename T, std::size_t N, UPD_REQUIRE(std::is_same<Target_T, T[N]>::value)>
 auto normalize(std::array<T, N> &&array) -> T (&&)[N] {
   return reinterpret_cast<T(&&)[N]>(*array.data());
 }
-template<typename T,
-         require<std::is_same<decltype(read_as<T, endianess::BUILTIN, signed_mode::BUILTIN>(nullptr)), T>::value> = 0>
+template<
+    typename Target_T,
+    typename T,
+    require<std::is_same<decltype(read_as<T, endianess::BUILTIN, signed_mode::BUILTIN>(nullptr)), Target_T>::value> = 0>
 T &&normalize(T &&x) {
   return FWD(x);
 }
@@ -191,7 +194,7 @@ private:
   //! \brief Unserialize the tuple content and forward it as parameters to the provided functor
   template<typename F, std::size_t... Is>
   detail::return_t<F> invoke_impl(F &&ftor, detail::index_sequence<Is...>) const {
-    return FWD(ftor)(detail::normalize(get<Is>())...);
+    return FWD(ftor)(detail::normalize<Ts>(get<Is>())...);
   }
 };
 
