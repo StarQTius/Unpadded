@@ -9,10 +9,8 @@
 #include <string>
 #include <typeinfo>
 #include <utility>
-#include <vector>
 
 #include <pybind11/cast.h>
-#include <pybind11/eval.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h> // IWYU pragma: keep
@@ -139,10 +137,10 @@ void declare_dispatcher(pybind11::module &pymodule, const char *name, Keyring ke
         .value("RESOLVED_PACKET", packet_status::RESOLVED_PACKET);
 
   pybind11::class_<dispatcher_t>{pymodule, name}
-      .def(pybind11::init([]() { return dispatcher_t{}; }))
+      .def(pybind11::init<>())
       .def("resolve",
            [](dispatcher_t &self, pybind11::bytes bytes) {
-             std::vector<byte_t> retval;
+             std::string retval;
              auto it = bytes.begin();
 
              self(
@@ -152,8 +150,7 @@ void declare_dispatcher(pybind11::module &pymodule, const char *name, Keyring ke
                  },
                  [&](byte_t b) { retval.push_back(b); });
 
-             // Have to perform an eval because direct conversion with `pybind11::bytes` raise a segfault
-             return pybind11::eval("bytes(retval)", pybind11::dict{"retval"_a = retval});
+             return pybind11::bytes{retval};
            })
       .def("read_from", [](dispatcher_t &self, const std::function<byte_t()> &src) { return self.read_from(src); })
       .def("write_to", [](dispatcher_t &self, const std::function<void(byte_t)> &dest) { self.write_to(dest); })
