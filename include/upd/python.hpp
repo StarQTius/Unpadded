@@ -159,9 +159,6 @@ void declare_dispatcher(pybind11::module &pymodule, const char *name, Keyring ke
            })
       .def("resolve_completely",
            [](dispatcher_t &self, pybind11::bytes bytes) {
-             if (self.is_loaded())
-               throw std::logic_error{"The output buffer must be empty before calling `resolve_completely`"};
-
              std::list<pybind11::bytes> outputs;
 
              for (auto byte : bytes) {
