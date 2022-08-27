@@ -159,14 +159,22 @@ void declare_dispatcher(pybind11::module &pymodule, const char *name, Keyring ke
            })
       .def("resolve_completely",
            [](dispatcher_t &self, pybind11::bytes bytes) {
-             std::list<pybind11::bytes> outputs;
+             std::list<pybind11::object> outputs;
 
              for (auto byte : bytes) {
-               if (self.put(byte.cast<byte_t>()) == packet_status::RESOLVED_PACKET) {
+               auto status = self.put(byte.cast<byte_t>());
+               switch (status) {
+               case packet_status::RESOLVED_PACKET: {
                  std::string output;
                  self.write_to(std::insert_iterator{output, output.begin()});
 
-                 outputs.push_back(output);
+                 outputs.push_back(pybind11::bytes{output});
+               } break;
+               case packet_status::DROPPED_PACKET:
+                 throw std::invalid_argument{"Some of the provided packets are corrupted"};
+                 break;
+               default:
+                 break;
                }
              }
 

@@ -111,3 +111,8 @@ def test_fill_dispatcher_with_resolve_completely():
         b"\x20\x40",
         b"",
     ]
+
+
+def test_dispatcher_packet_dropped_with_resolve_completely():
+    with pytest.raises(ValueError):
+        assert Dispatcher().resolve_completely(b"\x00\x01\x10\x20\xff\x67\x89")
