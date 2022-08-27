@@ -16,10 +16,10 @@ set(HEADERS
     detail/type_traits/index_sequence.hpp
     detail/type_traits/input_tuple.hpp
     detail/type_traits/is_array.hpp
-    detail/type_traits/is_byte_iterator.hpp
     detail/type_traits/is_key.hpp
     detail/type_traits/is_keyring.hpp
     detail/type_traits/is_tuple.hpp
+    detail/type_traits/iterator_category.hpp
     detail/type_traits/remove_cv_ref.hpp
     detail/type_traits/require.hpp
     detail/type_traits/smallest.hpp

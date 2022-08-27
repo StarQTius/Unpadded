@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "../../upd.hpp"
 #include "../type_traits/require.hpp"
 
 #include "../def.hpp"
@@ -25,32 +26,32 @@ public:
   //!   These functions may be invoked on hardware registers and input functors and iterators
   //! @{
 
-  template<typename Src_F, detail::require_input_invocable<Src_F> = 0>
+  template<typename Src_F, UPD_REQUIREMENT(input_invocable, Src_F)>
   R operator<<(Src_F &&src) {
     return derived().read_from(FWD(src));
   }
 
-  template<typename Src_F, detail::require_input_invocable<Src_F> = 0>
+  template<typename Src_F, UPD_REQUIREMENT(input_invocable, Src_F)>
   R operator<<(Src_F &&src) const {
     return derived().read_from(FWD(src));
   }
 
-  template<typename It, detail::require_byte_iterator<It> = 0>
+  template<typename It, UPD_REQUIREMENT(input_byte_iterator, It)>
   R read_from(It it) {
     return derived().read_from([&]() { return *it++; });
   }
 
-  template<typename It, detail::require_byte_iterator<It> = 0>
+  template<typename It, UPD_REQUIREMENT(input_byte_iterator, It)>
   R read_from(It it) const {
     return derived().read_from([&]() { return *it++; });
   }
 
-  template<typename It, detail::require_byte_iterator<It> = 0>
+  template<typename It, UPD_REQUIREMENT(input_byte_iterator, It)>
   R operator<<(It src) {
     return read_from(src);
   }
 
-  template<typename It, detail::require_byte_iterator<It> = 0>
+  template<typename It, UPD_REQUIREMENT(input_byte_iterator, It)>
   R operator<<(It src) const {
     return read_from(src);
   }

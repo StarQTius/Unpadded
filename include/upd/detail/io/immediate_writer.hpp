@@ -3,6 +3,7 @@
 #pragma once
 
 #include "../../type.hpp"
+#include "../../upd.hpp"
 #include "../type_traits/require.hpp"
 
 #include "../def.hpp"
@@ -26,32 +27,32 @@ public:
   //!   These functions may be invoked on hardware registers and output functors and iterators
   //! @{
 
-  template<typename Dest_F, detail::require_output_invocable<Dest_F> = 0>
+  template<typename Dest_F, UPD_REQUIREMENT(output_invocable, Dest_F)>
   void operator>>(Dest_F &&dest) {
     derived().write_to(FWD(dest));
   }
 
-  template<typename Dest_F, detail::require_output_invocable<Dest_F> = 0>
+  template<typename Dest_F, UPD_REQUIREMENT(output_invocable, Dest_F)>
   void operator>>(Dest_F &&dest) const {
     derived().write_to(FWD(dest));
   }
 
-  template<typename It, detail::require_byte_iterator<It> = 0>
+  template<typename It, UPD_REQUIREMENT(output_byte_iterator, It)>
   void write_to(It it) {
     derived().write_to([&](byte_t byte) { *it++ = byte; });
   }
 
-  template<typename It, detail::require_byte_iterator<It> = 0>
+  template<typename It, UPD_REQUIREMENT(output_byte_iterator, It)>
   void write_to(It it) const {
     derived().write_to([&](byte_t byte) { *it++ = byte; });
   }
 
-  template<typename It, detail::require_byte_iterator<It> = 0>
+  template<typename It, UPD_REQUIREMENT(output_byte_iterator, It)>
   void operator>>(It src) {
     write_to(src);
   }
 
-  template<typename It, detail::require_byte_iterator<It> = 0>
+  template<typename It, UPD_REQUIREMENT(output_byte_iterator, It)>
   void operator>>(It src) const {
     write_to(src);
   }

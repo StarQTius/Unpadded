@@ -12,6 +12,7 @@
 #include "is_tuple.hpp"
 #include "is_user_serializable.hpp"
 #include "signature.hpp"
+#include "typelist.hpp"
 
 namespace upd {
 
@@ -23,16 +24,13 @@ struct tuple; // IWYU pragma: keep
 
 namespace detail {
 
-template<typename... Args>
-int require_pack(Args &&...);
-
 //! \brief Require the provided expression to be true
 template<bool Expression, typename U = int>
 using require = typename std::enable_if<Expression, U>::type;
 
 //! \brief Require the provided types to be well-formed
-template<typename... Args>
-using require_t = typename std::remove_reference<decltype(require_pack(std::declval<Args>()...))>::type;
+template<typename U, typename... Args>
+using require_t = decltype(tlist_t<Args...>{}, U{});
 
 //! \brief Require the provided type to be a template instance of `tuple`
 template<typename T, typename U = int>
@@ -67,11 +65,17 @@ using require_input_invocable = require<has_signature<F, byte_t()>::value, U>;
 template<typename F, typename U = int>
 using require_output_invocable = require<has_signature<F, void(byte_t)>::value, U>;
 
-//! \brief Require the given type to be an iterator type to a byte sequence
-template<typename T>
-using require_byte_iterator =
-    require_t<typename std::iterator_traits<T>::iterator_category,
-              require<std::is_convertible<typename std::iterator_traits<T>::value_type, byte_t>::value>>;
+//! \brief Require the given type to be an input iterator to a byte sequence
+template<typename T, typename U = int>
+using require_input_byte_iterator =
+    require_t<U,
+              decltype(std::input_iterator_tag{typename std::iterator_traits<T>::iterator_category{}}),
+              decltype(std::declval<byte_t &>() = *std::declval<T &>()++)>;
+
+//! \brief Require the given type to be an output iterator which allows to write byte sequences
+template<typename T, typename U = int>
+using require_output_byte_iterator =
+    require_t<U, typename std::iterator_traits<T>::iterator_category, decltype(*std::declval<T &>()++ = byte_t{})>;
 
 //! \brief Require `T` to be invocable
 template<typename T, typename U = int>

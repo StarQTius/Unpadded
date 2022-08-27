@@ -12,6 +12,7 @@
 #include "detail/type_traits/signature.hpp"
 #include "format.hpp"
 #include "type.hpp"
+#include "upd.hpp"
 
 #include "detail/def.hpp"
 
@@ -107,7 +108,11 @@ decltype(read_as<T, Endianess, Signed_Mode>(std::declval<byte_t *>())) read_as(I
 template<typename T, endianess Endianess, signed_mode Signed_Mode, typename It>
 auto read_as(const It &begin, std::size_t offset)
 #else
-template<typename T, endianess Endianess, signed_mode Signed_Mode, typename It, detail::require_byte_iterator<It> = 0>
+template<typename T,
+         endianess Endianess,
+         signed_mode Signed_Mode,
+         typename It,
+         UPD_REQUIREMENT(input_byte_iterator, It)>
 decltype(read_as<T, Endianess, Signed_Mode>(std::declval<byte_t *>())) read_as(const It &begin, std::size_t offset) {
   return read_as<T, Endianess, Signed_Mode>(std::next(begin, offset));
 }
@@ -168,7 +173,11 @@ void write_as(const T &value, const It &begin, std::size_t offset) {
   write_as<Endianess, Signed_Mode>(begin + offset);
 }
 #else
-template<endianess Endianess, signed_mode Signed_Mode, typename T, typename It, detail::require_byte_iterator<It> = 0>
+template<endianess Endianess,
+         signed_mode Signed_Mode,
+         typename T,
+         typename It,
+         UPD_REQUIREMENT(output_byte_iterator, It)>
 void write_as(const T &value, const It &begin, std::size_t offset) {
   write_as<Endianess, Signed_Mode>(value, std::next(begin, offset));
 }

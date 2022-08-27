@@ -3,7 +3,8 @@
 #pragma once
 
 #include "../../type.hpp"
-#include "../type_traits/is_byte_iterator.hpp"
+#include "../../upd.hpp"
+#include "../type_traits/iterator_category.hpp"
 #include "../type_traits/remove_cv_ref.hpp"
 #include "../type_traits/require.hpp"
 
@@ -28,8 +29,8 @@ public:
   //! \return the result of the invocation of the derived instance on the normalized parameters
   template<typename Input,
            typename Output,
-           detail::require<detail::is_byte_iterator<decay_t<Input>>::value ||
-                           detail::is_byte_iterator<decay_t<Output>>::value> = 0>
+           UPD_REQUIRE(is_input_byte_iterator<decay_t<Input>>::value ||
+                       is_output_byte_iterator<decay_t<Output>>::value)>
   R operator()(Input &&input, Output &&output) {
     return derived()(normalize(FWD(input), reader_tag_t{}), normalize(FWD(output), writer_tag_t{}));
   }
@@ -37,8 +38,8 @@ public:
   //! \copydoc operator()
   template<typename Input,
            typename Output,
-           detail::require<detail::is_byte_iterator<decay_t<Input>>::value ||
-                           detail::is_byte_iterator<decay_t<Output>>::value> = 0>
+           UPD_REQUIRE(is_input_byte_iterator<decay_t<Input>>::value ||
+                       is_output_byte_iterator<decay_t<Output>>::value)>
   R operator()(Input &&input, Output &&output) const {
     return derived()(normalize(FWD(input), reader_tag_t{}), normalize(FWD(output), writer_tag_t{}));
   }
@@ -74,25 +75,25 @@ private:
   }
 
   //! Wrap the iterator to get an input functor
-  template<typename It, detail::require_byte_iterator<It> = 0>
+  template<typename It, UPD_REQUIREMENT(input_byte_iterator, It)>
   reader_iterator<It> normalize(It it, reader_tag_t) {
     return {it};
   }
 
   //! Wrap the iterator to get an input functor
-  template<typename It, detail::require_byte_iterator<It> = 0>
+  template<typename It, UPD_REQUIREMENT(input_byte_iterator, It)>
   reader_iterator<It> normalize(It it, reader_tag_t) const {
     return {it};
   }
 
   //! Wrap the iterator to get an output functor
-  template<typename It, detail::require_byte_iterator<It> = 0>
+  template<typename It, UPD_REQUIREMENT(output_byte_iterator, It)>
   writer_iterator<It> normalize(It it, writer_tag_t) {
     return {it};
   }
 
   //! Wrap the iterator to get an output functor
-  template<typename It, detail::require_byte_iterator<It> = 0>
+  template<typename It, UPD_REQUIREMENT(output_byte_iterator, It)>
   writer_iterator<It> normalize(It it, writer_tag_t) const {
     return {it};
   }

@@ -16,7 +16,7 @@ auto f6 = [](std::uint8_t) {};
 
 void f7(std::array<int, 16>, std::array<short, 32>);
 
-std::uint16_t g1() { return 0; }
+std::uint16_t g1() { return 0xff; }
 std::uint16_t g2(std::uint16_t x) { return 2 * x; }
 void g3(std::uint16_t) {}
 

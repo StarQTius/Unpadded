@@ -103,3 +103,11 @@ def test_demangle_function_with_templated_parameters():
 def test_feed_dispatcher_invalid_byte_sequence():
     with pytest.raises(ValueError):
         Dispatcher().resolve(b"\xff")
+
+
+def test_fill_dispatcher_with_resolve_completely():
+    assert Dispatcher().resolve_completely(b"\x00\x01\x10\x20\x02\x67\x89") == [
+        b"\xff\x00",
+        b"\x20\x40",
+        b"",
+    ]

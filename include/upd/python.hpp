@@ -3,6 +3,8 @@
 #include <cstdlib>
 #include <cxxabi.h>
 #include <functional>
+#include <iterator>
+#include <list>
 #include <optional>
 #include <regex>
 #include <stdexcept>
@@ -154,6 +156,24 @@ void declare_dispatcher(pybind11::module &pymodule, const char *name, Keyring ke
                throw std::invalid_argument{"The provided byte sequence cannot be resolved"};
 
              return pybind11::bytes{retval};
+           })
+      .def("resolve_completely",
+           [](dispatcher_t &self, pybind11::bytes bytes) {
+             if (self.is_loaded())
+               throw std::logic_error{"The output buffer must be empty before calling `resolve_completely`"};
+
+             std::list<pybind11::bytes> outputs;
+
+             for (auto byte : bytes) {
+               if (self.put(byte.cast<byte_t>()) == packet_status::RESOLVED_PACKET) {
+                 std::string output;
+                 self.write_to(std::insert_iterator{output, output.begin()});
+
+                 outputs.push_back(output);
+               }
+             }
+
+             return outputs;
            })
       .def("read_from", [](dispatcher_t &self, const std::function<byte_t()> &src) { return self.read_from(src); })
       .def("write_to", [](dispatcher_t &self, const std::function<void(byte_t)> &dest) { self.write_to(dest); })

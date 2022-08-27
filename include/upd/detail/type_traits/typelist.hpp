@@ -21,9 +21,17 @@ namespace detail {
 template<std::size_t I>
 using index_t = std::integral_constant<std::size_t, I>;
 
+//! \brief Compile-time type holder
+template<typename>
+struct element_t {};
+
 //! \copydoc index_t
 template<std::size_t I>
 index_t<I> index_v;
+
+//! \copydoc element_t
+template<typename T>
+element_t<T> element_v;
 
 //! \brief Indexed element holder meant to be derived from
 template<std::size_t I, typename T>
@@ -31,7 +39,7 @@ struct itype {
   using type = T;
   constexpr static auto value = I;
 
-  constexpr static itype<I, T> index(T *) { return {}; };
+  constexpr static itype<I, T> index(element_t<T>) { return {}; };
   constexpr static itype<I, T> element(index_t<I>) { return {}; };
 };
 
@@ -139,7 +147,7 @@ constexpr auto max_impl(tlist_t<Ts...> tl) {
 //! There must be only one element in the typelist aliasing the provided element.
 template<typename T, typename... Ts>
 constexpr auto find_impl(tlist_t<Ts...> tl) {
-  return index_v<tl.index((T *)nullptr).value>;
+  return index_v<tl.index(element_v<T>).value>;
 }
 
 //! \brief Sum the values held by the typelist
