@@ -1,3 +1,4 @@
+import runpy
 import subprocess
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -8,6 +9,8 @@ WORKING_DIRECTORY = str(Path(__file__).parent.absolute())
 
 with TemporaryDirectory() as tmp:
     cmake_install_directory = WORKING_DIRECTORY + "/py/unpadded"
+
+    runpy.run_path("py/unpadded")
 
     subprocess.run(
         [
