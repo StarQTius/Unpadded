@@ -6,13 +6,13 @@ from shutil import which
 
 import pytest
 
-import unpadded as upd
-
 if which("ccache") is not None:
     os.environ["CC"] = "ccache " + os.environ["CC"]
     os.environ["CXX"] = "ccache " + os.environ["CXX"]
+os.environ["CPPFLAGS"] = "-I" + str(Path(__file__).parent.parent.parent) + "/include"
 
-upd.set_extra_include_dirs(["../../include"])
+import unpadded as upd
+
 for file in Path(__file__).parent.glob("module*.so"):
     os.remove(file)
 pytest_plugins = ("pytest_asyncio",)
@@ -71,9 +71,9 @@ def test_fill_dispatcher_manually():
     n_bytes = n.to_bytes(2, "little")
     expected = (2 * n).to_bytes(2, "little")
 
-    assert dispatcher.put(1) == PacketStatus.LOADING_PACKET
-    assert dispatcher.put(n_bytes[0]) == PacketStatus.LOADING_PACKET
-    assert dispatcher.put(n_bytes[1]) == PacketStatus.RESOLVED_PACKET
+    assert dispatcher.put(1) == upd.PacketStatus.LOADING_PACKET
+    assert dispatcher.put(n_bytes[0]) == upd.PacketStatus.LOADING_PACKET
+    assert dispatcher.put(n_bytes[1]) == upd.PacketStatus.RESOLVED_PACKET
 
     assert dispatcher.is_loaded() and dispatcher.get() == expected[0]
     assert dispatcher.is_loaded() and dispatcher.get() == expected[1]

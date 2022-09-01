@@ -5,7 +5,6 @@
 #include <functional>
 #include <iterator>
 #include <list>
-#include <optional>
 #include <regex>
 #include <stdexcept>
 #include <string>
@@ -109,16 +108,6 @@ void define_pykeys(pybind11::module &pymodule, Keyring keyring, std::index_seque
            0)...};
 }
 
-template<typename T>
-auto ensure_class(pybind11::module &pymodule, const char *name) {
-  return !pybind11::hasattr(pymodule, name) ? std::optional{pybind11::class_<T>{pymodule, name}} : std::nullopt;
-}
-
-template<typename T>
-auto ensure_enum(pybind11::module &pymodule, const char *name) {
-  return !pybind11::hasattr(pymodule, name) ? std::optional{pybind11::enum_<T>{pymodule, name}} : std::nullopt;
-}
-
 } // namespace detail
 
 template<typename Keyring, UPD_REQUIREMENT(is_keyring, Keyring)>
@@ -130,13 +119,6 @@ template<typename Keyring, UPD_REQUIREMENT(is_keyring, Keyring)>
 void declare_dispatcher(pybind11::module &pymodule, const char *name, Keyring keyring) {
   using namespace pybind11::literals;
   using dispatcher_t = decltype(double_buffered_dispatcher{Keyring{}, policy::any_action});
-
-  detail::ensure_class<action>(pymodule, "_Action");
-  if (auto opt = detail::ensure_enum<packet_status>(pymodule, "PacketStatus"))
-    opt.value()
-        .value("LOADING_PACKET", packet_status::LOADING_PACKET)
-        .value("DROPPED_PACKET", packet_status::DROPPED_PACKET)
-        .value("RESOLVED_PACKET", packet_status::RESOLVED_PACKET);
 
   pybind11::class_<dispatcher_t>{pymodule, name}
       .def(pybind11::init<>())
