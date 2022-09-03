@@ -6,4 +6,4 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - run: pip install . pytest pytest-asyncio 
-    - run: CC="gcc" CXX="g++" pytest test/py/test.py
+    - run: CC="gcc-10" CXX="g++-10" pytest test/py/test.py
