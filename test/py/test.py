@@ -2,13 +2,9 @@ import os
 from asyncio import get_event_loop
 from pathlib import Path
 from random import getrandbits
-from shutil import which
 
 import pytest
 
-if which("ccache") is not None:
-    os.environ["CC"] = "ccache " + os.environ["CC"]
-    os.environ["CXX"] = "ccache " + os.environ["CXX"]
 os.environ["CPPFLAGS"] = "-I" + str(Path(__file__).parent.parent.parent) + "/include"
 
 import unpadded as upd
