@@ -1,0 +1,9 @@
+name: Pip Installation Check
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - run: pip install . pytest pytest-asyncio 
+    - run: CC="gcc" CXX="g++" pytest test/py/test.py

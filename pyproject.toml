@@ -5,6 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "unpadded"
 version = "0.0"
+dependencies = ["cppimport>=22.8.2"]
 
 [tool.setuptools]
 include-package-data = true
