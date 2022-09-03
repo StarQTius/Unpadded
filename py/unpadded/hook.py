@@ -30,7 +30,7 @@ class Hook:
 
         try:
             self._running = True
-            filepath = os.path.abspath(find_module_cpppath(fullname, opt_in=False))
+            filepath = os.path.abspath(find_module_cpppath(fullname, opt_in=True))
             if fullname is None:
                 fullname = os.path.splitext(os.path.basename(filepath))[0]
             module_data = setup_module_data(fullname, filepath)
