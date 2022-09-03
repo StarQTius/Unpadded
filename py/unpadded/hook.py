@@ -5,13 +5,7 @@ import traceback
 from pathlib import Path
 
 from cppimport.find import find_module_cpppath
-from cppimport.importer import (
-    build_safely,
-    is_build_needed,
-    load_module,
-    setup_module_data,
-    try_load,
-)
+from cppimport.importer import build_safely, load_module, setup_module_data
 from cppimport.templating import setup_pybind11
 
 INCLUDE_DIRECTORY = str(Path(__file__).parent.absolute()) + "/include"
@@ -35,6 +29,8 @@ class Hook:
                 fullname = os.path.splitext(os.path.basename(filepath))[0]
             module_data = setup_module_data(fullname, filepath)
             module_data["setup_unpadded"] = setup_unpadded
+            if os.path.exists(module_data["ext_path"]):
+                os.remove(module_data["ext_path"])
             build_safely(filepath, module_data)
             load_module(module_data)
             return module_data["module"]

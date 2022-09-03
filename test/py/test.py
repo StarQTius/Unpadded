@@ -3,14 +3,12 @@ from asyncio import get_event_loop
 from pathlib import Path
 from random import getrandbits
 
-import pytest
-
 os.environ["CPPFLAGS"] = "-I" + str(Path(__file__).parent.parent.parent) + "/include"
+
+import pytest
 
 import unpadded as upd
 
-for file in Path(__file__).parent.glob("module*.so"):
-    os.remove(file)
 pytest_plugins = ("pytest_asyncio",)
 
 from module import *

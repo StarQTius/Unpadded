@@ -1,5 +1,4 @@
 import os
-from pathlib import Path
 from shutil import which
 from sysconfig import get_config_var
 
