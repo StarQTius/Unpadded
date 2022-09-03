@@ -35,8 +35,7 @@ class Hook:
                 fullname = os.path.splitext(os.path.basename(filepath))[0]
             module_data = setup_module_data(fullname, filepath)
             module_data["setup_unpadded"] = setup_unpadded
-            if is_build_needed(module_data) or not try_load(module_data):
-                build_safely(filepath, module_data)
+            build_safely(filepath, module_data)
             load_module(module_data)
             return module_data["module"]
         except ImportError:
