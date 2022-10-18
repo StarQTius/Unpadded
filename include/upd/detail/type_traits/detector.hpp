@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <type_traits> // IWYU pragma: keep
+
 //! \brief Make a detector function which implements the Detection Idiom
 //!
 //! A detector is a template of `constexpr` functions which return a `bool` value wrapped in a `std::integral_constant`.
