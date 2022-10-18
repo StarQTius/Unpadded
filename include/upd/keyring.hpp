@@ -97,7 +97,7 @@ public:
 
 #if __cplusplus >= 201703L
 template<typename... Hs>
-keyring(flist_t<Hs...>) -> keyring<endianess::BUILTIN, signed_mode::BUILTIN, Hs...>;
+keyring(flist_t<Hs...>) -> keyring<endianess::LITTLE, signed_mode::TWO_COMPLEMENT, Hs...>;
 
 template<typename... Hs, endianess Endianess, signed_mode Signed_Mode>
 keyring(flist_t<Hs...>, endianess_h<Endianess>, signed_mode_h<Signed_Mode>) -> keyring<Endianess, Signed_Mode, Hs...>;
@@ -114,7 +114,7 @@ make_keyring(flist_t<Hs...>, endianess_h<Endianess>, signed_mode_h<Signed_Mode>)
 //! \copybrief make_keyring
 //! \related keyring
 template<typename... Hs>
-constexpr keyring<endianess::BUILTIN, signed_mode::BUILTIN, Hs...> make_keyring(flist_t<Hs...>) {
+constexpr keyring<endianess::LITTLE, signed_mode::TWO_COMPLEMENT, Hs...> make_keyring(flist_t<Hs...>) {
   return {};
 }
 
