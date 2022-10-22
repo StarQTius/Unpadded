@@ -69,3 +69,6 @@ API References
 
 .. doxygenclass:: upd::action
   :members:
+
+.. doxygenclass:: upd::no_storage_action
+  :members:
