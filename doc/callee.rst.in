@@ -89,6 +89,8 @@ API References
 .. doxygenclass:: upd::double_buffered_dispatcher
   :members:
 
+.. doxygenenum:: upd::packet_status
+
 .. doxygenvariable:: upd::policy::any_action
 
 .. doxygenvariable:: upd::policy::static_storage_duration_only

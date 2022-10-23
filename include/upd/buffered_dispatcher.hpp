@@ -41,22 +41,24 @@ using needed_output_buffer_size = detail::max<detail::map_parameters_size<typena
 //!
 //! - `LOADING_PACKET`: The packet is currently being loaded and is not yet complete
 //! - `DROPPED_PACKET`: The packet loading has been canceled before completion
-//! - `RESOLVED_PACKET`: The packet loading has been completed and the corresponding action called
+//! - `RESOLVED_PACKET`: The packet loading has been completed and the corresponding action has been called
 //!
 enum class packet_status { LOADING_PACKET, DROPPED_PACKET, RESOLVED_PACKET };
 
 //! \brief Dispatcher with input / output storage
 //!
-//! Instances of this class may store input and output byte sequences as they are received / sent. This allows the
+//! Instances of this class may store input and output byte sequences while they are received or sent. This allows the
 //! user to load and unload the dispatcher byte after byte, whereas plain dispatchers cannot buffer their input and
-//! output, therefore they must receive and send byte sequences all at once. A buffered dispatcher goes through the
-//! following states:
+//! output. A buffered dispatcher goes through the following states:
+//!
 //!   -# The input buffer is empty, ready to accept an action request.
-//!   -# Once a full action request has been received, it is immediately fulfilled and the result is written in the
+//!   -# Once a full action request has been received, it is immediately fulfilled and the result is written to the
 //!   output buffer. The input buffer is reset, thus it may receive a new request while the output buffer is unloaded.
 //!   -# Once the output buffer is empty, it may be written again.
-//! \note It is possible to use a single buffer as input and output as long as byte sequence reading and writting does
-//! not occur at the same time. For that purpose, `is_loaded` will indicate whether the output buffer is empty or not.
+//!
+//! \note It is possible to use a single buffer as input and output as long as the reading and the writing does
+//! not occur at the same time. For that purpose, is_loaded() will indicate whether the output buffer is empty or not.
+//!
 //! This class is not self-sufficient and must be derived from according to the CRTP idiom.
 //!
 //! \tparam D Derived class
@@ -81,7 +83,7 @@ public:
   using keyring_t = typename Dispatcher::keyring_t;
 
   //! \brief Initialize the underlying plain dispatcher with a keyring
-  //! \tparam Keyring Type of the keyring
+  //! \tparam Keyring \ref<keyring> keyring template instance
   //! \tparam Action_Features Allowed action features for the managed actions
   template<typename Keyring, action_features Action_Features>
   explicit buffered_dispatcher(Keyring, action_features_h<Action_Features>) : buffered_dispatcher{} {}
@@ -91,18 +93,19 @@ public:
       : m_is_index_loaded{false}, m_load_count{sizeof(index_t)}, m_ibuf_next{0}, m_obuf_next{0}, m_obuf_bottom{0} {}
 
   //! \brief Indicates whether the output buffer contains data to send
-  //! \return `true` if and only if the next call to `write` or `write_all` will have a visible effect
+  //! \return `true` if and only if the next call to put() or write_to() will have a visible effect
   bool is_loaded() const { return m_obuf_next != m_obuf_bottom; }
 
   using detail::immediate_reader<this_t, packet_status>::read_from;
 
   //! \brief Put bytes into the input buffer until a full action request is stored
   //! \copydoc ImmediateReader_CRTP
-  //! \param src Input invocable
+  //! \param src Input sequence as a callback
   //! \return one of the following :
-  //!   - `DROPPED_PACKET`: the received index was invalid and the input buffer content was therefore discarded
-  //!   - `RESOLVED_PACKET`: the packet was fully loaded and the associated action has been called (the input buffer is
-  //!   empty and the output buffer contains the result of the action invocation)
+  //!   - packet_status::DROPPED_PACKET: The received index was invalid and the input buffer content was therefore
+  //!   discarded.
+  //!   - packet_status::RESOLVED_PACKET: The packet was fully loaded and the associated action has been called (the
+  //!   input buffer is empty and the output buffer contains the result of the action invocation).
   template<typename Src, UPD_REQUIREMENT(input_invocable, Src)>
   packet_status read_from(Src &&src) {
     packet_status status = packet_status::LOADING_PACKET;
@@ -119,10 +122,11 @@ public:
   //! \copydoc Reader_CRTP
   //! \param byte Byte to put
   //! \return one of the following :
-  //!   - `LOADING_PACKET`: the packet is not yet fully loaded
-  //!   - `DROPPED_PACKET`: the received index was invalid and the input buffer content was therefore discarded
-  //!   - `RESOLVED_PACKET`: the packet was fully loaded and the associated action has been called (the input buffer is
-  //!   empty and the output buffer contains the result of the action invocation)
+  //!   - packet_status::LOADING_PACKET: The packet is not yet fully loaded.
+  //!   - packet_status::DROPPED_PACKET: The received index was invalid and the input buffer content was therefore
+  //!   discarded.
+  //!   - packet_status::RESOLVED_PACKET: The packet was fully loaded and the associated action has been called (the
+  //!   input buffer is empty and the output buffer contains the result of the action invocation).
   packet_status put(byte_t byte) {
     derived().ibuf_begin()[m_ibuf_next++] = byte;
 
@@ -182,14 +186,14 @@ public:
 
   using detail::immediate_process<this_t, packet_status>::operator();
 
-  //! \brief Call `read_from` then `write_to`
+  //! \brief Call read_from() then write_to()
   //!
-  //! `write_to` is called if and only the output buffer has been populated by `read_from`.
+  //! write_to() is called if and only the output buffer has been populated by read_from().
   //! \copydoc ImmediateProcess_CRTP
   //!
-  //! \param src Input invocable
-  //! \param dest Output invocable
-  //! \return the `packet_status` instance resulting from the `read_from` call
+  //! \param src Input sequence as a callback
+  //! \param dest Output sequence as a callback
+  //! \return the \ref<packet_status> enumerator instance resulting from the read_from() call
   template<typename Src, typename Dest, UPD_REQUIREMENT(input_invocable, Src), UPD_REQUIREMENT(output_invocable, Dest)>
   packet_status operator()(Src &&src, Dest &&dest) {
     auto status = read_from(UPD_FWD(src));
@@ -212,19 +216,20 @@ public:
     m_dispatcher.template replace<Index>(UPD_FWD(ftor));
   }
 
-  //! \brief Forward the content of the output buffer to another dispatcher
+  //! \brief Forward the content of the output buffer to another dispatcher as an action request
   //!
   //! This function send an action request to the other dispatcher, which is supposed to process directly the content of
-  //! the output buffer. The requets action must accepts a single byte buffer as argument. The content of the received
-  //! byte buffer is the same as if it was written by `write_to`, so it can be deserialized by the requested action by
-  //! using the key that was used to populate the output buffer.
+  //! the output buffer. The requested action must accept a single byte buffer as sole argument (the size of the buffer
+  //! can be choosen at compile time). The content of the received byte sequence is the same as if it was written by
+  //! write_to(), so it can be deserialized inside the requested action by using the key that was used to populate the
+  //! output buffer.
   //!
-  //! This function can only be used if the data in the output buffer is complete (i.e. if no `get` invocation has been
+  //! This function can only be used if the data in the output buffer is complete (i.e. if no call to get() has been
   //! made since the last packet resolution) and if the requested action buffer is large enough to hold all the data to
   //! send. When this function has finished executing, the output buffer is empty.
   //!
   //! \param output Output byte sequence
-  //! \param k Key of the action to request
+  //! \param k Key of the action to request on the other dispatcher
   //! \return `true` if and only if the content of the output buffer has been written to the output byte sequence
   template<typename Output, typename Key, UPD_REQUIREMENT(key, typename std::decay<Key>::type)>
   bool reply(Output &&output, Key k) {
@@ -280,8 +285,10 @@ private:
 //! \brief Implements a dispatcher using a single buffer for input and output
 //!
 //! The buffer is allocated statically as a plain array. Its size is as small as possible for holding any action request
-//! and any action response. \warning It is not possible to read a request and write a response at the same time. If you
-//! need that, use `double_buffered_dispatcher` instead.
+//! and any action response.
+//!
+//!\warning It is not possible to read a request and write a response at the same time. If you
+//! need to do that, use \ref<double_buffered_dispatcher> double_buffered_dispatcher instead.
 //!
 //! \tparam Dispatcher Underlying dispatcher type
 template<typename Dispatcher>
@@ -336,8 +343,10 @@ make_single_buffered_dispatcher(Keyring, action_features_h<Action_Features>) {
 //! \brief Implements a dispatcher using separate buffers for input and output
 //!
 //! The buffers are allocated statically as plain arrays. Their sizes are as small as possible for holding any action
-//! request and any action response. \note If you would rather having a single buffer and do not mind reading and
-//! writing at different moment, consider using `single_buffered_dispatcher` instead.
+//! request and any action response.
+//!
+//!\note If you would rather having a single buffer and do not mind reading and writing at different moment, consider
+//!using \ref<single_buffered_dispatcher> single_buffered_dispatcher instead.
 //!
 //! \tparam Dispatcher Underlying dispatcher type
 template<typename Dispatcher>
