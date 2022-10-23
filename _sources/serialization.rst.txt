@@ -1,0 +1,45 @@
+Serialization tools
+===================
+
+API References
+--------------
+
+``tuple``
+~~~~~~~~~
+
+.. doxygenclass:: upd::tuple
+  :members:
+
+``view_tuple``
+~~~~~~~~~~~~~~
+
+.. doxygenclass:: upd::tuple_view
+  :members:
+
+``get``
+~~~~~~~
+
+.. doxygenfunction:: upd::get
+
+``set``
+~~~~~~~
+
+.. doxygenfunction:: upd::set
+
+Serialization parameters
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenenum:: upd::endianess
+.. doxygenenum:: upd::signed_mode
+
+.. doxygenstruct:: upd::endianess_h
+   :members:
+
+.. doxygenstruct:: upd::signed_mode_h
+   :members:
+
+Other
+~~~~~
+
+.. doxygentypedef:: upd::byte_t
+

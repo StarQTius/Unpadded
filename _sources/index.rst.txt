@@ -1,7 +1,8 @@
-.. include:: //home/runner/work/Unpadded/Unpadded/README.md
-  :parser: myst_parser.sphinx_
+.. mdinclude:: /home/runner/work/Unpadded/Unpadded/README.md
 
 .. toctree::
   shared
   caller
   callee
+  serialization
+  python

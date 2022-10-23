@@ -1,192 +1,260 @@
-<!DOCTYPE html>
-<html class="writer-html5" lang="en" >
-<head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Unpadded &mdash; Python  documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xml:lang="" lang="" version="-//W3C//DTD XHTML 1.1//EN" xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
-        <script src="_static/doctools.js"></script>
-    <script src="_static/js/theme.js"></script>
-    <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Sharing RPC convention" href="shared.html" /> 
-</head>
+  <title>Unpadded &mdash; Unpadded  documentation</title>
+  
 
-<body class="wy-body-for-nav"> 
+  
+
+  
+
+    <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'/>
+    <link rel="stylesheet" href="_static/css/pdj.css" type="text/css" />
+
+  
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  
+    <link rel="stylesheet" href="_static/css/pdj.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="Unpadded  documentation" href="#"/>
+        <link rel="next" title="Sharing RPC convention" href="shared.html"/>
+
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta http-equiv="cache-control" content="public" />
+    <meta name="robots" content="follow, all" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Add jQuery library -->
+    <script type="text/javascript" src="http://code.jquery.com/jquery-latest.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+  </head>
+
+  <body class="wy-body-for-nav" role="document">
+
   <div class="wy-grid-for-nav">
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
-      <div class="wy-side-scroll">
-        <div class="wy-side-nav-search" >
-            <a href="#" class="icon icon-home"> Python
-          </a>
-<div role="search">
-  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
-    <input type="hidden" name="check_keywords" value="yes" />
-    <input type="hidden" name="area" value="default" />
-  </form>
-</div>
-        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+      <div class="wy-side-nav-search">
+        <a href="#" class="fa fa-home"> Unpadded </a>
+        <div role="search">
+	  <form id ="rtd-search-form" class="wy-form"
+		action="search.html" method="get">
+	    <input type="text" name="q" placeholder="Search docs" />
+	    <input type="hidden" name="check_keywords" value="yes" />
+	    <input type="hidden" name="area" value="default" />
+	  </form>
+	</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	
+          
+          
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="shared.html">Sharing RPC convention</a></li>
-<li class="toctree-l1"><a class="reference internal" href="caller.html">Implementing caller side</a></li>
-<li class="toctree-l1"><a class="reference internal" href="callee.html">Implementing callee side</a></li>
+<li class="toctree-l1"><a class="reference internal" href="shared.html">Sharing RPC convention</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="shared.html#basics-defining-a-keyring">Basics : defining a keyring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="shared.html#binding-lambda-expressions-and-invocable-objects-to-a-keyring">Binding lambda expressions and invocable objects to a keyring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="shared.html#pre-c-17-support">Pre C++17 support</a></li>
+<li class="toctree-l2"><a class="reference internal" href="shared.html#api-references">API References</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="caller.html">Implementing caller side</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="caller.html#basics-sending-request-with-keys">Basics : sending request with keys</a></li>
+<li class="toctree-l2"><a class="reference internal" href="caller.html#handling-the-callee-response">Handling the callee response</a></li>
+<li class="toctree-l2"><a class="reference internal" href="caller.html#api-references">API References</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="callee.html">Implementing callee side</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="callee.html#basics-fulfiling-incoming-request-with-dispatchers">Basics : fulfiling incoming request with dispatchers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="callee.html#hot-swapping-callbacks">Hot swapping callbacks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="callee.html#storage-policy">Storage policy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="callee.html#api-references">API References</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="serialization.html">Serialization tools</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="serialization.html#api-references">API References</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="python.html">Extending Unpadded to Python</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="python.html#api-references">API References</a></li>
+</ul>
+</li>
 </ul>
 
-        </div>
-      </div>
-    </nav>
+          
+        
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
-          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="#">Python</a>
+      </div>
+      &nbsp;
+    </nav>
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      <nav class="wy-nav-top" id="barra-mobile" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="#">Porão do Juca</a>
       </nav>
 
       <div class="wy-nav-content">
+	<div class="fundo-claro">
+	</div>
+	<div class="fundo-escuro">
+	</div>
+
         <div class="rst-content">
-          <div role="navigation" aria-label="Page navigation">
-  <ul class="wy-breadcrumbs">
-      <li><a href="#" class="icon icon-home"></a> &raquo;</li>
-      <li>Unpadded</li>
-      <li class="wy-breadcrumbs-aside">
-            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
-      </li>
-  </ul>
-  <hr/>
-</div>
-          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
-           <div itemprop="articleBody">
-             
+          <div role="navigation" aria-label="breadcrumbs navigation">
+	    
+	    <!-- <ul class="wy-breadcrumbs"> -->
+	    <!--   <li><a href="#">Docs</a> &raquo;</li> -->
+
+	    <!--   <li>Features</li> -->
+	    <!--   <li class="wy-breadcrumbs-aside"> -->
+
+	    <!-- 	<a href="_sources/index.txt" rel="nofollow"> View page source</a> -->
+
+	    <!--   </li> -->
+	    <!-- </ul> -->
+	    <!-- <hr/> -->
+	  </div>
+
+          <div role="main" class="">
+
+	    <div id="content" class="hfeed entry-container hentry">
   <section id="unpadded">
-<h1>Unpadded<a class="headerlink" href="#unpadded" title="Permalink to this headline"></a></h1>
+<h1>Unpadded<a class="headerlink" href="#unpadded" title="Permalink to this heading">¶</a></h1>
 <p>Unpadded is a header-only RPC library appropriate for embedded software and compatible with C++11 (with syntactic sugar with C++17).</p>
-<p>Unpadded does not require code generation, so it is easy to integrate in any project. Using metaprogramming, the library has been designed to be as close as possible to equivalent C code.</p>
+<p>Unpadded does not require code generation, so it is easy to integrate in any project. It provides compile-time safety mechanisms to avoid silly mistakes while striving for low memory usage.</p>
+<section id="what-unpadded-is-good-for-and-what-it-cannot-do">
+<h2>What Unpadded is good for and what it cannot do<a class="headerlink" href="#what-unpadded-is-good-for-and-what-it-cannot-do" title="Permalink to this heading">¶</a></h2>
+<p>This library does not provide ready-to-use RPC support by itself. It does not implement any protocol like I²2, SPI, TCP etc… Therefore, one downside of Unpadded is that you must implement bindings with the protocol you want to use. You must also encapsulate the packets generated by this library yourself, if needed.</p>
+<p>The good news is that it is easy to use any protocol with this library. It is done by providing callbacks to the library for sending and receiving data. It is also possible to write packet directly in buffers or memory registers.</p>
+</section>
 <section id="quick-example-with-arduino">
-<h2>Quick example with Arduino<a class="headerlink" href="#quick-example-with-arduino" title="Permalink to this headline"></a></h2>
+<h2>Quick example with Arduino<a class="headerlink" href="#quick-example-with-arduino" title="Permalink to this heading">¶</a></h2>
 <p>Do note that many Arduino framework do not come with a standard library implementation which is needed to compile Unpadded, so the following example should be taken as proof of concept rather than a functional implementation.</p>
 <p>In the following example, we have an Arduino board connected through I2C to another Arduino board. The latter is managing a traffic light with its GPIOs.</p>
 <section id="shared-hpp">
-<h3>shared.hpp<a class="headerlink" href="#shared-hpp" title="Permalink to this headline"></a></h3>
+<h3>shared.hpp<a class="headerlink" href="#shared-hpp" title="Permalink to this heading">¶</a></h3>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#pragma once</span>
 
-<span class="cp">#include</span> <span class="cpf">&lt;cstdint&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cstdint&gt;</span><span class="cp"></span>
 
-<span class="cp">#include</span> <span class="cpf">&lt;upd/keyring.hpp&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;upd/keyring.hpp&gt;</span><span class="cp"></span>
 
-<span class="kt">void</span> <span class="nf">Set_Green_Light</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">uint8_t</span><span class="p">);</span>
-<span class="kt">void</span> <span class="nf">Set_Yellow_Light</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">uint8_t</span><span class="p">);</span>
-<span class="kt">void</span> <span class="nf">Set_Red_Light</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">uint8_t</span><span class="p">);</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">Set_Green_Light</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">uint8_t</span><span class="p">);</span><span class="w"></span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">Set_Yellow_Light</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">uint8_t</span><span class="p">);</span><span class="w"></span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">Set_Red_Light</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">uint8_t</span><span class="p">);</span><span class="w"></span>
 
-<span class="n">upd</span><span class="o">::</span><span class="n">keyring</span> <span class="n">keyring</span><span class="p">{</span>
-  <span class="n">upd</span><span class="o">::</span><span class="n">flist</span><span class="o">&lt;</span><span class="n">Set_Green_Light</span><span class="p">,</span> <span class="n">Set_Yellow_Light</span><span class="p">,</span> <span class="n">Set_Red_Light</span><span class="o">&gt;</span><span class="p">,</span>
-  <span class="n">upd</span><span class="o">::</span><span class="n">little_endian</span><span class="p">,</span>
-  <span class="n">upd</span><span class="o">::</span><span class="n">two_complement</span>
-<span class="p">};</span>
+<span class="n">upd</span><span class="o">::</span><span class="n">keyring</span><span class="w"> </span><span class="n">keyring</span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">upd</span><span class="o">::</span><span class="n">flist</span><span class="o">&lt;</span><span class="n">Set_Green_Light</span><span class="p">,</span><span class="w"> </span><span class="n">Set_Yellow_Light</span><span class="p">,</span><span class="w"> </span><span class="n">Set_Red_Light</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="n">upd</span><span class="o">::</span><span class="n">little_endian</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="n">upd</span><span class="o">::</span><span class="n">two_complement</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
 </pre></div>
 </div>
 </section>
 <section id="caller-cpp">
-<h3>caller.cpp<a class="headerlink" href="#caller-cpp" title="Permalink to this headline"></a></h3>
-<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;Wire.h&gt;</span><span class="cp"></span>
+<h3>caller.cpp<a class="headerlink" href="#caller-cpp" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;Wire.h&gt;</span><span class="cp"></span>
 
-<span class="cp">#include</span> <span class="cpf">&quot;shared.hpp&quot;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;shared.hpp&quot;</span><span class="cp"></span>
 
-<span class="kt">void</span> <span class="nf">setup</span><span class="p">()</span> <span class="p">{</span>
-  <span class="n">Wire</span><span class="p">.</span><span class="n">begin</span><span class="p">();</span>
-<span class="p">}</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">setup</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">Wire</span><span class="p">.</span><span class="n">begin</span><span class="p">();</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
 
-<span class="kt">void</span> <span class="nf">loop</span><span class="p">()</span> <span class="p">{</span>
-  <span class="k">auto</span> <span class="n">gkey</span> <span class="o">=</span> <span class="n">keyring</span><span class="p">.</span><span class="n">get</span><span class="o">&lt;</span><span class="n">Set_Green_Light</span><span class="o">&gt;</span><span class="p">();</span>
-  <span class="k">auto</span> <span class="n">ykey</span> <span class="o">=</span> <span class="n">keyring</span><span class="p">.</span><span class="n">get</span><span class="o">&lt;</span><span class="n">Set_Yellow_Light</span><span class="o">&gt;</span><span class="p">();</span>
-  <span class="k">auto</span> <span class="n">rkey</span> <span class="o">=</span> <span class="n">keyring</span><span class="p">.</span><span class="n">get</span><span class="o">&lt;</span><span class="n">Set_Red_Light</span><span class="o">&gt;</span><span class="p">();</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">loop</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">gkey</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">keyring</span><span class="p">.</span><span class="n">get</span><span class="o">&lt;</span><span class="n">Set_Green_Light</span><span class="o">&gt;</span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">ykey</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">keyring</span><span class="p">.</span><span class="n">get</span><span class="o">&lt;</span><span class="n">Set_Yellow_Light</span><span class="o">&gt;</span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">rkey</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">keyring</span><span class="p">.</span><span class="n">get</span><span class="o">&lt;</span><span class="n">Set_Red_Light</span><span class="o">&gt;</span><span class="p">();</span><span class="w"></span>
 
-  <span class="k">auto</span> <span class="n">write_byte</span> <span class="o">=</span> <span class="p">[](</span><span class="n">upd</span><span class="o">::</span><span class="n">byte_t</span> <span class="n">x</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">Wire</span><span class="p">.</span><span class="n">write</span><span class="p">(</span><span class="n">x</span><span class="p">);</span>
-  <span class="p">};</span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">write_byte</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[](</span><span class="n">upd</span><span class="o">::</span><span class="n">byte_t</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">Wire</span><span class="p">.</span><span class="n">write</span><span class="p">(</span><span class="n">x</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="p">};</span><span class="w"></span>
 
-  <span class="n">Wire</span><span class="p">.</span><span class="n">beginTransmission</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-  <span class="n">gkey</span><span class="p">(</span><span class="nb">true</span><span class="p">).</span><span class="n">write_all</span><span class="p">(</span><span class="n">write_byte</span><span class="p">);</span>
-  <span class="n">delay</span><span class="p">(</span><span class="mi">500</span><span class="p">);</span>
-  <span class="n">Wire</span><span class="p">.</span><span class="n">endTransmission</span><span class="p">();</span>
+<span class="w">  </span><span class="n">Wire</span><span class="p">.</span><span class="n">beginTransmission</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">gkey</span><span class="p">(</span><span class="nb">true</span><span class="p">).</span><span class="n">write_all</span><span class="p">(</span><span class="n">write_byte</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">delay</span><span class="p">(</span><span class="mi">500</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">Wire</span><span class="p">.</span><span class="n">endTransmission</span><span class="p">();</span><span class="w"></span>
 
-  <span class="n">Wire</span><span class="p">.</span><span class="n">beginTransmission</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-  <span class="n">ykey</span><span class="p">(</span><span class="nb">true</span><span class="p">).</span><span class="n">write_all</span><span class="p">(</span><span class="n">write_byte</span><span class="p">);</span>
-  <span class="n">delay</span><span class="p">(</span><span class="mi">500</span><span class="p">);</span>
-  <span class="n">Wire</span><span class="p">.</span><span class="n">endTransmission</span><span class="p">();</span>
+<span class="w">  </span><span class="n">Wire</span><span class="p">.</span><span class="n">beginTransmission</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">ykey</span><span class="p">(</span><span class="nb">true</span><span class="p">).</span><span class="n">write_all</span><span class="p">(</span><span class="n">write_byte</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">delay</span><span class="p">(</span><span class="mi">500</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">Wire</span><span class="p">.</span><span class="n">endTransmission</span><span class="p">();</span><span class="w"></span>
 
-  <span class="n">Wire</span><span class="p">.</span><span class="n">beginTransmission</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-  <span class="n">rkey</span><span class="p">(</span><span class="nb">true</span><span class="p">).</span><span class="n">write_all</span><span class="p">(</span><span class="n">write_byte</span><span class="p">);</span>
-  <span class="n">delay</span><span class="p">(</span><span class="mi">500</span><span class="p">);</span>
-  <span class="n">Wire</span><span class="p">.</span><span class="n">endTransmission</span><span class="p">();</span>
+<span class="w">  </span><span class="n">Wire</span><span class="p">.</span><span class="n">beginTransmission</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">rkey</span><span class="p">(</span><span class="nb">true</span><span class="p">).</span><span class="n">write_all</span><span class="p">(</span><span class="n">write_byte</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">delay</span><span class="p">(</span><span class="mi">500</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">Wire</span><span class="p">.</span><span class="n">endTransmission</span><span class="p">();</span><span class="w"></span>
 
-  <span class="n">Wire</span><span class="p">.</span><span class="n">beginTransmission</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-  <span class="n">gkey</span><span class="p">(</span><span class="nb">false</span><span class="p">).</span><span class="n">write_all</span><span class="p">(</span><span class="n">write_byte</span><span class="p">);</span>
-  <span class="n">delay</span><span class="p">(</span><span class="mi">500</span><span class="p">);</span>
-  <span class="n">Wire</span><span class="p">.</span><span class="n">endTransmission</span><span class="p">();</span>
+<span class="w">  </span><span class="n">Wire</span><span class="p">.</span><span class="n">beginTransmission</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">gkey</span><span class="p">(</span><span class="nb">false</span><span class="p">).</span><span class="n">write_all</span><span class="p">(</span><span class="n">write_byte</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">delay</span><span class="p">(</span><span class="mi">500</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">Wire</span><span class="p">.</span><span class="n">endTransmission</span><span class="p">();</span><span class="w"></span>
 
-  <span class="n">Wire</span><span class="p">.</span><span class="n">beginTransmission</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-  <span class="n">ykey</span><span class="p">(</span><span class="nb">false</span><span class="p">).</span><span class="n">write_all</span><span class="p">(</span><span class="n">write_byte</span><span class="p">);</span>
-  <span class="n">delay</span><span class="p">(</span><span class="mi">500</span><span class="p">);</span>
-  <span class="n">Wire</span><span class="p">.</span><span class="n">endTransmission</span><span class="p">();</span>
+<span class="w">  </span><span class="n">Wire</span><span class="p">.</span><span class="n">beginTransmission</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">ykey</span><span class="p">(</span><span class="nb">false</span><span class="p">).</span><span class="n">write_all</span><span class="p">(</span><span class="n">write_byte</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">delay</span><span class="p">(</span><span class="mi">500</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">Wire</span><span class="p">.</span><span class="n">endTransmission</span><span class="p">();</span><span class="w"></span>
 
-  <span class="n">Wire</span><span class="p">.</span><span class="n">beginTransmission</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-  <span class="n">rkey</span><span class="p">(</span><span class="nb">false</span><span class="p">).</span><span class="n">write_all</span><span class="p">(</span><span class="n">write_byte</span><span class="p">);</span>
-  <span class="n">delay</span><span class="p">(</span><span class="mi">500</span><span class="p">);</span>
-  <span class="n">Wire</span><span class="p">.</span><span class="n">endTransmission</span><span class="p">();</span>
-<span class="p">}</span>
+<span class="w">  </span><span class="n">Wire</span><span class="p">.</span><span class="n">beginTransmission</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">rkey</span><span class="p">(</span><span class="nb">false</span><span class="p">).</span><span class="n">write_all</span><span class="p">(</span><span class="n">write_byte</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">delay</span><span class="p">(</span><span class="mi">500</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">Wire</span><span class="p">.</span><span class="n">endTransmission</span><span class="p">();</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
 </pre></div>
 </div>
 </section>
 <section id="callee-cpp">
-<h3>callee.cpp<a class="headerlink" href="#callee-cpp" title="Permalink to this headline"></a></h3>
-<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;Wire.h&gt;</span><span class="cp"></span>
+<h3>callee.cpp<a class="headerlink" href="#callee-cpp" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;Wire.h&gt;</span><span class="cp"></span>
 
-<span class="cp">#include</span> <span class="cpf">&lt;upd/buffered_dispatcher.hpp&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;upd/buffered_dispatcher.hpp&gt;</span><span class="cp"></span>
 
-<span class="cp">#include</span> <span class="cpf">&quot;shared.hpp&quot;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;shared.hpp&quot;</span><span class="cp"></span>
 
-<span class="k">static</span> <span class="n">upd</span><span class="o">::</span><span class="n">single_buffered_dispatcher</span> <span class="n">dispatcher</span><span class="p">{</span><span class="n">keyring</span><span class="p">,</span> <span class="n">upd</span><span class="o">::</span><span class="n">any_action</span><span class="p">};</span>
+<span class="k">static</span><span class="w"> </span><span class="n">upd</span><span class="o">::</span><span class="n">single_buffered_dispatcher</span><span class="w"> </span><span class="n">dispatcher</span><span class="p">{</span><span class="n">keyring</span><span class="p">,</span><span class="w"> </span><span class="n">upd</span><span class="o">::</span><span class="n">policy</span><span class="o">::</span><span class="n">static_storage_duration_only</span><span class="p">};</span><span class="w"></span>
 
-<span class="kt">void</span> <span class="nf">Set_Green_Light</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">uint8_t</span> <span class="n">state</span><span class="p">)</span> <span class="p">{</span>
-  <span class="n">digitalWrite</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">state</span> <span class="o">?</span> <span class="nl">HIGH</span> <span class="p">:</span> <span class="n">LOW</span><span class="p">);</span>
-<span class="p">}</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">Set_Green_Light</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">state</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">digitalWrite</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">state</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">HIGH</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">LOW</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
 
-<span class="kt">void</span> <span class="nf">Set_Yellow_Light</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">uint8_t</span> <span class="n">state</span><span class="p">)</span> <span class="p">{</span>
-  <span class="n">digitalWrite</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">state</span> <span class="o">?</span> <span class="nl">HIGH</span> <span class="p">:</span> <span class="n">LOW</span><span class="p">);</span>
-<span class="p">}</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">Set_Yellow_Light</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">state</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">digitalWrite</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">state</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">HIGH</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">LOW</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
 
-<span class="kt">void</span> <span class="nf">Set_Red_Light</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">uint8_t</span> <span class="n">state</span><span class="p">)</span> <span class="p">{</span>
-  <span class="n">digitalWrite</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">state</span> <span class="o">?</span> <span class="nl">HIGH</span> <span class="p">:</span> <span class="n">LOW</span><span class="p">);</span>
-<span class="p">}</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">Set_Red_Light</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">state</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">digitalWrite</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="n">state</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">HIGH</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">LOW</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
 
-<span class="kt">void</span> <span class="nf">setup</span><span class="p">()</span> <span class="p">{</span>
-  <span class="n">pinMode</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">OUTPUT</span><span class="p">);</span>
-  <span class="n">pinMode</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">OUTPUT</span><span class="p">);</span>
-  <span class="n">pinMode</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">OUTPUT</span><span class="p">);</span>
-  <span class="n">Wire</span><span class="p">.</span><span class="n">onReceive</span><span class="p">([](</span><span class="kt">int</span> <span class="n">n</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">upd</span><span class="o">::</span><span class="n">packet_status</span> <span class="n">status</span><span class="p">;</span>
-    <span class="k">do</span> <span class="p">{</span>
-      <span class="n">status</span> <span class="o">=</span> <span class="n">dispatcher</span><span class="p">.</span><span class="n">read</span><span class="p">([]()</span> <span class="p">{</span> <span class="k">return</span> <span class="n">Wire</span><span class="p">.</span><span class="n">read</span><span class="p">();</span> <span class="p">});</span>
-    <span class="p">}</span> <span class="k">while</span><span class="p">(</span><span class="o">--</span><span class="n">n</span> <span class="o">&amp;&amp;</span> <span class="n">status</span> <span class="o">!=</span> <span class="n">upd</span><span class="o">::</span><span class="n">packet_status</span><span class="o">::</span><span class="n">DROPPED_PACKET</span><span class="p">);</span>
-  <span class="p">});</span>
-  <span class="n">Wire</span><span class="p">.</span><span class="n">begin</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-<span class="p">}</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">setup</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">pinMode</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">OUTPUT</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">pinMode</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">OUTPUT</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">pinMode</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="n">OUTPUT</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">Wire</span><span class="p">.</span><span class="n">onReceive</span><span class="p">([](</span><span class="kt">int</span><span class="w"> </span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">upd</span><span class="o">::</span><span class="n">packet_status</span><span class="w"> </span><span class="n">status</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">do</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dispatcher</span><span class="p">.</span><span class="n">read</span><span class="p">([]()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">Wire</span><span class="p">.</span><span class="n">read</span><span class="p">();</span><span class="w"> </span><span class="p">});</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">while</span><span class="p">(</span><span class="o">--</span><span class="n">n</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">upd</span><span class="o">::</span><span class="n">packet_status</span><span class="o">::</span><span class="n">DROPPED_PACKET</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="p">});</span><span class="w"></span>
+<span class="w">  </span><span class="n">Wire</span><span class="p">.</span><span class="n">begin</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
 
-<span class="kt">void</span> <span class="nf">loop</span><span class="p">()</span> <span class="p">{}</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">loop</span><span class="p">()</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
 </pre></div>
 </div>
-</section>
-</section>
-</section>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="shared.html">Sharing RPC convention</a><ul>
@@ -204,7 +272,12 @@
 <li class="toctree-l3"><a class="reference internal" href="shared.html#id2">Example</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="shared.html#api-references">API References</a></li>
+<li class="toctree-l2"><a class="reference internal" href="shared.html#api-references">API References</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="shared.html#keyring"><code class="docutils literal notranslate"><span class="pre">keyring</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="shared.html#unevaluated"><code class="docutils literal notranslate"><span class="pre">unevaluated</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="shared.html#flist"><code class="docutils literal notranslate"><span class="pre">flist</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="caller.html">Implementing caller side</a><ul>
@@ -217,7 +290,12 @@
 <li class="toctree-l3"><a class="reference internal" href="caller.html#non-blocking-mode">Non-blocking mode</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="caller.html#api-references">API References</a></li>
+<li class="toctree-l2"><a class="reference internal" href="caller.html#api-references">API References</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="caller.html#key"><code class="docutils literal notranslate"><span class="pre">key</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="caller.html#action"><code class="docutils literal notranslate"><span class="pre">action</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="caller.html#no-storage-action"><code class="docutils literal notranslate"><span class="pre">no_storage_action</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="callee.html">Implementing callee side</a><ul>
@@ -229,40 +307,114 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="callee.html#hot-swapping-callbacks">Hot swapping callbacks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="callee.html#storage-policy">Storage policy</a></li>
-<li class="toctree-l2"><a class="reference internal" href="callee.html#api-references">API References</a></li>
+<li class="toctree-l2"><a class="reference internal" href="callee.html#api-references">API References</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="callee.html#dispatcher"><code class="docutils literal notranslate"><span class="pre">dispatcher</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="callee.html#buffered-dispatcher"><code class="docutils literal notranslate"><span class="pre">buffered_dispatcher</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="callee.html#single-buffered-dispatcher"><code class="docutils literal notranslate"><span class="pre">single_buffered_dispatcher</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="callee.html#double-buffered-dispatcher"><code class="docutils literal notranslate"><span class="pre">double_buffered_dispatcher</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="callee.html#packet-status"><code class="docutils literal notranslate"><span class="pre">packet_status</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="callee.html#policies">Policies</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="serialization.html">Serialization tools</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="serialization.html#api-references">API References</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="serialization.html#tuple"><code class="docutils literal notranslate"><span class="pre">tuple</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="serialization.html#view-tuple"><code class="docutils literal notranslate"><span class="pre">view_tuple</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="serialization.html#get"><code class="docutils literal notranslate"><span class="pre">get</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="serialization.html#set"><code class="docutils literal notranslate"><span class="pre">set</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="serialization.html#serialization-parameters">Serialization parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="serialization.html#other">Other</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="python.html">Extending Unpadded to Python</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="python.html#api-references">API References</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="python.html#unpack-keyring"><code class="docutils literal notranslate"><span class="pre">unpack_keyring</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="python.html#declare-dispatcher"><code class="docutils literal notranslate"><span class="pre">declare_dispatcher</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
 </div>
+</section>
+</section>
+</section>
 
 
-           </div>
-          </div>
-          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="shared.html" class="btn btn-neutral float-right" title="Sharing RPC convention" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+	    </div>
+            <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="shared.html" class="btn btn-neutral float-right" title="Sharing RPC convention">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
     </div>
+  
 
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright .</p>
+    <p>
+        &copy; Copyright .
+    </p>
   </div>
 
-  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/jucacrispim/sphinx_pdj_theme">theme</a> provided by <a href="http://poraodojuca.net">Porão do Juca</a>.
 
 </footer>
-        </div>
-      </div>
-    </section>
-  </div>
-  <script>
-      jQuery(function () {
-          SphinxRtdTheme.Navigation.enable(true);
-      });
-  </script> 
+	</div>
+	</div>
+	  
 
-</body>
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+    <script type="text/javascript" src="_static/documentation_options.js">
+
+    </script>
+    <script type="text/javascript" src="_static/jquery.js">
+
+    </script>
+    <script type="text/javascript" src="_static/underscore.js">
+
+    </script>
+    <script type="text/javascript" src="_static/_sphinx_javascript_frameworks_compat.js">
+
+    </script>
+    <script type="text/javascript" src="_static/doctools.js">
+
+    </script>
+    <script type="text/javascript" src="_static/sphinx_highlight.js">
+
+    </script>
+
+  
+
+   <script type="text/javascript"
+           src="_static/js/theme.js"></script>
+
+   <script type="text/javascript"
+           src="_static/js/pdj.js"></script>
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+  </body>
 </html>
