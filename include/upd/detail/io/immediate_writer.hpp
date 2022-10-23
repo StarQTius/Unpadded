@@ -6,8 +6,6 @@
 #include "../../upd.hpp"
 #include "../type_traits/require.hpp"
 
-#include "../def.hpp"
-
 namespace upd {
 namespace detail {
 
@@ -21,20 +19,14 @@ class immediate_writer {
   const D &derived() const { return reinterpret_cast<const D &>(*this); }
 
 public:
-  //! \name Immediate writing functions
-  //! \brief Call the `write_to` member function of the derived class
-  //! \details
-  //!   These functions may be invoked on hardware registers and output functors and iterators
-  //! @{
-
   template<typename Dest_F, UPD_REQUIREMENT(output_invocable, Dest_F)>
   void operator>>(Dest_F &&dest) {
-    derived().write_to(FWD(dest));
+    derived().write_to(UPD_FWD(dest));
   }
 
   template<typename Dest_F, UPD_REQUIREMENT(output_invocable, Dest_F)>
   void operator>>(Dest_F &&dest) const {
-    derived().write_to(FWD(dest));
+    derived().write_to(UPD_FWD(dest));
   }
 
   template<typename It, UPD_REQUIREMENT(output_byte_iterator, It)>
@@ -56,8 +48,6 @@ public:
   void operator>>(It src) const {
     write_to(src);
   }
-
-  //! @}
 };
 
 //! \class ImmediateWriter_CRTP
@@ -78,5 +68,3 @@ public:
 
 } // namespace detail
 } // namespace upd
-
-#include "../undef.hpp" // IWYU pragma: keep

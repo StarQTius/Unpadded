@@ -18,8 +18,6 @@
 #include "typelist.hpp"
 #include "upd.hpp"
 
-#include "detail/def.hpp"
-
 namespace upd {
 
 template<typename, endianess, signed_mode, typename...>
@@ -47,18 +45,10 @@ template<
     typename T,
     require<std::is_same<decltype(read_as<T, endianess::BUILTIN, signed_mode::BUILTIN>(nullptr)), Target_T>::value> = 0>
 T &&normalize(T &&x) {
-  return FWD(x);
+  return UPD_FWD(x);
 }
 
 //! @}
-
-} // namespace detail
-
-template<std::size_t I, typename D, endianess Endianess, signed_mode Signed_Mode, typename... Ts>
-decltype(std::declval<detail::tuple_base<D, Endianess, Signed_Mode, Ts...>>().template get<I>())
-get(const detail::tuple_base<D, Endianess, Signed_Mode, Ts...> &);
-
-namespace detail {
 
 //! \brief Return the size in bytes occupied by the serialization of instances of the provided type (if serializable)
 template<typename T, detail::require_is_serializable<T> = 0>
@@ -126,15 +116,15 @@ public:
 
   //! \brief Copy each element of a tuple-like object into the content
   //! \param t Tuple-like object to copy from
-  template<typename T>
-  D &operator=(T &&t) {
-    lay_tuple(make_index_sequence<sizeof...(Ts)>{}, FWD(t));
+  template<typename Tuple, UPD_REQUIREMENT(is_tuple, Tuple)>
+  D &operator=(Tuple &&t) {
+    lay_tuple(make_index_sequence<sizeof...(Ts)>{}, UPD_FWD(t));
     return derived();
   }
 
   //! \brief Unserialize one of the value held by the object
   //! \tparam I Index of the requested value
-  //! \return A copy of the serialized value or an array if I designate an array type
+  //! \return A copy of the serialized value or a `std::array` instance if `I` designates an array type
 #ifdef DOXYGEN
   template<std::size_t I>
   auto get() const;
@@ -162,15 +152,15 @@ public:
   }
 
   //! \brief Invoke a functor with the stored values
-  //! \param ftor Functor to be invoked
-  //! \return ftor(this->get<Is>()...) with Is = 0, 1, ..., sizeof...(Ts)
+  //! \param ftor Callback to be invoked
+  //! \return `ftor(upd::get<Is>()...)` with `Is` = `0`, `1`, ..., `sizeof...(Ts)`
 #ifdef DOXYGEN
   template<typename F>
   auto invoke(F &&ftor) const;
 #else
   template<typename F>
   detail::return_t<F> invoke(F &&ftor) const {
-    return invoke_impl(FWD(ftor), make_index_sequence<sizeof...(Ts)>{});
+    return invoke_impl(UPD_FWD(ftor), make_index_sequence<sizeof...(Ts)>{});
   }
 #endif
 
@@ -185,49 +175,54 @@ protected:
   //! \brief Lay the element of a tuple-like object into the content
   template<std::size_t... Is, typename T>
   void lay_tuple(detail::index_sequence<Is...> is, T &&t) {
-    using upd::get;
-
-    lay(is, get<Is>(FWD(t))...);
+    lay(is, t.template get<Is>()...);
   }
 
 private:
   //! \brief Unserialize the tuple content and forward it as parameters to the provided functor
   template<typename F, std::size_t... Is>
   detail::return_t<F> invoke_impl(F &&ftor, detail::index_sequence<Is...>) const {
-    return FWD(ftor)(detail::normalize<Ts>(get<Is>())...);
+    return UPD_FWD(ftor)(detail::normalize<Ts>(get<Is>())...);
   }
 };
 
 } // namespace detail
 
-//! \brief Call the member function 'tuple_base::get'
-//! \details This function create a coherent interface 'std::tuple' for the sake of genericity
+//! \brief Call the member function `get()` from an Unpadded tuple-like instance
+//!
+//! This function create a coherent interface with std::tuple for the sake of genericity.
+//!
 //! \param t Tuple to get a value from
+#if defined(DOXYGEN)
+template<std::size_t I, typename D, endianess Endianess, signed_mode Signed_Mode, typename... Ts>
+auto get(const detail::tuple_base<D, Endianess, Signed_Mode, Ts...> &t)
+#else  // defined(DOXYGEN)
 template<std::size_t I, typename D, endianess Endianess, signed_mode Signed_Mode, typename... Ts>
 decltype(std::declval<detail::tuple_base<D, Endianess, Signed_Mode, Ts...>>().template get<I>())
-get(const detail::tuple_base<D, Endianess, Signed_Mode, Ts...> &t) {
+get(const detail::tuple_base<D, Endianess, Signed_Mode, Ts...> &t)
+#endif // defined(DOXYGEN)
+{
   return t.template get<I>();
 }
 
-//! \brief Call the member function 'tuple_base::set'
-//! \details This function create a coherent interface 'std::tuple' for the sake of genericity
+//! \brief Call the member function `set()` from an Unpadded tuple-like instance
+//!
+//! This function create a coherent interface std::tuple for the sake of genericity
+//!
 //! \param t Tuple to set a value in
 //! \param value Value to set
 template<std::size_t I, typename D, endianess Endianess, signed_mode Signed_Mode, typename... Ts, typename U>
 void set(detail::tuple_base<D, Endianess, Signed_Mode, Ts...> &t, U &&value) {
-  return t.template set<I>(FWD(value));
+  return t.template set<I>(UPD_FWD(value));
 }
 
 //! \brief Binds a byte sequence to a tuple view
-//! \details
-//!   Once bound, the byte sequence content can be read and modified as it were the content of a 'tuple' object.
-//!   The byte sequence and the tuple view are bound throught an iterator. It must at least be a forward iterator, but
-//!   tuple views are faster with random access iterators. Best case would be a non-volatile plain pointer, as it can be
-//!   called with memcpy.
-//! \tparam It type of the iterators used for binding with the byte sequence
-//! \tparam Endianess endianess of the stored data
-//! \tparam Signed_Mode signed mode of the stored data
-//! \tparam Ts... types of the serialized values
+//!
+//! Once bound, the byte sequence content can be read and modified as it were the content of a \ref<tuple> tuple
+//! instance. The byte sequence and the tuple view are bound through an iterator. It must at least be a forward
+//! iterator, but tuple views are faster with random access iterators. Best case would be a non-volatile plain pointer,
+//! as it can be called with memcpy. \tparam It Type of the iterator used for binding with the byte sequence \tparam
+//! Endianess, Signed_Mode Serialization parameters \tparam Ts... Types of the serialized values
 template<typename It, endianess Endianess, signed_mode Signed_Mode, typename... Ts>
 class tuple_view
     : public detail::tuple_base<tuple_view<It, Endianess, Signed_Mode, Ts...>, Endianess, Signed_Mode, Ts...> {
@@ -236,17 +231,18 @@ class tuple_view
 public:
   using base_t::operator=;
 
-  //! \brief Bind the view to a byte sequence throught an iterator
+  //! \brief Bind the view to a byte sequence through an iterator
   //! \param src Iterator to the start of the byte sequence
   explicit tuple_view(const It &src) : m_begin{src}, m_end{src} { std::advance(m_end, base_t::size); }
 
-  //! \name Iterability
-  //! @{
+  //! \brief Beginning of the byte sequence
   const It &begin() const { return m_begin; }
+
+  //! \brief End of the byte sequence
   const It &end() const { return m_end; }
   //! @}
 
-  //! \brief Get the iterator associated to the byte sequence
+  //! \copydoc begin()
   const It &src() const { return m_begin; }
 
 private:
@@ -254,52 +250,58 @@ private:
 };
 
 //! \brief Bind a byte sequence to a tuple view
-//! \tparam Ts... types held by the tuple
-//! \tparam Endianess target endianess for serialization
-//! \tparam Signed_Mode target signed representation for serialization
-//! \param src start of the byte sequence
-//! \return a 'tuple_view' object bound to the byte sequence
+//! \tparam Ts... Types held by the tuple
+//! \tparam Endianess Target endianess for serialization
+//! \tparam Signed_Mode Target signed representation for serialization
+//! \param src Start of the byte sequence
+//! \return a \ref<tuple_view> tuple_view instance bound to the byte sequence
+//! \related tuple_view
 template<typename... Ts, typename It, endianess Endianess, signed_mode Signed_Mode>
 tuple_view<It, Endianess, Signed_Mode, Ts...>
 make_view(endianess_h<Endianess>, signed_mode_h<Signed_Mode>, const It &src) {
   return tuple_view<It, Endianess, Signed_Mode, Ts...>{src};
 }
 
-//! \brief Bind a byte sequence to a tuple view with native serialization parameters
-//! \tparam Ts... types held by the tuple
-//! \param src start of the byte sequence
-//! \return a 'tuple_view' object bound to the byte sequence
-template<typename... Ts, typename It>
-tuple_view<It, endianess::BUILTIN, signed_mode::BUILTIN, Ts...> make_view(const It &src) {
-  return tuple_view<It, endianess::BUILTIN, signed_mode::BUILTIN, Ts...>{src};
-}
-
 //! \upd_doc{MakeView_Tuple}
-//! \brief Bind a view to a tuple
+//! \brief Bind a view to a slice of a \ref<tuple> tuple
 //! \tparam I First element in the view
 //! \tparam L Number of elements in the view
-//! \param tuple tuple to bind the view to
-//! \return a tuple view including every elements in the given range
+//! \param tuple Tuple to bind the view to
+//! \return a \ref<tuple_view> tuple_view including every elements in the given range
+//! \related tuple_view
 
 //! \copydoc MakeView_Tuple
+#if defined(DOXYGEN)
 template<std::size_t I, std::size_t L, endianess Endianess, signed_mode Signed_Mode, typename... Ts>
-auto make_view(tuple<Endianess, Signed_Mode, Ts...> &tuple) -> decltype(tuple.template view<I, L>()) {
-  return tuple.template view<I, L>();
-}
-//! \copydoc MakeView_Tuple
+auto make_view(tuple<Endianess, Signed_Mode, Ts...> &tuple)
+#else  // defined(DOXYGEN)
 template<std::size_t I, std::size_t L, endianess Endianess, signed_mode Signed_Mode, typename... Ts>
-auto make_view(const tuple<Endianess, Signed_Mode, Ts...> &tuple) -> decltype(tuple.template view<I, L>()) {
+auto make_view(tuple<Endianess, Signed_Mode, Ts...> &tuple) -> decltype(tuple.template view<I, L>())
+#endif // defined(DOXYGEN)
+{
   return tuple.template view<I, L>();
 }
 
-//! \brief Unaligned storage with fixed target types
-//! \details
-//!   The object holds values of provided type in an unaligned maners (ie, there is no padding between two consecutive
-//!   values).
-//! \tparam Endianess endianess of the stored data
-//! \tparam Signed_Mode signed mode of the stored data
+//! \copydoc MakeView_Tuple
+#if defined(DOXYGEN)
+template<std::size_t I, std::size_t L, endianess Endianess, signed_mode Signed_Mode, typename... Ts>
+auto make_view(const tuple<Endianess, Signed_Mode, Ts...> &tuple)
+#else  // defined(DOXYGEN)
+template<std::size_t I, std::size_t L, endianess Endianess, signed_mode Signed_Mode, typename... Ts>
+auto make_view(const tuple<Endianess, Signed_Mode, Ts...> &tuple) -> decltype(tuple.template view<I, L>())
+#endif // defined(DOXYGEN)
+{
+  return tuple.template view<I, L>();
+}
+
+//! \brief Unaligned storage tuple
+//!
+//! \ref<tuple> tuple instances hold values like a tuple but in an unaligned manner (i.e., there is no padding between
+//! two consecutive values).
+//!
+//! \tparam Endianess, Signed_Mode Serialization parameters
 //! \tparam Ts... Types of the serialized values
-template<endianess Endianess = endianess::BUILTIN, signed_mode Signed_Mode = signed_mode::BUILTIN, typename... Ts>
+template<endianess Endianess, signed_mode Signed_Mode, typename... Ts>
 class tuple : public detail::tuple_base<tuple<Endianess, Signed_Mode, Ts...>, Endianess, Signed_Mode, Ts...> {
   using base_t = detail::tuple_base<tuple<Endianess, Signed_Mode, Ts...>, Endianess, Signed_Mode, Ts...>;
   using types_t = typename base_t::types_t;
@@ -308,63 +310,85 @@ class tuple : public detail::tuple_base<tuple<Endianess, Signed_Mode, Ts...>, En
 public:
   using base_t::operator=;
 
-  //! \brief Initialize the content with default constructed value
+  //! \brief Initialize the internal storage with default constructed values
   tuple() : tuple(Ts{}...) {}
 
   //! \brief Serialize the provided values
-  //! \tparam Args... Serialized values types
   //! \param args... Values to be serialized
   explicit tuple(const Ts &...args) { base_t::lay(detail::make_index_sequence<sizeof...(Ts)>{}, args...); }
 
-  //! \name Iterability
-  //! @{
+#if __cplusplus >= 201703L
+  //! \brief (C++17) Serialize the provided values
+  //!
+  //! \tparam Endianess, Signed_Mode Serialization parameters
+  //! \param values... Values to be serialized
+  explicit tuple(endianess_h<Endianess>, signed_mode_h<Signed_Mode>, const Ts &...values) : tuple(values...) {}
+#endif // __cplusplus >= 201703L
+
+  //! \brief Beginning of the internal storage
   byte_t *begin() { return m_storage; }
-  byte_t *end() { return m_storage + base_t::size; }
+
+  //! \copydoc begin()
   const byte_t *begin() const { return m_storage; }
+
+  //! \brief End of the internal storage
+  byte_t *end() { return m_storage + base_t::size; }
+
+  //! \copydoc end()
   const byte_t *end() const { return m_storage + base_t::size; }
-  //! @}
 
   //! \brief Access the object content
-  //! \details There is no bound check performed.
+  //!
+  //! \warning There is no bound check performed.
+  //!
   //! \param i Index of the accessed byte
   byte_t &operator[](std::size_t i) { return m_storage[i]; }
 
   //! \brief Access the object content
-  //! \details There is no bound check performed.
+  //!
+  //! \warning There is no bound check performed.
+  //!
   //! \param i Index of the accessed byte
   const byte_t &operator[](std::size_t i) const { return m_storage[i]; }
 
-#if __cplusplus >= 201703L
-  //! \brief (C++17) Serialize the provided values
-  //! \detail
-  //!   Endianess and signed integer representation is provided throught the two first parameters.
-  //! \param values... Values to be serialized
-  //! \see format.hpp
-  explicit tuple(endianess_h<Endianess>, signed_mode_h<Signed_Mode>, const Ts &...values) : tuple(values...) {}
-#endif // __cplusplus >= 201703L
-
-  //! \brief Get the 'begin' iterator
+  //! \copydoc begin()
   byte_t *src() { return begin(); }
+
+  //! \copydoc begin()
   const byte_t *src() const { return begin(); }
 
   //! \brief Make a view out of a subset of the tuple
   //! \tparam I First element in the view
   //! \tparam L Number of elements in the view
-  //! \return a tuple view including every elements in the given range
+  //! \return a \ref<tuple_view> tuple_view instance including every elements in the given range
+#if defined(DOXYGEN)
+  template<std::size_t I, std::size_t L>
+  auto view()
+#else  // defined(DOXYGEN)
   template<std::size_t I, std::size_t L>
   decltype(detail::make_view_from_typelist<Endianess, Signed_Mode>((byte_t *)nullptr, detail::clip<types_t, I, L>{}))
-  view() {
+  view()
+#endif // defined(DOXYGEN)
+  {
     using detail::clip;
     using detail::sum;
+
     constexpr auto offset = sum<clip<sizes_t, 0, I>>::value;
+
     return detail::make_view_from_typelist<Endianess, Signed_Mode>(begin() + offset, clip<types_t, I, L>{});
   }
 
   //! \copydoc view
+#if defined(DOXYGEN)
+  template<std::size_t I, std::size_t L>
+  auto view() const
+#else  // defined(DOXYGEN)
   template<std::size_t I, std::size_t L>
   decltype(detail::make_view_from_typelist<Endianess, Signed_Mode>((const byte_t *)nullptr,
                                                                    detail::clip<types_t, I, L>{}))
-  view() const {
+  view() const
+#endif // defined(DOXYGEN)
+  {
     using detail::clip;
     using detail::sum;
     constexpr auto offset = sum<clip<sizes_t, 0, I>>::value;
@@ -378,68 +402,49 @@ private:
 template<endianess Endianess, signed_mode Signed_Mode>
 class tuple<Endianess, Signed_Mode> : public detail::tuple_base<tuple<Endianess, Signed_Mode>, Endianess, Signed_Mode> {
 public:
-  //! \name Iterability
-  //! @{
   constexpr byte_t *begin() const { return nullptr; }
   constexpr byte_t *end() const { return nullptr; }
-  //! @}
-
-  //! \brief Get the 'begin' iterator
   constexpr byte_t *src() const { return begin(); }
 };
 
-//! \brief Construct a tuple object provided constant lvalue to values
-//! \tparam Endianess Target endianess for serialization
-//! \tparam Signed_Mode Target signed representation for serialization
-//! \tparam Args... Deduced types of the provided values.
+//! \brief Construct a \ref<tuple> tuple instance from provided values
+//! \tparam Endianess, Signed_Mode Serialization parameters
 //! \param args... Values to be serialized into the return value
-//! \return tuple object holding a serialized copy of the provided values.
+//! \return a \ref<tuple> tuple instance initialized from `args...`
+//! \related tuple
 template<endianess Endianess, signed_mode Signed_Mode, typename... Args>
 tuple<Endianess, Signed_Mode, Args...>
 make_tuple(endianess_h<Endianess>, signed_mode_h<Signed_Mode>, const Args &...args) {
   return tuple<Endianess, Signed_Mode, Args...>{args...};
 }
 
-//! \brief Construct a tuple object provided constant lvalue to values using native data representation
-//! \param args... Values to be serialized into the return value
-//! \return a tuple object holding a serialized copy of the provided values.
-template<typename... Args>
-tuple<endianess::BUILTIN, signed_mode::BUILTIN, Args...> make_tuple(const Args &...args) {
-  return tuple<endianess::BUILTIN, signed_mode::BUILTIN, Args...>{args...};
-}
-
-//! \brief Default construct a tuple object
-//! \tparam Args... deduced types of the provided values
-//! \tparam Endianess target endianess for serialization
-//! \tparam Signed_Mode target signed representation for serialization
+//! \brief Construct a \ref<tuple> tuple instance holding default values
+//! \tparam Args... Types of the values held by the tuple
+//! \tparam Endianess, Signed_Mode Serialization parameters
+//! \related tuple
 template<typename... Args, endianess Endianess, signed_mode Signed_Mode>
 tuple<Endianess, Signed_Mode, Args...> make_tuple(endianess_h<Endianess>, signed_mode_h<Signed_Mode>) {
   return tuple<Endianess, Signed_Mode, Args...>{};
 }
 
-//! \brief Default construct a tuple object with native serialization parameters
-//! \tparam Args... deduced types of the provided values
-template<typename... Args>
-tuple<endianess::BUILTIN, signed_mode::BUILTIN, Args...> make_tuple() {
-  return tuple<endianess::BUILTIN, signed_mode::BUILTIN, Args...>{};
-}
-
 } // namespace upd
 
-//! \brief Partial specialization of 'std::tuple_size' for 'tuple'
-//! \detail
-//!   This specialization enables to use structured binding with 'tuple'
 template<upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Ts>
 struct std::tuple_size<upd::tuple<Endianess, Signed_Mode, Ts...>> {
   constexpr static auto value = sizeof...(Ts);
 };
 
-//! \brief Partial specialization of 'std::tuple_element' for 'tuple'
-//! \detail
-//!   This specialization enables to use structured binding with 'tuple'
 template<std::size_t I, upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Ts>
 struct std::tuple_element<I, upd::tuple<Endianess, Signed_Mode, Ts...>> {
   using type = decltype(std::declval<upd::tuple<Endianess, Signed_Mode, Ts...>>().template get<I>());
 };
 
-#include "detail/undef.hpp" // IWYU pragma: keep
+template<typename It, upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Ts>
+struct std::tuple_size<upd::tuple_view<It, Endianess, Signed_Mode, Ts...>> {
+  constexpr static auto value = sizeof...(Ts);
+};
+
+template<std::size_t I, typename It, upd::endianess Endianess, upd::signed_mode Signed_Mode, typename... Ts>
+struct std::tuple_element<I, upd::tuple_view<It, Endianess, Signed_Mode, Ts...>> {
+  using type = decltype(std::declval<upd::tuple<Endianess, Signed_Mode, Ts...>>().template get<I>());
+};

@@ -16,14 +16,17 @@ std::int64_t identity(std::int64_t x) { return x; }
 void void_procedure() {}
 
 constexpr auto kring =
-    upd::make_keyring(upd::make_flist(UPD_CTREF(check_64), UPD_CTREF(identity), UPD_CTREF(void_procedure)));
+    upd::make_keyring(upd::make_flist(UPD_CTREF(check_64), UPD_CTREF(identity), UPD_CTREF(void_procedure)),
+                      upd::little_endian,
+                      upd::two_complement);
 
 static upd::action reply_hook;
 
 void reply(const upd::byte_t (&payload)[16]) { reply_hook(std::begin(payload)); }
 void reply_std_array(const std::array<upd::byte_t, 16> &payload) { reply_hook(payload.data()); }
 
-constexpr auto reply_kring = upd::make_keyring(upd::make_flist(UPD_CTREF(reply), UPD_CTREF(reply_std_array)));
+constexpr auto reply_kring = upd::make_keyring(
+    upd::make_flist(UPD_CTREF(reply), UPD_CTREF(reply_std_array)), upd::little_endian, upd::two_complement);
 
 extern "C" void setUp() {}
 

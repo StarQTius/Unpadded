@@ -8,7 +8,7 @@
 #include "detector.hpp"
 #include "typelist.hpp"
 
-#include "../def.hpp"
+#include "../../upd.hpp"
 
 namespace upd {
 namespace detail {
@@ -90,8 +90,8 @@ using return_t = typename examine_invocable<F>::return_type;
 
 UPD_DETAIL_MAKE_DETECTOR(
     is_invocable_impl,
-    PACK(typename F),
-    PACK(typename = typename std::enable_if<!std::is_convertible<examine_invocable<F>, no_signature>::value>::type))
+    UPD_PACK(typename F),
+    UPD_PACK(typename = typename std::enable_if<!std::is_convertible<examine_invocable<F>, no_signature>::value>::type))
 
 //! \brief Indicates whether `F` is an invocable type
 template<typename F>
@@ -129,9 +129,9 @@ struct return_type_size<void(Args...)> : std::integral_constant<std::size_t, 0> 
 
 UPD_DETAIL_MAKE_DETECTOR(
     has_signature_impl,
-    PACK(typename F, typename R, typename... Args),
-    PACK(typename = typename std::enable_if<
-             std::is_convertible<decltype(std::declval<F>()(std::declval<Args>()...)), R>::value>::type))
+    UPD_PACK(typename F, typename R, typename... Args),
+    UPD_PACK(typename = typename std::enable_if<
+                 std::is_convertible<decltype(std::declval<F>()(std::declval<Args>()...)), R>::value>::type))
 
 //! \name
 //! \brief Indicates whether the instances of `F` can be invoked as they were functions of type `R(Args...)`
@@ -146,5 +146,3 @@ struct has_signature<F, R(Args...)> : decltype(has_signature_impl<F, R, Args...>
 
 } // namespace detail
 } // namespace upd
-
-#include "../undef.hpp" // IWYU pragma: keep

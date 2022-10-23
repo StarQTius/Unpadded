@@ -8,8 +8,6 @@
 #include "../type_traits/remove_cv_ref.hpp"
 #include "../type_traits/require.hpp"
 
-#include "../def.hpp"
-
 namespace upd {
 namespace detail {
 
@@ -23,25 +21,20 @@ class immediate_process {
   const D &derived() const { return reinterpret_cast<const D &>(*this); }
 
 public:
-  //! \brief Normalize the parameters and invoke the derived instance on them
-  //! \param input Byte input to process
-  //! \param output Byte output to write to
-  //! \return the result of the invocation of the derived instance on the normalized parameters
   template<typename Input,
            typename Output,
            UPD_REQUIRE(is_input_byte_iterator<decay_t<Input>>::value ||
                        is_output_byte_iterator<decay_t<Output>>::value)>
   R operator()(Input &&input, Output &&output) {
-    return derived()(normalize(FWD(input), reader_tag_t{}), normalize(FWD(output), writer_tag_t{}));
+    return derived()(normalize(UPD_FWD(input), reader_tag_t{}), normalize(UPD_FWD(output), writer_tag_t{}));
   }
 
-  //! \copydoc operator()
   template<typename Input,
            typename Output,
            UPD_REQUIRE(is_input_byte_iterator<decay_t<Input>>::value ||
                        is_output_byte_iterator<decay_t<Output>>::value)>
   R operator()(Input &&input, Output &&output) const {
-    return derived()(normalize(FWD(input), reader_tag_t{}), normalize(FWD(output), writer_tag_t{}));
+    return derived()(normalize(UPD_FWD(input), reader_tag_t{}), normalize(UPD_FWD(output), writer_tag_t{}));
   }
 
 private:
@@ -65,13 +58,13 @@ private:
   //! Behave as an identity function
   template<typename F>
   F &&normalize(F &&ftor, ...) {
-    return FWD(ftor);
+    return UPD_FWD(ftor);
   }
 
   //! Behave as an identity function
   template<typename F>
   F &&normalize(F &&ftor, ...) const {
-    return FWD(ftor);
+    return UPD_FWD(ftor);
   }
 
   //! Wrap the iterator to get an input functor
@@ -113,5 +106,3 @@ private:
 
 } // namespace detail
 } // namespace upd
-
-#include "../undef.hpp" // IWYU pragma: keep

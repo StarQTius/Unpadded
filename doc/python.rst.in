@@ -1,0 +1,15 @@
+Extending @PROJECT_NAME@ to Python
+==================================
+
+API References
+--------------
+
+``unpack_keyring``
+~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: upd::py::unpack_keyring
+
+``declare_dispatcher``
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: upd::py::declare_dispatcher

@@ -14,8 +14,7 @@
 #include "format.hpp"
 #include "tuple.hpp"
 #include "unevaluated.hpp"
-
-#include "detail/def.hpp"
+#include "upd.hpp"
 
 namespace upd {
 
@@ -24,38 +23,43 @@ class key : public key<Index_T, Index, detail::signature_t<F>, Endianess, Signed
   static_assert(detail::is_invocable<F>::value, UPD_ERROR_NOT_INVOCABLE(F));
 };
 
-//! \brief Packet generator for invoking an action on a slave device
+//! \brief Packet generator for invoking an action on a callee device
 //!
 //! Keys will generate packets whose structure is the following:
 //!   - index of the action (value: `Index`; size: `sizeof Index`);
 //!   - payload (size: `sizeof(Args) + ...`);
 //!
-//! The index is used by the slave to determine which action is addressed (see `dispatcher`). The content of the payload
-//! is choosen by the user. In the following example \code int function1(uint8_t, uint16_t); int function2(uint16_t,
-//! uint32_t); int function3(uint32_t, uint64_t);
+//! The index is used by the callee to determine which action is addressed. The content of the payload is choosen by the
+//! user. In the following example :
+//!
+//! \code
+//! int function1(uint8_t, uint16_t);
+//! int function2(uint16_t, uint32_t);
+//! int function3(uint32_t, uint64_t);
 //!
 //! constexpr keyring keyring{flist<function1, function2, function3>};
 //!
 //! int main() {
 //!   auto key = keyring.get<function2>();
-//!   key(7, 21) >> /*an output invocable*/;
+//!   key(7, 21).write_to(/*an output invocable*/);
 //! }
 //! \endcode
-//! the packet sent will have the following content:
+//!
+//! The packet sent will have the following content:
 //!   - 1 byte of index (value: 1)
 //!   - 2 bytes for the first argument of `function2` (type: `uint16_t`; value: 7)
 //!   - 4 bytes for the second argument of `function2` (type: `uint32_t`; value: 21)
 //!
-//! When the packet has been processed by the slave device and the resulting value is sent back to the master device,
-//! keys can be used to extract this value from the slave response. The syntax to achieve that is `auto x = key << /*an
-//! input invocable*/`. However, key instances being templated, it is hard to store them for later. If blocking the
-//! program until the slave device response is not a viable option, it is possible to save a callback to be executed
-//! once the slave device has finished using the `ticket` class.
+//! When the packet has been processed by the callee device and the resulting value is sent back to the caller device,
+//! keys can be used to extract this value from the callee response. The syntax to achieve that is `auto x =
+//! key.read_from(/*an input invocable*/)`. However, \ref<key> key instances being templated, it is hard to store them
+//! for later. If blocking the program until the callee device response is not a viable option, it is possible to save a
+//! callback to be executed once the callee device has finished using the \ref<action> action or \ref<no_storage_action>
+//! no_storage_action classes.
 //!
 //! \tparam Index Index of the action in the keyring
-//! \tparam F Signature of the invocable associated with the key
-//! \tparam Endianess Byte order of the integers in the generated packets
-//! \tparam Signed_Mode Representation of signed integers in the generated packets
+//! \tparam F Signature of the callback associated with the key
+//! \tparam Endianess, Signed_Mode Serialization parameters
 #if defined(DOXYGEN)
 template<typename Index_T, Index_T Index, typename F, endianess Endianess, signed_mode Signed_Mode>
 class key
@@ -73,10 +77,10 @@ public:
   //! \brief Signature of the invocable associated with this key
   using signature_t = R(Args...);
 
-  //! \brief Return type of `read_from`(i.e. the return type of the invocable without its reference and cv-qualifier)
+  //! \brief Return type of read_from() (i.e. the return type of the callback without its reference and cv-qualifier)
   using return_t = detail::remove_cv_ref_t<R>;
 
-  //! \brief Type of the tuple which can be invoked on this key (like so for example: `t.invoke(key)`)
+  //! \brief Type of the tuple which can be invoked on this key (e.g. `t.invoke(key)`)
   using tuple_t = tuple<Endianess, Signed_Mode, detail::remove_cv_ref_t<Args>...>;
 
   //! \brief Equals the `Index` template parameter
@@ -93,9 +97,9 @@ public:
 
   //! \brief Generate a packet ready to be sent
   //!
-  //! This allows the following syntax : `key(x1, x2, x3, ...) >> dest` (with `dest` being an output invocable).
-  //! `dest_f` is invoked on every byte representing the data passed as parameter, in the action they appear in the
-  //! packet.
+  //! This allows the following syntax : `key(x1, x2, x3, ...).write_to(dest)` (with `dest` being an output sequence as
+  //! a callback). `dest` is invoked on every byte representing the data passed as parameter, in the action they appear
+  //! in the packet.
   //!
   //! \param args... Values to insert in the payload
   //! \return a temporary object allowing the syntax mentioned above
@@ -110,22 +114,21 @@ public:
 
   using detail::immediate_reader<key<Index_T, Index, R(Args...), Endianess, Signed_Mode>, return_t>::read_from;
 
-  //! \brief Unserialize a value from a packet sent by a slave device in response to a packet generated by this key
+  //! \brief Unserialize a value from a packet sent by a callee device in response to a packet generated by this key
   //! \copydoc ImmediateReader_CRTP
   //!
   //! \param src Input invocable to the packet
   //! \return the unserialized value
-  template<typename Src, REQUIREMENT(input_invocable, Src), REQUIRE_CLASS(!std::is_void<return_t>::value)>
+  template<typename Src, UPD_REQUIREMENT(input_invocable, Src), UPD_REQUIRE_CLASS(!std::is_void<return_t>::value)>
   return_t read_from(Src &&src) const {
     tuple<Endianess, Signed_Mode, detail::remove_cv_ref_t<R>> retval;
     for (auto &byte : retval)
-      byte = FWD(src)();
+      byte = UPD_FWD(src)();
 
     return retval.template get<0>();
   }
 
-  //! \copydoc read_from
-  template<typename Src, REQUIREMENT(input_invocable, Src), REQUIRE_CLASS(std::is_void<return_t>::value)>
+  template<typename Src, UPD_REQUIREMENT(input_invocable, Src), UPD_REQUIRE_CLASS(std::is_void<return_t>::value)>
   void read_from(Src &&) const {}
 
   UPD_SFINAE_FAILURE_MEMBER(read_from, UPD_ERROR_NOT_INPUT(src))
@@ -133,15 +136,15 @@ public:
   //! \brief Plan an action to perform when a packet resulting from the execution of the action is received
   //! \param ftor Callback which will carry out the action
   //! \return an action holding the provided hook
-  template<typename F, REQUIREMENT(invocable, F)>
+  template<typename F, UPD_REQUIREMENT(invocable, F)>
   action with_hook(F &&ftor) const {
-    return action{FWD(ftor), endianess_h<Endianess>{}, signed_mode_h<Signed_Mode>{}};
+    return action{UPD_FWD(ftor), endianess_h<Endianess>{}, signed_mode_h<Signed_Mode>{}};
   }
 
   //! \copybrief with_hook
   //! \tparam Ftor Callback which will carry out the action
   //! \return an action holding the provided hook
-  template<typename F, F Ftor, REQUIREMENT(invocable, F)>
+  template<typename F, F Ftor, UPD_REQUIREMENT(invocable, F)>
   no_storage_action with_hook(unevaluated<F, Ftor>) const {
     return no_storage_action{unevaluated<F, Ftor>{}, endianess_h<Endianess>{}, signed_mode_h<Signed_Mode>{}};
   }
@@ -150,7 +153,7 @@ public:
   //! \copybrief with_hook
   //! \tparam Ftor Callback which will carry out the action
   //! \return an action holding the provided hook
-  template<auto &Ftor, REQUIREMENT(invocable, decltype(Ftor))>
+  template<auto &Ftor, UPD_REQUIREMENT(invocable, decltype(Ftor))>
   auto with_hook() const {
     return with_hook(unevaluated<decltype(Ftor), Ftor>{});
   }
@@ -161,7 +164,5 @@ public:
 
 template<typename Index_T, Index_T Index, endianess Endianess, signed_mode Signed_Mode>
 class key<Index_T, Index, detail::no_signature, Endianess, Signed_Mode> {};
-
-#include "detail/undef.hpp" // IWYU pragma: keep
 
 } // namespace upd

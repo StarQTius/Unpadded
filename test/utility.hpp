@@ -5,19 +5,6 @@
 
 #include "product.hpp"
 
-#define PACK(...) __VA_ARGS__
-#define DECLVAL(...) std::declval<PACK(__VA_ARGS__)>()
-#define DETECT(...) decltype(__VA_ARGS__, DECLVAL(int)){};
-
-#define INTEGER DECLVAL(int &)
-
-#define BYTE_PTR DECLVAL(upd::byte_t *)
-#define READABLE DECLVAL(upd::byte_t (&)())
-#define WRITABLE DECLVAL(void (&)(upd::byte_t))
-#define REGISTRY DECLVAL(volatile upd::byte_t &)
-#define WRITABLE DECLVAL(void (&)(upd::byte_t))
-#define FUNCTOR undefined_function
-
 #define MAKE_MULTIOPT(FUNCTION_NAME)                                                                                   \
   template<upd::endianess... Endianesses, upd::signed_mode... Signed_Modes>                                            \
   void FUNCTION_NAME##_multiopt(                                                                                       \

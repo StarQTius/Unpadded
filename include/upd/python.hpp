@@ -32,8 +32,10 @@ namespace upd {
 namespace py {
 namespace detail {
 
+//! \brief Prefix appended to the key names in order to get their name
 constexpr char pykey_prefix[] = "__";
 
+//! \brief Demangle the name of a symbol wrapped in an \ref<unevaluated> unevaluated template instance
 template<typename T>
 std::string demangle(const T &x) {
   int status;
@@ -54,6 +56,11 @@ std::string demangle(const T &x) {
   }
 }
 
+//! \brief Get the demangled name of a symbol wrapped in an \ref<unevaluated> unevaluated template instance as C-style
+//! string
+//!
+//! The returned string is kept valid until the end of the execution of the program as if it had static storage
+//! duration.
 template<typename T>
 const char *demangled_fname(const T &x) {
   static std::string static_name{pykey_prefix + demangle(x)};
@@ -61,6 +68,7 @@ const char *demangled_fname(const T &x) {
   return static_name.c_str();
 }
 
+//! \brief Expose a \ref<key> key template instance to Python
 template<typename Keyring, typename Index_T, Index_T I, typename R, typename... Args, endianess E, signed_mode S>
 void define_pykey(pybind11::module &pymodule, const char *name, Keyring, key<Index_T, I, R(Args...), E, S> k) {
   using key_t = decltype(k);
@@ -95,6 +103,7 @@ void define_pykey(pybind11::module &pymodule, const char *name, Keyring, key<Ind
   pymodule.attr(name + 2) = k;
 }
 
+//! \brief Expose the \ref<key> key template instances of a \ref<keyring> keyring template instance to Python
 template<typename Keyring, std::size_t... Is>
 void define_pykeys(pybind11::module &pymodule, Keyring keyring, std::index_sequence<Is...>) {
   using flist_t = typename Keyring::flist_t;
@@ -110,11 +119,23 @@ void define_pykeys(pybind11::module &pymodule, Keyring keyring, std::index_seque
 
 } // namespace detail
 
+//! \brief Expose every \ref<key> key template instances from a keyring to Python
+//!
+//! For every key in the provided keyring, a Python class with the same name as the callback held by the key will be
+//! defined with the following methods :
+//!
+//!   - `encode(self, *args) -> bytes` : serialize an argument list into a sequence of bytes
+//!   - `decode(self, payload: bytes)` : deserialize a sequence of bytes and return the corresponding value
+//!   - `index(self) -> int` : get the index associated with the key
+//!
+//! \tparam Keyring Keyring holding the keys to expose
+//! \param pymodule Python module inside of which the classes will be defined
 template<typename Keyring, UPD_REQUIREMENT(is_keyring, Keyring)>
 void unpack_keyring(pybind11::module &pymodule, Keyring keyring) {
   detail::define_pykeys(pymodule, keyring, std::make_index_sequence<Keyring::size>{});
 }
 
+//! \brief Expose a \ref<dispatcher> dispatcher template instance made from the given keyring
 template<typename Keyring, UPD_REQUIREMENT(is_keyring, Keyring)>
 void declare_dispatcher(pybind11::module &pymodule, const char *name, Keyring keyring) {
   using namespace pybind11::literals;

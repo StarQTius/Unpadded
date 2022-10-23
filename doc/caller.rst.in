@@ -64,11 +64,20 @@ In non-blocking mode, the ``action`` class must be used to store a callback for 
 API References
 --------------
 
+``key``
+~~~~~~~
+
 .. doxygenclass:: upd::key
   :members:
 
+``action``
+~~~~~~~~~~
+
 .. doxygenclass:: upd::action
   :members:
+
+``no_storage_action``
+~~~~~~~~~~~~~~~~~~~~~
 
 .. doxygenclass:: upd::no_storage_action
   :members:

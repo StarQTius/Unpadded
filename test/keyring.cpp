@@ -28,7 +28,8 @@ constexpr auto ftor_list = upd::make_flist(UPD_CTREF(ftor3),
 static void keyring_DO_get_an_ikey_EXPECT_correct_index() {
   using namespace upd;
 
-  constexpr auto kring = make_keyring(make_flist(UPD_CTREF(function1), UPD_CTREF(function2), UPD_CTREF(function3)));
+  constexpr auto kring = make_keyring(
+      make_flist(UPD_CTREF(function1), UPD_CTREF(function2), UPD_CTREF(function3)), little_endian, two_complement);
   auto k = kring.get(UPD_CTREF(function2));
 
   TEST_ASSERT_EQUAL_UINT(1, k.index);
@@ -37,7 +38,7 @@ static void keyring_DO_get_an_ikey_EXPECT_correct_index() {
 static void keyring_DO_use_make_keyring_EXPECT_correct_behavior() {
   using namespace upd;
 
-  constexpr auto kring = make_keyring(ftor_list);
+  constexpr auto kring = make_keyring(ftor_list, little_endian, two_complement);
   auto k = kring.get(UPD_CTREF(function2));
 
   TEST_ASSERT_EQUAL_UINT(2, k.index);
@@ -60,7 +61,7 @@ static void keyring_DO_get_an_ikey_by_variable_EXPECT_correct_index_cpp17() {
   using namespace upd;
 
   constexpr auto ftor_list = flist<function1, ftor1, function2, ftor2, ftor3, function3>;
-  keyring kring{ftor_list};
+  keyring kring{ftor_list, little_endian, two_complement};
   auto k = kring.get<ftor3>();
 
   TEST_ASSERT_EQUAL_UINT(4, k.index);

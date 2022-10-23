@@ -77,20 +77,37 @@ The latter policy is more appropriate for embedding devices.
 API References
 --------------
 
+``dispatcher``
+~~~~~~~~~~~~~~
+
 .. doxygenclass:: upd::dispatcher
   :members:
+
+``buffered_dispatcher``
+~~~~~~~~~~~~~~~~~~~~~~~
 
 .. doxygenclass:: upd::buffered_dispatcher
   :members:
 
+``single_buffered_dispatcher``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 .. doxygenclass:: upd::single_buffered_dispatcher
   :members:
+
+``double_buffered_dispatcher``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. doxygenclass:: upd::double_buffered_dispatcher
   :members:
 
+``packet_status``
+~~~~~~~~~~~~~~~~~
+
 .. doxygenenum:: upd::packet_status
 
-.. doxygenvariable:: upd::policy::any_action
+Policies
+~~~~~~~~
 
+.. doxygenvariable:: upd::policy::any_action
 .. doxygenvariable:: upd::policy::static_storage_duration_only

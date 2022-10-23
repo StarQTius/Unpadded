@@ -17,8 +17,8 @@ static void action_DO_give_then_return_argument_from_action_EXPECT_unaltered_val
   using namespace upd;
 
   constexpr int argument = 0xabc;
-  auto serialized_argument = upd::make_tuple(argument);
-  auto serialized_return_value = upd::make_tuple(int{0});
+  auto serialized_argument = upd::make_tuple(little_endian, two_complement, argument);
+  auto serialized_return_value = upd::make_tuple(little_endian, two_complement, int{0});
   action return_argument{[](int value) { return value; }};
 
   std::size_t i = 0, j = 0;
@@ -64,13 +64,8 @@ static void action_DO_instantiate_action_with_functor_non_returning_EXPECT_input
   TEST_ASSERT_EQUAL_INT(0, f.output_size());
 }
 
-#define ACTION DECLVAL(action)
-
 int main() {
   using namespace upd;
-
-  DETECT(
-      ACTION(READABLE, WRITABLE), ACTION(READABLE, BYTE_PTR), ACTION(BYTE_PTR, WRITABLE), ACTION(BYTE_PTR, BYTE_PTR));
 
   UNITY_BEGIN();
   RUN_TEST(action_DO_serialize_argument_into_stream_EXPECT_action_getting_unaltered_argument);

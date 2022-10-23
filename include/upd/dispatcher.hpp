@@ -16,8 +16,7 @@
 #include "tuple.hpp"
 #include "typelist.hpp"
 #include "unevaluated.hpp" // IWYU pragma: keep
-
-#include "detail/def.hpp"
+#include "upd.hpp"
 
 // IWYU pragma: no_forward_declare unevaluated
 
@@ -33,7 +32,7 @@ template<action_features Action_Features,
          F Ftor,
          endianess Endianess,
          signed_mode Signed_Mode,
-         REQUIRE(Action_Features == action_features::STATIC_STORAGE_DURATION_ONLY)>
+         UPD_REQUIRE(Action_Features == action_features::STATIC_STORAGE_DURATION_ONLY)>
 no_storage_action make_action() {
   return no_storage_action{unevaluated<F, Ftor>{}, endianess_h<Endianess>{}, signed_mode_h<Signed_Mode>{}};
 }
@@ -43,7 +42,7 @@ template<action_features Action_Features,
          F Ftor,
          endianess Endianess,
          signed_mode Signed_Mode,
-         REQUIRE(Action_Features == action_features::ANY)>
+         UPD_REQUIRE(Action_Features == action_features::ANY)>
 action make_action() {
   return action{Ftor, endianess_h<Endianess>{}, signed_mode_h<Signed_Mode>{}};
 }
@@ -68,12 +67,12 @@ struct actions {
 
 } // namespace detail
 
-//! \brief Action containers able to unserialize byte sequence serialized by an key
+//! \brief Action container able to accept and process action requests
 //!
-//! A dispatcher is constructed from a keyring and is able to unserialize a payload serialized by
-//! an key created from the same keyring. When it happens, the dispatcher calls the
-//! function associated with the key, forwarding the arguments from the payload to the function. The
-//! functions are internally held as `action` objects.
+//! A dispatcher is constructed from a \ref<keyring> keyring instance and is able to unserialize a payload serialized by
+//! a key created from the same keyring. When it happens, the dispatcher calls the callback associated with the key,
+//! forwards the arguments from the payload to the callback. The functions are internally held as \ref<action> action
+//! instances.
 //!
 //! \tparam Keyring Keyring describing the actions to manage
 //! \tparam Action_Features Restriction on stored actions
@@ -114,10 +113,10 @@ public:
   //! The parameters for the action call are extracted from `src` and the return value is inserted into `dest`.
   //! \copydoc ImmediateProcess_CRTP
   //!
-  //! \param src Input invocable
-  //! \param dest Output invocable
+  //! \param src Input sequence as a callback
+  //! \param dest Output sequence as a callback
   //! \return the index of the called action
-  template<typename Src, typename Dest, REQUIREMENT(input_invocable, Src), REQUIREMENT(output_invocable, Dest)>
+  template<typename Src, typename Dest, UPD_REQUIREMENT(input_invocable, Src), UPD_REQUIREMENT(output_invocable, Dest)>
   index_t operator()(Src &&src, Dest &&dest) {
     auto index = get_index(src);
 
@@ -128,18 +127,18 @@ public:
   }
 
   //! \brief Extract an index from a byte sequence and get the action with that index
-  //! \param src Input invocable
+  //! \param src Input sequence as a callback
   //! \return Either a reference to the action if it exists or `nullptr`
-  template<typename Src, REQUIREMENT(input_invocable, Src)>
+  template<typename Src, UPD_REQUIREMENT(input_invocable, Src)>
   action_t *get_action(Src &&src) {
-    auto index = get_index(FWD(src));
+    auto index = get_index(UPD_FWD(src));
     return index < size ? m_actions.content + index : nullptr;
   }
 
   //! \brief Extract an index from a byte sequence
-  //! \param src Input invocable
+  //! \param src Input invocable as a callback
   //! \return The extracted index
-  template<typename Src, REQUIREMENT(input_invocable, Src)>
+  template<typename Src, UPD_REQUIREMENT(input_invocable, Src)>
   index_t get_index(Src &&src) const {
     tuple<endianess, signed_mode, index_t> index_tuple;
 
@@ -149,9 +148,9 @@ public:
     return get<0>(index_tuple);
   }
 
-  //! \brief Replace with an invocable with static storage duration
+  //! \brief Replace with a free function or a callback with static storage duration
   //! \tparam Index Index of the action to replace
-  //! \tparam Ftor Invocable with static storage duration
+  //! \tparam Ftor Free function or callback with static storage duration
   template<index_t Index, typename F, F Ftor>
   void replace(unevaluated<F, Ftor>) {
     static_assert(Index < size, UPD_ERROR_OUT_OF_BOUND(Index));
@@ -162,9 +161,9 @@ public:
   }
 
 #if __cplusplus >= 201703L
-  //! \brief (C++17) Replace with an invocable with static storage duration
+  //! \brief (C++17) Replace with a free function or a callback with static storage duration
   //! \tparam Index Index of the action to replace
-  //! \tparam Ftor Invocable with static storage duration
+  //! \tparam Ftor Free function or callback with static storage duration
   template<index_t Index, auto &Ftor>
   void replace() {
     static_assert(Index < size, UPD_ERROR_OUT_OF_BOUND(Index));
@@ -175,16 +174,16 @@ public:
   }
 #endif // __cplusplus >= 201703L
 
-  //! \brief Replace with an invocable of any kind
+  //! \brief Replace with a callback of any kind
   //! \tparam Index Index of the action to replace
-  //! \param ftor Invocable of any kind
-  template<index_t Index, typename F, REQUIRE_CLASS(Action_Features == action_features::ANY)>
+  //! \param ftor Callback of any kind
+  template<index_t Index, typename F, UPD_REQUIRE_CLASS(Action_Features == action_features::ANY)>
   void replace(F &&ftor) {
     static_assert(Index < size, UPD_ERROR_OUT_OF_BOUND(Index));
     static_assert(std::is_same<detail::at<signatures_t, Index>, detail::signature_t<F>>::value,
                   UPD_ERROR_SIGNATURE_MISMATCH(ftor));
 
-    m_actions.content[Index] = action{FWD(ftor), endianess_h<endianess>{}, signed_mode_h<signed_mode>{}};
+    m_actions.content[Index] = action{UPD_FWD(ftor), endianess_h<endianess>{}, signed_mode_h<signed_mode>{}};
   }
 
   //! \brief Get one of the stored actions
@@ -208,5 +207,3 @@ dispatcher<Keyring, Action_Features> make_dispatcher(Keyring, action_features_h<
 }
 
 } // namespace upd
-
-#include "detail/undef.hpp" // IWYU pragma: keep

@@ -86,8 +86,9 @@ static void tuple_view_DO_bind_to_a_forward_list_EXPECT_correct_behavior() {
 static void tuple_view_DO_assign_to_a_tuple_EXPECT_correct_behavior() {
   using namespace upd;
 
-  auto lhs = make_tuple(int{}, char{}, bool{}), rhs = make_tuple(int{0xa}, char{0xb}, bool{true});
-  auto result = (lhs = make_view<int, char, bool>(rhs.begin()));
+  auto lhs = make_tuple(little_endian, two_complement, int{}, char{}, bool{}),
+       rhs = make_tuple(little_endian, two_complement, int{0xa}, char{0xb}, bool{true});
+  auto result = (lhs = make_view<int, char, bool>(little_endian, two_complement, rhs.begin()));
 
   static_assert(std::is_same<decltype(result), decltype(lhs)>::value);
   TEST_ASSERT_EQUAL_INT(get<0>(lhs), 0xa);
@@ -107,7 +108,6 @@ int main() {
     tuple_view<byte_t *, endianess::LITTLE, signed_mode::TWO_COMPLEMENT, int, char, bool>{buf};
 
     make_view<int, char, bool>(little_endian, two_complement, (byte_t *)buf);
-    make_view<int, char, bool>((byte_t *)buf);
   }
 
   UNITY_BEGIN();

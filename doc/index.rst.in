@@ -1,7 +1,8 @@
-.. include:: /@PROJECT_SOURCE_DIR@/README.md
-  :parser: myst_parser.sphinx_
+.. mdinclude:: @PROJECT_SOURCE_DIR@/README.md
 
 .. toctree::
   shared
   caller
   callee
+  serialization
+  python

@@ -19,20 +19,18 @@ namespace upd {
 template<endianess, signed_mode, typename...>
 class keyring; // IWYU pragma: keep
 
-//! \brief Holds a set of functions and index them at compile-time
+//! \brief Holds a set of callbacks and index them at compile-time
 //!
-//! A keyring introduces a RPC convention between the master and the slave. The master must have access to the
-//! declarations of the functions given to the keyring so it knows what are the parameters to send for each action and
-//! what type of value it has to except in return. However, only the slave must have access to the function
-//! definitions, in order to execute any action request from the master. Each function is associated with a key in the
-//! keyring. For each function, its key can be used by the master to build a packet to send to the salve or interpret
-//! the value received from the slave. Keyrings also holds the endianess and signed number representation of the data
-//! in the packets.
-//! \see \mgref{key, key} for further information on how packets are generated.
+//! A keyring introduces a RPC convention between the caller and the callee. The caller must have access to the
+//! declarations of the callbacks given to the keyring so it knows what are the parameters to send for each action and
+//! what type of value it has to except in return. However, only the callee must have access to the callback
+//! definitions, in order to execute any action request from the caller. Each callback is associated with a key in the
+//! keyring. For each callback, its key can be used by the caller to build a packet to send to the callee or interpret
+//! the value received from the callee. Keyrings also holds the endianess and signed number representation of the data
+//! in the packets. \see \ref<key> key for further information on how packets are generated.
 //!
-//! \tparam Endianess Endianess of the data in the packets built by the keys
-//! \tparam Signed_Mode Signed number representation of the data in the packets built by the keys
-//! \tparam Hs Unevaluated references to functions available for calling
+//! \tparam Endianess, Signed_Mode Serialization parameters
+//! \tparam Hs Unevaluated references to callbacks available for calling
 #ifdef DOXYGEN
 template<endianess Endianess, signed_mode Signed_Mode, typename... Hs>
 class keyring
@@ -42,22 +40,22 @@ class keyring<Endianess, Signed_Mode, unevaluated<Fs, Functions>...>
 #endif // DOXYGEN
 {
 public:
-  //! \brief Typelist containing unevaluated references to the functions
+  //! \brief Typelist containing unevaluated references to the callbacks
   using flist_t = upd::flist_t<unevaluated<Fs, Functions>...>;
 
-  //! \brief Typelist containing the signatures of the functions
+  //! \brief Typelist containing the signatures of the callbacks
   using signatures_t = typelist_t<detail::signature_t<Fs>...>;
 
-  //! \brief Type of the index prepended to the payload when sending a packet to the slave
+  //! \brief Type of the index prepended to the payload when sending a packet to the callee
   using index_t = detail::smallest_unsigned_t<sizeof...(Fs)>;
 
-  //! \brief Type of the key associated to an unevaluated reference to a function
-  //! \tparam H Unevaluated reference to a function managed by the keyring
+  //! \brief Type of the key associated to an unevaluated reference to a callback
+  //! \tparam H Unevaluated reference to a callback managed by the keyring
   template<typename H>
   using key_t =
       key<index_t, detail::find<flist_t, H>::value, detail::signature_t<typename H::type>, Endianess, Signed_Mode>;
 
-  //! \brief Number of managed functions
+  //! \brief Number of managed callbacks
   constexpr static index_t size = sizeof...(Fs);
 
   //! \brief Endianess of the data in the packets built by the keys
@@ -69,25 +67,22 @@ public:
 #if __cplusplus >= 201703L
   constexpr keyring() = default;
 
-  //! \brief (C++17) Create a keyring managing the given functions with the native serialization parameters
-  constexpr explicit keyring(upd::flist_t<unevaluated<Fs, Functions>...>) {}
-
-  //! \brief (C++17) Create a keyring managing the given functions with the provided serialization parameters
+  //! \brief (C++17) Create a keyring managing the given callbacks with the provided serialization parameters
   constexpr explicit keyring(upd::flist_t<unevaluated<Fs, Functions>...>,
                              endianess_h<Endianess>,
                              signed_mode_h<Signed_Mode>) {}
 #endif // __cplusplus >= 201703L
 
-  //! \brief Make a key associated with the given unevaluated reference to a function
-  //! \tparam H Unevaluated reference to a function managed by the keyring
+  //! \brief Make a key associated with the given unevaluated reference to a callback
+  //! \tparam H Unevaluated reference to a callback managed by the keyring
   template<typename H>
   constexpr key_t<H> get(H) const {
     return {};
   }
 
 #if __cplusplus >= 201703L
-  //! \brief Make a key associated with the given unevaluated reference to a function
-  //! \tparam Ftor One of the functors managed by the keyring
+  //! \brief Make a key associated with the given unevaluated reference to a callback
+  //! \tparam Ftor One of the callbacks managed by the keyring
   template<auto &Ftor>
   constexpr auto get() const {
     return get(unevaluated<decltype(Ftor), Ftor>{});
@@ -96,9 +91,6 @@ public:
 };
 
 #if __cplusplus >= 201703L
-template<typename... Hs>
-keyring(flist_t<Hs...>) -> keyring<endianess::LITTLE, signed_mode::TWO_COMPLEMENT, Hs...>;
-
 template<typename... Hs, endianess Endianess, signed_mode Signed_Mode>
 keyring(flist_t<Hs...>, endianess_h<Endianess>, signed_mode_h<Signed_Mode>) -> keyring<Endianess, Signed_Mode, Hs...>;
 #endif // __cplusplus >= 201703L
@@ -108,13 +100,6 @@ keyring(flist_t<Hs...>, endianess_h<Endianess>, signed_mode_h<Signed_Mode>) -> k
 template<endianess Endianess, signed_mode Signed_Mode, typename... Hs>
 constexpr keyring<Endianess, Signed_Mode, Hs...>
 make_keyring(flist_t<Hs...>, endianess_h<Endianess>, signed_mode_h<Signed_Mode>) {
-  return {};
-}
-
-//! \copybrief make_keyring
-//! \related keyring
-template<typename... Hs>
-constexpr keyring<endianess::LITTLE, signed_mode::TWO_COMPLEMENT, Hs...> make_keyring(flist_t<Hs...>) {
   return {};
 }
 

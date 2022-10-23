@@ -9,10 +9,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - run: sudo apt install doxygen
-    - run: pip install sphinx
-    - run: pip install breathe
-    - run: pip install myst_parser
-    - run: pip install sphinx_rtd_theme
+    - run: pip install sphinx breathe sphinx_mdinclude sphinx-pdj-theme
     - run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release
     - run: cmake --build ${{github.workspace}}/build -t doc
     - run: touch ${{github.workspace}}/build/Unpadded/.nojekyll

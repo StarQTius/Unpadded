@@ -14,8 +14,6 @@
 #include "type.hpp"
 #include "upd.hpp"
 
-#include "detail/def.hpp"
-
 namespace upd {
 
 template<typename It, endianess Endianess, signed_mode Signed_Mode, typename... Args>
@@ -185,11 +183,11 @@ void write_as(const T &value, const It &begin, std::size_t offset) {
 
 namespace detail {
 
-UPD_DETAIL_MAKE_DETECTOR(is_serializable_impl,
-                         PACK(typename T),
-                         PACK(typename = decltype(write_as<endianess::BUILTIN, signed_mode::BUILTIN>(std::declval<T>(),
-                                                                                                     nullptr),
-                                                  read_as<T, endianess::BUILTIN, signed_mode::BUILTIN>(nullptr))))
+UPD_DETAIL_MAKE_DETECTOR(
+    is_serializable_impl,
+    UPD_PACK(typename T),
+    UPD_PACK(typename = decltype(write_as<endianess::BUILTIN, signed_mode::BUILTIN>(std::declval<T>(), nullptr),
+                                 read_as<T, endianess::BUILTIN, signed_mode::BUILTIN>(nullptr))))
 
 //! \brief Indicate if the provided type is serializable
 template<typename T>
@@ -201,5 +199,3 @@ using require_is_serializable = require<is_serializable<T>::value, U>;
 
 } // namespace detail
 } // namespace upd
-
-#include "detail/undef.hpp" // IWYU pragma: keep

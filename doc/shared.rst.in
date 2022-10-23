@@ -90,15 +90,22 @@ If you find this to verbose, the ``UPD_CTREF`` macro can ease your pain:
 API References
 --------------
 
+``keyring``
+~~~~~~~~~~~
+
 .. doxygenclass:: upd::keyring
   :members:
+
+``unevaluated``
+~~~~~~~~~~~~~~~
 
 .. doxygenstruct:: upd::unevaluated
   :members:
 
-.. doxygendefine:: UPD_CTREF
+``flist``
+~~~~~~~~~
+
+.. doxygenvariable:: upd::flist
 
 .. doxygenstruct:: upd::flist_t< unevaluated< Fs, Functions >... >
   :members:
-
-.. doxygenvariable:: upd::flist

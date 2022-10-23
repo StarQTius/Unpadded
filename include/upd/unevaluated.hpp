@@ -3,6 +3,7 @@
 #pragma once
 
 //! \brief Bind an object with static storage duration to a compile-time reference
+//! \related unevaluated
 #define UPD_CTREF(VALUE)                                                                                               \
   ::upd::unevaluated<decltype(VALUE) &, VALUE> {}
 

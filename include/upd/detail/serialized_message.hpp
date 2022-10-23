@@ -5,10 +5,9 @@
 #include "../format.hpp"
 #include "../tuple.hpp"
 
+#include "../upd.hpp"
 #include "io/immediate_writer.hpp"
 #include "type_traits/require.hpp"
-
-#include "def.hpp"
 
 namespace upd {
 namespace detail {
@@ -31,7 +30,7 @@ struct serialized_message : detail::immediate_writer<serialized_message<Endianes
   using detail::immediate_writer<serialized_message<Endianess, Signed_Mode, Ts...>>::write_to;
 
   //! \brief Completely output the payload represented by the key
-  template<typename Dest_F, REQUIREMENT(output_invocable, Dest_F)>
+  template<typename Dest_F, UPD_REQUIREMENT(output_invocable, Dest_F)>
   void write_to(Dest_F &&insert_byte) const {
     for (auto byte : content)
       insert_byte(byte);
@@ -42,5 +41,3 @@ struct serialized_message : detail::immediate_writer<serialized_message<Endianes
 
 } // namespace detail
 } // namespace upd
-
-#include "undef.hpp" // IWYU pragma: keep

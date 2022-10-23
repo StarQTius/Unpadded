@@ -1,4 +1,10 @@
-extensions = [ "breathe", "myst_parser" ]
+import sphinx_pdj_theme
+
+extensions = [ "breathe", "sphinx_mdinclude" ]
 breathe_projects = { "@PROJECT_NAME@": "@CMAKE_CURRENT_BINARY_DIR@/xml" }
 breathe_default_project = "@PROJECT_NAME@"
-html_theme = "sphinx_rtd_theme"
+
+project = "@PROJECT_NAME@"
+
+html_theme = "sphinx_pdj_theme"
+html_theme_path = [sphinx_pdj_theme.get_html_theme_path()]

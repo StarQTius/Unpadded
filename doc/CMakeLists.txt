@@ -1,4 +1,4 @@
-set(TEMPLATE_FILES conf.py Doxyfile index.rst shared.rst caller.rst callee.rst)
+set(TEMPLATE_FILES conf.py Doxyfile index.rst shared.rst caller.rst callee.rst serialization.rst python.rst)
 
 foreach(TEMPLATE_FILE IN LISTS TEMPLATE_FILES)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${TEMPLATE_FILE}.in
