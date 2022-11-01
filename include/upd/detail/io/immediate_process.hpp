@@ -101,8 +101,8 @@ private:
 //! \endcode
 //! All these functions work the same way as `operator()(Src &&, Dest &&)`.
 //!
-//! \tparam Input An input functor type or an input iterator type
-//! \tparam Output An output functor type or an output iterator type
+//! \tparam Input Input byte stream type of any kind
+//! \tparam Output Output byte stream type of any kind
 
 } // namespace detail
 } // namespace upd

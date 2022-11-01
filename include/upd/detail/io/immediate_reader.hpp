@@ -62,7 +62,7 @@ public:
 //! \endcode
 //! All these functions work the same way as `read_from(Src &&)`.
 //!
-//! \tparam Src Input functor type
+//! \tparam Src Byte getter type
 //! \tparam It Input iterator type
 
 } // namespace detail

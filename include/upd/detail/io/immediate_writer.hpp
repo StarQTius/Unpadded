@@ -63,7 +63,7 @@ public:
 //! \endcode
 //! All these functions work the same way as `write_to(Dest &&)`.
 //!
-//! \tparam Dest Output functor type
+//! \tparam Dest Byte putter type
 //! \tparam It Output iterator type
 
 } // namespace detail
