@@ -19,3 +19,6 @@
 #endif // !defined(DOXYGEN)
 
 namespace upd {}
+
+template<typename>
+struct upd_extension; // IWYU pragma: keep

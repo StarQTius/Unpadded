@@ -58,7 +58,7 @@ constexpr std::size_t serialization_size_impl(...) {
 template<typename T, detail::require_is_user_serializable<T> = 0>
 constexpr std::size_t serialization_size_impl(int) {
   return decltype(make_view_for<endianess::BUILTIN, signed_mode::BUILTIN>(
-      (byte_t *)nullptr, examine_invocable<decltype(upd_extension((T *)nullptr).unserialize)>{}))::size;
+      (byte_t *)nullptr, examine_invocable<decltype(upd_extension<T>::unserialize)>{}))::size;
 }
 
 //! \brief Return the size in bytes occupied by the serialization of instances of the provided type (if serializable)

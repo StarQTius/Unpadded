@@ -2,32 +2,13 @@
 
 #include "utility.hpp"
 
-namespace detail {
-
 struct object_t {
   uint8_t x;
   uint16_t a, b;
 };
 
-#if __cplusplus >= 201703L
-
-struct {
-  template<typename View_T>
-  static void serialize(const object_t &o, View_T &view) {
-    upd::set<0>(view, o.x);
-    upd::set<1>(view, o.a);
-    upd::set<2>(view, o.b);
-  }
-
-  static object_t unserialize(uint8_t x, uint16_t a, uint16_t b) { return {x, a, b}; }
-} extension;
-
-inline auto upd_extension(object_t *) { return extension; }
-
-#else // __cplusplus >= 201703L
-
-struct object_extension_t {
-
+template<>
+struct upd_extension<object_t> {
   template<typename View_T>
   static void serialize(const object_t &o, View_T &view) {
     upd::set<0>(view, o.x);
@@ -37,12 +18,6 @@ struct object_extension_t {
 
   static object_t unserialize(uint8_t x, uint16_t a, uint16_t b) { return {x, a, b}; }
 };
-
-inline object_extension_t upd_extension(object_t *) { return {}; }
-
-#endif // __cplusplus >= 201703L
-
-} // namespace detail
 
 template<upd::endianess Endianess, upd::signed_mode Signed_Mode>
 void tuple_DO_set_value_EXPECT_same_value_with_get() {
@@ -276,7 +251,7 @@ static void tuple_DO_bind_names_to_tuple_element_EXPECT_getting_same_values_cpp1
 static void tuple_DO_serialize_user_provided_structure_EXCEPT_correct_behavior() {
   using namespace upd;
 
-  ::detail::object_t o{0xa, 0xb, 0xc};
+  object_t o{0xa, 0xb, 0xc};
 
   auto t = make_tuple(little_endian, two_complement, int32_t{0xd}, o, int16_t{0xe});
   TEST_ASSERT_EQUAL_INT32(t.get<0>(), 0xd);

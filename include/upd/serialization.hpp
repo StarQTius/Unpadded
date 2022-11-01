@@ -83,8 +83,8 @@ detail::array_t<T> read_as(const byte_t *sequence) {
 template<typename T, endianess Endianess, signed_mode Signed_Mode, detail::require_is_user_serializable<T> = 0>
 T read_as(const byte_t *sequence) {
   auto view = detail::make_view_for<Endianess, Signed_Mode>(
-      sequence, detail::examine_invocable<decltype(upd_extension(static_cast<T *>(nullptr)).unserialize)>{});
-  return view.invoke(upd_extension(static_cast<T *>(nullptr)).unserialize);
+      sequence, detail::examine_invocable<decltype(upd_extension<T>::unserialize)>{});
+  return view.invoke(upd_extension<T>::unserialize);
 }
 template<typename T, endianess Endianess, signed_mode Signed_Mode, typename It, detail::require_not_pointer<It> = 0>
 decltype(read_as<T, Endianess, Signed_Mode>(std::declval<byte_t *>())) read_as(It it) {
@@ -146,8 +146,8 @@ void write_as(const T &array, byte_t *sequence) {
 template<endianess Endianess, signed_mode Signed_Mode, typename T, detail::require_is_user_serializable<T> = 0>
 void write_as(const T &x, byte_t *sequence) {
   auto view = detail::make_view_for<Endianess, Signed_Mode>(
-      sequence, detail::examine_invocable<decltype(upd_extension(static_cast<T *>(nullptr)).unserialize)>{});
-  upd_extension(static_cast<T *>(nullptr)).serialize(x, view);
+      sequence, detail::examine_invocable<decltype(upd_extension<T>::unserialize)>{});
+  upd_extension<T>::serialize(x, view);
 }
 template<endianess Endianess, signed_mode Signed_Mode, typename T, typename It, detail::require_not_pointer<It> = 0>
 void write_as(const T &value, It it) {

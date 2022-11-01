@@ -25,7 +25,8 @@ constexpr auto list = upd::make_flist(UPD_CTREF(function),
                                       UPD_CTREF(function_object));
 constexpr auto kring = upd::make_keyring(list, upd::little_endian, upd::two_complement);
 
-struct object_extension_t {
+template<>
+struct upd_extension<object_t> {
   template<typename View_T>
   static void serialize(const object_t &o, View_T &view) {
     view = upd::make_tuple(upd::little_endian, upd::two_complement, o.a, o.b, o.c);
@@ -33,7 +34,6 @@ struct object_extension_t {
 
   static object_t unserialize(uint8_t a, uint16_t b, uint16_t c) { return {a, b, c}; }
 };
-object_extension_t upd_extension(object_t *) { return {}; }
 
 static void key_base_DO_serialize_arguments_EXPECT_correct_byte_sequence() {
   using namespace upd;
