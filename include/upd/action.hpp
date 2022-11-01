@@ -24,10 +24,10 @@
 namespace upd {
 namespace detail {
 
-//! \brief Input invocable with erased type
+//! \brief Byte getter with erased type
 using src_t = abstract_function<byte_t()>;
 
-//! \brief Output invocable with erased type
+//! \brief Byte putter with erased type
 using dest_t = abstract_function<void(byte_t)>;
 
 //! \brief Serialize `value` as a sequence of byte then call `dest` on every byte of that sequence
@@ -170,11 +170,13 @@ public:
 
   //! \brief Invoke the managed callback
   //!
-  //! The parameters are unserialized from the input byte sequence from `src`. After the callback invocation, the result
-  //! is serialized into `dest`. \copydoc ImmediateProcess_CRTP
+  //! The parameters are unserialized from the input byte stream `src`. After the callback invocation, the result
+  //! is serialized into `dest`.
   //!
-  //! \param src Input byte sequence as a callback
-  //! \param dest Output byte sequence as a callback
+  //! \copydoc ImmediateProcess_CRTP
+  //!
+  //! \param src Byte getter
+  //! \param dest Byte putter
   template<typename Src, typename Dest, UPD_REQUIREMENT(input_invocable, Src), UPD_REQUIREMENT(output_invocable, Dest)>
   void operator()(Src &&src, Dest &&dest) const {
     if (m_concept_uptr)
@@ -184,7 +186,7 @@ public:
   UPD_SFINAE_FAILURE_MEMBER(operator(), UPD_ERROR_NOT_INPUT(src) " OR " UPD_ERROR_NOT_OUTPUT(dest))
 
   //! \brief Invoke the managed callback
-  //! \param input Input byte sequence
+  //! \param input Input byte stream
   template<typename Input>
   void operator()(Input &&input) const {
     operator()(UPD_FWD(input), [](byte_t) {});

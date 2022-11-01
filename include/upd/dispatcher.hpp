@@ -113,8 +113,8 @@ public:
   //! The parameters for the action call are extracted from `src` and the return value is inserted into `dest`.
   //! \copydoc ImmediateProcess_CRTP
   //!
-  //! \param src Input sequence as a callback
-  //! \param dest Output sequence as a callback
+  //! \param src Byte getter
+  //! \param dest Byte putter
   //! \return the index of the called action
   template<typename Src, typename Dest, UPD_REQUIREMENT(input_invocable, Src), UPD_REQUIREMENT(output_invocable, Dest)>
   index_t operator()(Src &&src, Dest &&dest) {
@@ -127,7 +127,7 @@ public:
   }
 
   //! \brief Extract an index from a byte sequence and get the action with that index
-  //! \param src Input sequence as a callback
+  //! \param src Byte getter
   //! \return Either a reference to the action if it exists or `nullptr`
   template<typename Src, UPD_REQUIREMENT(input_invocable, Src)>
   action_t *get_action(Src &&src) {
@@ -136,7 +136,7 @@ public:
   }
 
   //! \brief Extract an index from a byte sequence
-  //! \param src Input invocable as a callback
+  //! \param src Byte getter
   //! \return The extracted index
   template<typename Src, UPD_REQUIREMENT(input_invocable, Src)>
   index_t get_index(Src &&src) const {

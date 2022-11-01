@@ -47,7 +47,7 @@ enum class packet_status { LOADING_PACKET, DROPPED_PACKET, RESOLVED_PACKET };
 
 //! \brief Dispatcher with input / output storage
 //!
-//! Instances of this class may store input and output byte sequences while they are received or sent. This allows the
+//! Instances of this class may store input and output byte streams while they are received or sent. This allows the
 //! user to load and unload the dispatcher byte after byte, whereas plain dispatchers cannot buffer their input and
 //! output. A buffered dispatcher goes through the following states:
 //!
@@ -100,7 +100,7 @@ public:
 
   //! \brief Put bytes into the input buffer until a full action request is stored
   //! \copydoc ImmediateReader_CRTP
-  //! \param src Input sequence as a callback
+  //! \param src Byte getter
   //! \return one of the following :
   //!   - packet_status::DROPPED_PACKET: The received index was invalid and the input buffer content was therefore
   //!   discarded.
@@ -161,7 +161,7 @@ public:
 
   //! \brief Completely output the output buffer content
   //! \copydoc ImmediateWriter_CRTP
-  //! \param dest Output invocable
+  //! \param dest Byte putter
   template<typename Dest, UPD_REQUIREMENT(output_invocable, Dest)>
   void write_to(Dest &&dest) {
     while (is_loaded())
@@ -191,8 +191,8 @@ public:
   //! write_to() is called if and only the output buffer has been populated by read_from().
   //! \copydoc ImmediateProcess_CRTP
   //!
-  //! \param src Input sequence as a callback
-  //! \param dest Output sequence as a callback
+  //! \param src Byte getter
+  //! \param dest Byte putter
   //! \return the \ref<packet_status> enumerator instance resulting from the read_from() call
   template<typename Src, typename Dest, UPD_REQUIREMENT(input_invocable, Src), UPD_REQUIREMENT(output_invocable, Dest)>
   packet_status operator()(Src &&src, Dest &&dest) {
@@ -228,9 +228,9 @@ public:
   //! made since the last packet resolution) and if the requested action buffer is large enough to hold all the data to
   //! send. When this function has finished executing, the output buffer is empty.
   //!
-  //! \param output Output byte sequence
+  //! \param output Output byte stream of any kind
   //! \param k Key of the action to request on the other dispatcher
-  //! \return `true` if and only if the content of the output buffer has been written to the output byte sequence
+  //! \return `true` if and only if the content of the output buffer has been written to the output byte stream
   template<typename Output, typename Key, UPD_REQUIREMENT(key, typename std::decay<Key>::type)>
   bool reply(Output &&output, Key k) {
     constexpr auto buf_size = k.payload_length - sizeof k.index;
@@ -346,7 +346,7 @@ make_single_buffered_dispatcher(Keyring, action_features_h<Action_Features>) {
 //! request and any action response.
 //!
 //!\note If you would rather having a single buffer and do not mind reading and writing at different moment, consider
-//!using \ref<single_buffered_dispatcher> single_buffered_dispatcher instead.
+//! using \ref<single_buffered_dispatcher> single_buffered_dispatcher instead.
 //!
 //! \tparam Dispatcher Underlying dispatcher type
 template<typename Dispatcher>
