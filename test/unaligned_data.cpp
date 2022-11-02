@@ -1,4 +1,4 @@
-#include <upd/serialization.hpp>
+#include <upd/detail/serialization.hpp>
 
 #include "utility.hpp"
 
@@ -8,7 +8,7 @@ static void unaligned_data_DO_serialize_data_EXPECT_correct_raw_data() {
 
   byte_t expected_data[] = {Expected_Bytes...}, buf[4 * sizeof(Int)];
 
-  write_as<Endianess, Signed_Mode>(V, buf + sizeof(Int));
+  detail::write_as<Endianess, Signed_Mode>(V, buf + sizeof(Int));
 
   TEST_ASSERT_EQUAL_HEX8_ARRAY(expected_data, buf + sizeof(Int), sizeof(Int));
 }
@@ -21,10 +21,10 @@ static void unaligned_data_DO_serialize_data_EXPECT_correct_value_when_unseriali
   char error_msg[sizeof(error_format)];
   byte_t buf[4 * sizeof(int)];
 
-  write_as<Endianess, Signed_Mode>(-0xabc, buf + sizeof(int));
+  detail::write_as<Endianess, Signed_Mode>(-0xabc, buf + sizeof(int));
 
   snprintf(error_msg, sizeof(error_msg), error_format, static_cast<int>(Endianess), static_cast<int>(Signed_Mode));
-  TEST_ASSERT_EQUAL_HEX64_MESSAGE(-0xabc, (read_as<int, Endianess, Signed_Mode>(buf + sizeof(int))), error_msg);
+  TEST_ASSERT_EQUAL_HEX64_MESSAGE(-0xabc, (detail::read_as<int, Endianess, Signed_Mode>(buf + sizeof(int))), error_msg);
 }
 
 MAKE_MULTIOPT(unaligned_data_DO_serialize_data_EXPECT_correct_value_when_unserializing)

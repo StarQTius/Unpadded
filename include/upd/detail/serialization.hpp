@@ -5,14 +5,14 @@
 #include <iterator> // IWYU pragma: keep
 #include <type_traits>
 
-#include "detail/endianess.hpp"
-#include "detail/signed_representation.hpp"
-#include "detail/type_traits/detector.hpp"
-#include "detail/type_traits/require.hpp"
-#include "detail/type_traits/signature.hpp"
-#include "format.hpp"
-#include "type.hpp"
-#include "upd.hpp"
+#include "../format.hpp"
+#include "../type.hpp"
+#include "../upd.hpp"
+#include "endianess.hpp"
+#include "signed_representation.hpp"
+#include "type_traits/detector.hpp"
+#include "type_traits/require.hpp"
+#include "type_traits/signature.hpp"
 
 namespace upd {
 
@@ -45,8 +45,6 @@ template<typename T>
 using array_t = typename array_t_impl<T>::type;
 
 //! @}
-
-} // namespace detail
 
 //! \brief Interpret a part of a byte sequence as a value of the given type
 //! \tparam T Requested type
@@ -180,8 +178,6 @@ void write_as(const T &value, const It &begin, std::size_t offset) {
   write_as<Endianess, Signed_Mode>(value, std::next(begin, offset));
 }
 #endif
-
-namespace detail {
 
 UPD_DETAIL_MAKE_DETECTOR(
     is_serializable_impl,

@@ -10,7 +10,7 @@ static void tuple_view_DO_bind_to_buffer_EXPECT_reading_correct_value() {
   byte_t buf[size];
   auto tview = make_view<short, int, long>(builtin_endianess, builtin_signed_mode, (byte_t *)buf);
 
-  write_as<endianess::BUILTIN, signed_mode::BUILTIN>(int{-0xabc}, buf + sizeof(short));
+  detail::write_as<endianess::BUILTIN, signed_mode::BUILTIN>(int{-0xabc}, buf + sizeof(short));
 
   TEST_ASSERT_EQUAL_HEX64(-0xabc, tview.get<1>());
 }

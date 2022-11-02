@@ -7,13 +7,13 @@
 #include <type_traits>
 #include <utility>
 
+#include "detail/serialization.hpp"
 #include "detail/type_traits/conjunction.hpp"
 #include "detail/type_traits/index_sequence.hpp"
 #include "detail/type_traits/require.hpp"
 #include "detail/type_traits/signature.hpp"
 #include "detail/type_traits/typelist.hpp"
 #include "format.hpp"
-#include "serialization.hpp"
 #include "type.hpp"
 #include "typelist.hpp"
 #include "upd.hpp"
