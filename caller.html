@@ -86,6 +86,9 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="serialization.html">Serialization tools</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="serialization.html#formatting-packets-with-the-upd-tuple-class">Formatting packets with the <code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">upd::tuple</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="serialization.html#make-a-view-of-a-subtuple-or-a-bare-buffer-using-upd-tuple-view">Make a view of a subtuple or a bare buffer using <code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">upd::tuple_view</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="serialization.html#customization-points-defining-serialization-processes-for-foreign-types">Customization points: defining serialization processes for foreign types</a></li>
 <li class="toctree-l2"><a class="reference internal" href="serialization.html#api-references">API References</a></li>
 </ul>
 </li>
@@ -301,7 +304,7 @@
 <li><p>4 bytes for the second argument of <code class="docutils literal notranslate"><span class="pre">function2</span></code> (type: <code class="docutils literal notranslate"><span class="pre">uint32_t</span></code>; value: 21)</p></li>
 </ul>
 </p>
-<p>When the packet has been processed by the callee device and the resulting value is sent back to the caller device, keys can be used to extract this value from the callee response. The syntax to achieve that is <code class="docutils literal notranslate"><span class="pre">auto</span> <span class="pre">x</span> <span class="pre">=</span> <a class="reference internal" href="#structupd_1_1key_1af085280515ea28041935f8068885cde0"><span class="std std-ref"><span class="pre">key.read_from</span></span></a><span class="pre">(/*an</span> <span class="pre">input</span> <span class="pre">invocable*</span><span class="pre">/)</span></code>. However,  key instances being templated, it is hard to store them for later. If blocking the program until the callee device response is not a viable option, it is possible to save a callback to be executed once the callee device has finished using the  action or  <a class="reference internal" href="#classupd_1_1no__storage__action"><span class="std std-ref">no_storage_action</span></a> classes.</p>
+<p>When the packet has been processed by the callee device and the resulting value is sent back to the caller device, keys can be used to extract this value from the callee response. The syntax to achieve that is <code class="docutils literal notranslate"><span class="pre">auto</span> <span class="pre">x</span> <span class="pre">=</span> <a class="reference internal" href="#structupd_1_1key_1af085280515ea28041935f8068885cde0"><span class="std std-ref"><span class="pre">key.read_from</span></span></a><span class="pre">(/*a</span> <span class="pre">byte</span> <span class="pre">getter*</span><span class="pre">/)</span></code>. However,  key instances being templated, it is hard to store them for later. If blocking the program until the callee device response is not a viable option, it is possible to save a callback to be executed once the callee device has finished using the  action or  <a class="reference internal" href="#classupd_1_1no__storage__action"><span class="std std-ref">no_storage_action</span></a> classes.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -344,7 +347,7 @@
 <dt class="sig sig-object cpp" id="_CPPv4NK3upd3keyclEDpRK4Args">
 <span id="_CPPv3NK3upd3keyclEDpRK4Args"></span><span id="_CPPv2NK3upd3keyclEDpRK4Args"></span><span id="upd::key::call-operator__ArgsCRDpC"></span><span class="target" id="structupd_1_1key_1a6e4af8d6b51d226ef44c9305b92fa26a"></span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">()</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">Args</span></span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">...</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">args</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK3upd3keyclEDpRK4Args" title="Permalink to this definition">¶</a><br /></dt>
 <dd><p>Generate a packet ready to be sent. </p>
-<p>This allows the following syntax : <code class="docutils literal notranslate"><span class="pre">key(x1,</span> <span class="pre">x2,</span> <span class="pre">x3,</span> <span class="pre">...).write_to(dest)</span></code> (with <code class="docutils literal notranslate"><span class="pre">dest</span></code> being an output sequence as a callback). <code class="docutils literal notranslate"><span class="pre">dest</span></code> is invoked on every byte representing the data passed as parameter, in the action they appear in the packet.</p>
+<p>This allows the following syntax : <code class="docutils literal notranslate"><span class="pre">key(x1,</span> <span class="pre">x2,</span> <span class="pre">x3,</span> <span class="pre">...).write_to(dest)</span></code> (with <code class="docutils literal notranslate"><span class="pre">dest</span></code> being a byte putter). <code class="docutils literal notranslate"><span class="pre">dest</span></code> is invoked on every byte representing the data passed as parameter, in the action they appear in the packet.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>args...</strong> – Values to insert in the payload </p>
@@ -371,12 +374,12 @@
 <dl class="field-list simple">
 <dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>Src</strong> – Input functor type </p></li>
+<li><p><strong>Src</strong> – Byte getter type </p></li>
 <li><p><strong>It</strong> – Input iterator type</p></li>
 </ul>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>src</strong> – Input invocable to the packet </p>
+<dd class="field-even"><p><strong>src</strong> – Byte getter </p>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>the unserialized value </p>
@@ -495,7 +498,7 @@
 <dt class="sig sig-object cpp" id="_CPPv4I00ENK3upd6actionclEvRR3SrcRR4Dest">
 <span id="_CPPv3I00ENK3upd6actionclERR3SrcRR4Dest"></span><span id="_CPPv2I00ENK3upd6actionclERR3SrcRR4Dest"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Src</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Dest</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classupd_1_1action_1a26a82aa15b5860e06fa75931c3634145"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">()</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I00ENK3upd6actionclEvRR3SrcRR4Dest" title="upd::action::operator()::Src"><span class="n"><span class="pre">Src</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">src</span></span>, <a class="reference internal" href="#_CPPv4I00ENK3upd6actionclEvRR3SrcRR4Dest" title="upd::action::operator()::Dest"><span class="n"><span class="pre">Dest</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">dest</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4I00ENK3upd6actionclEvRR3SrcRR4Dest" title="Permalink to this definition">¶</a><br /></dt>
 <dd><p>Invoke the managed callback. </p>
-<p>The parameters are unserialized from the input byte sequence from <code class="docutils literal notranslate"><span class="pre">src</span></code>. After the callback invocation, the result is serialized into <code class="docutils literal notranslate"><span class="pre">dest</span></code>.</p>
+<p>The parameters are unserialized from the input byte stream <code class="docutils literal notranslate"><span class="pre">src</span></code>. After the callback invocation, the result is serialized into <code class="docutils literal notranslate"><span class="pre">dest</span></code>.</p>
 <p>The following member functions are also defined through CRTP. <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">auto</span> <span class="n">operator</span><span class="p">()(</span><span class="n">Input</span> <span class="o">&amp;&amp;</span><span class="p">,</span> <span class="n">Output</span> <span class="o">&amp;&amp;</span><span class="p">);</span>
 <span class="n">auto</span> <span class="n">operator</span><span class="p">()(</span><span class="n">Input</span> <span class="o">&amp;&amp;</span><span class="p">,</span> <span class="n">Output</span> <span class="o">&amp;&amp;</span><span class="p">)</span> <span class="n">const</span><span class="p">;</span>
 </pre></div>
@@ -504,14 +507,14 @@
 <dl class="field-list simple">
 <dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>Input</strong> – An input functor type or an input iterator type </p></li>
-<li><p><strong>Output</strong> – An output functor type or an output iterator type</p></li>
+<li><p><strong>Input</strong> – Input byte stream type of any kind </p></li>
+<li><p><strong>Output</strong> – Output byte stream type of any kind</p></li>
 </ul>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>src</strong> – Input byte sequence as a callback </p></li>
-<li><p><strong>dest</strong> – Output byte sequence as a callback </p></li>
+<li><p><strong>src</strong> – Byte getter </p></li>
+<li><p><strong>dest</strong> – Byte putter </p></li>
 </ul>
 </dd>
 </dl>
@@ -523,7 +526,7 @@
 <dd><p>Invoke the managed callback. </p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>input</strong> – Input byte sequence </p>
+<dd class="field-odd"><p><strong>input</strong> – Input byte stream </p>
 </dd>
 </dl>
 </dd></dl>
@@ -592,7 +595,7 @@
 <dt class="sig sig-object cpp" id="_CPPv4I00ENK3upd17no_storage_actionclEvRR3SrcRR4Dest">
 <span id="_CPPv3I00ENK3upd17no_storage_actionclERR3SrcRR4Dest"></span><span id="_CPPv2I00ENK3upd17no_storage_actionclERR3SrcRR4Dest"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Src</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Dest</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classupd_1_1no__storage__action_1a79d2589147a421e7c56f7968721e55af"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">()</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I00ENK3upd17no_storage_actionclEvRR3SrcRR4Dest" title="upd::no_storage_action::operator()::Src"><span class="n"><span class="pre">Src</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">src</span></span>, <a class="reference internal" href="#_CPPv4I00ENK3upd17no_storage_actionclEvRR3SrcRR4Dest" title="upd::no_storage_action::operator()::Dest"><span class="n"><span class="pre">Dest</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">dest</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4I00ENK3upd17no_storage_actionclEvRR3SrcRR4Dest" title="Permalink to this definition">¶</a><br /></dt>
 <dd><p>Invoke the managed callback. </p>
-<p>The parameters are unserialized from the input byte sequence from <code class="docutils literal notranslate"><span class="pre">src</span></code>. After the callback invocation, the result is serialized into <code class="docutils literal notranslate"><span class="pre">dest</span></code>.</p>
+<p>The parameters are unserialized from the input byte stream <code class="docutils literal notranslate"><span class="pre">src</span></code>. After the callback invocation, the result is serialized into <code class="docutils literal notranslate"><span class="pre">dest</span></code>.</p>
 <p>The following member functions are also defined through CRTP. <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">auto</span> <span class="n">operator</span><span class="p">()(</span><span class="n">Input</span> <span class="o">&amp;&amp;</span><span class="p">,</span> <span class="n">Output</span> <span class="o">&amp;&amp;</span><span class="p">);</span>
 <span class="n">auto</span> <span class="n">operator</span><span class="p">()(</span><span class="n">Input</span> <span class="o">&amp;&amp;</span><span class="p">,</span> <span class="n">Output</span> <span class="o">&amp;&amp;</span><span class="p">)</span> <span class="n">const</span><span class="p">;</span>
 </pre></div>
@@ -601,14 +604,14 @@
 <dl class="field-list simple">
 <dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>Input</strong> – An input functor type or an input iterator type </p></li>
-<li><p><strong>Output</strong> – An output functor type or an output iterator type</p></li>
+<li><p><strong>Input</strong> – Input byte stream type of any kind </p></li>
+<li><p><strong>Output</strong> – Output byte stream type of any kind</p></li>
 </ul>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>src</strong> – Input byte sequence as a callback </p></li>
-<li><p><strong>dest</strong> – Output byte sequence as a callback </p></li>
+<li><p><strong>src</strong> – Byte getter </p></li>
+<li><p><strong>dest</strong> – Byte putter </p></li>
 </ul>
 </dd>
 </dl>

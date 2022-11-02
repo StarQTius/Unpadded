@@ -86,6 +86,9 @@
 </ul>
 </li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Serialization tools</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#formatting-packets-with-the-upd-tuple-class">Formatting packets with the <code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">upd::tuple</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#make-a-view-of-a-subtuple-or-a-bare-buffer-using-upd-tuple-view">Make a view of a subtuple or a bare buffer using <code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">upd::tuple_view</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#customization-points-defining-serialization-processes-for-foreign-types">Customization points: defining serialization processes for foreign types</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#api-references">API References</a></li>
 </ul>
 </li>
@@ -135,6 +138,102 @@
 	    <div id="content" class="hfeed entry-container hentry">
   <section id="serialization-tools">
 <h1>Serialization tools<a class="headerlink" href="#serialization-tools" title="Permalink to this heading">¶</a></h1>
+<p>Serializing data on the fly is very common in embedded systems. For example, if your microcontroller needs to communicate with an external device through an UART line, chances are this device requires a specific protocol to be implemented. Unpadded provides a special kind of tuple which will help you encode and decode packets.</p>
+<section id="formatting-packets-with-the-upd-tuple-class">
+<h2>Formatting packets with the <a class="reference internal" href="#_CPPv4I_9endianess_11signed_modeDpEN3upd5tupleE" title="upd::tuple"><code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">upd::tuple</span></code></a> class<a class="headerlink" href="#formatting-packets-with-the-upd-tuple-class" title="Permalink to this heading">¶</a></h2>
+<p>The <a class="reference internal" href="#_CPPv4I_9endianess_11signed_modeDpEN3upd5tupleE" title="upd::tuple"><code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">upd::tuple</span></code></a> works a bit like <cite>std::tuple</cite>. It even specializes the <cite>std::tuple_element</cite> and <cite>std::tuple_size</cite> structure template in order to be compatible with structured bindings. However, the internal layout is widly different. <a class="reference internal" href="#_CPPv4I_9endianess_11signed_modeDpEN3upd5tupleE" title="upd::tuple"><code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">upd::tuple</span></code></a> use an internal byte buffer to store its elements in an unaligned way. Therefore, it is not possible to get references to the elements of a <a class="reference internal" href="#_CPPv4I_9endianess_11signed_modeDpEN3upd5tupleE" title="upd::tuple"><code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">upd::tuple</span></code></a> instance, only copies.</p>
+<p>However, <a class="reference internal" href="#_CPPv4I_9endianess_11signed_modeDpEN3upd5tupleE" title="upd::tuple"><code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">upd::tuple</span></code></a> is iterable like a container. When you iterate through it, it actually iterate the underlying the internal byte buffer. Therefore, do not use <a class="reference internal" href="#_CPPv4I_9endianess_11signed_modeDpEN3upd5tupleE" title="upd::tuple"><code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">upd::tuple</span></code></a> as a mean of storing data, but like a flexible packet encoder and decoder.</p>
+<section id="example">
+<h3>Example<a class="headerlink" href="#example" title="Permalink to this heading">¶</a></h3>
+<p>Let’s assume we need to communicate with an external device that use big endian and ones’ complement and follows this protocol:</p>
+<ul class="simple">
+<li><p>Each packet start with a 4-byte long header</p></li>
+<li><p>Packet to the device contains 2 32-bit unsigned integer right after the header</p></li>
+<li><p>Packet from the device contains a 16-bit signed integer and a 16-bit unsigned integer right after the header</p></li>
+<li><p>Finally, each packet ends with a 16-bit CRC</p></li>
+</ul>
+<p>Assuming <cite>write_byte_to_device</cite> and <cite>read_byte_from_device</cite> are defined and work as their names suggest, the following code will allow our microcontroller to send a packet and wait for a response from the device before unserializing it.</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">constexpr</span><span class="w"> </span><span class="n">upd</span><span class="o">::</span><span class="n">byte_t</span><span class="w"> </span><span class="n">header</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mh">0xff</span><span class="p">,</span><span class="w"> </span><span class="mh">0xff</span><span class="p">,</span><span class="w"> </span><span class="mh">0xff</span><span class="p">,</span><span class="w"> </span><span class="mh">0xff</span><span class="p">};</span><span class="w"></span>
+
+<span class="c1">// We fill our tuple with the header and the data and keep some room for the CRC</span>
+<span class="n">upd</span><span class="o">::</span><span class="n">tuple</span><span class="w"> </span><span class="n">output_tuple</span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">upd</span><span class="o">::</span><span class="n">big_endian</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="n">upd</span><span class="o">::</span><span class="n">one_complement</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="n">header</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="kt">uint32_t</span><span class="p">{</span><span class="mi">64</span><span class="p">},</span><span class="w"></span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="kt">uint32_t</span><span class="p">{</span><span class="mi">32</span><span class="p">},</span><span class="w"></span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="kt">uint16_t</span><span class="p">{}</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
+<span class="c1">// We calculate the CRC from the data fields</span>
+<span class="n">upd</span><span class="o">::</span><span class="n">set</span><span class="o">&lt;</span><span class="mi">3</span><span class="o">&gt;</span><span class="p">(</span><span class="n">output_tuple</span><span class="p">,</span><span class="w"> </span><span class="n">calculate_crc</span><span class="p">(</span><span class="n">output_tuple</span><span class="p">.</span><span class="n">begin</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="n">output_tuple</span><span class="p">.</span><span class="n">end</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">2</span><span class="p">));</span><span class="w"></span>
+
+<span class="c1">// Finally we send the packet to the device</span>
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="w"> </span><span class="n">byte</span><span class="o">:</span><span class="w"> </span><span class="n">output_tuple</span><span class="p">)</span><span class="w"> </span><span class="n">write_byte_to_device</span><span class="p">(</span><span class="n">byte</span><span class="p">);</span><span class="w"></span>
+
+<span class="c1">// We prepare the tuple for the reception of the response</span>
+<span class="n">upd</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="w"></span>
+<span class="w">  </span><span class="n">upd</span><span class="o">::</span><span class="n">endianess</span><span class="o">::</span><span class="n">BIG</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="n">upd</span><span class="o">::</span><span class="n">signed_mode</span><span class="o">::</span><span class="n">ONE_COMPLEMENT</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="n">upd</span><span class="o">::</span><span class="n">byte_t</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span><span class="w"></span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="kt">int16_t</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="kt">uint16_t</span><span class="p">,</span><span class="w"></span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="kt">uint16_t</span><span class="o">&gt;</span><span class="w"></span>
+<span class="n">input_tuple</span><span class="p">{};</span><span class="w"></span>
+
+<span class="c1">// We receive the packet from the device (assuming `read_byte_from_device` did not get rid of the header)</span>
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="w"> </span><span class="o">&amp;</span><span class="n">byte</span><span class="o">:</span><span class="w"> </span><span class="n">input_tuple</span><span class="p">)</span><span class="w"> </span><span class="n">byte</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">read_byte_from_device</span><span class="p">();</span><span class="w"></span>
+
+<span class="c1">// Finally we handle the values from the remote device</span>
+<span class="k">auto</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="p">[</span><span class="n">rcv_header</span><span class="p">,</span><span class="w"> </span><span class="n">arg1</span><span class="p">,</span><span class="w"> </span><span class="n">arg2</span><span class="p">,</span><span class="w"> </span><span class="n">crc</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">input_tuple</span><span class="p">;</span><span class="w"></span>
+<span class="n">assert</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">equal</span><span class="p">(</span><span class="n">rcv_header</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">rcv_header</span><span class="p">.</span><span class="n">end</span><span class="p">(),</span><span class="w"> </span><span class="n">header</span><span class="p">));</span><span class="w"></span>
+<span class="n">assert</span><span class="p">(</span><span class="n">crc</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">calculate_crc</span><span class="p">(</span><span class="n">input_tuple</span><span class="p">.</span><span class="n">begin</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="n">input_tuple</span><span class="p">.</span><span class="n">end</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">2</span><span class="p">));</span><span class="w"></span>
+
+<span class="k">return</span><span class="w"> </span><span class="n">arg1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">arg2</span><span class="p">;</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="make-a-view-of-a-subtuple-or-a-bare-buffer-using-upd-tuple-view">
+<h2>Make a view of a subtuple or a bare buffer using <a class="reference internal" href="#_CPPv4I0_9endianess_11signed_modeDpEN3upd10tuple_viewE" title="upd::tuple_view"><code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">upd::tuple_view</span></code></a><a class="headerlink" href="#make-a-view-of-a-subtuple-or-a-bare-buffer-using-upd-tuple-view" title="Permalink to this heading">¶</a></h2>
+<p>In some case, having a view of a subtuple or interpreting a bare buffer as if it was a <a class="reference internal" href="#_CPPv4I_9endianess_11signed_modeDpEN3upd5tupleE" title="upd::tuple"><code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">upd::tuple</span></code></a> content is useful because it prevent any copy from occuring. A <a class="reference internal" href="#_CPPv4I0_9endianess_11signed_modeDpEN3upd10tuple_viewE" title="upd::tuple_view"><code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">upd::tuple_view</span></code></a> instance is either constructed from a buffer iterator or created from the <a class="reference internal" href="#_CPPv4I_NSt6size_tE_NSt6size_tEEN3upd5tuple4viewEDav" title="upd::tuple::view"><code class="xref cpp cpp-func docutils literal notranslate"><span class="pre">upd::tuple::view()</span></code></a> function.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p><a class="reference internal" href="#_CPPv4I0_9endianess_11signed_modeDpEN3upd10tuple_viewE" title="upd::tuple_view"><code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">upd::tuple_view</span></code></a> will assume the end of the container it is associated with by incrementing the provided iterator according to the sizes of the elements. Therefore, this iterator might go past the real end iterator if the viewed container is not large enough.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p><a class="reference internal" href="#_CPPv4I0_9endianess_11signed_modeDpEN3upd10tuple_viewE" title="upd::tuple_view"><code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">upd::tuple_view</span></code></a> do not extend the lifetime of the container it is associated with.</p>
+</div>
+</section>
+<section id="customization-points-defining-serialization-processes-for-foreign-types">
+<h2>Customization points: defining serialization processes for foreign types<a class="headerlink" href="#customization-points-defining-serialization-processes-for-foreign-types" title="Permalink to this heading">¶</a></h2>
+<p>Unpadded only handles primitive types and array of those. However, you can make any type serializable with <cite>upd_extension</cite>.</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="c1">// Here we define our object, and we want to make it serializable</span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">object_t</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="kt">int16_t</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">z</span><span class="p">;</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
+<span class="c1">// Thanks to the wonders of template specialization, we can define how our object must be serialized and unserialized</span>
+<span class="k">template</span><span class="o">&lt;&gt;</span><span class="w"></span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">upd_extension</span><span class="o">&lt;</span><span class="n">object_t</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">  </span><span class="c1">// Here we define how `object_t` should be serialized by packing it into a tuple view</span>
+<span class="w">  </span><span class="c1">// Do not worry about the exact type of the tuple view, the library will deduce it from the signature of `unserialize`.</span>
+<span class="w">  </span><span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">View_T</span><span class="o">&gt;</span><span class="w"></span>
+<span class="w">  </span><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">serialize</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">object_t</span><span class="w"> </span><span class="o">&amp;</span><span class="n">o</span><span class="p">,</span><span class="w"> </span><span class="n">View_T</span><span class="w"> </span><span class="o">&amp;</span><span class="n">view</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">upd</span><span class="o">::</span><span class="n">set</span><span class="o">&lt;</span><span class="mi">0</span><span class="o">&gt;</span><span class="p">(</span><span class="n">view</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">x</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">upd</span><span class="o">::</span><span class="n">set</span><span class="o">&lt;</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">(</span><span class="n">view</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">y</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">upd</span><span class="o">::</span><span class="n">set</span><span class="o">&lt;</span><span class="mi">2</span><span class="o">&gt;</span><span class="p">(</span><span class="n">view</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">z</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Here we define how `object_t` should be unserialized from a pack of integers</span>
+<span class="w">  </span><span class="k">static</span><span class="w"> </span><span class="n">object_t</span><span class="w"> </span><span class="n">unserialize</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">int16_t</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="kt">int16_t</span><span class="w"> </span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">z</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="p">{</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">z</span><span class="p">};</span><span class="w"> </span><span class="p">}</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
 <section id="api-references">
 <h2>API References<a class="headerlink" href="#api-references" title="Permalink to this heading">¶</a></h2>
 <section id="tuple">

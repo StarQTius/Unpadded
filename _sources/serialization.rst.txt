@@ -1,6 +1,79 @@
 Serialization tools
 ===================
 
+Serializing data on the fly is very common in embedded systems. For example, if your microcontroller needs to communicate with an external device through an UART line, chances are this device requires a specific protocol to be implemented. Unpadded provides a special kind of tuple which will help you encode and decode packets.
+
+Formatting packets with the :cpp:class:`upd::tuple` class
+-------------------------------------------------
+
+The :cpp:class:`upd::tuple` works a bit like `std::tuple`. It even specializes the `std::tuple_element` and `std::tuple_size` structure template in order to be compatible with structured bindings. However, the internal layout is widly different. :cpp:class:`upd::tuple` use an internal byte buffer to store its elements in an unaligned way. Therefore, it is not possible to get references to the elements of a :cpp:class:`upd::tuple` instance, only copies.
+
+However, :cpp:class:`upd::tuple` is iterable like a container. When you iterate through it, it actually iterate the underlying the internal byte buffer. Therefore, do not use :cpp:class:`upd::tuple` as a mean of storing data, but like a flexible packet encoder and decoder.
+
+Example
+~~~~~~~
+
+Let's assume we need to communicate with an external device that use big endian and ones' complement and follows this protocol:
+
+- Each packet start with a 4-byte long header
+- Packet to the device contains 2 32-bit unsigned integer right after the header
+- Packet from the device contains a 16-bit signed integer and a 16-bit unsigned integer right after the header
+- Finally, each packet ends with a 16-bit CRC
+
+.. list-table:: Format of the packet to the device
+  :widths: 8 8 8 4
+  :header-rows: 0
+   
+  *
+  - Header
+  - First data
+  - Second data
+  - CRC
+  *
+  - 4 bytes
+  - 32-bit unsigned
+  - 32-bit unsigned
+  - 16-bit unsigned
+
+.. list-table:: Format of the packet from the device
+  :widths: 8 4 4 4
+  :header-rows: 0
+   
+  *
+  - Header
+  - First data
+  - Second data
+  - CRC
+  *
+  - 4 bytes
+  - 16-bit signed (ones' complement)
+  - 16-bit unsigned
+  - 16-bit unsigned
+
+Assuming `write_byte_to_device` and `read_byte_from_device` are defined and work as their names suggest, the following code will allow our microcontroller to send a packet and wait for a response from the device before unserializing it.
+
+.. literalinclude:: //home/runner/work/Unpadded/Unpadded/test/snippet/serialization1
+  :language: cpp
+
+Make a view of a subtuple or a bare buffer using :cpp:class:`upd::tuple_view`
+------------------------------------------------------------------------------
+
+In some case, having a view of a subtuple or interpreting a bare buffer as if it was a :cpp:class:`upd::tuple` content is useful because it prevent any copy from occuring. A :cpp:class:`upd::tuple_view` instance is either constructed from a buffer iterator or created from the :cpp:func:`upd::tuple::view` function.
+
+.. warning::
+   :cpp:class:`upd::tuple_view` will assume the end of the container it is associated with by incrementing the provided iterator according to the sizes of the elements. Therefore, this iterator might go past the real end iterator if the viewed container is not large enough.
+
+.. warning::
+   :cpp:class:`upd::tuple_view` do not extend the lifetime of the container it is associated with.
+
+Customization points: defining serialization processes for foreign types
+----------------------------------------------------------------------
+
+Unpadded only handles primitive types and array of those. However, you can make any type serializable with `upd_extension`.
+
+.. literalinclude:: //home/runner/work/Unpadded/Unpadded/test/snippet/serialization2
+   :language: cpp
+
 API References
 --------------
 

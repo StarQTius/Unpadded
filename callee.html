@@ -86,6 +86,9 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="serialization.html">Serialization tools</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="serialization.html#formatting-packets-with-the-upd-tuple-class">Formatting packets with the <code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">upd::tuple</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="serialization.html#make-a-view-of-a-subtuple-or-a-bare-buffer-using-upd-tuple-view">Make a view of a subtuple or a bare buffer using <code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">upd::tuple_view</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="serialization.html#customization-points-defining-serialization-processes-for-foreign-types">Customization points: defining serialization processes for foreign types</a></li>
 <li class="toctree-l2"><a class="reference internal" href="serialization.html#api-references">API References</a></li>
 </ul>
 </li>
@@ -335,14 +338,14 @@
 <dl class="field-list simple">
 <dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>Input</strong> – An input functor type or an input iterator type </p></li>
-<li><p><strong>Output</strong> – An output functor type or an output iterator type</p></li>
+<li><p><strong>Input</strong> – Input byte stream type of any kind </p></li>
+<li><p><strong>Output</strong> – Output byte stream type of any kind</p></li>
 </ul>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>src</strong> – Input sequence as a callback </p></li>
-<li><p><strong>dest</strong> – Output sequence as a callback </p></li>
+<li><p><strong>src</strong> – Byte getter </p></li>
+<li><p><strong>dest</strong> – Byte putter </p></li>
 </ul>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -357,7 +360,7 @@
 <dd><p>Extract an index from a byte sequence and get the action with that index. </p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>src</strong> – Input sequence as a callback </p>
+<dd class="field-odd"><p><strong>src</strong> – Byte getter </p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Either a reference to the action if it exists or <code class="docutils literal notranslate"><span class="pre">nullptr</span></code> </p>
@@ -371,7 +374,7 @@
 <dd><p>Extract an index from a byte sequence. </p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>src</strong> – Input invocable as a callback </p>
+<dd class="field-odd"><p><strong>src</strong> – Byte getter </p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>The extracted index </p>
@@ -497,7 +500,7 @@
 <dt class="sig sig-object cpp" id="_CPPv4I00EN3upd19buffered_dispatcherE">
 <span id="_CPPv3I00EN3upd19buffered_dispatcherE"></span><span id="_CPPv2I00EN3upd19buffered_dispatcherE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">D</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Dispatcher</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classupd_1_1buffered__dispatcher"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">buffered_dispatcher</span></span></span><span class="w"> </span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="k"><span class="pre">public</span></span><span class="w"> </span><span class="n"><span class="pre">upd</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">detail</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">immediate_reader</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I00EN3upd19buffered_dispatcherE" title="upd::buffered_dispatcher"><span class="n"><span class="pre">buffered_dispatcher</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I00EN3upd19buffered_dispatcherE" title="upd::buffered_dispatcher::D"><span class="n"><span class="pre">D</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I00EN3upd19buffered_dispatcherE" title="upd::buffered_dispatcher::Dispatcher"><span class="n"><span class="pre">Dispatcher</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N3upd13packet_statusE" title="upd::packet_status"><span class="n"><span class="pre">packet_status</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">public</span></span><span class="w"> </span><span class="n"><span class="pre">upd</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">detail</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">immediate_writer</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I00EN3upd19buffered_dispatcherE" title="upd::buffered_dispatcher"><span class="n"><span class="pre">buffered_dispatcher</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I00EN3upd19buffered_dispatcherE" title="upd::buffered_dispatcher::D"><span class="n"><span class="pre">D</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I00EN3upd19buffered_dispatcherE" title="upd::buffered_dispatcher::Dispatcher"><span class="n"><span class="pre">Dispatcher</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">public</span></span><span class="w"> </span><span class="n"><span class="pre">upd</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">detail</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">immediate_process</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I00EN3upd19buffered_dispatcherE" title="upd::buffered_dispatcher"><span class="n"><span class="pre">buffered_dispatcher</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I00EN3upd19buffered_dispatcherE" title="upd::buffered_dispatcher::D"><span class="n"><span class="pre">D</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I00EN3upd19buffered_dispatcherE" title="upd::buffered_dispatcher::Dispatcher"><span class="n"><span class="pre">Dispatcher</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N3upd13packet_statusE" title="upd::packet_status"><span class="n"><span class="pre">packet_status</span></span></a><span class="p"><span class="pre">&gt;</span></span><a class="headerlink" href="#_CPPv4I00EN3upd19buffered_dispatcherE" title="Permalink to this definition">¶</a><br /></dt>
 <dd><p>Dispatcher with input / output storage. </p>
-<p>Instances of this class may store input and output byte sequences while they are received or sent. This allows the user to load and unload the dispatcher byte after byte, whereas plain dispatchers cannot buffer their input and output. A buffered dispatcher goes through the following states:</p>
+<p>Instances of this class may store input and output byte streams while they are received or sent. This allows the user to load and unload the dispatcher byte after byte, whereas plain dispatchers cannot buffer their input and output. A buffered dispatcher goes through the following states:</p>
 <p><ol class="loweralpha simple">
 <li><p>The input buffer is empty, ready to accept an action request.</p></li>
 <li><p>Once a full action request has been received, it is immediately fulfilled and the result is written to the output buffer. The input buffer is reset, thus it may receive a new request while the output buffer is unloaded.</p></li>
@@ -584,12 +587,12 @@ This class is not self-sufficient and must be derived from according to the CRTP
 <dl class="field-list simple">
 <dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>Src</strong> – Input functor type </p></li>
+<li><p><strong>Src</strong> – Byte getter type </p></li>
 <li><p><strong>It</strong> – Input iterator type </p></li>
 </ul>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>src</strong> – Input sequence as a callback </p>
+<dd class="field-even"><p><strong>src</strong> – Byte getter </p>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>one of the following :<ul class="simple">
@@ -636,12 +639,12 @@ This class is not self-sufficient and must be derived from according to the CRTP
 <dl class="field-list simple">
 <dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>Dest</strong> – Output functor type </p></li>
+<li><p><strong>Dest</strong> – Byte putter type </p></li>
 <li><p><strong>It</strong> – Output iterator type </p></li>
 </ul>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>dest</strong> – Output invocable </p>
+<dd class="field-even"><p><strong>dest</strong> – Byte putter </p>
 </dd>
 </dl>
 </dd></dl>
@@ -685,14 +688,14 @@ This class is not self-sufficient and must be derived from according to the CRTP
 <dl class="field-list simple">
 <dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>Input</strong> – An input functor type or an input iterator type </p></li>
-<li><p><strong>Output</strong> – An output functor type or an output iterator type</p></li>
+<li><p><strong>Input</strong> – Input byte stream type of any kind </p></li>
+<li><p><strong>Output</strong> – Output byte stream type of any kind</p></li>
 </ul>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>src</strong> – Input sequence as a callback </p></li>
-<li><p><strong>dest</strong> – Output sequence as a callback </p></li>
+<li><p><strong>src</strong> – Byte getter </p></li>
+<li><p><strong>dest</strong> – Byte putter </p></li>
 </ul>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -738,12 +741,12 @@ This class is not self-sufficient and must be derived from according to the CRTP
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>output</strong> – Output byte sequence </p></li>
+<li><p><strong>output</strong> – Output byte stream of any kind </p></li>
 <li><p><strong>k</strong> – Key of the action to request on the other dispatcher </p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">true</span></code> if and only if the content of the output buffer has been written to the output byte sequence </p>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">true</span></code> if and only if the content of the output buffer has been written to the output byte stream </p>
 </dd>
 </dl>
 </dd></dl>
@@ -853,12 +856,12 @@ This class is not self-sufficient and must be derived from according to the CRTP
 <dl class="field-list simple">
 <dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>Src</strong> – Input functor type </p></li>
+<li><p><strong>Src</strong> – Byte getter type </p></li>
 <li><p><strong>It</strong> – Input iterator type </p></li>
 </ul>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>src</strong> – Input sequence as a callback </p>
+<dd class="field-even"><p><strong>src</strong> – Byte getter </p>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>one of the following :<ul class="simple">
@@ -905,12 +908,12 @@ This class is not self-sufficient and must be derived from according to the CRTP
 <dl class="field-list simple">
 <dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>Dest</strong> – Output functor type </p></li>
+<li><p><strong>Dest</strong> – Byte putter type </p></li>
 <li><p><strong>It</strong> – Output iterator type </p></li>
 </ul>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>dest</strong> – Output invocable </p>
+<dd class="field-even"><p><strong>dest</strong> – Byte putter </p>
 </dd>
 </dl>
 </dd></dl>
@@ -940,14 +943,14 @@ This class is not self-sufficient and must be derived from according to the CRTP
 <dl class="field-list simple">
 <dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>Input</strong> – An input functor type or an input iterator type </p></li>
-<li><p><strong>Output</strong> – An output functor type or an output iterator type</p></li>
+<li><p><strong>Input</strong> – Input byte stream type of any kind </p></li>
+<li><p><strong>Output</strong> – Output byte stream type of any kind</p></li>
 </ul>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>src</strong> – Input sequence as a callback </p></li>
-<li><p><strong>dest</strong> – Output sequence as a callback </p></li>
+<li><p><strong>src</strong> – Byte getter </p></li>
+<li><p><strong>dest</strong> – Byte putter </p></li>
 </ul>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -965,12 +968,12 @@ This class is not self-sufficient and must be derived from according to the CRTP
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>output</strong> – Output byte sequence </p></li>
+<li><p><strong>output</strong> – Output byte stream of any kind </p></li>
 <li><p><strong>k</strong> – Key of the action to request on the other dispatcher </p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">true</span></code> if and only if the content of the output buffer has been written to the output byte sequence </p>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">true</span></code> if and only if the content of the output buffer has been written to the output byte stream </p>
 </dd>
 </dl>
 </dd></dl>
@@ -1062,12 +1065,12 @@ This class is not self-sufficient and must be derived from according to the CRTP
 <dl class="field-list simple">
 <dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>Src</strong> – Input functor type </p></li>
+<li><p><strong>Src</strong> – Byte getter type </p></li>
 <li><p><strong>It</strong> – Input iterator type </p></li>
 </ul>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>src</strong> – Input sequence as a callback </p>
+<dd class="field-even"><p><strong>src</strong> – Byte getter </p>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>one of the following :<ul class="simple">
@@ -1114,12 +1117,12 @@ This class is not self-sufficient and must be derived from according to the CRTP
 <dl class="field-list simple">
 <dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>Dest</strong> – Output functor type </p></li>
+<li><p><strong>Dest</strong> – Byte putter type </p></li>
 <li><p><strong>It</strong> – Output iterator type </p></li>
 </ul>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>dest</strong> – Output invocable </p>
+<dd class="field-even"><p><strong>dest</strong> – Byte putter </p>
 </dd>
 </dl>
 </dd></dl>
@@ -1149,14 +1152,14 @@ This class is not self-sufficient and must be derived from according to the CRTP
 <dl class="field-list simple">
 <dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>Input</strong> – An input functor type or an input iterator type </p></li>
-<li><p><strong>Output</strong> – An output functor type or an output iterator type</p></li>
+<li><p><strong>Input</strong> – Input byte stream type of any kind </p></li>
+<li><p><strong>Output</strong> – Output byte stream type of any kind</p></li>
 </ul>
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>src</strong> – Input sequence as a callback </p></li>
-<li><p><strong>dest</strong> – Output sequence as a callback </p></li>
+<li><p><strong>src</strong> – Byte getter </p></li>
+<li><p><strong>dest</strong> – Byte putter </p></li>
 </ul>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -1174,12 +1177,12 @@ This class is not self-sufficient and must be derived from according to the CRTP
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>output</strong> – Output byte sequence </p></li>
+<li><p><strong>output</strong> – Output byte stream of any kind </p></li>
 <li><p><strong>k</strong> – Key of the action to request on the other dispatcher </p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">true</span></code> if and only if the content of the output buffer has been written to the output byte sequence </p>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">true</span></code> if and only if the content of the output buffer has been written to the output byte stream </p>
 </dd>
 </dl>
 </dd></dl>
