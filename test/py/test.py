@@ -43,17 +43,33 @@ async def test_asynchronous_key():
     client = MockClient()
     assert await client.call(f4, 16) == 32
 
-
-def test_dispatcher_resolve():
+def test_read_from_and_write_to():
     dispatcher = Dispatcher()
-    assert dispatcher.resolve(b"\x01\x10\x00") == b"\x20\x00"
 
+    ibuf = list(b"\x00\x01\x10\x20\x02\x67\x89")
+    obuf = []
+
+    dispatcher.read_from(lambda : ibuf.pop(0))
+    dispatcher.write_to(lambda x : obuf.append(x))
+    dispatcher.read_from(lambda : ibuf.pop(0))
+    dispatcher.write_to(lambda x : obuf.append(x))
+    dispatcher.read_from(lambda : ibuf.pop(0))
+    dispatcher.write_to(lambda x : obuf.append(x))
+
+    assert bytes(obuf) == b"\xff\x00\x20\x40"
 
 def test_dispatcher_replace_with_pyfunction():
-    dispatcher = Dispatcher()
     n = getrandbits(14)
+    ibuf = list(b"\x01" + n.to_bytes(2, "little"))
+    obuf = []
+
+    dispatcher = Dispatcher()
     dispatcher.replace(g2, lambda x: 3 * x)
-    assert dispatcher.resolve(b"\x01" + n.to_bytes(2, "little")) == (3 * n).to_bytes(
+    
+    dispatcher.read_from(lambda : ibuf.pop(0))
+    dispatcher.write_to(lambda x : obuf.append(x))
+
+    assert bytes(obuf) == (3 * n).to_bytes(
         2, "little"
     )
 
@@ -95,18 +111,4 @@ def test_demangle_function_with_templated_parameters():
 
 
 def test_feed_dispatcher_invalid_byte_sequence():
-    with pytest.raises(ValueError):
-        Dispatcher().resolve(b"\xff")
-
-
-def test_fill_dispatcher_with_resolve_completely():
-    assert Dispatcher().resolve_completely(b"\x00\x01\x10\x20\x02\x67\x89") == [
-        b"\xff\x00",
-        b"\x20\x40",
-        b"",
-    ]
-
-
-def test_dispatcher_packet_dropped_with_resolve_completely():
-    with pytest.raises(ValueError):
-        assert Dispatcher().resolve_completely(b"\x00\x01\x10\x20\xff\x67\x89")
+    assert Dispatcher().put(0xff) == upd.PacketStatus.DROPPED_PACKET

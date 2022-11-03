@@ -3,8 +3,6 @@
 #include <cstdlib>
 #include <cxxabi.h>
 #include <functional>
-#include <iterator>
-#include <list>
 #include <regex>
 #include <stdexcept>
 #include <string>
@@ -12,6 +10,7 @@
 #include <utility>
 
 #include <pybind11/cast.h>
+#include <pybind11/functional.h> // IWYU pragma: keep
 #include <pybind11/pybind11.h>
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h> // IWYU pragma: keep
@@ -135,7 +134,26 @@ void unpack_keyring(pybind11::module &pymodule, Keyring keyring) {
   detail::define_pykeys(pymodule, keyring, std::make_index_sequence<Keyring::size>{});
 }
 
-//! \brief Expose a \ref<dispatcher> dispatcher template instance made from the given keyring
+//! \brief Expose a \ref<double_buffered_dispatcher> double_buffered_dispatcher template instance made from the given
+//! keyring
+//!
+//! The class will have the following methods :
+//!   - `read_from(self, getter: Callable[[], int]) -> unpadded.PacketStatus`: read from a byte getter until a packet is
+//!   dropped on resolved
+//!   - `write_to(self, putter: Callable[[int], None]) -> None`: write to a byte putter until the internal output buffer
+//!   is exhausted
+//!   - `put(self, x: int) -> None`: put a single byte into the input internal buffer and return the status of the
+//!   current packet
+//!   - `get(self) -> int`: get a single byte from the ouput interna buffer
+//!   - `is_loaded(self) -> bool`: check whether a packet is loaded in the output buffer
+//!   - `replace(self, key, f: Callable) -> None`: replace the behavior of the action designated by `key` by `f` (Python
+//!   callbacks are supported)
+//!
+//! \note The provided keyring is unpacked.
+//!
+//! \tparam Keyring Keyring holding the keys to expose
+//! \param name Name for the Python class bound to the dispatcher
+//! \param pymodule Python module inside of which the classes will be defined
 template<typename Keyring, UPD_REQUIREMENT(is_keyring, Keyring)>
 void declare_dispatcher(pybind11::module &pymodule, const char *name, Keyring keyring) {
   using namespace pybind11::literals;
@@ -143,46 +161,6 @@ void declare_dispatcher(pybind11::module &pymodule, const char *name, Keyring ke
 
   pybind11::class_<dispatcher_t>{pymodule, name}
       .def(pybind11::init<>())
-      .def("resolve",
-           [](dispatcher_t &self, pybind11::bytes bytes) {
-             std::string retval;
-             auto it = bytes.begin();
-             auto status = self(
-                 [&]() {
-                   if (++it == bytes.end())
-                     throw std::out_of_range{"The provided byte sequence doesn't represent a full packet"};
-                   return it->cast<byte_t>();
-                 },
-                 [&](byte_t b) { retval.push_back(b); });
-
-             if (status == packet_status::DROPPED_PACKET)
-               throw std::invalid_argument{"The provided byte sequence cannot be resolved"};
-
-             return pybind11::bytes{retval};
-           })
-      .def("resolve_completely",
-           [](dispatcher_t &self, pybind11::bytes bytes) {
-             std::list<pybind11::object> outputs;
-
-             for (auto byte : bytes) {
-               auto status = self.put(byte.cast<byte_t>());
-               switch (status) {
-               case packet_status::RESOLVED_PACKET: {
-                 std::string output;
-                 self.write_to(std::insert_iterator{output, output.begin()});
-
-                 outputs.push_back(pybind11::bytes{output});
-               } break;
-               case packet_status::DROPPED_PACKET:
-                 throw std::invalid_argument{"Some of the provided packets are corrupted"};
-                 break;
-               default:
-                 break;
-               }
-             }
-
-             return outputs;
-           })
       .def("read_from", [](dispatcher_t &self, const std::function<byte_t()> &src) { return self.read_from(src); })
       .def("write_to", [](dispatcher_t &self, const std::function<void(byte_t)> &dest) { self.write_to(dest); })
       .def("put", &dispatcher_t::put)
