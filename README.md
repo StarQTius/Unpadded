@@ -39,6 +39,7 @@ upd::keyring keyring{
 ### caller.cpp
 
 ```cpp
+#include <Arduino.h>
 #include <Wire.h>
 
 #include "shared.hpp"
@@ -57,32 +58,32 @@ void loop() {
   };
 
   Wire.beginTransmission(1);
-  gkey(true).write_all(write_byte);
+  gkey(true).write_to(write_byte);
   delay(500);
   Wire.endTransmission();
 
   Wire.beginTransmission(1);
-  ykey(true).write_all(write_byte);
+  ykey(true).write_to(write_byte);
   delay(500);
   Wire.endTransmission();
 
   Wire.beginTransmission(1);
-  rkey(true).write_all(write_byte);
+  rkey(true).write_to(write_byte);
   delay(500);
   Wire.endTransmission();
 
   Wire.beginTransmission(1);
-  gkey(false).write_all(write_byte);
+  gkey(false).write_to(write_byte);
   delay(500);
   Wire.endTransmission();
 
   Wire.beginTransmission(1);
-  ykey(false).write_all(write_byte);
+  ykey(false).write_to(write_byte);
   delay(500);
   Wire.endTransmission();
 
   Wire.beginTransmission(1);
-  rkey(false).write_all(write_byte);
+  rkey(false).write_to(write_byte);
   delay(500);
   Wire.endTransmission();
 }
@@ -91,6 +92,7 @@ void loop() {
 ### callee.cpp
 
 ```cpp
+#include <Arduino.h>
 #include <Wire.h>
 
 #include <upd/buffered_dispatcher.hpp>
@@ -118,7 +120,7 @@ void setup() {
   Wire.onReceive([](int n) {
     upd::packet_status status;
     do {
-      status = dispatcher.read([]() { return Wire.read(); });
+      status = dispatcher.put(Wire.read());
     } while(--n && status != upd::packet_status::DROPPED_PACKET);
   });
   Wire.begin(1);

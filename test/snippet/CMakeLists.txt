@@ -1,3 +1,5 @@
+FetchContent_MakeAvailable(ArduinoFake)
+
 add_executable(run_callee2 detail/callee2.cpp)
 set_target_properties(run_callee2 PROPERTIES CXX_STANDARD 17)
 target_link_libraries(run_callee2 PRIVATE ${PROJECT_NAME})
@@ -47,3 +49,32 @@ target_link_libraries(run_serialization PRIVATE ${PROJECT_NAME})
 target_compile_definitions(run_serialization PRIVATE CALLEE)
 add_test(NAME serialization COMMAND run_serialization PROPERTIES LABELS check)
 add_dependencies(check run_serialization)
+
+file(READ ${PROJECT_SOURCE_DIR}/README.md README)
+string(REPLACE ";" "@" README "${README}")
+string(REGEX MATCHALL "```cpp[^`]*```" SNIPPETS "${README}")
+set(SNIPPET_FILENAMES shared.hpp caller.cpp callee.cpp)
+
+foreach(SNIPPET IN ZIP_LISTS SNIPPETS SNIPPET_FILENAMES)
+  string(REPLACE "```cpp" "" SNIPPET_0 ${SNIPPET_0})
+  string(REPLACE "```" "" SNIPPET_0 ${SNIPPET_0})
+  string(REPLACE "@" ";" SNIPPET_0 "${SNIPPET_0}")
+  file(CONFIGURE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${SNIPPET_1} CONTENT
+       "${SNIPPET_0}")
+endforeach()
+
+add_executable(run_readme_caller detail/readme_caller.cpp
+                                 ${CMAKE_CURRENT_BINARY_DIR}/caller.cpp)
+set_target_properties(run_readme_caller PROPERTIES CXX_STANDARD 17)
+target_link_libraries(run_readme_caller PRIVATE ${PROJECT_NAME} ArduinoFake)
+target_compile_definitions(run_readme_caller PRIVATE CALLEE)
+add_test(NAME readme_caller COMMAND run_readme_caller PROPERTIES LABELS check)
+add_dependencies(check run_readme_caller)
+
+add_executable(run_readme_callee detail/readme_callee.cpp
+                                 ${CMAKE_CURRENT_BINARY_DIR}/callee.cpp)
+set_target_properties(run_readme_callee PROPERTIES CXX_STANDARD 17)
+target_link_libraries(run_readme_callee PRIVATE ${PROJECT_NAME} ArduinoFake)
+target_compile_definitions(run_readme_callee PRIVATE CALLEE)
+add_test(NAME readme_callee COMMAND run_readme_callee PROPERTIES LABELS check)
+add_dependencies(check run_readme_callee)
