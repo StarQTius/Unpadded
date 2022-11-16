@@ -3,7 +3,7 @@
 
 #include "motion_keyring.hpp"
 
-static upd::double_buffered_dispatcher dispatcher{motion_keyring, upd::policy::any_action};
+static upd::double_buffered_dispatcher dispatcher{motion_keyring, upd::policy::any_callback};
 
 void set_forward_speed(std::uint32_t speed) {
   // function implementation

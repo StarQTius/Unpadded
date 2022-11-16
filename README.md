@@ -99,7 +99,7 @@ void loop() {
 
 #include "shared.hpp"
 
-static upd::single_buffered_dispatcher dispatcher{keyring, upd::policy::static_storage_duration_only};
+static upd::single_buffered_dispatcher dispatcher{keyring, upd::policy::weak_reference};
 
 void Set_Green_Light(std::uint8_t state) {
   digitalWrite(2, state ? HIGH : LOW);

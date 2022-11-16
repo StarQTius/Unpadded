@@ -32,7 +32,7 @@ template<action_features Action_Features,
          F Ftor,
          endianess Endianess,
          signed_mode Signed_Mode,
-         UPD_REQUIRE(Action_Features == action_features::STATIC_STORAGE_DURATION_ONLY)>
+         UPD_REQUIRE(Action_Features == action_features::WEAK_REFERENCE)>
 no_storage_action make_action() {
   return no_storage_action{unevaluated<F, Ftor>{}, endianess_h<Endianess>{}, signed_mode_h<Signed_Mode>{}};
 }

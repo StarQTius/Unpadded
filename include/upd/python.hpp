@@ -157,7 +157,7 @@ void unpack_keyring(pybind11::module &pymodule, Keyring keyring) {
 template<typename Keyring, UPD_REQUIREMENT(is_keyring, Keyring)>
 void declare_dispatcher(pybind11::module &pymodule, const char *name, Keyring keyring) {
   using namespace pybind11::literals;
-  using dispatcher_t = decltype(double_buffered_dispatcher{Keyring{}, policy::any_action});
+  using dispatcher_t = decltype(double_buffered_dispatcher{Keyring{}, policy::any_callback});
 
   pybind11::class_<dispatcher_t>{pymodule, name}
       .def(pybind11::init<>())

@@ -2,7 +2,7 @@
 
 // We create a dispatcher which can handle request for the invocables managed by `keyring`
 // The second argument will be discussed later
-static upd::dispatcher dispatcher{keyring, upd::policy::any_action};
+static upd::dispatcher dispatcher{keyring, upd::policy::any_callback};
 
 // Let's assume this function is invoked when the input buffer contains a full request
 void processing_request() {

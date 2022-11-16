@@ -16,7 +16,7 @@ static void dispatcher_DO_call_action_EXPECT_calling_correct_action() {
   using namespace upd;
 
   constexpr auto kring = make_keyring(ftor_list, little_endian, two_complement);
-  auto dispatcher = make_dispatcher(kring, policy::any_action);
+  auto dispatcher = make_dispatcher(kring, policy::any_callback);
   auto function16_index = upd::make_tuple(little_endian, two_complement, uint16_t{1});
   auto output = upd::make_tuple<int>(little_endian, two_complement);
 
@@ -37,7 +37,7 @@ static void dispatcher_DO_get_action_EXPECT_correct_index() {
   auto input_f = [&]() { return function16_index[i++]; };
   auto output_f = [&](upd::byte_t byte) { output[j++] = byte; };
 
-  auto d = make_dispatcher(kring, policy::any_action);
+  auto d = make_dispatcher(kring, policy::any_callback);
   auto *action_ptr = d.get_action(input_f);
   TEST_ASSERT_NOT_NULL(action_ptr);
 
@@ -49,7 +49,7 @@ static void dispatcher_DO_call_no_storage_action_EXPECT_correct_behavior() {
   using namespace upd;
 
   constexpr auto kring = make_keyring(ftor_list, little_endian, two_complement);
-  auto dispatcher = make_dispatcher(kring, policy::static_storage_duration_only);
+  auto dispatcher = make_dispatcher(kring, policy::weak_reference);
   auto function16_index = upd::make_tuple(little_endian, two_complement, uint16_t{1});
   auto output = upd::make_tuple<int>(little_endian, two_complement);
 
@@ -63,7 +63,7 @@ static void dispatcher_DO_replace_an_action_EXPECT_changed_action() {
   using namespace upd;
 
   constexpr auto kring = make_keyring(ftor_list, little_endian, two_complement);
-  auto dispatcher = make_dispatcher(kring, policy::any_action);
+  auto dispatcher = make_dispatcher(kring, policy::any_callback);
   auto function16_index = upd::make_tuple(little_endian, two_complement, uint16_t{1});
   auto output = upd::make_tuple<int>(little_endian, two_complement);
 
@@ -83,7 +83,7 @@ static void dispatcher_DO_replace_a_no_storage_action_EXPECT_changed_action() {
   using namespace upd;
 
   constexpr auto kring = make_keyring(ftor_list, little_endian, two_complement);
-  auto dispatcher = make_dispatcher(kring, policy::static_storage_duration_only);
+  auto dispatcher = make_dispatcher(kring, policy::weak_reference);
   auto function16_index = upd::make_tuple(little_endian, two_complement, uint16_t{1});
   auto output = upd::make_tuple<int>(little_endian, two_complement);
 
