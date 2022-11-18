@@ -1,5 +1,8 @@
 FetchContent_MakeAvailable(ArduinoFake)
 
+target_compile_options(
+  ArduinoFake PUBLIC $<$<CXX_COMPILER_ID:GNU>:-Wno-deprecated-declarations>)
+
 add_executable(run_callee2 detail/callee2.cpp)
 set_target_properties(run_callee2 PROPERTIES CXX_STANDARD 17)
 target_link_libraries(run_callee2 PRIVATE ${PROJECT_NAME})
@@ -50,18 +53,12 @@ target_compile_definitions(run_serialization PRIVATE CALLEE)
 add_test(NAME serialization COMMAND run_serialization PROPERTIES LABELS check)
 add_dependencies(check run_serialization)
 
-file(READ ${PROJECT_SOURCE_DIR}/README.md README)
-string(REPLACE ";" "@" README "${README}")
-string(REGEX MATCHALL "```cpp[^`]*```" SNIPPETS "${README}")
-set(SNIPPET_FILENAMES shared.hpp caller.cpp callee.cpp)
-
-foreach(SNIPPET IN ZIP_LISTS SNIPPETS SNIPPET_FILENAMES)
-  string(REPLACE "```cpp" "" SNIPPET_0 ${SNIPPET_0})
-  string(REPLACE "```" "" SNIPPET_0 ${SNIPPET_0})
-  string(REPLACE "@" ";" SNIPPET_0 "${SNIPPET_0}")
-  file(CONFIGURE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${SNIPPET_1} CONTENT
-       "${SNIPPET_0}")
-endforeach()
+add_custom_command(
+  COMMAND ${CMAKE_COMMAND} -DREADME_PATH=${PROJECT_SOURCE_DIR}/README.md -P
+          ${CMAKE_CURRENT_SOURCE_DIR}/parse_readme.cmake
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/caller.cpp
+         ${CMAKE_CURRENT_BINARY_DIR}/callee.cpp
+  DEPENDS ${PROJECT_SOURCE_DIR}/README.md)
 
 add_executable(run_readme_caller detail/readme_caller.cpp
                                  ${CMAKE_CURRENT_BINARY_DIR}/caller.cpp)
