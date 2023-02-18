@@ -7,6 +7,11 @@
 #define UPD_SCOPE_OPERATOR(LHS, RHS) LHS::RHS
 
 namespace upd {
+
+//! \brief Contains the platform-specific information provided by the user
+//!
+//! `platform_info.endianess` equals `UPD_PLATFORM_ENDIANESS`.
+//! `platform_info.signed_mode` equals `UPD_PLATFORM_SIGNED_MODE`.
 constexpr struct {
 #if defined(UPD_PLATFORM_ENDIANESS)
   upd::endianess endianess = UPD_SCOPE_OPERATOR(upd::endianess, UPD_PLATFORM_ENDIANESS);
