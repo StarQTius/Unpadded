@@ -182,8 +182,8 @@ void write_as(const T &value, const It &begin, std::size_t offset) {
 UPD_DETAIL_MAKE_DETECTOR(
     is_serializable_impl,
     UPD_PACK(typename T),
-    UPD_PACK(typename = decltype(write_as<endianess::BUILTIN, signed_mode::BUILTIN>(std::declval<T>(), nullptr),
-                                 read_as<T, endianess::BUILTIN, signed_mode::BUILTIN>(nullptr))))
+    UPD_PACK(typename = decltype(write_as<endianess::LITTLE, signed_mode::TWO_COMPLEMENT>(std::declval<T>(), nullptr),
+                                 read_as<T, endianess::LITTLE, signed_mode::TWO_COMPLEMENT>(nullptr))))
 
 //! \brief Indicate if the provided type is serializable
 template<typename T>

@@ -46,26 +46,6 @@ void tuple_DO_set_array_EXPECT_same_value_with_get() {
 
 template<upd::endianess Endianess,
          upd::signed_mode Signed_Mode,
-         upd::detail::require<Endianess == upd::endianess::BUILTIN> = 0>
-void tuple_DO_iterate_throught_content_EXPECT_correct_raw_data() {
-  using namespace upd;
-
-  uint8_t raw_data[7]{};
-  uint32_t data[]{0xaa, 0xbbcc, 0xddeeff00};
-
-  memcpy(raw_data, data, 1);
-  memcpy(raw_data + 1, data + 1, 2);
-  memcpy(raw_data + 3, data + 2, 4);
-
-  tuple<Endianess, Signed_Mode, uint8_t, uint16_t, uint32_t> tuple{0xaa, 0xbbcc, 0xddeeff00};
-  TEST_ASSERT_TRUE(tuple.begin() != tuple.end());
-  std::size_t i = 0;
-  for (auto byte : tuple)
-    TEST_ASSERT_EQUAL_HEX16(raw_data[i++], byte);
-}
-
-template<upd::endianess Endianess,
-         upd::signed_mode Signed_Mode,
          upd::detail::require<Endianess == upd::endianess::LITTLE> = 0>
 void tuple_DO_iterate_throught_content_EXPECT_correct_raw_data() {
   using namespace upd;
@@ -90,30 +70,6 @@ void tuple_DO_iterate_throught_content_EXPECT_correct_raw_data() {
   std::size_t i = 0;
   for (auto byte : tuple)
     TEST_ASSERT_EQUAL_HEX16(raw_data[i++], byte);
-}
-
-template<upd::endianess Endianess,
-         upd::signed_mode Signed_Mode,
-         upd::detail::require<Endianess == upd::endianess::BUILTIN> = 0>
-void tuple_DO_access_like_array_EXPECT_correct_raw_values() {
-  using namespace upd;
-
-  uint8_t raw_data[4]{};
-  uint16_t data[]{0xaa, 0xbb, 0xccdd};
-
-  memcpy(raw_data, data, 1);
-  memcpy(raw_data + 1, data + 1, 1);
-  memcpy(raw_data + 2, data + 2, 2);
-
-  auto tuple = make_tuple(endianess_h<Endianess>{},
-                          signed_mode_h<Signed_Mode>{},
-                          (unsigned char){0xaa},
-                          (unsigned char){0xbb},
-                          (unsigned short){0xccdd});
-  TEST_ASSERT_EQUAL_HEX8(raw_data[0], tuple.begin()[0]);
-  TEST_ASSERT_EQUAL_HEX8(raw_data[1], tuple.begin()[1]);
-  TEST_ASSERT_EQUAL_HEX8(raw_data[2], tuple.begin()[2]);
-  TEST_ASSERT_EQUAL_HEX8(raw_data[3], tuple.begin()[3]);
 }
 
 template<upd::endianess Endianess,

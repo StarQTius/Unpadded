@@ -19,11 +19,8 @@ template<upd::signed_mode Signed_Mode>
 struct signed_mode_token {};
 
 constexpr auto every_options =
-    typename product<upd::typelist_t<endianess_token<upd::endianess::BUILTIN>,
-                                     endianess_token<upd::endianess::LITTLE>,
-                                     endianess_token<upd::endianess::BIG>>,
-                     upd::typelist_t<signed_mode_token<upd::signed_mode::BUILTIN>,
-                                     signed_mode_token<upd::signed_mode::SIGNED_MAGNITUDE>,
+    typename product<upd::typelist_t<endianess_token<upd::endianess::LITTLE>, endianess_token<upd::endianess::BIG>>,
+                     upd::typelist_t<signed_mode_token<upd::signed_mode::SIGNED_MAGNITUDE>,
                                      signed_mode_token<upd::signed_mode::ONE_COMPLEMENT>,
                                      signed_mode_token<upd::signed_mode::TWO_COMPLEMENT>,
                                      signed_mode_token<upd::signed_mode::OFFSET_BINARY>>>::type{};

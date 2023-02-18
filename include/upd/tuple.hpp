@@ -40,10 +40,10 @@ template<typename Target_T, typename T, std::size_t N, UPD_REQUIRE(std::is_same<
 auto normalize(std::array<T, N> &&array) -> T (&&)[N] {
   return reinterpret_cast<T(&&)[N]>(*array.data());
 }
-template<
-    typename Target_T,
-    typename T,
-    require<std::is_same<decltype(read_as<T, endianess::BUILTIN, signed_mode::BUILTIN>(nullptr)), Target_T>::value> = 0>
+template<typename Target_T,
+         typename T,
+         require<std::is_same<decltype(read_as<T, endianess::LITTLE, signed_mode::TWO_COMPLEMENT>(nullptr)),
+                              Target_T>::value> = 0>
 T &&normalize(T &&x) {
   return UPD_FWD(x);
 }
@@ -57,7 +57,7 @@ constexpr std::size_t serialization_size_impl(...) {
 }
 template<typename T, detail::require_is_user_serializable<T> = 0>
 constexpr std::size_t serialization_size_impl(int) {
-  return decltype(make_view_for<endianess::BUILTIN, signed_mode::BUILTIN>(
+  return decltype(make_view_for<endianess::LITTLE, signed_mode::TWO_COMPLEMENT>(
       (byte_t *)nullptr, examine_invocable<decltype(upd_extension<T>::unserialize)>{}))::size;
 }
 

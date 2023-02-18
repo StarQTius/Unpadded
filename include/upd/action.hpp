@@ -159,11 +159,6 @@ public:
   explicit action(F &&ftor, endianess_h<Endianess>, signed_mode_h<Signed_Mode>)
       : m_concept_uptr{new detail::action_model<F, Endianess, Signed_Mode>{UPD_FWD(ftor)}} {}
 
-  //! \copybrief action(F&&,endianess_h<Endianess>,signed_mode_h<Signed_Mode>)
-  //! \param ftor Callback to be wrapped
-  template<typename F, UPD_REQUIREMENT(invocable, F)>
-  explicit action(F &&ftor) : action{UPD_FWD(ftor), builtin_endianess, builtin_signed_mode} {}
-
   UPD_SFINAE_FAILURE_CTOR(action, UPD_ERROR_NOT_INVOCABLE(ftor))
 
   using detail::immediate_process<action, void>::operator();
@@ -220,13 +215,6 @@ public:
   explicit no_storage_action(unevaluated<F, Ftor>, endianess_h<Endianess>, signed_mode_h<Signed_Mode>)
       : m_wrapper{detail::static_storage_duration_callback_wrapper<Endianess, Signed_Mode, F, Ftor>},
         m_input_size{detail::parameters_size<F>::value}, m_output_size{detail::return_type_size<F>::value} {}
-
-  //! \copybrief no_storage_action::no_storage_action(unevaluated<F, Ftor>, endianess_h<Endianess>,
-  //! signed_mode_h<Signed_Mode>)
-  //! \tparam Ftor Free function or callback with static storage duration
-  template<typename F, F Ftor>
-  explicit no_storage_action(unevaluated<F, Ftor>)
-      : no_storage_action{unevaluated<F, Ftor>{}, builtin_endianess, builtin_signed_mode} {}
 
   //! \copydoc action::operator()()
   template<typename Src, typename Dest, UPD_REQUIREMENT(input_invocable, Src), UPD_REQUIREMENT(output_invocable, Dest)>

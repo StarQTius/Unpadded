@@ -7,10 +7,10 @@
 namespace upd {
 
 //! \brief Used to specify endianess for serialization and unserialization
-enum class endianess { BUILTIN, LITTLE, BIG };
+enum class endianess { LITTLE, BIG };
 
 //! \brief Used to specify signed integer representation for serialization and unserialization
-enum class signed_mode { BUILTIN, SIGNED_MAGNITUDE, ONE_COMPLEMENT, TWO_COMPLEMENT, OFFSET_BINARY };
+enum class signed_mode { SIGNED_MAGNITUDE, ONE_COMPLEMENT, TWO_COMPLEMENT, OFFSET_BINARY };
 
 //! \brief \ref<endianess> endianess enumerator holder for named parameters
 template<endianess Endianess>
@@ -20,17 +20,11 @@ struct endianess_h : unevaluated<endianess, Endianess> {};
 template<signed_mode Signed_Mode>
 struct signed_mode_h : unevaluated<signed_mode, Signed_Mode> {};
 
-//! \brief Token associated with endianess::BUILTIN
-constexpr endianess_h<endianess::BUILTIN> builtin_endianess;
-
 //! \brief Token associated with endianess::LITTLE
 constexpr endianess_h<endianess::LITTLE> little_endian;
 
 //! \brief Token associated with endianess::BIG
 constexpr endianess_h<endianess::BIG> big_endian;
-
-//! \brief Token associated with signed_mode::BUILTIN
-constexpr signed_mode_h<signed_mode::BUILTIN> builtin_signed_mode;
 
 //! \brief Token associated with signed_mode::SIGNED_MAGNITUDE
 constexpr signed_mode_h<signed_mode::SIGNED_MAGNITUDE> signed_magnitude;

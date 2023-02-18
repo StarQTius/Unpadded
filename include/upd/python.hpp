@@ -92,12 +92,14 @@ void define_pykey(pybind11::module &pymodule, const char *name, Keyring, key<Ind
       .def("index", [](key_t) { return I; })
       .def("__make_action", [](key_t, pybind11::function pyfunction) {
         return action{[pyfunction](const Args &...args) {
-          if constexpr (std::is_void_v<R>) {
-            pyfunction(args...);
-          } else {
-            return pyfunction(args...).template cast<R>();
-          }
-        }};
+                        if constexpr (std::is_void_v<R>) {
+                          pyfunction(args...);
+                        } else {
+                          return pyfunction(args...).template cast<R>();
+                        }
+                      },
+                      endianess_h<E>{},
+                      signed_mode_h<S>{}};
       });
 
   pymodule.attr(name + 2) = k;

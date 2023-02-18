@@ -8,9 +8,9 @@ static void tuple_view_DO_bind_to_buffer_EXPECT_reading_correct_value() {
   constexpr std::size_t size = sizeof(short) + sizeof(int) + sizeof(long);
 
   byte_t buf[size];
-  auto tview = make_view<short, int, long>(builtin_endianess, builtin_signed_mode, (byte_t *)buf);
+  auto tview = make_view<short, int, long>(little_endian, two_complement, (byte_t *)buf);
 
-  detail::write_as<endianess::BUILTIN, signed_mode::BUILTIN>(int{-0xabc}, buf + sizeof(short));
+  detail::write_as<endianess::LITTLE, signed_mode::TWO_COMPLEMENT>(int{-0xabc}, buf + sizeof(short));
 
   TEST_ASSERT_EQUAL_HEX64(-0xabc, tview.get<1>());
 }
@@ -21,7 +21,7 @@ static void tuple_view_DO_set_value_EXPECT_reading_same_value() {
   constexpr std::size_t size = sizeof(short) + sizeof(int) + sizeof(long);
 
   byte_t buf[size];
-  auto tview = make_view<short, int, long>(builtin_endianess, builtin_signed_mode, (byte_t *)buf);
+  auto tview = make_view<short, int, long>(little_endian, two_complement, (byte_t *)buf);
 
   tview.set<1>(-0xabc);
 
@@ -76,7 +76,7 @@ static void tuple_view_DO_bind_to_a_forward_list_EXPECT_correct_behavior() {
   node root{new node{new node{new node{new node{}}}}};
   iterator begin{&root};
 
-  auto tview = make_view<uint8_t, uint32_t>(builtin_endianess, builtin_signed_mode, begin);
+  auto tview = make_view<uint8_t, uint32_t>(little_endian, two_complement, begin);
 
   tview.set<1>(0xabc);
 
