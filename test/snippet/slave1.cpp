@@ -1,6 +1,7 @@
 #include <upd/action.hpp>
 #include <upd/buffered_dispatcher.hpp>
 
+#define CALLEE
 #include "motion_keyring.hpp"
 
 static upd::double_buffered_dispatcher dispatcher{motion_keyring, upd::policy::any_callback};
