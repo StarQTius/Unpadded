@@ -3,6 +3,10 @@ cmake_minimum_required(VERSION 3.21)
 project(Unpadded LANGUAGES CXX)
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/tool)
 option(${PROJECT_NAME}_INSTALL "Only make what is needed for installing" OFF)
+option(${PROJECT_NAME}_PLATFORM_ENDIANESS
+       "Provide platform endianess and allow serialization optimization" OFF)
+option(${PROJECT_NAME}_PLATFORM_SIGNED_MODE
+       "Provide platform endianess and allow serialization optimization" OFF)
 
 include(GNUInstallDirs)
 include(FetchContent)
