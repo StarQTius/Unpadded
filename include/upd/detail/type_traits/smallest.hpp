@@ -16,7 +16,8 @@ struct smallest_unsigned_impl {
 
   template<typename U, UPD_REQUIRE(U(X) == X)>
   smallest_unsigned_impl<U, X> try_promote(U &&) const;
-  smallest_unsigned_impl<T, X> try_promote(...) const;
+  template<typename U, UPD_REQUIRE(U(X) != X)>
+  smallest_unsigned_impl<T, X> try_promote(U &&) const;
 };
 
 //! \name

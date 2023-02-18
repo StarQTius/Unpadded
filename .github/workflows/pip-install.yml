@@ -5,7 +5,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - run: sudo apt purge python3-setuptools
-    - run: sudo apt install ccache setuptools
-    - run: pip install . pytest pytest-asyncio 
-    - run: CC="gcc-10" CXX="g++-10" pytest test/py/test.py
+    - run: sudo apt install ccache gcc-11
+    - run: python3.10 -m venv venv
+    - run: venv/bin/pip install . pytest pytest-asyncio 
+    - run: CC="gcc-11" CXX="g++-11" venv/bin/python -m pytest test/py/test.py

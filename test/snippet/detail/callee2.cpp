@@ -22,7 +22,7 @@ void write_byte_to_master(upd::byte_t byte) {
 
   if (p == buf + sizeof(std::uint8_t)) {
     auto key = keyring.get<f>();
-    assert(key << buf == 128);
+    assert((key << buf) == 128);
     complete = true;
   }
 }
