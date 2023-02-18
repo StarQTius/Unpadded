@@ -1,11 +1,11 @@
-name: C/C++ CI
+name: Run tests with Clang
 on: push
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - run: sudo apt install ccache
+    - run: sudo apt install ccache clang-10
     - run: pip install pytest pytest-asyncio cppimport
     - run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang-10 -DCMAKE_CXX_COMPILER=clang++-10
     - run: cmake --build ${{github.workspace}}/build -t check
