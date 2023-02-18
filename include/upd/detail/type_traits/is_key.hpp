@@ -9,7 +9,7 @@
 namespace upd {
 
 template<typename Index_T, Index_T, typename, endianess, signed_mode>
-struct key;
+class key;
 
 namespace detail {
 

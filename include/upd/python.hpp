@@ -23,7 +23,6 @@
 #include "key.hpp"
 #include "policy.hpp"
 #include "type.hpp"
-#include "upd.hpp"
 
 // IWYU pragma: no_include <pybind11/detail/descr.h>
 
@@ -46,7 +45,9 @@ std::string demangle(const T &x) {
   std::string name{cstr_name};
   free(cstr_name);
 
-  std::regex callback_name_re{"upd::unevaluated<.*,\\s(\\w+)(\\(.*\\))?>$"};
+  // Grab [CALLBACK REFERENCE] in `upd::unevaluated<[CALLBACK TYPE], [CALLBACK REFERENCE]>` and remove the potential
+  // return type, parameters types and the `&` symbol
+  std::regex callback_name_re{"upd::unevaluated<.*,\\s\\&\\(?(\\w+)(\\(.*\\))?\\)?>$"};
   std::smatch match;
   if (std::regex_match(name, match, callback_name_re) && match.size() == 3) {
     return match[1];

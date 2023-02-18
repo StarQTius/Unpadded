@@ -55,7 +55,7 @@ static void buffered_dispatcher_DO_load_an_action_in_a_single_buffered_dispatche
   auto k = kring.get(UPD_CTREF(identity));
   auto dis = make_single_buffered_dispatcher(kring, policy::any_callback);
 
-  static_assert(dis.buffer_size == sizeof(std::int64_t) + sizeof(decltype(dis)::index_t));
+  static_assert(dis.buffer_size == sizeof(std::int64_t) + sizeof(decltype(dis)::index_t), "");
 
   k(64).write_to(kbuf);
   TEST_ASSERT_EQUAL(packet_status::RESOLVED_PACKET, dis.read_from(kbuf));
@@ -72,8 +72,8 @@ static void buffered_dispatcher_DO_load_an_action_in_a_double_buffered_dispatche
   auto k = kring.get(UPD_CTREF(identity));
   auto dis = make_double_buffered_dispatcher(kring, policy::any_callback);
 
-  static_assert(dis.input_buffer_size == sizeof(std::int64_t) + sizeof(decltype(dis)::index_t));
-  static_assert(dis.output_buffer_size == sizeof(std::int64_t));
+  static_assert(dis.input_buffer_size == sizeof(std::int64_t) + sizeof(decltype(dis)::index_t), "");
+  static_assert(dis.output_buffer_size == sizeof(std::int64_t), "");
 
   k(64).write_to(kbuf);
   TEST_ASSERT_EQUAL(packet_status::RESOLVED_PACKET, dis.read_from(kbuf));
@@ -90,8 +90,8 @@ static void buffered_dispatcher_DO_load_an_action_in_a_double_buffered_dispatche
   auto k = kring.get(UPD_CTREF(identity));
   auto dis = make_double_buffered_dispatcher(kring, policy::any_callback);
 
-  static_assert(dis.input_buffer_size == sizeof(std::int64_t) + sizeof(decltype(dis)::index_t));
-  static_assert(dis.output_buffer_size == sizeof(std::int64_t));
+  static_assert(dis.input_buffer_size == sizeof(std::int64_t) + sizeof(decltype(dis)::index_t), "");
+  static_assert(dis.output_buffer_size == sizeof(std::int64_t), "");
 
   k(64).write_to(kbuf);
   TEST_ASSERT_EQUAL(packet_status::RESOLVED_PACKET, dis.read_from(kbuf));
@@ -236,7 +236,7 @@ static void buffered_dispatcher_DO_create_double_buffered_dispatcher_with_no_sto
   auto k = kring.get(UPD_CTREF(identity));
   auto dis = make_single_buffered_dispatcher(kring, policy::weak_reference);
 
-  static_assert(dis.buffer_size == sizeof(std::int64_t) + sizeof(decltype(dis)::index_t));
+  static_assert(dis.buffer_size == sizeof(std::int64_t) + sizeof(decltype(dis)::index_t), "");
 
   k(64).write_to(kbuf);
   TEST_ASSERT_EQUAL(packet_status::RESOLVED_PACKET, dis.read_from(kbuf));

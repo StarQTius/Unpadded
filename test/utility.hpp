@@ -10,7 +10,7 @@
   void FUNCTION_NAME##_multiopt(                                                                                       \
       upd::typelist_t<upd::typelist_t<endianess_token<Endianesses>, signed_mode_token<Signed_Modes>>...>) {            \
     using discard = int[];                                                                                             \
-    discard{(RUN_TEST((FUNCTION_NAME<Endianesses, Signed_Modes>)), 0)...};                                             \
+    (void)discard{(RUN_TEST((FUNCTION_NAME<Endianesses, Signed_Modes>)), 0)...};                                       \
   }
 
 template<upd::endianess Endianess>

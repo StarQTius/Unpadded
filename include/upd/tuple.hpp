@@ -169,7 +169,7 @@ protected:
   template<std::size_t... Is, typename... Args>
   void lay(detail::index_sequence<Is...>, const Args &...args) {
     using discard = int[];
-    discard{0, (set<Is>(args), 0)...};
+    (void)discard{0, (set<Is>(args), 0)...};
   }
 
   //! \brief Lay the element of a tuple-like object into the content

@@ -10,10 +10,10 @@ enum class endianess;
 enum class signed_mode;
 
 template<endianess, signed_mode, typename...>
-struct tuple; // IWYU pragma: keep
+class tuple; // IWYU pragma: keep
 
 template<typename, endianess, signed_mode, typename...>
-struct tuple_view; // IWYU pragma: keep
+class tuple_view; // IWYU pragma: keep
 
 namespace detail {
 

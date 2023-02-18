@@ -1,7 +1,12 @@
 FetchContent_MakeAvailable(ArduinoFake)
 
+# Added so the compiler shuts up about the use of `std::uncaught_exception` in
+# `ArduinoFake`
 target_compile_options(
-  ArduinoFake PUBLIC $<$<CXX_COMPILER_ID:GNU>:-Wno-deprecated-declarations>)
+  ArduinoFake
+  PUBLIC
+    $<$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>:-Wno-deprecated-declarations>
+)
 
 add_executable(run_callee2 detail/callee2.cpp)
 set_target_properties(run_callee2 PROPERTIES CXX_STANDARD 17)

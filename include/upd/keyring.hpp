@@ -4,7 +4,9 @@
 
 #include "format.hpp"
 
-#include "detail/type_traits/is_keyring.hpp"
+#include "upd/detail/type_traits/remove_cv_ref.hpp"
+#include <type_traits>
+
 #include "detail/type_traits/signature.hpp"
 #include "detail/type_traits/smallest.hpp"
 #include "detail/type_traits/typelist.hpp"
@@ -17,7 +19,7 @@
 namespace upd {
 
 template<endianess, signed_mode, typename...>
-class keyring; // IWYU pragma: keep
+class keyring {};
 
 //! \brief Holds a set of callbacks and index them at compile-time
 //!
@@ -52,8 +54,11 @@ public:
   //! \brief Type of the key associated to an unevaluated reference to a callback
   //! \tparam H Unevaluated reference to a callback managed by the keyring
   template<typename H>
-  using key_t =
-      key<index_t, detail::find<flist_t, H>::value, detail::signature_t<typename H::type>, Endianess, Signed_Mode>;
+  using key_t = key<index_t,
+                    detail::find<flist_t, H>::value,
+                    typename std::remove_pointer<typename H::type>::type,
+                    Endianess,
+                    Signed_Mode>;
 
   //! \brief Number of managed callbacks
   constexpr static index_t size = sizeof...(Fs);
@@ -85,7 +90,7 @@ public:
   //! \tparam Ftor One of the callbacks managed by the keyring
   template<auto &Ftor>
   constexpr auto get() const {
-    return get(unevaluated<decltype(Ftor), Ftor>{});
+    return get(unevaluated<detail::remove_cv_ref_t<decltype(Ftor)> *, &Ftor>{});
   }
 #endif // __cplusplus >= 201703L
 };

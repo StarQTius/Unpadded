@@ -90,7 +90,7 @@ static void tuple_view_DO_assign_to_a_tuple_EXPECT_correct_behavior() {
        rhs = make_tuple(little_endian, two_complement, int{0xa}, char{0xb}, bool{true});
   auto result = (lhs = make_view<int, char, bool>(little_endian, two_complement, rhs.begin()));
 
-  static_assert(std::is_same<decltype(result), decltype(lhs)>::value);
+  static_assert(std::is_same<decltype(result), decltype(lhs)>::value, "");
   TEST_ASSERT_EQUAL_INT(get<0>(lhs), 0xa);
   TEST_ASSERT_EQUAL_CHAR(get<1>(lhs), 0xb);
   TEST_ASSERT_TRUE(get<2>(lhs));

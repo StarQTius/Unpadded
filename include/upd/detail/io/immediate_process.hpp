@@ -5,6 +5,7 @@
 #include "../../type.hpp"
 #include "../../upd.hpp"
 #include "../type_traits/iterator_category.hpp"
+#include "../type_traits/no_derived_member_shadowing.hpp"
 #include "../type_traits/remove_cv_ref.hpp"
 #include "../type_traits/require.hpp"
 
@@ -25,7 +26,7 @@ public:
            typename Output,
            UPD_REQUIRE(is_input_byte_iterator<decay_t<Input>>::value ||
                        is_output_byte_iterator<decay_t<Output>>::value)>
-  R operator()(Input &&input, Output &&output) {
+  R operator()(Input &&input, Output &&output, no_derived_member_shadowing = 0) {
     return derived()(normalize(UPD_FWD(input), reader_tag_t{}), normalize(UPD_FWD(output), writer_tag_t{}));
   }
 
@@ -33,7 +34,7 @@ public:
            typename Output,
            UPD_REQUIRE(is_input_byte_iterator<decay_t<Input>>::value ||
                        is_output_byte_iterator<decay_t<Output>>::value)>
-  R operator()(Input &&input, Output &&output) const {
+  R operator()(Input &&input, Output &&output, no_derived_member_shadowing = 0) const {
     return derived()(normalize(UPD_FWD(input), reader_tag_t{}), normalize(UPD_FWD(output), writer_tag_t{}));
   }
 
