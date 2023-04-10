@@ -1,11 +1,11 @@
-name: Pip Installation Check
+name: Check library installability as a Python wheel
 on: push
 jobs:
-  build:
+  pip-install:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - run: sudo apt install ccache gcc-11
+    - run: sudo apt install ccache gcc-11 python3.10 python3.10-venv
     - run: python3.10 -m venv venv
     - run: venv/bin/pip install . pytest pytest-asyncio 
-    - run: CC="gcc-11" CXX="g++-11" venv/bin/python -m pytest test/py/test.py
+    - run: venv/bin/python -m pytest test/py/test.py

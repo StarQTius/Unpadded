@@ -1,0 +1,36 @@
+name: Check code quality
+on: push
+jobs:
+  check-format:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{github.workspace}}
+    steps:
+    - uses: actions/checkout@v2
+    - run: sudo apt install clang-format
+    - run: pip install cmakelang
+    - run: clang-format --dry-run $(git ls-files | grep -E "\.(hpp|cpp)$")
+    - run: cmake-format --check $(git ls-files | grep -E "(CMakeLists.txt|\.cmake)$")
+    - run: cmake -B ${{github.workspace}}/build
+    - run: cmake --build build -t iwyu
+  check-gcc-11:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - run: sudo apt install ccache gcc-11
+    - run: pip install pytest pytest-asyncio cppimport
+    - run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=gcc-11 -DCMAKE_CXX_COMPILER=g++-11
+    - run: cmake --build ${{github.workspace}}/build -t check
+    - run: cmake -B ${{github.workspace}}/build -DUnpadded_PLATFORM_ENDIANESS=LITTLE -DUnpadded_PLATFORM_SIGNED_MODE=TWO_COMPLEMENT
+    - run: cmake --build ${{github.workspace}}/build -t check
+  check-clang-11:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - run: sudo apt install ccache clang-11
+    - run: pip install pytest pytest-asyncio cppimport
+    - run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang-11 -DCMAKE_CXX_COMPILER=clang++-11
+    - run: cmake --build ${{github.workspace}}/build -t check
+    - run: cmake -B ${{github.workspace}}/build -DUnpadded_PLATFORM_ENDIANESS=LITTLE -DUnpadded_PLATFORM_SIGNED_MODE=TWO_COMPLEMENT
+    - run: cmake --build ${{github.workspace}}/build -t check

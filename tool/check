@@ -1,6 +1,0 @@
-#!/bin/sh
-
-cmake -B build -DCMAKE_BUILD_TYPE=Debug -DUnpadded_INSTALL=OFF \
-&& cmake --build build -t check $@ \
-&& cd build \
-&& ctest --output-on-failure

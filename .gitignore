@@ -1,2 +1,15 @@
-build/
-html/
+/*
+!.git/
+!.github/
+!doc/
+!include/
+!py/
+!test/
+!tool/
+!.clang-format
+!.gitignore
+!CMakeLists.txt
+!MANIFEST.in
+!README.md
+!pyproject.toml
+!setup.py
