@@ -6,12 +6,12 @@ Extending @PROJECT_NAME@ to Python
 Exposing keyrings and dispatchers to Python
 -------------------------------------------
 
-@PROJECT_NAME@ classes can be made available to Python inside a [pybind11](https://pybind11.readthedocs.io/en/latest/) module. Two classes can be exposed at the moment:
+@PROJECT_NAME@ classes can be made available to Python inside a `pybind11 <https://pybind11.readthedocs.io/en/latest/>`_ module. Two classes can be exposed at the moment:
 
 - :cpp:class:`upd::key` template instances through the :cpp:func:`upd::py::unpack_keyring`
 - :cpp:class:`upd::double_buffered_dispatcher` template instances through the :cpp:func:`upd::py::declare_dispatcher`
 
-:cpp:class:`upd::keyring` does not need to be declared because keys are directly exposed. When unpacking a keyring, a Python module attribute is defined for each key in the keyring. The name of each attribute is the name of the function associated with the exposed key.
+When exposing a keyring to Python, a Python module attribute is defined for each key in the keyring. The name of each attribute is the name of the function associated with the exposed key.
 
 Please refer to the API documentation for further detail on the exposed classes interface.
 

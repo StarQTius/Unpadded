@@ -1,6 +1,7 @@
 constexpr upd::byte_t header[4] = {0xff, 0xff, 0xff, 0xff};
 
-// We fill our tuple with the header and the data and keep some room for the CRC
+// We fill our tuple with the header and the data and keep
+// some room for the CRC.
 upd::tuple output_tuple{
   upd::big_endian,
   upd::ones_complement,
@@ -26,7 +27,8 @@ upd::tuple<
   std::uint16_t>
 input_tuple{};
 
-// We receive the packet from the device (assuming `read_byte_from_device` did not get rid of the header)
+// We receive the packet from the device (assuming
+// `read_byte_from_device` did not get rid of the header)
 for (auto &byte: input_tuple) byte = read_byte_from_device();
 
 // Finally we handle the values from the remote device

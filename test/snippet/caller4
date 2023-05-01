@@ -1,11 +1,13 @@
-// We assume that a `keyring` object has been defined and holds a function `f` of signature `std::uint8_t(std::uint16_t)`
+// We assume that a `keyring` object has been defined and
+// holds a function `f` of signature `std::uint8_t(std::uint16_t)`.
 
 auto key = keyring.get<f>();
 
 // First we send a request to the slave device
 key(64).write_to(write_byte_to_slave);
 
-// Let's wait a little for the slave device to completely fulfill the request
+// Let's wait a little for the slave device to completely
+//fulfill the request.
 
 // Then we receive its response
 // `x` type is `std::uint8_t`

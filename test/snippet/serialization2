@@ -1,15 +1,19 @@
-// Here we define our object, and we want to make it serializable
+// Here we define our object, and we want to make it
+// serializable.
 struct object_t {
   std::int16_t x, y;
   std::uint32_t z;
 };
 
-// Thanks to the wonders of template specialization, we can define how our object must be serialized and unserialized
+// Thanks to the wonders of template specialization, we can
+// define how our object must be serialized and unserialized.
 template<>
 struct upd_extension<object_t> {
   
-  // Here we define how `object_t` should be serialized by packing it into a tuple view
-  // Do not worry about the exact type of the tuple view, the library will deduce it from the signature of `unserialize`.
+  // Here we define how `object_t` should be serialized by
+  // packing it into a tuple view. Do not worry about the
+  // exact type of the tuple view, the library will deduce
+  // it from the signature of `unserialize`.
   template<typename View_T>
   static void serialize(const object_t &o, View_T &view) {
     upd::set<0>(view, o.x);
@@ -17,6 +21,7 @@ struct upd_extension<object_t> {
     upd::set<2>(view, o.z);
   }
 
-  // Here we define how `object_t` should be unserialized from a pack of integers
+  // Here we define how `object_t` should be unserialized
+  // from a pack of integers.
   static object_t unserialize(std::int16_t x, std::int16_t y, std::uint32_t z) { return {x, y, z}; }
 };
