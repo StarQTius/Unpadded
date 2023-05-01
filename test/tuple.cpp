@@ -153,7 +153,7 @@ void tuple_DO_invoke_function_EXPECT_correct_behavior() {
       void operator()(int) const volatile && {}
     };
 
-    auto args = make_tuple(little_endian, two_complement, 0);
+    auto args = make_tuple(little_endian, twos_complement, 0);
 
     args.invoke(f);
     args.invoke(cf);
@@ -194,7 +194,7 @@ static void tuple_DO_bind_names_to_tuple_element_EXPECT_getting_same_values_cpp1
   using namespace upd;
 
   int array[]{0x00, 0x11, 0x22, 0x33};
-  tuple t{little_endian, two_complement, int{64}, array, short{16}, char{8}};
+  tuple t{little_endian, twos_complement, int{64}, array, short{16}, char{8}};
 
   auto [a, b, c, d] = t;
   TEST_ASSERT_EQUAL_INT(64, a);
@@ -209,7 +209,7 @@ static void tuple_DO_serialize_user_provided_structure_EXCEPT_correct_behavior()
 
   object_t o{0xa, 0xb, 0xc};
 
-  auto t = make_tuple(little_endian, two_complement, int32_t{0xd}, o, int16_t{0xe});
+  auto t = make_tuple(little_endian, twos_complement, int32_t{0xd}, o, int16_t{0xe});
   TEST_ASSERT_EQUAL_INT32(t.get<0>(), 0xd);
   TEST_ASSERT_EQUAL_UINT8(t.get<1>().x, 0xa);
   TEST_ASSERT_EQUAL_UINT16(t.get<1>().a, 0xb);
@@ -221,7 +221,7 @@ static void tuple_DO_serialize_user_provided_structure_EXCEPT_correct_behavior()
 static void tuple_view_DO_iterate_subview_EXPECT_exact_subsequence() {
   using namespace upd;
 
-  auto t = make_tuple(little_endian, two_complement, int{64}, char{16}, int{32}, bool{true});
+  auto t = make_tuple(little_endian, twos_complement, int{64}, char{16}, int{32}, bool{true});
   byte_t *s_seq = t.begin(), *m_seq = t.begin() + sizeof(int), *e_seq = t.begin() + sizeof(int) + sizeof(char);
   for (auto byte : t.view<0, 2>())
     TEST_ASSERT_EQUAL_UINT8(*s_seq++, byte);
@@ -235,7 +235,7 @@ static void tuple_DO_serialize_std_array() {
   using namespace upd;
 
   int expected[4] = {0, 1, 2, 3};
-  auto t = make_tuple(little_endian, two_complement, std::array<int, 4>{0, 1, 2, 3});
+  auto t = make_tuple(little_endian, twos_complement, std::array<int, 4>{0, 1, 2, 3});
 
   TEST_ASSERT_EQUAL_INT_ARRAY(expected, get<0>(t).data(), 4);
 }
@@ -252,12 +252,12 @@ int main() {
 
   // Template instantiation check
   {
-    tuple<endianess::LITTLE, signed_mode::TWO_COMPLEMENT, int, char, bool>{0, 0, 0};
+    tuple<endianess::LITTLE, signed_mode::TWOS_COMPLEMENT, int, char, bool>{0, 0, 0};
 
-    make_tuple(little_endian, two_complement, int{}, char{}, bool{});
+    make_tuple(little_endian, twos_complement, int{}, char{}, bool{});
 
 #if __cplusplus >= 201703L
-    tuple{little_endian, two_complement, int{}, char{}, bool{}};
+    tuple{little_endian, twos_complement, int{}, char{}, bool{}};
 #endif
   }
 

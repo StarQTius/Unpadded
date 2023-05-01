@@ -8,7 +8,7 @@
 
 std::uint8_t f(std::uint16_t x) { return x / 4; }
 
-constexpr upd::keyring keyring{upd::flist<f>, upd::little_endian, upd::two_complement};
+constexpr upd::keyring keyring{upd::flist<f>, upd::little_endian, upd::twos_complement};
 
 #include "../callee1"
 #include "../callee2"

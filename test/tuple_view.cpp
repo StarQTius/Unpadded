@@ -8,9 +8,9 @@ static void tuple_view_DO_bind_to_buffer_EXPECT_reading_correct_value() {
   constexpr std::size_t size = sizeof(short) + sizeof(int) + sizeof(long);
 
   byte_t buf[size];
-  auto tview = make_view<short, int, long>(little_endian, two_complement, (byte_t *)buf);
+  auto tview = make_view<short, int, long>(little_endian, twos_complement, (byte_t *)buf);
 
-  detail::write_as<endianess::LITTLE, signed_mode::TWO_COMPLEMENT>(int{-0xabc}, buf + sizeof(short));
+  detail::write_as<endianess::LITTLE, signed_mode::TWOS_COMPLEMENT>(int{-0xabc}, buf + sizeof(short));
 
   TEST_ASSERT_EQUAL_HEX64(-0xabc, tview.get<1>());
 }
@@ -21,7 +21,7 @@ static void tuple_view_DO_set_value_EXPECT_reading_same_value() {
   constexpr std::size_t size = sizeof(short) + sizeof(int) + sizeof(long);
 
   byte_t buf[size];
-  auto tview = make_view<short, int, long>(little_endian, two_complement, (byte_t *)buf);
+  auto tview = make_view<short, int, long>(little_endian, twos_complement, (byte_t *)buf);
 
   tview.set<1>(-0xabc);
 
@@ -76,7 +76,7 @@ static void tuple_view_DO_bind_to_a_forward_list_EXPECT_correct_behavior() {
   node root{new node{new node{new node{new node{}}}}};
   iterator begin{&root};
 
-  auto tview = make_view<uint8_t, uint32_t>(little_endian, two_complement, begin);
+  auto tview = make_view<uint8_t, uint32_t>(little_endian, twos_complement, begin);
 
   tview.set<1>(0xabc);
 
@@ -86,9 +86,9 @@ static void tuple_view_DO_bind_to_a_forward_list_EXPECT_correct_behavior() {
 static void tuple_view_DO_assign_to_a_tuple_EXPECT_correct_behavior() {
   using namespace upd;
 
-  auto lhs = make_tuple(little_endian, two_complement, int{}, char{}, bool{}),
-       rhs = make_tuple(little_endian, two_complement, int{0xa}, char{0xb}, bool{true});
-  auto result = (lhs = make_view<int, char, bool>(little_endian, two_complement, rhs.begin()));
+  auto lhs = make_tuple(little_endian, twos_complement, int{}, char{}, bool{}),
+       rhs = make_tuple(little_endian, twos_complement, int{0xa}, char{0xb}, bool{true});
+  auto result = (lhs = make_view<int, char, bool>(little_endian, twos_complement, rhs.begin()));
 
   static_assert(std::is_same<decltype(result), decltype(lhs)>::value, "");
   TEST_ASSERT_EQUAL_INT(get<0>(lhs), 0xa);
@@ -105,9 +105,9 @@ int main() {
 
     byte_t buf[size];
 
-    tuple_view<byte_t *, endianess::LITTLE, signed_mode::TWO_COMPLEMENT, int, char, bool>{buf};
+    tuple_view<byte_t *, endianess::LITTLE, signed_mode::TWOS_COMPLEMENT, int, char, bool>{buf};
 
-    make_view<int, char, bool>(little_endian, two_complement, (byte_t *)buf);
+    make_view<int, char, bool>(little_endian, twos_complement, (byte_t *)buf);
   }
 
   UNITY_BEGIN();

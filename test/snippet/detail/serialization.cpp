@@ -29,7 +29,7 @@ static std::int32_t f() {
 int main() {
   assert(f() == -128 + 64);
 
-  object_t o{16, 32, 64}, _o = upd::get<0>(upd::tuple{upd::little_endian, upd::two_complement, o});
+  object_t o{16, 32, 64}, _o = upd::get<0>(upd::tuple{upd::little_endian, upd::twos_complement, o});
 
   assert(o.x == _o.x);
   assert(o.y == _o.y);

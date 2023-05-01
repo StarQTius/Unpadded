@@ -3,7 +3,7 @@ constexpr upd::byte_t header[4] = {0xff, 0xff, 0xff, 0xff};
 // We fill our tuple with the header and the data and keep some room for the CRC
 upd::tuple output_tuple{
   upd::big_endian,
-  upd::one_complement,
+  upd::ones_complement,
   header,
   std::uint32_t{64},
   std::uint32_t{32},
@@ -19,7 +19,7 @@ for (auto byte: output_tuple) write_byte_to_device(byte);
 // We prepare the tuple for the reception of the response
 upd::tuple<
   upd::endianess::BIG,
-  upd::signed_mode::ONE_COMPLEMENT,
+  upd::signed_mode::ONES_COMPLEMENT,
   upd::byte_t[4],
   std::int16_t,
   std::uint16_t,

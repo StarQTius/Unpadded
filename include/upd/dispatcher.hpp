@@ -51,7 +51,7 @@ action make_action() {
 
 //! \brief Alias for `action` if `Action_Features` is `action_features::ANY`, `no_storage_action` otherwise
 template<action_features Action_Features>
-using action_t = decltype(make_action<Action_Features, int, 0, endianess::LITTLE, signed_mode::TWO_COMPLEMENT>());
+using action_t = decltype(make_action<Action_Features, int, 0, endianess::LITTLE, signed_mode::TWOS_COMPLEMENT>());
 
 //! \brief Stores actions
 //!

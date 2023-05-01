@@ -10,7 +10,7 @@ namespace upd {
 enum class endianess { LITTLE, BIG };
 
 //! \brief Used to specify signed integer representation for serialization and unserialization
-enum class signed_mode { SIGNED_MAGNITUDE, ONE_COMPLEMENT, TWO_COMPLEMENT, OFFSET_BINARY };
+enum class signed_mode { SIGNED_MAGNITUDE, ONES_COMPLEMENT, TWOS_COMPLEMENT, OFFSET_BINARY };
 
 //! \brief \ref<endianess> endianess enumerator holder for named parameters
 template<endianess Endianess>
@@ -29,11 +29,11 @@ constexpr endianess_h<endianess::BIG> big_endian;
 //! \brief Token associated with signed_mode::SIGNED_MAGNITUDE
 constexpr signed_mode_h<signed_mode::SIGNED_MAGNITUDE> signed_magnitude;
 
-//! \brief Token associated with signed_mode::ONE_COMPLEMENT
-constexpr signed_mode_h<signed_mode::ONE_COMPLEMENT> one_complement;
+//! \brief Token associated with signed_mode::ONES_COMPLEMENT
+constexpr signed_mode_h<signed_mode::ONES_COMPLEMENT> ones_complement;
 
-//! \brief Token associated with signed_mode::TWO_COMPLEMENT
-constexpr signed_mode_h<signed_mode::TWO_COMPLEMENT> two_complement;
+//! \brief Token associated with signed_mode::TWOS_COMPLEMENT
+constexpr signed_mode_h<signed_mode::TWOS_COMPLEMENT> twos_complement;
 
 //! \brief Token associated with signed_mode::OFFSET_BINARY
 constexpr signed_mode_h<signed_mode::OFFSET_BINARY> offset_binary;

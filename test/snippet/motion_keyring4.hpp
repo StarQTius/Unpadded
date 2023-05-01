@@ -15,4 +15,4 @@ constexpr auto motion_keyring = upd::make_keyring(upd::flist_t<UPD_CTREF(set_for
                                                                UPD_CTREF(set_left_steering_speed),
                                                                UPD_CTREF(set_right_steering_speed)>{},
                                                   upd::little_endian,
-                                                  upd::two_complement);
+                                                  upd::twos_complement);

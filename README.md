@@ -32,7 +32,7 @@ void Set_Red_Light(std::uint8_t);
 upd::keyring keyring{
   upd::flist<Set_Green_Light, Set_Yellow_Light, Set_Red_Light>,
   upd::little_endian,
-  upd::two_complement
+  upd::twos_complement
 };
 ```
 

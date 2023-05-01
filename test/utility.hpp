@@ -21,8 +21,8 @@ struct signed_mode_token {};
 constexpr auto every_options =
     typename product<upd::typelist_t<endianess_token<upd::endianess::LITTLE>, endianess_token<upd::endianess::BIG>>,
                      upd::typelist_t<signed_mode_token<upd::signed_mode::SIGNED_MAGNITUDE>,
-                                     signed_mode_token<upd::signed_mode::ONE_COMPLEMENT>,
-                                     signed_mode_token<upd::signed_mode::TWO_COMPLEMENT>,
+                                     signed_mode_token<upd::signed_mode::ONES_COMPLEMENT>,
+                                     signed_mode_token<upd::signed_mode::TWOS_COMPLEMENT>,
                                      signed_mode_token<upd::signed_mode::OFFSET_BINARY>>>::type{};
 #if !defined(UPD_TEST_SETUP)
 extern "C" void setUp() {}

@@ -7,7 +7,7 @@
 
 void f(std::uint8_t, std::uint16_t);
 
-constexpr upd::keyring keyring{upd::flist<f>, upd::little_endian, upd::two_complement};
+constexpr upd::keyring keyring{upd::flist<f>, upd::little_endian, upd::twos_complement};
 
 #include "../caller1"
 

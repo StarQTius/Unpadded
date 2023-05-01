@@ -5,6 +5,7 @@
 #include <iterator>
 #include <type_traits>
 
+#include "../../format.hpp"
 #include "../../type.hpp"
 #include "is_array.hpp"
 #include "is_key.hpp"
@@ -30,9 +31,6 @@
 #endif // !defined(DOXYGEN)
 
 namespace upd {
-
-enum class endianess;
-enum class signed_mode;
 
 template<endianess Endianess, signed_mode Signed_Mode, typename... Ts>
 class tuple; // IWYU pragma: keep

@@ -5,7 +5,6 @@
 #include <array>
 #include <cstddef>
 #include <type_traits>
-#include <utility>
 
 #include "detail/serialization.hpp"
 #include "detail/type_traits/conjunction.hpp"
@@ -42,7 +41,7 @@ auto normalize(std::array<T, N> &&array) -> T (&&)[N] {
 }
 template<typename Target_T,
          typename T,
-         require<std::is_same<decltype(read_as<T, endianess::LITTLE, signed_mode::TWO_COMPLEMENT>(nullptr)),
+         require<std::is_same<decltype(read_as<T, endianess::LITTLE, signed_mode::TWOS_COMPLEMENT>(nullptr)),
                               Target_T>::value> = 0>
 T &&normalize(T &&x) {
   return UPD_FWD(x);
@@ -57,7 +56,7 @@ constexpr std::size_t serialization_size_impl(...) {
 }
 template<typename T, detail::require_is_user_serializable<T> = 0>
 constexpr std::size_t serialization_size_impl(int) {
-  return decltype(make_view_for<endianess::LITTLE, signed_mode::TWO_COMPLEMENT>(
+  return decltype(make_view_for<endianess::LITTLE, signed_mode::TWOS_COMPLEMENT>(
       (byte_t *)nullptr, examine_invocable<decltype(upd_extension<T>::unserialize)>{}))::size;
 }
 
