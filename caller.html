@@ -34,8 +34,8 @@
   <section id="implementing-caller-side">
 <h1>Implementing caller side<a class="headerlink" href="#implementing-caller-side" title="Permalink to this heading">¶</a></h1>
 <p>On the caller side, requesting a remote device to invoke a function is pretty much like a regular function invocation. The types of the arguments are checked at compile-time. The type of the return value is also available at compile-time.</p>
-<p>What Unpadded does for you is generating the packet and sending them byte by byte with a user-provided callback. What remains to be handled is the implementation of the aforesaid callback and the packets encapsulation, if you need one.</p>
-<p>The following sections will assume these functions to be defined by the master device:</p>
+<p>What Unpadded does for you is generating the packet and sending it byte by byte through a user-provided callback. What remains to be handled is the implementation of the aforesaid callback.</p>
+<p>The following sections will assume these functions to be defined by the caller device:</p>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="nf">write_byte_to_slave</span><span class="p">(</span><span class="n">upd</span><span class="o">::</span><span class="n">byte_t</span><span class="p">);</span>
 <span class="n">upd</span><span class="o">::</span><span class="n">byte_t</span><span class="w"> </span><span class="nf">read_byte_from_slave</span><span class="p">();</span>
 </pre></div>
@@ -46,8 +46,9 @@
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="c1">// We create a key to `f`.</span>
 <span class="k">auto</span><span class="w"> </span><span class="n">key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">keyring</span><span class="p">.</span><span class="n">get</span><span class="o">&lt;</span><span class="n">f</span><span class="o">&gt;</span><span class="p">();</span>
 
-<span class="c1">// Then we generate the packet and write every byte of it to the slave device.</span>
-<span class="c1">// On the remote device, ``f`` will be invoked on the arguments ``16`` and ``64``.</span>
+<span class="c1">// Then we generate the packet and write every byte of it</span>
+<span class="c1">// to the slave device. On the remote device, ``f`` will be</span>
+<span class="c1">// invoked on the arguments ``16`` and ``64``.</span>
 <span class="n">key</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span><span class="w"> </span><span class="mi">64</span><span class="p">).</span><span class="n">write_to</span><span class="p">(</span><span class="n">write_byte_to_slave</span><span class="p">);</span>
 
 <span class="c1">// This line does the same thing, but with another syntax.</span>
@@ -66,7 +67,7 @@
 <p>Once sent, the packet must be received by a dispatcher.</p>
 <section id="example">
 <h3>Example<a class="headerlink" href="#example" title="Permalink to this heading">¶</a></h3>
-<p>In the follwing example, we are requesting the slave device to spiral faster and faster.</p>
+<p>In the follwing example, we are requesting the callee device to spiral faster and faster.</p>
 <div class="literal-block-wrapper docutils container" id="id1">
 <div class="code-block-caption"><span class="caption-text">motion_keyring.hpp</span><a class="headerlink" href="#id1" title="Permalink to this code">¶</a></div>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#pragma once</span>
@@ -111,29 +112,34 @@
 </section>
 <section id="handling-the-callee-response">
 <h2>Handling the callee response<a class="headerlink" href="#handling-the-callee-response" title="Permalink to this heading">¶</a></h2>
-<p>You are free to ignore the result of an invocation request if you don’t need it. Unpadded won’t handle the response from the callee automatically. If you need to, there is two different way to proceed. Either you send a request then wait until the slave device is done (blocking mode) or you hook a callback to be invoked when receiving a response from the slave device (non-blocking mode).</p>
+<p>You are free to ignore the result of an invocation request if you don’t need it. Unpadded won’t handle the response from the callee automatically. If you need to, there is two different way to proceed. Either you send a request then wait until the callee device is done (blocking mode) or you hook a callback to be invoked when receiving a response from the callee device (non-blocking mode).</p>
 <section id="blocking-mode">
 <h3>Blocking mode<a class="headerlink" href="#blocking-mode" title="Permalink to this heading">¶</a></h3>
-<p>In blocking mode, keys must be used to extract the invocaiton request result out of the packet sent back to the master device.</p>
-<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="c1">// We assume that a `keyring` object has been defined and holds a function `f` of signature `std::uint8_t(std::uint16_t)`</span>
+<p>In blocking mode, keys must be used to extract the result of the invocation request out of the packet sent back by the callee device.</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="c1">// We assume that a `keyring` object has been defined and</span>
+<span class="c1">// holds a function `f` of signature `std::uint8_t(std::uint16_t)`.</span>
 
 <span class="k">auto</span><span class="w"> </span><span class="n">key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">keyring</span><span class="p">.</span><span class="n">get</span><span class="o">&lt;</span><span class="n">f</span><span class="o">&gt;</span><span class="p">();</span>
 
 <span class="c1">// First we send a request to the slave device</span>
 <span class="n">key</span><span class="p">(</span><span class="mi">64</span><span class="p">).</span><span class="n">write_to</span><span class="p">(</span><span class="n">write_byte_to_slave</span><span class="p">);</span>
 
-<span class="c1">// Let&#39;s wait a little for the slave device to completely fulfill the request</span>
+<span class="c1">// Let&#39;s wait a little for the slave device to completely</span>
+<span class="c1">//fulfill the request.</span>
 
 <span class="c1">// Then we receive its response</span>
 <span class="c1">// `x` type is `std::uint8_t`</span>
 <span class="k">auto</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">key</span><span class="p">.</span><span class="n">read_from</span><span class="p">(</span><span class="n">read_byte_from_slave</span><span class="p">);</span>
 </pre></div>
 </div>
+<p>On bare-metal implementations, the blocking mode is not really useful. If you are using an RTOS however, synchronization primitives can be used in order to wait for the response to be received without blocking the caller device.</p>
 </section>
 <section id="non-blocking-mode">
 <h3>Non-blocking mode<a class="headerlink" href="#non-blocking-mode" title="Permalink to this heading">¶</a></h3>
+<p>If you cannot afford using the blocking mode (for example, because you cannot use an RTOS), Unpadded provides you with a portable way to hook actions to be executed on reception of a reponse from the callee device.</p>
 <p>In non-blocking mode, the <code class="docutils literal notranslate"><span class="pre">action</span></code> class must be used to store a callback for later.</p>
-<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="c1">// We assume that a `keyring` object has been defined and holds a function `f` of signature `std::uint8_t(std::uint16_t)`</span>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="c1">// We assume that a `keyring` object has been defined and</span>
+<span class="c1">// holds a function `f` of signature `std::uint8_t(std::uint16_t)`</span>
 
 <span class="k">static</span><span class="w"> </span><span class="n">upd</span><span class="o">::</span><span class="n">action</span><span class="w"> </span><span class="n">action</span><span class="p">;</span>
 
@@ -163,7 +169,7 @@
 <span class="p">}</span>
 </pre></div>
 </div>
-<p><code class="docutils literal notranslate"><span class="pre">action</span></code> is non-templated, so it is suitable for storage.</p>
+<p><code class="docutils literal notranslate"><span class="pre">action</span></code> is non-templated, so it is suitable for storage. The hooked callback must be invocable on whatever value the remotely called function returns. In case of a multimaster architecture (i.e. if both devices can initiate a request), the <cite>dispatcher::reply()</cite> function can come in handy.</p>
 </section>
 </section>
 <section id="api-references">

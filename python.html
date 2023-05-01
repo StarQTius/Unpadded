@@ -35,12 +35,12 @@
 <p>Unpadded API can be extended to Python quite easily, allowing you to communicate with C++ application from a Python script.</p>
 <section id="exposing-keyrings-and-dispatchers-to-python">
 <h2>Exposing keyrings and dispatchers to Python<a class="headerlink" href="#exposing-keyrings-and-dispatchers-to-python" title="Permalink to this heading">¶</a></h2>
-<p>Unpadded classes can be made available to Python inside a [pybind11](<a class="reference external" href="https://pybind11.readthedocs.io/en/latest/">https://pybind11.readthedocs.io/en/latest/</a>) module. Two classes can be exposed at the moment:</p>
+<p>Unpadded classes can be made available to Python inside a <a class="reference external" href="https://pybind11.readthedocs.io/en/latest/">pybind11</a> module. Two classes can be exposed at the moment:</p>
 <ul class="simple">
 <li><p><a class="reference internal" href="caller.html#_CPPv4I0_7Index_T0_9endianess_11signed_modeEN3upd3keyE" title="upd::key"><code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">upd::key</span></code></a> template instances through the <a class="reference internal" href="#_CPPv4I0EN3upd2py14unpack_keyringEvRN8pybind116moduleE7Keyring" title="upd::py::unpack_keyring"><code class="xref cpp cpp-func docutils literal notranslate"><span class="pre">upd::py::unpack_keyring()</span></code></a></p></li>
 <li><p><a class="reference internal" href="callee.html#_CPPv4I0EN3upd26double_buffered_dispatcherE" title="upd::double_buffered_dispatcher"><code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">upd::double_buffered_dispatcher</span></code></a> template instances through the <a class="reference internal" href="#_CPPv4I0EN3upd2py18declare_dispatcherEvRN8pybind116moduleEPKc7Keyring" title="upd::py::declare_dispatcher"><code class="xref cpp cpp-func docutils literal notranslate"><span class="pre">upd::py::declare_dispatcher()</span></code></a></p></li>
 </ul>
-<p><a class="reference internal" href="shared.html#_CPPv4I_9endianess_11signed_modeDpEN3upd7keyringE" title="upd::keyring"><code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">upd::keyring</span></code></a> does not need to be declared because keys are directly exposed. When unpacking a keyring, a Python module attribute is defined for each key in the keyring. The name of each attribute is the name of the function associated with the exposed key.</p>
+<p>When exposing a keyring to Python, a Python module attribute is defined for each key in the keyring. The name of each attribute is the name of the function associated with the exposed key.</p>
 <p>Please refer to the API documentation for further detail on the exposed classes interface.</p>
 </section>
 <section id="lazily-compile-your-python-extension-modules">

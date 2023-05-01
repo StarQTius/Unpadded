@@ -3,9 +3,9 @@ Implementing caller side
 
 On the caller side, requesting a remote device to invoke a function is pretty much like a regular function invocation. The types of the arguments are checked at compile-time. The type of the return value is also available at compile-time.
 
-What Unpadded does for you is generating the packet and sending them byte by byte with a user-provided callback. What remains to be handled is the implementation of the aforesaid callback and the packets encapsulation, if you need one.
+What Unpadded does for you is generating the packet and sending it byte by byte through a user-provided callback. What remains to be handled is the implementation of the aforesaid callback.
 
-The following sections will assume these functions to be defined by the master device:
+The following sections will assume these functions to be defined by the caller device:
 
 .. literalinclude:: //home/runner/work/Unpadded/Unpadded/test/snippet/caller1
   :language: cpp
@@ -28,7 +28,7 @@ Once sent, the packet must be received by a dispatcher.
 Example
 ~~~~~~~
 
-In the follwing example, we are requesting the slave device to spiral faster and faster.
+In the follwing example, we are requesting the callee device to spiral faster and faster.
 
 .. literalinclude:: //home/runner/work/Unpadded/Unpadded/test/snippet/motion_keyring1.hpp
   :language: cpp
@@ -41,25 +41,29 @@ In the follwing example, we are requesting the slave device to spiral faster and
 Handling the callee response
 ----------------------------
 
-You are free to ignore the result of an invocation request if you don't need it. Unpadded won't handle the response from the callee automatically. If you need to, there is two different way to proceed. Either you send a request then wait until the slave device is done (blocking mode) or you hook a callback to be invoked when receiving a response from the slave device (non-blocking mode).
+You are free to ignore the result of an invocation request if you don't need it. Unpadded won't handle the response from the callee automatically. If you need to, there is two different way to proceed. Either you send a request then wait until the callee device is done (blocking mode) or you hook a callback to be invoked when receiving a response from the callee device (non-blocking mode).
 
 Blocking mode
 ~~~~~~~~~~~~~
 
-In blocking mode, keys must be used to extract the invocaiton request result out of the packet sent back to the master device.
+In blocking mode, keys must be used to extract the result of the invocation request out of the packet sent back by the callee device.
 
 .. literalinclude:: //home/runner/work/Unpadded/Unpadded/test/snippet/caller4
   :language: cpp
 
+On bare-metal implementations, the blocking mode is not really useful. If you are using an RTOS however, synchronization primitives can be used in order to wait for the response to be received without blocking the caller device.
+
 Non-blocking mode
 ~~~~~~~~~~~~~~~~~
+
+If you cannot afford using the blocking mode (for example, because you cannot use an RTOS), Unpadded provides you with a portable way to hook actions to be executed on reception of a reponse from the callee device.
 
 In non-blocking mode, the ``action`` class must be used to store a callback for later.
 
 .. literalinclude:: //home/runner/work/Unpadded/Unpadded/test/snippet/caller5
   :language: cpp
 
-``action`` is non-templated, so it is suitable for storage.
+``action`` is non-templated, so it is suitable for storage. The hooked callback must be invocable on whatever value the remotely called function returns. In case of a multimaster architecture (i.e. if both devices can initiate a request), the `dispatcher::reply()` function can come in handy.
 
 API References
 --------------

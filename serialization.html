@@ -50,7 +50,8 @@
 <p>Assuming <cite>write_byte_to_device</cite> and <cite>read_byte_from_device</cite> are defined and work as their names suggest, the following code will allow our microcontroller to send a packet and wait for a response from the device before unserializing it.</p>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">constexpr</span><span class="w"> </span><span class="n">upd</span><span class="o">::</span><span class="n">byte_t</span><span class="w"> </span><span class="n">header</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mh">0xff</span><span class="p">,</span><span class="w"> </span><span class="mh">0xff</span><span class="p">,</span><span class="w"> </span><span class="mh">0xff</span><span class="p">,</span><span class="w"> </span><span class="mh">0xff</span><span class="p">};</span>
 
-<span class="c1">// We fill our tuple with the header and the data and keep some room for the CRC</span>
+<span class="c1">// We fill our tuple with the header and the data and keep</span>
+<span class="c1">// some room for the CRC.</span>
 <span class="n">upd</span><span class="o">::</span><span class="n">tuple</span><span class="w"> </span><span class="n">output_tuple</span><span class="p">{</span>
 <span class="w">  </span><span class="n">upd</span><span class="o">::</span><span class="n">big_endian</span><span class="p">,</span>
 <span class="w">  </span><span class="n">upd</span><span class="o">::</span><span class="n">ones_complement</span><span class="p">,</span>
@@ -76,7 +77,8 @@
 <span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="kt">uint16_t</span><span class="o">&gt;</span>
 <span class="n">input_tuple</span><span class="p">{};</span>
 
-<span class="c1">// We receive the packet from the device (assuming `read_byte_from_device` did not get rid of the header)</span>
+<span class="c1">// We receive the packet from the device (assuming</span>
+<span class="c1">// `read_byte_from_device` did not get rid of the header)</span>
 <span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="w"> </span><span class="o">&amp;</span><span class="n">byte</span><span class="o">:</span><span class="w"> </span><span class="n">input_tuple</span><span class="p">)</span><span class="w"> </span><span class="n">byte</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">read_byte_from_device</span><span class="p">();</span>
 
 <span class="c1">// Finally we handle the values from the remote device</span>
@@ -89,9 +91,9 @@
 </div>
 </section>
 </section>
-<section id="make-a-view-of-a-subtuple-or-a-bare-buffer-using-upd-tuple-view">
-<h2>Make a view of a subtuple or a bare buffer using <a class="reference internal" href="#_CPPv4I0_9endianess_11signed_modeDpEN3upd10tuple_viewE" title="upd::tuple_view"><code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">upd::tuple_view</span></code></a><a class="headerlink" href="#make-a-view-of-a-subtuple-or-a-bare-buffer-using-upd-tuple-view" title="Permalink to this heading">¶</a></h2>
-<p>In some case, having a view of a subtuple or interpreting a bare buffer as if it was a <a class="reference internal" href="#_CPPv4I_9endianess_11signed_modeDpEN3upd5tupleE" title="upd::tuple"><code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">upd::tuple</span></code></a> content is useful because it prevent any copy from occuring. A <a class="reference internal" href="#_CPPv4I0_9endianess_11signed_modeDpEN3upd10tuple_viewE" title="upd::tuple_view"><code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">upd::tuple_view</span></code></a> instance is either constructed from a buffer iterator or created from the <a class="reference internal" href="#_CPPv4I_NSt6size_tE_NSt6size_tEEN3upd5tuple4viewEDav" title="upd::tuple::view"><code class="xref cpp cpp-func docutils literal notranslate"><span class="pre">upd::tuple::view()</span></code></a> function.</p>
+<section id="make-a-view-of-a-part-of-a-tuple-or-out-of-an-existing-buffer-using-upd-tuple-view">
+<h2>Make a view of a part of a tuple or out of an existing buffer using <a class="reference internal" href="#_CPPv4I0_9endianess_11signed_modeDpEN3upd10tuple_viewE" title="upd::tuple_view"><code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">upd::tuple_view</span></code></a><a class="headerlink" href="#make-a-view-of-a-part-of-a-tuple-or-out-of-an-existing-buffer-using-upd-tuple-view" title="Permalink to this heading">¶</a></h2>
+<p>In some case, having a view of a subtuple or interpreting a bare buffer as if it was a <a class="reference internal" href="#_CPPv4I_9endianess_11signed_modeDpEN3upd5tupleE" title="upd::tuple"><code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">upd::tuple</span></code></a> content is useful as it prevents any copy from occuring. A <a class="reference internal" href="#_CPPv4I0_9endianess_11signed_modeDpEN3upd10tuple_viewE" title="upd::tuple_view"><code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">upd::tuple_view</span></code></a> instance is either constructed from a buffer iterator or created from the <a class="reference internal" href="#_CPPv4I_NSt6size_tE_NSt6size_tEEN3upd5tuple4viewEDav" title="upd::tuple::view"><code class="xref cpp cpp-func docutils literal notranslate"><span class="pre">upd::tuple::view()</span></code></a> function.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p><a class="reference internal" href="#_CPPv4I0_9endianess_11signed_modeDpEN3upd10tuple_viewE" title="upd::tuple_view"><code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">upd::tuple_view</span></code></a> will assume the end of the container it is associated with by incrementing the provided iterator according to the sizes of the elements. Therefore, this iterator might go past the real end iterator if the viewed container is not large enough.</p>
@@ -104,18 +106,22 @@
 <section id="customization-points-defining-serialization-processes-for-foreign-types">
 <h2>Customization points: defining serialization processes for foreign types<a class="headerlink" href="#customization-points-defining-serialization-processes-for-foreign-types" title="Permalink to this heading">¶</a></h2>
 <p>Unpadded only handles primitive types and array of those. However, you can make any type serializable with <cite>upd_extension</cite>.</p>
-<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="c1">// Here we define our object, and we want to make it serializable</span>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="c1">// Here we define our object, and we want to make it</span>
+<span class="c1">// serializable.</span>
 <span class="k">struct</span><span class="w"> </span><span class="nc">object_t</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="kt">int16_t</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">;</span>
 <span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">z</span><span class="p">;</span>
 <span class="p">};</span>
 
-<span class="c1">// Thanks to the wonders of template specialization, we can define how our object must be serialized and unserialized</span>
+<span class="c1">// Thanks to the wonders of template specialization, we can</span>
+<span class="c1">// define how our object must be serialized and unserialized.</span>
 <span class="k">template</span><span class="o">&lt;&gt;</span>
 <span class="k">struct</span><span class="w"> </span><span class="nc">upd_extension</span><span class="o">&lt;</span><span class="n">object_t</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span>
-<span class="w">  </span><span class="c1">// Here we define how `object_t` should be serialized by packing it into a tuple view</span>
-<span class="w">  </span><span class="c1">// Do not worry about the exact type of the tuple view, the library will deduce it from the signature of `unserialize`.</span>
+<span class="w">  </span><span class="c1">// Here we define how `object_t` should be serialized by</span>
+<span class="w">  </span><span class="c1">// packing it into a tuple view. Do not worry about the</span>
+<span class="w">  </span><span class="c1">// exact type of the tuple view, the library will deduce</span>
+<span class="w">  </span><span class="c1">// it from the signature of `unserialize`.</span>
 <span class="w">  </span><span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">View_T</span><span class="o">&gt;</span>
 <span class="w">  </span><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">serialize</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">object_t</span><span class="w"> </span><span class="o">&amp;</span><span class="n">o</span><span class="p">,</span><span class="w"> </span><span class="n">View_T</span><span class="w"> </span><span class="o">&amp;</span><span class="n">view</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">upd</span><span class="o">::</span><span class="n">set</span><span class="o">&lt;</span><span class="mi">0</span><span class="o">&gt;</span><span class="p">(</span><span class="n">view</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">x</span><span class="p">);</span>
@@ -123,7 +129,8 @@
 <span class="w">    </span><span class="n">upd</span><span class="o">::</span><span class="n">set</span><span class="o">&lt;</span><span class="mi">2</span><span class="o">&gt;</span><span class="p">(</span><span class="n">view</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">z</span><span class="p">);</span>
 <span class="w">  </span><span class="p">}</span>
 
-<span class="w">  </span><span class="c1">// Here we define how `object_t` should be unserialized from a pack of integers</span>
+<span class="w">  </span><span class="c1">// Here we define how `object_t` should be unserialized</span>
+<span class="w">  </span><span class="c1">// from a pack of integers.</span>
 <span class="w">  </span><span class="k">static</span><span class="w"> </span><span class="n">object_t</span><span class="w"> </span><span class="n">unserialize</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">int16_t</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="kt">int16_t</span><span class="w"> </span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">z</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="p">{</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">z</span><span class="p">};</span><span class="w"> </span><span class="p">}</span>
 <span class="p">};</span>
 </pre></div>
@@ -710,7 +717,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#example">Example</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#make-a-view-of-a-subtuple-or-a-bare-buffer-using-upd-tuple-view">Make a view of a subtuple or a bare buffer using <code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">upd::tuple_view</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#make-a-view-of-a-part-of-a-tuple-or-out-of-an-existing-buffer-using-upd-tuple-view">Make a view of a part of a tuple or out of an existing buffer using <code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">upd::tuple_view</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#customization-points-defining-serialization-processes-for-foreign-types">Customization points: defining serialization processes for foreign types</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#api-references">API References</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#tuple"><code class="docutils literal notranslate"><span class="pre">tuple</span></code></a></li>

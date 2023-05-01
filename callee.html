@@ -34,7 +34,7 @@
   <section id="implementing-callee-side">
 <h1>Implementing callee side<a class="headerlink" href="#implementing-callee-side" title="Permalink to this heading">¶</a></h1>
 <p>Unpadded provides tools for receiving and processing incoming packet from the caller. Depending on your needs, there are several options available, especially for embedded platforms.</p>
-<p>The following sections will assume these functions to be defined by the master device:</p>
+<p>The following sections will assume these functions to be defined by the callee device:</p>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="nf">write_byte_to_master</span><span class="p">(</span><span class="n">upd</span><span class="o">::</span><span class="n">byte_t</span><span class="p">);</span>
 <span class="n">upd</span><span class="o">::</span><span class="n">byte_t</span><span class="w"> </span><span class="nf">read_byte_from_master</span><span class="p">();</span>
 </pre></div>
@@ -49,15 +49,20 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">double_buffered_dispatcher</span></code>, which use two separate internal buffers: one for receiving and one for sending;</p></li>
 </ul>
 <p>Receiving a packet and sending back a response packet is pretty straightforward:</p>
-<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="c1">// We assume that a `keyring` object has been defined and both the caller and the callee use this keyring</span>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="c1">// We assume that a `keyring` object has been defined and</span>
+<span class="c1">// both the caller and the callee use this keyring.</span>
 
-<span class="c1">// We create a dispatcher which can handle request for the invocables managed by `keyring`</span>
-<span class="c1">// The second argument will be discussed later</span>
+<span class="c1">// We create a dispatcher which can handle request for</span>
+<span class="c1">// the invocables managed by `keyring`. The second</span>
+<span class="c1">// argument will be discussed later.</span>
 <span class="k">static</span><span class="w"> </span><span class="n">upd</span><span class="o">::</span><span class="n">dispatcher</span><span class="w"> </span><span class="n">dispatcher</span><span class="p">{</span><span class="n">keyring</span><span class="p">,</span><span class="w"> </span><span class="n">upd</span><span class="o">::</span><span class="n">policy</span><span class="o">::</span><span class="n">any_callback</span><span class="p">};</span>
 
-<span class="c1">// Let&#39;s assume this function is invoked when the input buffer contains a full request</span>
+<span class="c1">// Let&#39;s assume this function is invoked when the input</span>
+<span class="c1">// buffer contains a full request.</span>
 <span class="kt">void</span><span class="w"> </span><span class="nf">processing_request</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="c1">// And, that&#39;s it ! With this single line, the dispatcher will automatically extract the bytes from the input buffer and write the response to the output buffer</span>
+<span class="w">  </span><span class="c1">// And, that&#39;s it ! With this single line, the dispatcher</span>
+<span class="w">  </span><span class="c1">// will automatically extract the bytes from the input</span>
+<span class="w">  </span><span class="c1">// buffer and write the response to the output buffer.</span>
 <span class="w">  </span><span class="n">dispatcher</span><span class="p">(</span><span class="n">read_byte_from_master</span><span class="p">,</span><span class="w"> </span><span class="n">write_byte_to_master</span><span class="p">);</span>
 <span class="p">}</span>
 </pre></div>
@@ -66,21 +71,21 @@
 <h3>Buffered dispatchers vs. non-buffered dispatchers<a class="headerlink" href="#buffered-dispatchers-vs-non-buffered-dispatchers" title="Permalink to this heading">¶</a></h3>
 <p>Both kind of dispatchers use callbacks to read and write the bytes of the packets. However:</p>
 <ul class="simple">
-<li><p>Non-buffered dispatchers will immediately read all the bytes needed for a full packet, regardless of whether these bytes have actually all been receive at this point. In other words, the provided invocable which is used to get the bytes one by one will be called reapetedly, and it is up to you to implement the correct behavior. For example, you may block until at least one byte is available. The most sensible solution would be to call the dispatcher only when enough bytes have been received.</p></li>
+<li><p>Non-buffered dispatchers will immediately read all the bytes needed for a full packet, regardless of whether these bytes have actually all been receive at this point. In other words, the provided invocable which is used to get the bytes one by one will be called reapetedly, and it is up to you to implement the correct behavior. For example, you may block until at least one byte is available. The most sensible solution would be to call the dispatcher only when enough bytes have been received or to use synchronization primitives in order to wait for new bytes to come without blocking the device.</p></li>
 <li><p>Buffered dispatchers use buffers which allow you to store incomplete packets. That means that you may receive a part of the packet, then do something else to finally receive the rest later.</p></li>
 </ul>
-<p>Non buffered dispatcher may be a viable option when you can afford to block the execuction of your program. It may be also be useful if you have specific needs and want to implement your own dispatcher, since it is the most basic form of dispatcher.</p>
-<p>Buffered dispatchers are best used when you can’t afford to waste machine cycles. For example, on most embedded system, the microcontroller can only store one byte in a register. Therefore, you must immediately process every byte on they are receive, or store them in a buffer. Same goes with sending. In that case, buffered dispatchers are suitable, since they provide the aforesaid buffer.</p>
+<p>Non-buffered dispatchers may be a viable option when you can afford to block the execuction of your program or can use an RTOS. It may be also be useful if you have specific needs and want to implement your own dispatcher, since it is the most basic form of dispatcher.</p>
+<p>Buffered dispatchers are best used when you can’t afford to waste machine cycles. Most often, communication peripherals of microcontrollers can only receive incoming data in a fixed-width FIFO and same goes with sending. In that case, buffered dispatchers are suitable, since they provide a buffer big enough to receive an action request or response.</p>
 </section>
 <section id="single-buffered-dispatchers-vs-double-buffered-dispatchers">
 <h3>Single buffered dispatchers vs. double buffered dispatchers<a class="headerlink" href="#single-buffered-dispatchers-vs-double-buffered-dispatchers" title="Permalink to this heading">¶</a></h3>
-<p>Single buffered dispatchers only have a single internal buffer, which is use to store both incoming packets and packets to send back. However, you can’t receive any packets as long as you have a packet to send in the buffer. Only one packet in the buffer.</p>
+<p>Single buffered dispatchers only have a single internal buffer, which is used to store both incoming packets and packets to send back. However, you can’t receive any packet as long as you have a packet to send in the buffer.</p>
 <p>Double buffered dispatchers, on the other hand, use separate buffers for input and output. That means that you can receive an incoming request and sending a response packet at the same time. Only one packet can fit in both buffers.</p>
-<p>You can implement your owm kind of buffered dispatcher using the <code class="docutils literal notranslate"><span class="pre">buffered_dispatcher</span></code> class. On the other hand, <code class="docutils literal notranslate"><span class="pre">single_buffered_dispatcher</span></code> and <code class="docutils literal notranslate"><span class="pre">double_buffered_dispatcher</span></code> come with their owm internal buffers, whose sizes are optimized to handle packets no larger than what you should receive or send. These sizes are deduced at compile-time with CTAD (or template argument deduction is you are using <code class="docutils literal notranslate"><span class="pre">make_single_buffered_dispatcher</span></code> or <code class="docutils literal notranslate"><span class="pre">make_double_buffered_dispatcher</span></code>) using the provided keyring.</p>
+<p>You can implement your owm kind of buffered dispatcher using the <code class="docutils literal notranslate"><span class="pre">buffered_dispatcher</span></code> class. On the other hand, <code class="docutils literal notranslate"><span class="pre">single_buffered_dispatcher</span></code> and <code class="docutils literal notranslate"><span class="pre">double_buffered_dispatcher</span></code> come with their own internal buffers, whose sizes are optimized to handle packets no larger than what you should receive or send. These sizes are deduced at compile-time with CTAD (or template argument deduction is you are using <code class="docutils literal notranslate"><span class="pre">make_single_buffered_dispatcher</span></code> or <code class="docutils literal notranslate"><span class="pre">make_double_buffered_dispatcher</span></code>) using the provided keyring.</p>
 </section>
 <section id="example">
 <h3>Example<a class="headerlink" href="#example" title="Permalink to this heading">¶</a></h3>
-<p>In the follwing example, we assume that <code class="docutils literal notranslate"><span class="pre">on_byte_received</span></code> is invoked whenever a byte has been received from master (which can be retrieved using <code class="docutils literal notranslate"><span class="pre">read_byte_from_master</span></code>) and <code class="docutils literal notranslate"><span class="pre">on_byte_sent</span></code> is invoked whenever a byte has been fully sent to master with the function <code class="docutils literal notranslate"><span class="pre">write_byte_to_master</span></code>.</p>
+<p>In the follwing example, we assume that <code class="docutils literal notranslate"><span class="pre">on_byte_received</span></code> is invoked whenever a byte has been received from callee (which can be retrieved using <code class="docutils literal notranslate"><span class="pre">read_byte_from_callee</span></code>) and <code class="docutils literal notranslate"><span class="pre">on_byte_sent</span></code> is invoked whenever a byte has been fully sent to callee with the function <code class="docutils literal notranslate"><span class="pre">write_byte_to_callee</span></code>.</p>
 <div class="literal-block-wrapper docutils container" id="id1">
 <div class="code-block-caption"><span class="caption-text">motion_keyring.hpp</span><a class="headerlink" href="#id1" title="Permalink to this code">¶</a></div>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#pragma once</span>
@@ -101,65 +106,6 @@
 </pre></div>
 </div>
 </div>
-<div class="literal-block-wrapper docutils container" id="id2">
-<div class="code-block-caption"><span class="caption-text">slave.cpp</span><a class="headerlink" href="#id2" title="Permalink to this code">¶</a></div>
-<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;upd/action.hpp&gt;</span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;upd/buffered_dispatcher.hpp&gt;</span>
-
-<span class="cp">#define CALLEE</span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;motion_keyring.hpp&quot;</span>
-
-<span class="k">static</span><span class="w"> </span><span class="n">upd</span><span class="o">::</span><span class="n">double_buffered_dispatcher</span><span class="w"> </span><span class="n">dispatcher</span><span class="p">{</span><span class="n">motion_keyring</span><span class="p">,</span><span class="w"> </span><span class="n">upd</span><span class="o">::</span><span class="n">policy</span><span class="o">::</span><span class="n">any_callback</span><span class="p">};</span>
-
-<span class="kt">void</span><span class="w"> </span><span class="nf">set_forward_speed</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">speed</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="c1">// function implementation</span>
-<span class="p">}</span>
-
-<span class="kt">void</span><span class="w"> </span><span class="nf">set_left_steering_speed</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">speed</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="c1">// function implementation</span>
-<span class="p">}</span>
-
-<span class="kt">void</span><span class="w"> </span><span class="nf">set_right_steering_speed</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">speed</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="c1">// function implementation</span>
-<span class="p">}</span>
-
-<span class="kt">void</span><span class="w"> </span><span class="nf">on_byte_received</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="c1">// We read the incoming byte</span>
-<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dispatcher</span><span class="p">.</span><span class="n">put</span><span class="p">(</span><span class="n">read_byte_from_master</span><span class="p">());</span>
-
-<span class="w">  </span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">status</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="c1">// If a packet has been fully received, then the request has been fulfilled and the output buffer contains a response</span>
-<span class="w">  </span><span class="c1">// packet</span>
-<span class="w">  </span><span class="k">case</span><span class="w"> </span><span class="no">upd</span><span class="o">::</span><span class="no">packet_status</span><span class="o">::</span><span class="no">RESOLVED_PACKET</span><span class="p">:</span>
-<span class="w">    </span><span class="c1">// We thus start to send the response packet to the master</span>
-<span class="w">    </span><span class="n">write_byte_to_master</span><span class="p">(</span><span class="n">dispatcher</span><span class="p">.</span><span class="n">get</span><span class="p">());</span>
-<span class="w">    </span><span class="k">break</span><span class="p">;</span>
-<span class="w">  </span><span class="c1">// If a packet has been dropped, that means the received index is out of bound</span>
-<span class="w">  </span><span class="c1">// At this point, the input buffer is empty</span>
-<span class="w">  </span><span class="c1">// In that case, it is up to you to handle the issue, but it might be wise to stop reading the date in order to</span>
-<span class="w">  </span><span class="c1">// prevent the dispatcher from reading garbage</span>
-<span class="w">  </span><span class="k">case</span><span class="w"> </span><span class="no">upd</span><span class="o">::</span><span class="no">packet_status</span><span class="o">::</span><span class="no">DROPPED_PACKET</span><span class="p">:</span>
-<span class="w">    </span><span class="c1">// Handling the error here</span>
-<span class="w">    </span><span class="k">break</span><span class="p">;</span>
-<span class="w">  </span><span class="k">default</span><span class="o">:</span>
-<span class="w">    </span><span class="k">break</span><span class="p">;</span>
-<span class="w">  </span><span class="p">}</span>
-<span class="p">}</span>
-
-<span class="kt">void</span><span class="w"> </span><span class="nf">on_byte_sent</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="c1">// We keep sending the bytes of the response packet to the master</span>
-<span class="w">  </span><span class="c1">// If the packet has been completely sent already, then this line has no effect</span>
-<span class="w">  </span><span class="n">write_byte_to_master</span><span class="p">(</span><span class="n">dispatcher</span><span class="p">.</span><span class="n">get</span><span class="p">());</span>
-<span class="p">}</span>
-
-<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="nb">true</span><span class="p">)</span>
-<span class="w">    </span><span class="n">do_stuff</span><span class="p">();</span>
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
-<span class="p">}</span>
-</pre></div>
-</div>
-</div>
 </section>
 </section>
 <section id="hot-swapping-callbacks">
@@ -168,12 +114,12 @@
 </section>
 <section id="storage-policy">
 <h2>Storage policy<a class="headerlink" href="#storage-policy" title="Permalink to this heading">¶</a></h2>
-<p>Depending on what you can afford to do, you will want your invocables to be stored differently. There is two available policy at the moment:</p>
+<p>Depending on what you can afford to do, you will want your invocables to be stored differently. There is two available policies at the moment:</p>
 <ul class="simple">
 <li><p>Allowing any kind of callback to be stored with the <code class="docutils literal notranslate"><span class="pre">any_action</span></code> policy. It means that the dispatcher is responsible for the life cycle of the callbacks, and it therefore uses dynamic allocation.</p></li>
-<li><p>Allowing callback with static storage duration only with the <code class="docutils literal notranslate"><span class="pre">static_storage_duration_only</span></code> policy. In that case, the dispatcher doesn’t need to manage the life cycle of the callbacks and only static storage allocation is used.</p></li>
+<li><p>Allowing callback with static storage duration only with the <code class="docutils literal notranslate"><span class="pre">weak_reference</span></code> policy. In that case, the dispatcher doesn’t need to manage the life cycle of the callbacks because it restricts the callbacks to be allocated statically. In that case, the dispatcher merely refers to the callbacks without keeping it alive, hence the name of the policy. This policy works well with plain functions, since they exist: in program memory which is usually not modified. It can also work with function objects, but in that case, the object cannot live on the heap or on the stack. It must be alive during the whole execution of the program.</p></li>
 </ul>
-<p>The latter policy is more appropriate for embedding devices.</p>
+<p>The latter policy is more appropriate for microcontrollers.</p>
 </section>
 <section id="api-references">
 <h2>API References<a class="headerlink" href="#api-references" title="Permalink to this heading">¶</a></h2>
