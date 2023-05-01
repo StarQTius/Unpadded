@@ -63,7 +63,7 @@ In non-blocking mode, the ``action`` class must be used to store a callback for 
 .. literalinclude:: /@PROJECT_SOURCE_DIR@/test/snippet/caller5
   :language: cpp
 
-``action`` is non-templated, so it is suitable for storage. The hooked callback must be invocable on whatever value the remotely called function returns. In case of a multimaster architecture (i.e. if both devices can initiate a request), the `buffered_dispatcher::reply()` function can come in handy.
+``action`` is non-templated, so it is suitable for storage. The hooked callback must be invocable on whatever value the remotely called function returns. In case of a multimaster architecture (i.e. if both devices can initiate a request), the ``buffered_dispatcher::reply()`` function can come in handy.
 
 API References
 --------------
