@@ -1,171 +1,66 @@
+<!DOCTYPE html>
 
-
-
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
-<html xml:lang="" lang="" version="-//W3C//DTD XHTML 1.1//EN" xmlns="http://www.w3.org/1999/xhtml">
+<html lang="en">
   <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
+    <title>Implementing caller side &#8212; Unpadded  documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Implementing callee side" href="callee.html" />
+    <link rel="prev" title="Sharing RPC convention" href="shared.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
-  <title>Implementing caller side &mdash; Unpadded  documentation</title>
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
   
 
-  
-
-  
-
-    <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'/>
-    <link rel="stylesheet" href="_static/css/pdj.css" type="text/css" />
-
-  
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-  
-    <link rel="stylesheet" href="_static/css/pdj.css" type="text/css" />
-  
-
-  
-
-  
-        <link rel="index" title="Index"
-              href="genindex.html"/>
-        <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="Unpadded  documentation" href="index.html"/>
-        <link rel="next" title="Implementing callee side" href="callee.html"/>
-        <link rel="prev" title="Sharing RPC convention" href="shared.html"/>
-
-    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-    <meta http-equiv="cache-control" content="public" />
-    <meta name="robots" content="follow, all" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- Add jQuery library -->
-    <script type="text/javascript" src="http://code.jquery.com/jquery-latest.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
-
-  </head>
-
-  <body class="wy-body-for-nav" role="document">
-
-  <div class="wy-grid-for-nav">
-    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
-      <div class="wy-side-nav-search">
-        <a href="index.html" class="fa fa-home"> Unpadded </a>
-        <div role="search">
-	  <form id ="rtd-search-form" class="wy-form"
-		action="search.html" method="get">
-	    <input type="text" name="q" placeholder="Search docs" />
-	    <input type="hidden" name="check_keywords" value="yes" />
-	    <input type="hidden" name="area" value="default" />
-	  </form>
-	</div>
-      </div>
-
-      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-	
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
           
-          
-              <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="shared.html">Sharing RPC convention</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="shared.html#basics-defining-a-keyring">Basics : defining a keyring</a></li>
-<li class="toctree-l2"><a class="reference internal" href="shared.html#binding-lambda-expressions-and-invocable-objects-to-a-keyring">Binding lambda expressions and invocable objects to a keyring</a></li>
-<li class="toctree-l2"><a class="reference internal" href="shared.html#pre-c-17-support">Pre C++17 support</a></li>
-<li class="toctree-l2"><a class="reference internal" href="shared.html#api-references">API References</a></li>
-</ul>
-</li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Implementing caller side</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#basics-sending-request-with-keys">Basics : sending request with keys</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#handling-the-callee-response">Handling the callee response</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#api-references">API References</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="callee.html">Implementing callee side</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="callee.html#basics-fulfiling-incoming-request-with-dispatchers">Basics : fulfiling incoming request with dispatchers</a></li>
-<li class="toctree-l2"><a class="reference internal" href="callee.html#hot-swapping-callbacks">Hot swapping callbacks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="callee.html#storage-policy">Storage policy</a></li>
-<li class="toctree-l2"><a class="reference internal" href="callee.html#api-references">API References</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="serialization.html">Serialization tools</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="serialization.html#formatting-packets-with-the-upd-tuple-class">Formatting packets with the <code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">upd::tuple</span></code> class</a></li>
-<li class="toctree-l2"><a class="reference internal" href="serialization.html#make-a-view-of-a-subtuple-or-a-bare-buffer-using-upd-tuple-view">Make a view of a subtuple or a bare buffer using <code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">upd::tuple_view</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="serialization.html#customization-points-defining-serialization-processes-for-foreign-types">Customization points: defining serialization processes for foreign types</a></li>
-<li class="toctree-l2"><a class="reference internal" href="serialization.html#api-references">API References</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="python.html">Extending Unpadded to Python</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="python.html#api-references">API References</a></li>
-</ul>
-</li>
-</ul>
 
-          
-        
-
-      </div>
-      &nbsp;
-    </nav>
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-
-      <nav class="wy-nav-top" id="barra-mobile" role="navigation" aria-label="top navigation">
-        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="#">Porão do Juca</a>
-      </nav>
-
-      <div class="wy-nav-content">
-	<div class="fundo-claro">
-	</div>
-	<div class="fundo-escuro">
-	</div>
-
-        <div class="rst-content">
-          <div role="navigation" aria-label="breadcrumbs navigation">
-	    
-	    <!-- <ul class="wy-breadcrumbs"> -->
-	    <!--   <li><a href="#">Docs</a> &raquo;</li> -->
-
-	    <!--   <li>Features</li> -->
-	    <!--   <li class="wy-breadcrumbs-aside"> -->
-
-	    <!-- 	<a href="_sources/index.txt" rel="nofollow"> View page source</a> -->
-
-	    <!--   </li> -->
-	    <!-- </ul> -->
-	    <!-- <hr/> -->
-	  </div>
-
-          <div role="main" class="">
-
-	    <div id="content" class="hfeed entry-container hentry">
+          <div class="body" role="main">
+            
   <section id="implementing-caller-side">
 <h1>Implementing caller side<a class="headerlink" href="#implementing-caller-side" title="Permalink to this heading">¶</a></h1>
 <p>On the caller side, requesting a remote device to invoke a function is pretty much like a regular function invocation. The types of the arguments are checked at compile-time. The type of the return value is also available at compile-time.</p>
 <p>What Unpadded does for you is generating the packet and sending them byte by byte with a user-provided callback. What remains to be handled is the implementation of the aforesaid callback and the packets encapsulation, if you need one.</p>
 <p>The following sections will assume these functions to be defined by the master device:</p>
-<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="nf">write_byte_to_slave</span><span class="p">(</span><span class="n">upd</span><span class="o">::</span><span class="n">byte_t</span><span class="p">);</span><span class="w"></span>
-<span class="n">upd</span><span class="o">::</span><span class="n">byte_t</span><span class="w"> </span><span class="nf">read_byte_from_slave</span><span class="p">();</span><span class="w"></span>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="nf">write_byte_to_slave</span><span class="p">(</span><span class="n">upd</span><span class="o">::</span><span class="n">byte_t</span><span class="p">);</span>
+<span class="n">upd</span><span class="o">::</span><span class="n">byte_t</span><span class="w"> </span><span class="nf">read_byte_from_slave</span><span class="p">();</span>
 </pre></div>
 </div>
 <section id="basics-sending-request-with-keys">
 <h2>Basics : sending request with keys<a class="headerlink" href="#basics-sending-request-with-keys" title="Permalink to this heading">¶</a></h2>
 <p>Preparing a packet for a request is done by using keys from the corresponding keyring. Let say we defined a <code class="docutils literal notranslate"><span class="pre">keyring</span></code> object holding the function <code class="docutils literal notranslate"><span class="pre">f</span></code> of signature <code class="docutils literal notranslate"><span class="pre">void(std::uint8_t,</span> <span class="pre">std::uint16_t)</span></code>.</p>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="c1">// We create a key to `f`.</span>
-<span class="k">auto</span><span class="w"> </span><span class="n">key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">keyring</span><span class="p">.</span><span class="n">get</span><span class="o">&lt;</span><span class="n">f</span><span class="o">&gt;</span><span class="p">();</span><span class="w"></span>
+<span class="k">auto</span><span class="w"> </span><span class="n">key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">keyring</span><span class="p">.</span><span class="n">get</span><span class="o">&lt;</span><span class="n">f</span><span class="o">&gt;</span><span class="p">();</span>
 
 <span class="c1">// Then we generate the packet and write every byte of it to the slave device.</span>
 <span class="c1">// On the remote device, ``f`` will be invoked on the arguments ``16`` and ``64``.</span>
-<span class="n">key</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span><span class="w"> </span><span class="mi">64</span><span class="p">).</span><span class="n">write_to</span><span class="p">(</span><span class="n">write_byte_to_slave</span><span class="p">);</span><span class="w"></span>
+<span class="n">key</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span><span class="w"> </span><span class="mi">64</span><span class="p">).</span><span class="n">write_to</span><span class="p">(</span><span class="n">write_byte_to_slave</span><span class="p">);</span>
 
 <span class="c1">// This line does the same thing, but with another syntax.</span>
-<span class="n">key</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span><span class="w"> </span><span class="mi">64</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">write_byte_to_slave</span><span class="p">;</span><span class="w"></span>
+<span class="n">key</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span><span class="w"> </span><span class="mi">64</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">write_byte_to_slave</span><span class="p">;</span>
 </pre></div>
 </div>
 <p>If argument types does not match, the compiler will tell you.</p>
-<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">std</span><span class="o">::</span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">array</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mh">0x00</span><span class="p">,</span><span class="w"> </span><span class="mh">0x11</span><span class="p">,</span><span class="w"> </span><span class="mh">0x22</span><span class="p">};</span><span class="w"></span>
-<span class="k">auto</span><span class="w"> </span><span class="n">key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">keyring</span><span class="p">.</span><span class="n">get</span><span class="o">&lt;</span><span class="n">f</span><span class="o">&gt;</span><span class="p">();</span><span class="w"></span>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">std</span><span class="o">::</span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">array</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mh">0x00</span><span class="p">,</span><span class="w"> </span><span class="mh">0x11</span><span class="p">,</span><span class="w"> </span><span class="mh">0x22</span><span class="p">};</span>
+<span class="k">auto</span><span class="w"> </span><span class="n">key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">keyring</span><span class="p">.</span><span class="n">get</span><span class="o">&lt;</span><span class="n">f</span><span class="o">&gt;</span><span class="p">();</span>
 
 <span class="c1">// What are you doing ?</span>
 <span class="c1">//      vvvvv</span>
-<span class="n">key</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span><span class="w"> </span><span class="n">array</span><span class="p">).</span><span class="n">write_all</span><span class="p">(</span><span class="n">write_byte_to_master</span><span class="p">);</span><span class="w"></span>
+<span class="n">key</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span><span class="w"> </span><span class="n">array</span><span class="p">).</span><span class="n">write_all</span><span class="p">(</span><span class="n">write_byte_to_master</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>Once sent, the packet must be received by a dispatcher.</p>
@@ -176,19 +71,19 @@
 <div class="code-block-caption"><span class="caption-text">motion_keyring.hpp</span><a class="headerlink" href="#id1" title="Permalink to this code">¶</a></div>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#pragma once</span>
 
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cstdint&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cstdint&gt;</span>
 
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;upd/format.hpp&gt;</span><span class="cp"></span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;upd/keyring.hpp&gt;</span><span class="cp"></span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;upd/typelist.hpp&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;upd/format.hpp&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;upd/keyring.hpp&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;upd/typelist.hpp&gt;</span>
 
-<span class="kt">void</span><span class="w"> </span><span class="nf">set_forward_speed</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">uint32_t</span><span class="p">);</span><span class="w"></span>
-<span class="kt">void</span><span class="w"> </span><span class="nf">set_left_steering_speed</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">uint32_t</span><span class="p">);</span><span class="w"></span>
-<span class="kt">void</span><span class="w"> </span><span class="nf">set_right_steering_speed</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">uint32_t</span><span class="p">);</span><span class="w"></span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">set_forward_speed</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">uint32_t</span><span class="p">);</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">set_left_steering_speed</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">uint32_t</span><span class="p">);</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">set_right_steering_speed</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">uint32_t</span><span class="p">);</span>
 
-<span class="k">constexpr</span><span class="w"> </span><span class="n">upd</span><span class="o">::</span><span class="n">keyring</span><span class="w"> </span><span class="n">motion_keyring</span><span class="p">{</span><span class="n">upd</span><span class="o">::</span><span class="n">flist</span><span class="o">&lt;</span><span class="n">set_forward_speed</span><span class="p">,</span><span class="w"> </span><span class="n">set_left_steering_speed</span><span class="p">,</span><span class="w"> </span><span class="n">set_right_steering_speed</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
-<span class="w">                                      </span><span class="n">upd</span><span class="o">::</span><span class="n">little_endian</span><span class="p">,</span><span class="w"></span>
-<span class="w">                                      </span><span class="n">upd</span><span class="o">::</span><span class="n">two_complement</span><span class="p">};</span><span class="w"></span>
+<span class="k">constexpr</span><span class="w"> </span><span class="n">upd</span><span class="o">::</span><span class="n">keyring</span><span class="w"> </span><span class="n">motion_keyring</span><span class="p">{</span><span class="n">upd</span><span class="o">::</span><span class="n">flist</span><span class="o">&lt;</span><span class="n">set_forward_speed</span><span class="p">,</span><span class="w"> </span><span class="n">set_left_steering_speed</span><span class="p">,</span><span class="w"> </span><span class="n">set_right_steering_speed</span><span class="o">&gt;</span><span class="p">,</span>
+<span class="w">                                      </span><span class="n">upd</span><span class="o">::</span><span class="n">little_endian</span><span class="p">,</span>
+<span class="w">                                      </span><span class="n">upd</span><span class="o">::</span><span class="n">twos_complement</span><span class="p">};</span>
 </pre></div>
 </div>
 </div>
@@ -196,19 +91,19 @@
 <div class="code-block-caption"><span class="caption-text">master.cpp</span><a class="headerlink" href="#id2" title="Permalink to this code">¶</a></div>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#pragma once</span>
 
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cstdint&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cstdint&gt;</span>
 
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;upd/format.hpp&gt;</span><span class="cp"></span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;upd/keyring.hpp&gt;</span><span class="cp"></span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;upd/typelist.hpp&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;upd/format.hpp&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;upd/keyring.hpp&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;upd/typelist.hpp&gt;</span>
 
-<span class="kt">void</span><span class="w"> </span><span class="nf">set_forward_speed</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">uint32_t</span><span class="p">);</span><span class="w"></span>
-<span class="kt">void</span><span class="w"> </span><span class="nf">set_left_steering_speed</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">uint32_t</span><span class="p">);</span><span class="w"></span>
-<span class="kt">void</span><span class="w"> </span><span class="nf">set_right_steering_speed</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">uint32_t</span><span class="p">);</span><span class="w"></span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">set_forward_speed</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">uint32_t</span><span class="p">);</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">set_left_steering_speed</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">uint32_t</span><span class="p">);</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">set_right_steering_speed</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">uint32_t</span><span class="p">);</span>
 
-<span class="k">constexpr</span><span class="w"> </span><span class="n">upd</span><span class="o">::</span><span class="n">keyring</span><span class="w"> </span><span class="n">motion_keyring</span><span class="p">{</span><span class="n">upd</span><span class="o">::</span><span class="n">flist</span><span class="o">&lt;</span><span class="n">set_forward_speed</span><span class="p">,</span><span class="w"> </span><span class="n">set_left_steering_speed</span><span class="p">,</span><span class="w"> </span><span class="n">set_right_steering_speed</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
-<span class="w">                                      </span><span class="n">upd</span><span class="o">::</span><span class="n">little_endian</span><span class="p">,</span><span class="w"></span>
-<span class="w">                                      </span><span class="n">upd</span><span class="o">::</span><span class="n">two_complement</span><span class="p">};</span><span class="w"></span>
+<span class="k">constexpr</span><span class="w"> </span><span class="n">upd</span><span class="o">::</span><span class="n">keyring</span><span class="w"> </span><span class="n">motion_keyring</span><span class="p">{</span><span class="n">upd</span><span class="o">::</span><span class="n">flist</span><span class="o">&lt;</span><span class="n">set_forward_speed</span><span class="p">,</span><span class="w"> </span><span class="n">set_left_steering_speed</span><span class="p">,</span><span class="w"> </span><span class="n">set_right_steering_speed</span><span class="o">&gt;</span><span class="p">,</span>
+<span class="w">                                      </span><span class="n">upd</span><span class="o">::</span><span class="n">little_endian</span><span class="p">,</span>
+<span class="w">                                      </span><span class="n">upd</span><span class="o">::</span><span class="n">twos_complement</span><span class="p">};</span>
 </pre></div>
 </div>
 </div>
@@ -222,16 +117,16 @@
 <p>In blocking mode, keys must be used to extract the invocaiton request result out of the packet sent back to the master device.</p>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="c1">// We assume that a `keyring` object has been defined and holds a function `f` of signature `std::uint8_t(std::uint16_t)`</span>
 
-<span class="k">auto</span><span class="w"> </span><span class="n">key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">keyring</span><span class="p">.</span><span class="n">get</span><span class="o">&lt;</span><span class="n">f</span><span class="o">&gt;</span><span class="p">();</span><span class="w"></span>
+<span class="k">auto</span><span class="w"> </span><span class="n">key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">keyring</span><span class="p">.</span><span class="n">get</span><span class="o">&lt;</span><span class="n">f</span><span class="o">&gt;</span><span class="p">();</span>
 
 <span class="c1">// First we send a request to the slave device</span>
-<span class="n">key</span><span class="p">(</span><span class="mi">64</span><span class="p">).</span><span class="n">write_to</span><span class="p">(</span><span class="n">write_byte_to_slave</span><span class="p">);</span><span class="w"></span>
+<span class="n">key</span><span class="p">(</span><span class="mi">64</span><span class="p">).</span><span class="n">write_to</span><span class="p">(</span><span class="n">write_byte_to_slave</span><span class="p">);</span>
 
 <span class="c1">// Let&#39;s wait a little for the slave device to completely fulfill the request</span>
 
 <span class="c1">// Then we receive its response</span>
 <span class="c1">// `x` type is `std::uint8_t`</span>
-<span class="k">auto</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">key</span><span class="p">.</span><span class="n">read_from</span><span class="p">(</span><span class="n">read_byte_from_slave</span><span class="p">);</span><span class="w"></span>
+<span class="k">auto</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">key</span><span class="p">.</span><span class="n">read_from</span><span class="p">(</span><span class="n">read_byte_from_slave</span><span class="p">);</span>
 </pre></div>
 </div>
 </section>
@@ -240,32 +135,32 @@
 <p>In non-blocking mode, the <code class="docutils literal notranslate"><span class="pre">action</span></code> class must be used to store a callback for later.</p>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="c1">// We assume that a `keyring` object has been defined and holds a function `f` of signature `std::uint8_t(std::uint16_t)`</span>
 
-<span class="k">static</span><span class="w"> </span><span class="n">upd</span><span class="o">::</span><span class="n">action</span><span class="w"> </span><span class="n">action</span><span class="p">;</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="n">upd</span><span class="o">::</span><span class="n">action</span><span class="w"> </span><span class="n">action</span><span class="p">;</span>
 
-<span class="kt">void</span><span class="w"> </span><span class="nf">send_request</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">keyring</span><span class="p">.</span><span class="n">get</span><span class="o">&lt;</span><span class="n">f</span><span class="o">&gt;</span><span class="p">();</span><span class="w"></span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">send_request</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">keyring</span><span class="p">.</span><span class="n">get</span><span class="o">&lt;</span><span class="n">f</span><span class="o">&gt;</span><span class="p">();</span>
 
 <span class="w">  </span><span class="c1">// We send the request...</span>
-<span class="w">  </span><span class="n">key</span><span class="p">(</span><span class="mi">64</span><span class="p">).</span><span class="n">write_to</span><span class="p">(</span><span class="n">write_byte_to_slave</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">key</span><span class="p">(</span><span class="mi">64</span><span class="p">).</span><span class="n">write_to</span><span class="p">(</span><span class="n">write_byte_to_slave</span><span class="p">);</span>
 
 <span class="w">  </span><span class="c1">// ...and then, we save our callback for later</span>
-<span class="w">  </span><span class="n">action</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">key</span><span class="p">.</span><span class="n">with_hook</span><span class="p">(</span><span class="n">my_callback</span><span class="p">);</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="n">action</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">key</span><span class="p">.</span><span class="n">with_hook</span><span class="p">(</span><span class="n">my_callback</span><span class="p">);</span>
+<span class="p">}</span>
 
-<span class="kt">void</span><span class="w"> </span><span class="nf">process_response</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">process_response</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="c1">// Our callback is called !</span>
-<span class="w">  </span><span class="n">action</span><span class="p">(</span><span class="n">read_byte_from_slave</span><span class="p">);</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="n">action</span><span class="p">(</span><span class="n">read_byte_from_slave</span><span class="p">);</span>
+<span class="p">}</span>
 
-<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="n">send_request</span><span class="p">();</span><span class="w"></span>
+<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">send_request</span><span class="p">();</span>
 
 <span class="w">  </span><span class="c1">// Meanwhile, we do other stuff...</span>
 
-<span class="w">  </span><span class="n">process_response</span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="n">process_response</span><span class="p">();</span>
 
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">action</span></code> is non-templated, so it is suitable for storage.</p>
@@ -277,7 +172,7 @@
 <h3><code class="docutils literal notranslate"><span class="pre">key</span></code><a class="headerlink" href="#key" title="Permalink to this heading">¶</a></h3>
 <dl class="cpp class">
 <dt class="sig sig-object cpp" id="_CPPv4I0_7Index_T0_9endianess_11signed_modeEN3upd3keyE">
-<span id="_CPPv3I0_7Index_T0_9endianess_11signed_modeEN3upd3keyE"></span><span id="_CPPv2I0_7Index_T0_9endianess_11signed_modeEN3upd3keyE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Index_T</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_7Index_T0_9endianess_11signed_modeEN3upd3keyE" title="upd::key::Index_T"><span class="n"><span class="pre">Index_T</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Index</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">F</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N3upd3key9endianessE" title="upd::key::endianess"><span class="n"><span class="pre">endianess</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Endianess</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N3upd3key11signed_modeE" title="upd::key::signed_mode"><span class="n"><span class="pre">signed_mode</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Signed_Mode</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="structupd_1_1key"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">key</span></span></span><a class="headerlink" href="#_CPPv4I0_7Index_T0_9endianess_11signed_modeEN3upd3keyE" title="Permalink to this definition">¶</a><br /></dt>
+<span id="_CPPv3I0_7Index_T0_9endianess_11signed_modeEN3upd3keyE"></span><span id="_CPPv2I0_7Index_T0_9endianess_11signed_modeEN3upd3keyE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Index_T</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_7Index_T0_9endianess_11signed_modeEN3upd3keyE" title="upd::key::Index_T"><span class="n"><span class="pre">Index_T</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Index</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">F</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N3upd3key9endianessE" title="upd::key::endianess"><span class="n"><span class="pre">endianess</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Endianess</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N3upd3key11signed_modeE" title="upd::key::signed_mode"><span class="n"><span class="pre">signed_mode</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Signed_Mode</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classupd_1_1key"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">key</span></span></span><a class="headerlink" href="#_CPPv4I0_7Index_T0_9endianess_11signed_modeEN3upd3keyE" title="Permalink to this definition">¶</a><br /></dt>
 <dd><p>Packet generator for invoking an action on a callee device. </p>
 <p>Keys will generate packets whose structure is the following:<ul class="simple">
 <li><p>index of the action (value: <code class="docutils literal notranslate"><span class="pre">Index</span></code>; size: <code class="docutils literal notranslate"><span class="pre">sizeof</span> <span class="pre">Index</span></code>);</p></li>
@@ -285,7 +180,7 @@
 </ul>
 </p>
 <p>The index is used by the callee to determine which action is addressed. The content of the payload is choosen by the user. In the following example :</p>
-<p><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">int</span> <span class="n">function1</span><span class="p">(</span><span class="n">uint8_t</span><span class="p">,</span> <span class="n">uint16_t</span><span class="p">);</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">int</span> <span class="n">function1</span><span class="p">(</span><span class="n">uint8_t</span><span class="p">,</span> <span class="n">uint16_t</span><span class="p">);</span>
 <span class="nb">int</span> <span class="n">function2</span><span class="p">(</span><span class="n">uint16_t</span><span class="p">,</span> <span class="n">uint32_t</span><span class="p">);</span>
 <span class="nb">int</span> <span class="n">function3</span><span class="p">(</span><span class="n">uint32_t</span><span class="p">,</span> <span class="n">uint64_t</span><span class="p">);</span>
 
@@ -297,14 +192,13 @@
 <span class="p">}</span>
 </pre></div>
 </div>
-</p>
 <p>The packet sent will have the following content:<ul class="simple">
 <li><p>1 byte of index (value: 1)</p></li>
 <li><p>2 bytes for the first argument of <code class="docutils literal notranslate"><span class="pre">function2</span></code> (type: <code class="docutils literal notranslate"><span class="pre">uint16_t</span></code>; value: 7)</p></li>
 <li><p>4 bytes for the second argument of <code class="docutils literal notranslate"><span class="pre">function2</span></code> (type: <code class="docutils literal notranslate"><span class="pre">uint32_t</span></code>; value: 21)</p></li>
 </ul>
 </p>
-<p>When the packet has been processed by the callee device and the resulting value is sent back to the caller device, keys can be used to extract this value from the callee response. The syntax to achieve that is <code class="docutils literal notranslate"><span class="pre">auto</span> <span class="pre">x</span> <span class="pre">=</span> <a class="reference internal" href="#structupd_1_1key_1af085280515ea28041935f8068885cde0"><span class="std std-ref"><span class="pre">key.read_from</span></span></a><span class="pre">(/*a</span> <span class="pre">byte</span> <span class="pre">getter*</span><span class="pre">/)</span></code>. However,  key instances being templated, it is hard to store them for later. If blocking the program until the callee device response is not a viable option, it is possible to save a callback to be executed once the callee device has finished using the  action or  <a class="reference internal" href="#classupd_1_1no__storage__action"><span class="std std-ref">no_storage_action</span></a> classes.</p>
+<p>When the packet has been processed by the callee device and the resulting value is sent back to the caller device, keys can be used to extract this value from the callee response. The syntax to achieve that is <code class="docutils literal notranslate"><span class="pre">auto</span> <span class="pre">x</span> <span class="pre">=</span> <a class="reference internal" href="#classupd_1_1key_1af085280515ea28041935f8068885cde0"><span class="std std-ref"><span class="pre">key.read_from</span></span></a><span class="pre">(/*a</span> <span class="pre">byte</span> <span class="pre">getter*</span><span class="pre">/)</span></code>. However,  key instances being templated, it is hard to store them for later. If blocking the program until the callee device response is not a viable option, it is possible to save a callback to be executed once the callee device has finished using the  action or  <a class="reference internal" href="#classupd_1_1no__storage__action"><span class="std std-ref">no_storage_action</span></a> classes.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -318,25 +212,25 @@
 <p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-types">Public Types</p>
 <dl class="cpp type">
 <dt class="sig sig-object cpp" id="_CPPv4N3upd3key7index_tE">
-<span id="_CPPv3N3upd3key7index_tE"></span><span id="_CPPv2N3upd3key7index_tE"></span><span class="target" id="structupd_1_1key_1adb1898a7dbf6f029b42cd5fba5f14943"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">index_t</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_7Index_T0_9endianess_11signed_modeEN3upd3keyE" title="upd::key::Index_T"><span class="n"><span class="pre">Index_T</span></span></a><a class="headerlink" href="#_CPPv4N3upd3key7index_tE" title="Permalink to this definition">¶</a><br /></dt>
+<span id="_CPPv3N3upd3key7index_tE"></span><span id="_CPPv2N3upd3key7index_tE"></span><span class="target" id="classupd_1_1key_1adb1898a7dbf6f029b42cd5fba5f14943"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">index_t</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_7Index_T0_9endianess_11signed_modeEN3upd3keyE" title="upd::key::Index_T"><span class="n"><span class="pre">Index_T</span></span></a><a class="headerlink" href="#_CPPv4N3upd3key7index_tE" title="Permalink to this definition">¶</a><br /></dt>
 <dd><p>Type of the index as found in the packets generated by this key. </p>
 </dd></dl>
 
 <dl class="cpp type">
 <dt class="sig sig-object cpp" id="_CPPv4N3upd3key11signature_tE">
-<span id="_CPPv3N3upd3key11signature_tE"></span><span id="_CPPv2N3upd3key11signature_tE"></span><span class="target" id="structupd_1_1key_1aea5dce6ef5fcceccd86586c28adb07bc"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">signature_t</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="n"><span class="pre">R</span></span><span class="p"><span class="pre">(</span></span><span class="n"><span class="pre">Args</span></span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4N3upd3key11signature_tE" title="Permalink to this definition">¶</a><br /></dt>
+<span id="_CPPv3N3upd3key11signature_tE"></span><span id="_CPPv2N3upd3key11signature_tE"></span><span class="target" id="classupd_1_1key_1aea5dce6ef5fcceccd86586c28adb07bc"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">signature_t</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="n"><span class="pre">R</span></span><span class="p"><span class="pre">(</span></span><span class="n"><span class="pre">Args</span></span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4N3upd3key11signature_tE" title="Permalink to this definition">¶</a><br /></dt>
 <dd><p>Signature of the invocable associated with this key. </p>
 </dd></dl>
 
 <dl class="cpp type">
 <dt class="sig sig-object cpp" id="_CPPv4N3upd3key8return_tE">
-<span id="_CPPv3N3upd3key8return_tE"></span><span id="_CPPv2N3upd3key8return_tE"></span><span class="target" id="structupd_1_1key_1a8056b67f363fa00a670050ee5756eabb"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">return_t</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="n"><span class="pre">detail</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">remove_cv_ref_t</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">R</span></span><span class="p"><span class="pre">&gt;</span></span><a class="headerlink" href="#_CPPv4N3upd3key8return_tE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Return type of <a class="reference internal" href="#structupd_1_1key_1af085280515ea28041935f8068885cde0"><span class="std std-ref">read_from()</span></a> (i.e. the return type of the callback without its reference and cv-qualifier) </p>
+<span id="_CPPv3N3upd3key8return_tE"></span><span id="_CPPv2N3upd3key8return_tE"></span><span class="target" id="classupd_1_1key_1a8056b67f363fa00a670050ee5756eabb"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">return_t</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="n"><span class="pre">detail</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">remove_cv_ref_t</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">R</span></span><span class="p"><span class="pre">&gt;</span></span><a class="headerlink" href="#_CPPv4N3upd3key8return_tE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Return type of <a class="reference internal" href="#classupd_1_1key_1af085280515ea28041935f8068885cde0"><span class="std std-ref">read_from()</span></a> (i.e. the return type of the callback without its reference and cv-qualifier) </p>
 </dd></dl>
 
 <dl class="cpp type">
 <dt class="sig sig-object cpp" id="_CPPv4N3upd3key7tuple_tE">
-<span id="_CPPv3N3upd3key7tuple_tE"></span><span id="_CPPv2N3upd3key7tuple_tE"></span><span class="target" id="structupd_1_1key_1a7db2ac63296932c80f4823fbc49c8ed1"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">tuple_t</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="serialization.html#_CPPv4I_9endianess_11signed_modeDpEN3upd5tupleE" title="upd::tuple"><span class="n"><span class="pre">tuple</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0_7Index_T0_9endianess_11signed_modeEN3upd3keyE" title="upd::key::Endianess"><span class="n"><span class="pre">Endianess</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_7Index_T0_9endianess_11signed_modeEN3upd3keyE" title="upd::key::Signed_Mode"><span class="n"><span class="pre">Signed_Mode</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">detail</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">remove_cv_ref_t</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">Args</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">&gt;</span></span><a class="headerlink" href="#_CPPv4N3upd3key7tuple_tE" title="Permalink to this definition">¶</a><br /></dt>
+<span id="_CPPv3N3upd3key7tuple_tE"></span><span id="_CPPv2N3upd3key7tuple_tE"></span><span class="target" id="classupd_1_1key_1a7db2ac63296932c80f4823fbc49c8ed1"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">tuple_t</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="serialization.html#_CPPv4I_9endianess_11signed_modeDpEN3upd5tupleE" title="upd::tuple"><span class="n"><span class="pre">tuple</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0_7Index_T0_9endianess_11signed_modeEN3upd3keyE" title="upd::key::Endianess"><span class="n"><span class="pre">Endianess</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_7Index_T0_9endianess_11signed_modeEN3upd3keyE" title="upd::key::Signed_Mode"><span class="n"><span class="pre">Signed_Mode</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">detail</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">remove_cv_ref_t</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">Args</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">&gt;</span></span><a class="headerlink" href="#_CPPv4N3upd3key7tuple_tE" title="Permalink to this definition">¶</a><br /></dt>
 <dd><p>Type of the tuple which can be invoked on this key (e.g. <code class="docutils literal notranslate"><span class="pre">t.invoke(key)</span></code>) </p>
 </dd></dl>
 
@@ -345,7 +239,7 @@
 <p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4NK3upd3keyclEDpRK4Args">
-<span id="_CPPv3NK3upd3keyclEDpRK4Args"></span><span id="_CPPv2NK3upd3keyclEDpRK4Args"></span><span id="upd::key::call-operator__ArgsCRDpC"></span><span class="target" id="structupd_1_1key_1a6e4af8d6b51d226ef44c9305b92fa26a"></span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">()</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">Args</span></span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">...</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">args</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK3upd3keyclEDpRK4Args" title="Permalink to this definition">¶</a><br /></dt>
+<span id="_CPPv3NK3upd3keyclEDpRK4Args"></span><span id="_CPPv2NK3upd3keyclEDpRK4Args"></span><span id="upd::key::call-operator__ArgsCRDpC"></span><span class="target" id="classupd_1_1key_1a6e4af8d6b51d226ef44c9305b92fa26a"></span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">()</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">Args</span></span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">...</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">args</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK3upd3keyclEDpRK4Args" title="Permalink to this definition">¶</a><br /></dt>
 <dd><p>Generate a packet ready to be sent. </p>
 <p>This allows the following syntax : <code class="docutils literal notranslate"><span class="pre">key(x1,</span> <span class="pre">x2,</span> <span class="pre">x3,</span> <span class="pre">...).write_to(dest)</span></code> (with <code class="docutils literal notranslate"><span class="pre">dest</span></code> being a byte putter). <code class="docutils literal notranslate"><span class="pre">dest</span></code> is invoked on every byte representing the data passed as parameter, in the action they appear in the packet.</p>
 <dl class="field-list simple">
@@ -360,7 +254,7 @@
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4I0ENK3upd3key9read_fromE8return_tRR3Src">
-<span id="_CPPv3I0ENK3upd3key9read_fromERR3Src"></span><span id="_CPPv2I0ENK3upd3key9read_fromERR3Src"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Src</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="structupd_1_1key_1af085280515ea28041935f8068885cde0"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N3upd3key8return_tE" title="upd::key::return_t"><span class="n"><span class="pre">return_t</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">read_from</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0ENK3upd3key9read_fromE8return_tRR3Src" title="upd::key::read_from::Src"><span class="n"><span class="pre">Src</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">src</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4I0ENK3upd3key9read_fromE8return_tRR3Src" title="Permalink to this definition">¶</a><br /></dt>
+<span id="_CPPv3I0ENK3upd3key9read_fromERR3Src"></span><span id="_CPPv2I0ENK3upd3key9read_fromERR3Src"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Src</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classupd_1_1key_1af085280515ea28041935f8068885cde0"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N3upd3key8return_tE" title="upd::key::return_t"><span class="n"><span class="pre">return_t</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">read_from</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0ENK3upd3key9read_fromE8return_tRR3Src" title="upd::key::read_from::Src"><span class="n"><span class="pre">Src</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">src</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4I0ENK3upd3key9read_fromE8return_tRR3Src" title="Permalink to this definition">¶</a><br /></dt>
 <dd><p>Unserialize a value from a packet sent by a callee device in response to a packet generated by this key. </p>
 <p>The following member functions are also defined through CRTP. <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">R</span> <span class="n">operator</span><span class="o">&lt;&lt;</span><span class="p">(</span><span class="n">Src</span> <span class="o">&amp;&amp;</span><span class="p">);</span>
 <span class="n">R</span> <span class="n">operator</span><span class="o">&lt;&lt;</span><span class="p">(</span><span class="n">Src</span> <span class="o">&amp;&amp;</span><span class="p">)</span> <span class="n">const</span><span class="p">;</span>
@@ -389,7 +283,7 @@
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4I0ENK3upd3key9with_hookE6actionRR1F">
-<span id="_CPPv3I0ENK3upd3key9with_hookERR1F"></span><span id="_CPPv2I0ENK3upd3key9with_hookERR1F"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">F</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="structupd_1_1key_1aafc5ea5310ff845c185d8380c44539fb"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N3upd6actionE" title="upd::action"><span class="n"><span class="pre">action</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">with_hook</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0ENK3upd3key9with_hookE6actionRR1F" title="upd::key::with_hook::F"><span class="n"><span class="pre">F</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">ftor</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4I0ENK3upd3key9with_hookE6actionRR1F" title="Permalink to this definition">¶</a><br /></dt>
+<span id="_CPPv3I0ENK3upd3key9with_hookERR1F"></span><span id="_CPPv2I0ENK3upd3key9with_hookERR1F"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">F</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classupd_1_1key_1aafc5ea5310ff845c185d8380c44539fb"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N3upd6actionE" title="upd::action"><span class="n"><span class="pre">action</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">with_hook</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0ENK3upd3key9with_hookE6actionRR1F" title="upd::key::with_hook::F"><span class="n"><span class="pre">F</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">ftor</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4I0ENK3upd3key9with_hookE6actionRR1F" title="Permalink to this definition">¶</a><br /></dt>
 <dd><p>Plan an action to perform when a packet resulting from the execution of the action is received. </p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -403,7 +297,7 @@
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4I0_1FENK3upd3key9with_hookE17no_storage_action11unevaluatedI1F4FtorE">
-<span id="_CPPv3I0_1FENK3upd3key9with_hookE11unevaluatedI1F4FtorE"></span><span id="_CPPv2I0_1FENK3upd3key9with_hookE11unevaluatedI1F4FtorE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">F</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_1FENK3upd3key9with_hookE17no_storage_action11unevaluatedI1F4FtorE" title="upd::key::with_hook::F"><span class="n"><span class="pre">F</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Ftor</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="structupd_1_1key_1a579d236cdaed8f404e231f3748dbc348"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N3upd17no_storage_actionE" title="upd::no_storage_action"><span class="n"><span class="pre">no_storage_action</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">with_hook</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="shared.html#_CPPv4I0_1TEN3upd11unevaluatedE" title="upd::unevaluated"><span class="n"><span class="pre">unevaluated</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0_1FENK3upd3key9with_hookE17no_storage_action11unevaluatedI1F4FtorE" title="upd::key::with_hook::F"><span class="n"><span class="pre">F</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_1FENK3upd3key9with_hookE17no_storage_action11unevaluatedI1F4FtorE" title="upd::key::with_hook::Ftor"><span class="n"><span class="pre">Ftor</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4I0_1FENK3upd3key9with_hookE17no_storage_action11unevaluatedI1F4FtorE" title="Permalink to this definition">¶</a><br /></dt>
+<span id="_CPPv3I0_1FENK3upd3key9with_hookE11unevaluatedI1F4FtorE"></span><span id="_CPPv2I0_1FENK3upd3key9with_hookE11unevaluatedI1F4FtorE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">F</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_1FENK3upd3key9with_hookE17no_storage_action11unevaluatedI1F4FtorE" title="upd::key::with_hook::F"><span class="n"><span class="pre">F</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Ftor</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classupd_1_1key_1a579d236cdaed8f404e231f3748dbc348"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N3upd17no_storage_actionE" title="upd::no_storage_action"><span class="n"><span class="pre">no_storage_action</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">with_hook</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="shared.html#_CPPv4I0_1TEN3upd11unevaluatedE" title="upd::unevaluated"><span class="n"><span class="pre">unevaluated</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0_1FENK3upd3key9with_hookE17no_storage_action11unevaluatedI1F4FtorE" title="upd::key::with_hook::F"><span class="n"><span class="pre">F</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_1FENK3upd3key9with_hookE17no_storage_action11unevaluatedI1F4FtorE" title="upd::key::with_hook::Ftor"><span class="n"><span class="pre">Ftor</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4I0_1FENK3upd3key9with_hookE17no_storage_action11unevaluatedI1F4FtorE" title="Permalink to this definition">¶</a><br /></dt>
 <dd><p>Plan an action to perform when a packet resulting from the execution of the action is received. </p>
 <dl class="field-list simple">
 <dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
@@ -417,7 +311,7 @@
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4I_RDaENK3upd3key9with_hookEDav">
-<span id="_CPPv3I_RDaENK3upd3key9with_hookEv"></span><span id="_CPPv2I_RDaENK3upd3key9with_hookEv"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">Ftor</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="structupd_1_1key_1ad706f865226109a5a081dc2a89937efa"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">with_hook</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4I_RDaENK3upd3key9with_hookEDav" title="Permalink to this definition">¶</a><br /></dt>
+<span id="_CPPv3I_RDaENK3upd3key9with_hookEv"></span><span id="_CPPv2I_RDaENK3upd3key9with_hookEv"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">Ftor</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classupd_1_1key_1ad706f865226109a5a081dc2a89937efa"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">with_hook</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4I_RDaENK3upd3key9with_hookEDav" title="Permalink to this definition">¶</a><br /></dt>
 <dd><p>Plan an action to perform when a packet resulting from the execution of the action is received. </p>
 <dl class="field-list simple">
 <dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
@@ -434,25 +328,25 @@
 <p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-static-attributes">Public Static Attributes</p>
 <dl class="cpp var">
 <dt class="sig sig-object cpp" id="_CPPv4N3upd3key5indexE">
-<span id="_CPPv3N3upd3key5indexE"></span><span id="_CPPv2N3upd3key5indexE"></span><span id="upd::key::index__auto"></span><span class="target" id="structupd_1_1key_1a7882915aa78d5472ca4ce3866733e047"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">index</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_7Index_T0_9endianess_11signed_modeEN3upd3keyE" title="upd::key::Index"><span class="n"><span class="pre">Index</span></span></a><a class="headerlink" href="#_CPPv4N3upd3key5indexE" title="Permalink to this definition">¶</a><br /></dt>
+<span id="_CPPv3N3upd3key5indexE"></span><span id="_CPPv2N3upd3key5indexE"></span><span id="upd::key::index__auto"></span><span class="target" id="classupd_1_1key_1a7882915aa78d5472ca4ce3866733e047"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">index</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_7Index_T0_9endianess_11signed_modeEN3upd3keyE" title="upd::key::Index"><span class="n"><span class="pre">Index</span></span></a><a class="headerlink" href="#_CPPv4N3upd3key5indexE" title="Permalink to this definition">¶</a><br /></dt>
 <dd><p>Equals the <code class="docutils literal notranslate"><span class="pre">Index</span></code> template parameter. </p>
 </dd></dl>
 
 <dl class="cpp var">
 <dt class="sig sig-object cpp" id="_CPPv4N3upd3key9endianessE">
-<span id="_CPPv3N3upd3key9endianessE"></span><span id="_CPPv2N3upd3key9endianessE"></span><span id="upd::key::endianess__auto"></span><span class="target" id="structupd_1_1key_1a824760f518b3d8df95a31af83b340d97"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">endianess</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_7Index_T0_9endianess_11signed_modeEN3upd3keyE" title="upd::key::Endianess"><span class="n"><span class="pre">Endianess</span></span></a><a class="headerlink" href="#_CPPv4N3upd3key9endianessE" title="Permalink to this definition">¶</a><br /></dt>
+<span id="_CPPv3N3upd3key9endianessE"></span><span id="_CPPv2N3upd3key9endianessE"></span><span id="upd::key::endianess__auto"></span><span class="target" id="classupd_1_1key_1a824760f518b3d8df95a31af83b340d97"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">endianess</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_7Index_T0_9endianess_11signed_modeEN3upd3keyE" title="upd::key::Endianess"><span class="n"><span class="pre">Endianess</span></span></a><a class="headerlink" href="#_CPPv4N3upd3key9endianessE" title="Permalink to this definition">¶</a><br /></dt>
 <dd><p>Equals the <code class="docutils literal notranslate"><span class="pre">Endianess</span></code> template parameter. </p>
 </dd></dl>
 
 <dl class="cpp var">
 <dt class="sig sig-object cpp" id="_CPPv4N3upd3key11signed_modeE">
-<span id="_CPPv3N3upd3key11signed_modeE"></span><span id="_CPPv2N3upd3key11signed_modeE"></span><span id="upd::key::signed_mode__auto"></span><span class="target" id="structupd_1_1key_1aa7efb1bb064f1ad5a76b8860bf1d79a7"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">signed_mode</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_7Index_T0_9endianess_11signed_modeEN3upd3keyE" title="upd::key::Signed_Mode"><span class="n"><span class="pre">Signed_Mode</span></span></a><a class="headerlink" href="#_CPPv4N3upd3key11signed_modeE" title="Permalink to this definition">¶</a><br /></dt>
+<span id="_CPPv3N3upd3key11signed_modeE"></span><span id="_CPPv2N3upd3key11signed_modeE"></span><span id="upd::key::signed_mode__auto"></span><span class="target" id="classupd_1_1key_1aa7efb1bb064f1ad5a76b8860bf1d79a7"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">signed_mode</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_7Index_T0_9endianess_11signed_modeEN3upd3keyE" title="upd::key::Signed_Mode"><span class="n"><span class="pre">Signed_Mode</span></span></a><a class="headerlink" href="#_CPPv4N3upd3key11signed_modeE" title="Permalink to this definition">¶</a><br /></dt>
 <dd><p>Equals the <code class="docutils literal notranslate"><span class="pre">Signed_Mode</span></code> template parameter. </p>
 </dd></dl>
 
 <dl class="cpp var">
 <dt class="sig sig-object cpp" id="_CPPv4N3upd3key14payload_lengthE">
-<span id="_CPPv3N3upd3key14payload_lengthE"></span><span id="_CPPv2N3upd3key14payload_lengthE"></span><span id="upd::key::payload_length__auto"></span><span class="target" id="structupd_1_1key_1ae88c0eb282581965040ce067c362c2c3"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">payload_length</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">sizeof</span></span><span class="p"><span class="pre">(</span></span><a class="reference internal" href="#_CPPv4I0_7Index_T0_9endianess_11signed_modeEN3upd3keyE" title="upd::key::Index_T"><span class="n"><span class="pre">Index_T</span></span></a><span class="p"><span class="pre">)</span></span><span class="w"> </span><span class="o"><span class="pre">+</span></span><span class="w"> </span><span class="n"><span class="pre">detail</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">parameters_size</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">R</span></span><span class="p"><span class="pre">(</span></span><span class="n"><span class="pre">Args</span></span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">value</span></span><a class="headerlink" href="#_CPPv4N3upd3key14payload_lengthE" title="Permalink to this definition">¶</a><br /></dt>
+<span id="_CPPv3N3upd3key14payload_lengthE"></span><span id="_CPPv2N3upd3key14payload_lengthE"></span><span id="upd::key::payload_length__auto"></span><span class="target" id="classupd_1_1key_1ae88c0eb282581965040ce067c362c2c3"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">payload_length</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">sizeof</span></span><span class="p"><span class="pre">(</span></span><a class="reference internal" href="#_CPPv4I0_7Index_T0_9endianess_11signed_modeEN3upd3keyE" title="upd::key::Index_T"><span class="n"><span class="pre">Index_T</span></span></a><span class="p"><span class="pre">)</span></span><span class="w"> </span><span class="o"><span class="pre">+</span></span><span class="w"> </span><span class="n"><span class="pre">detail</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">parameters_size</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">R</span></span><span class="p"><span class="pre">(</span></span><span class="n"><span class="pre">Args</span></span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">value</span></span><a class="headerlink" href="#_CPPv4N3upd3key14payload_lengthE" title="Permalink to this definition">¶</a><br /></dt>
 <dd><p>Equals the length in bytes of an action request produced by this key. </p>
 </dd></dl>
 
@@ -479,17 +373,6 @@
 </dd>
 <dt class="field-even">Parameters<span class="colon">:</span></dt>
 <dd class="field-even"><p><strong>ftor</strong> – Callback to be wrapped </p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4I0EN3upd6action6actionERR1F">
-<span id="_CPPv3I0EN3upd6action6actionERR1F"></span><span id="_CPPv2I0EN3upd6action6actionERR1F"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">F</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classupd_1_1action_1a84ec84df9b0d3a6afded566c8697562c"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">explicit</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">action</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN3upd6action6actionERR1F" title="upd::action::action::F"><span class="n"><span class="pre">F</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">ftor</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN3upd6action6actionERR1F" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Wrap a copy of a provided callback. </p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>ftor</strong> – Callback to be wrapped </p>
 </dd>
 </dl>
 </dd></dl>
@@ -581,17 +464,6 @@
 </dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4I0_1FEN3upd17no_storage_action17no_storage_actionE11unevaluatedI1F4FtorE">
-<span id="_CPPv3I0_1FEN3upd17no_storage_action17no_storage_actionE11unevaluatedI1F4FtorE"></span><span id="_CPPv2I0_1FEN3upd17no_storage_action17no_storage_actionE11unevaluatedI1F4FtorE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">F</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_1FEN3upd17no_storage_action17no_storage_actionE11unevaluatedI1F4FtorE" title="upd::no_storage_action::no_storage_action::F"><span class="n"><span class="pre">F</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Ftor</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classupd_1_1no__storage__action_1a9e182c6e27711cabde5109a5a2527640"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">explicit</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">no_storage_action</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="shared.html#_CPPv4I0_1TEN3upd11unevaluatedE" title="upd::unevaluated"><span class="n"><span class="pre">unevaluated</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0_1FEN3upd17no_storage_action17no_storage_actionE11unevaluatedI1F4FtorE" title="upd::no_storage_action::no_storage_action::F"><span class="n"><span class="pre">F</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_1FEN3upd17no_storage_action17no_storage_actionE11unevaluatedI1F4FtorE" title="upd::no_storage_action::no_storage_action::Ftor"><span class="n"><span class="pre">Ftor</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0_1FEN3upd17no_storage_action17no_storage_actionE11unevaluatedI1F4FtorE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Create an action holding the provided callback. </p>
-<dl class="field-list simple">
-<dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>Ftor</strong> – Free function or callback with static storage duration </p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4I00ENK3upd17no_storage_actionclEvRR3SrcRR4Dest">
 <span id="_CPPv3I00ENK3upd17no_storage_actionclERR3SrcRR4Dest"></span><span id="_CPPv2I00ENK3upd17no_storage_actionclERR3SrcRR4Dest"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Src</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Dest</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classupd_1_1no__storage__action_1a79d2589147a421e7c56f7968721e55af"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">()</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I00ENK3upd17no_storage_actionclEvRR3SrcRR4Dest" title="upd::no_storage_action::operator()::Src"><span class="n"><span class="pre">Src</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">src</span></span>, <a class="reference internal" href="#_CPPv4I00ENK3upd17no_storage_actionclEvRR3SrcRR4Dest" title="upd::no_storage_action::operator()::Dest"><span class="n"><span class="pre">Dest</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">dest</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4I00ENK3upd17no_storage_actionclEvRR3SrcRR4Dest" title="Permalink to this definition">¶</a><br /></dt>
 <dd><p>Invoke the managed callback. </p>
@@ -647,78 +519,92 @@
 </section>
 
 
-	    </div>
-            <footer>
-  
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="callee.html" class="btn btn-neutral float-right" title="Implementing callee side">Next <span class="fa fa-arrow-circle-right"></span></a>
-      
-      
-        <a href="shared.html" class="btn btn-neutral" title="Sharing RPC convention"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Unpadded</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="shared.html">Sharing RPC convention</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Implementing caller side</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#basics-sending-request-with-keys">Basics : sending request with keys</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#example">Example</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#handling-the-callee-response">Handling the callee response</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#blocking-mode">Blocking mode</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#non-blocking-mode">Non-blocking mode</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#api-references">API References</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#key"><code class="docutils literal notranslate"><span class="pre">key</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#action"><code class="docutils literal notranslate"><span class="pre">action</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#no-storage-action"><code class="docutils literal notranslate"><span class="pre">no_storage_action</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="callee.html">Implementing callee side</a></li>
+<li class="toctree-l1"><a class="reference internal" href="serialization.html">Serialization tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python.html">Extending Unpadded to Python</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="shared.html" title="previous chapter">Sharing RPC convention</a></li>
+      <li>Next: <a href="callee.html" title="next chapter">Implementing callee side</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
     </div>
-  
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
 
-  <hr/>
 
-  <div role="contentinfo">
-    <p>
-        &copy; Copyright .
-    </p>
-  </div>
 
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/jucacrispim/sphinx_pdj_theme">theme</a> provided by <a href="http://poraodojuca.net">Porão do Juca</a>.
 
-</footer>
-	</div>
-	</div>
-	  
 
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'./',
-            VERSION:'',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
-        };
-    </script>
-    <script type="text/javascript" src="_static/documentation_options.js">
 
-    </script>
-    <script type="text/javascript" src="_static/jquery.js">
 
-    </script>
-    <script type="text/javascript" src="_static/underscore.js">
 
-    </script>
-    <script type="text/javascript" src="_static/_sphinx_javascript_frameworks_compat.js">
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.0.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+      |
+      <a href="_sources/caller.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
 
-    </script>
-    <script type="text/javascript" src="_static/doctools.js">
+    
 
-    </script>
-    <script type="text/javascript" src="_static/sphinx_highlight.js">
-
-    </script>
-
-  
-
-   <script type="text/javascript"
-           src="_static/js/theme.js"></script>
-
-   <script type="text/javascript"
-           src="_static/js/pdj.js"></script>
-
-  
-  
-  <script type="text/javascript">
-      jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
-      });
-  </script>
-   
-
+    
   </body>
 </html>

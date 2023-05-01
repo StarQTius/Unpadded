@@ -1,6 +1,28 @@
 Extending Unpadded to Python
 ==================================
 
+Unpadded API can be extended to Python quite easily, allowing you to communicate with C++ application from a Python script.
+
+Exposing keyrings and dispatchers to Python
+-------------------------------------------
+
+Unpadded classes can be made available to Python inside a [pybind11](https://pybind11.readthedocs.io/en/latest/) module. Two classes can be exposed at the moment:
+
+- :cpp:class:`upd::key` template instances through the :cpp:func:`upd::py::unpack_keyring`
+- :cpp:class:`upd::double_buffered_dispatcher` template instances through the :cpp:func:`upd::py::declare_dispatcher`
+
+:cpp:class:`upd::keyring` does not need to be declared because keys are directly exposed. When unpacking a keyring, a Python module attribute is defined for each key in the keyring. The name of each attribute is the name of the function associated with the exposed key.
+
+Please refer to the API documentation for further detail on the exposed classes interface.
+
+Lazily compile your Python extension modules
+--------------------------------------------
+
+Unpadded uses the `cppimport <https://github.com/tbenthompson/cppimport>`_ API to allow you to import your uncompiled extension modules as if they were Python modules. If you already has some experience of `cppimport <https://github.com/tbenthompson/cppimport>`_, the syntax of your Mako headers will be pretty simillar. The only difference is that you will need to replace `setup_pybind11(cfg)` by `setup_unpadded(cfg)`. 
+
+.. note::
+   Lazily compile extension modules will also require `ccache <https://ccache.dev/>`_ to be installed on your computer. Theroretically, it is not needed to compile your extension modules. However, Unpadded relies on `ccache <https://ccache.dev/>`_ to check whether the extension module needs to be recompiled. `cppimport <https://github.com/tbenthompson/cppimport>`_ has a similar mecanism, but has to be provided an explicit list of dependencies that needs to be kept updated, so it has not been retained for Unpadded. 
+
 API References
 --------------
 

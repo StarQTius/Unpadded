@@ -1,142 +1,56 @@
+<!DOCTYPE html>
 
-
-
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
-<html xml:lang="" lang="" version="-//W3C//DTD XHTML 1.1//EN" xmlns="http://www.w3.org/1999/xhtml">
+<html lang="en">
   <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
+    <title>Extending Unpadded to Python &#8212; Unpadded  documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Serialization tools" href="serialization.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
-  <title>Extending Unpadded to Python &mdash; Unpadded  documentation</title>
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
   
 
-  
-
-  
-
-    <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'/>
-    <link rel="stylesheet" href="_static/css/pdj.css" type="text/css" />
-
-  
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-  
-    <link rel="stylesheet" href="_static/css/pdj.css" type="text/css" />
-  
-
-  
-
-  
-        <link rel="index" title="Index"
-              href="genindex.html"/>
-        <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="Unpadded  documentation" href="index.html"/>
-        <link rel="prev" title="Serialization tools" href="serialization.html"/>
-
-    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-    <meta http-equiv="cache-control" content="public" />
-    <meta name="robots" content="follow, all" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- Add jQuery library -->
-    <script type="text/javascript" src="http://code.jquery.com/jquery-latest.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
-
-  </head>
-
-  <body class="wy-body-for-nav" role="document">
-
-  <div class="wy-grid-for-nav">
-    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
-      <div class="wy-side-nav-search">
-        <a href="index.html" class="fa fa-home"> Unpadded </a>
-        <div role="search">
-	  <form id ="rtd-search-form" class="wy-form"
-		action="search.html" method="get">
-	    <input type="text" name="q" placeholder="Search docs" />
-	    <input type="hidden" name="check_keywords" value="yes" />
-	    <input type="hidden" name="area" value="default" />
-	  </form>
-	</div>
-      </div>
-
-      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-	
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
           
-          
-              <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="shared.html">Sharing RPC convention</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="shared.html#basics-defining-a-keyring">Basics : defining a keyring</a></li>
-<li class="toctree-l2"><a class="reference internal" href="shared.html#binding-lambda-expressions-and-invocable-objects-to-a-keyring">Binding lambda expressions and invocable objects to a keyring</a></li>
-<li class="toctree-l2"><a class="reference internal" href="shared.html#pre-c-17-support">Pre C++17 support</a></li>
-<li class="toctree-l2"><a class="reference internal" href="shared.html#api-references">API References</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="caller.html">Implementing caller side</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="caller.html#basics-sending-request-with-keys">Basics : sending request with keys</a></li>
-<li class="toctree-l2"><a class="reference internal" href="caller.html#handling-the-callee-response">Handling the callee response</a></li>
-<li class="toctree-l2"><a class="reference internal" href="caller.html#api-references">API References</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="callee.html">Implementing callee side</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="callee.html#basics-fulfiling-incoming-request-with-dispatchers">Basics : fulfiling incoming request with dispatchers</a></li>
-<li class="toctree-l2"><a class="reference internal" href="callee.html#hot-swapping-callbacks">Hot swapping callbacks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="callee.html#storage-policy">Storage policy</a></li>
-<li class="toctree-l2"><a class="reference internal" href="callee.html#api-references">API References</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="serialization.html">Serialization tools</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="serialization.html#formatting-packets-with-the-upd-tuple-class">Formatting packets with the <code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">upd::tuple</span></code> class</a></li>
-<li class="toctree-l2"><a class="reference internal" href="serialization.html#make-a-view-of-a-subtuple-or-a-bare-buffer-using-upd-tuple-view">Make a view of a subtuple or a bare buffer using <code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">upd::tuple_view</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="serialization.html#customization-points-defining-serialization-processes-for-foreign-types">Customization points: defining serialization processes for foreign types</a></li>
-<li class="toctree-l2"><a class="reference internal" href="serialization.html#api-references">API References</a></li>
-</ul>
-</li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Extending Unpadded to Python</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#api-references">API References</a></li>
-</ul>
-</li>
-</ul>
 
-          
-        
-
-      </div>
-      &nbsp;
-    </nav>
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-
-      <nav class="wy-nav-top" id="barra-mobile" role="navigation" aria-label="top navigation">
-        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="#">Porão do Juca</a>
-      </nav>
-
-      <div class="wy-nav-content">
-	<div class="fundo-claro">
-	</div>
-	<div class="fundo-escuro">
-	</div>
-
-        <div class="rst-content">
-          <div role="navigation" aria-label="breadcrumbs navigation">
-	    
-	    <!-- <ul class="wy-breadcrumbs"> -->
-	    <!--   <li><a href="#">Docs</a> &raquo;</li> -->
-
-	    <!--   <li>Features</li> -->
-	    <!--   <li class="wy-breadcrumbs-aside"> -->
-
-	    <!-- 	<a href="_sources/index.txt" rel="nofollow"> View page source</a> -->
-
-	    <!--   </li> -->
-	    <!-- </ul> -->
-	    <!-- <hr/> -->
-	  </div>
-
-          <div role="main" class="">
-
-	    <div id="content" class="hfeed entry-container hentry">
+          <div class="body" role="main">
+            
   <section id="extending-unpadded-to-python">
 <h1>Extending Unpadded to Python<a class="headerlink" href="#extending-unpadded-to-python" title="Permalink to this heading">¶</a></h1>
+<p>Unpadded API can be extended to Python quite easily, allowing you to communicate with C++ application from a Python script.</p>
+<section id="exposing-keyrings-and-dispatchers-to-python">
+<h2>Exposing keyrings and dispatchers to Python<a class="headerlink" href="#exposing-keyrings-and-dispatchers-to-python" title="Permalink to this heading">¶</a></h2>
+<p>Unpadded classes can be made available to Python inside a [pybind11](<a class="reference external" href="https://pybind11.readthedocs.io/en/latest/">https://pybind11.readthedocs.io/en/latest/</a>) module. Two classes can be exposed at the moment:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="caller.html#_CPPv4I0_7Index_T0_9endianess_11signed_modeEN3upd3keyE" title="upd::key"><code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">upd::key</span></code></a> template instances through the <a class="reference internal" href="#_CPPv4I0EN3upd2py14unpack_keyringEvRN8pybind116moduleE7Keyring" title="upd::py::unpack_keyring"><code class="xref cpp cpp-func docutils literal notranslate"><span class="pre">upd::py::unpack_keyring()</span></code></a></p></li>
+<li><p><a class="reference internal" href="callee.html#_CPPv4I0EN3upd26double_buffered_dispatcherE" title="upd::double_buffered_dispatcher"><code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">upd::double_buffered_dispatcher</span></code></a> template instances through the <a class="reference internal" href="#_CPPv4I0EN3upd2py18declare_dispatcherEvRN8pybind116moduleEPKc7Keyring" title="upd::py::declare_dispatcher"><code class="xref cpp cpp-func docutils literal notranslate"><span class="pre">upd::py::declare_dispatcher()</span></code></a></p></li>
+</ul>
+<p><a class="reference internal" href="shared.html#_CPPv4I_9endianess_11signed_modeDpEN3upd7keyringE" title="upd::keyring"><code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">upd::keyring</span></code></a> does not need to be declared because keys are directly exposed. When unpacking a keyring, a Python module attribute is defined for each key in the keyring. The name of each attribute is the name of the function associated with the exposed key.</p>
+<p>Please refer to the API documentation for further detail on the exposed classes interface.</p>
+</section>
+<section id="lazily-compile-your-python-extension-modules">
+<h2>Lazily compile your Python extension modules<a class="headerlink" href="#lazily-compile-your-python-extension-modules" title="Permalink to this heading">¶</a></h2>
+<p>Unpadded uses the <a class="reference external" href="https://github.com/tbenthompson/cppimport">cppimport</a> API to allow you to import your uncompiled extension modules as if they were Python modules. If you already has some experience of <a class="reference external" href="https://github.com/tbenthompson/cppimport">cppimport</a>, the syntax of your Mako headers will be pretty simillar. The only difference is that you will need to replace <cite>setup_pybind11(cfg)</cite> by <cite>setup_unpadded(cfg)</cite>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Lazily compile extension modules will also require <a class="reference external" href="https://ccache.dev/">ccache</a> to be installed on your computer. Theroretically, it is not needed to compile your extension modules. However, Unpadded relies on <a class="reference external" href="https://ccache.dev/">ccache</a> to check whether the extension module needs to be recompiled. <a class="reference external" href="https://github.com/tbenthompson/cppimport">cppimport</a> has a similar mecanism, but has to be provided an explicit list of dependencies that needs to be kept updated, so it has not been retained for Unpadded.</p>
+</div>
+</section>
 <section id="api-references">
 <h2>API References<a class="headerlink" href="#api-references" title="Permalink to this heading">¶</a></h2>
 <section id="unpack-keyring">
@@ -168,7 +82,31 @@
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4I0EN3upd2py18declare_dispatcherEvRN8pybind116moduleEPKc7Keyring">
 <span id="_CPPv3I0EN3upd2py18declare_dispatcherERN8pybind116moduleEPKc7Keyring"></span><span id="_CPPv2I0EN3upd2py18declare_dispatcherERN8pybind116moduleEPKc7Keyring"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Keyring</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="python_8hpp_1a1562902aa4ec13894a04aa7e289e19bf"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-prename descclassname"><span class="n"><span class="pre">upd</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">py</span></span><span class="p"><span class="pre">::</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">declare_dispatcher</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">pybind11</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">module</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">pymodule</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">name</span></span>, <a class="reference internal" href="#_CPPv4I0EN3upd2py18declare_dispatcherEvRN8pybind116moduleEPKc7Keyring" title="upd::py::declare_dispatcher::Keyring"><span class="n"><span class="pre">Keyring</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">keyring</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN3upd2py18declare_dispatcherEvRN8pybind116moduleEPKc7Keyring" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Expose a  dispatcher template instance made from the given keyring. </p>
+<dd><p>Expose a  <a class="reference internal" href="callee.html#classupd_1_1double__buffered__dispatcher"><span class="std std-ref">double_buffered_dispatcher</span></a> template instance made from the given keyring. </p>
+<p>The class will have the following methods :<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">read_from(self,</span> <span class="pre">getter:</span> <span class="pre">Callable[[],</span> <span class="pre">int])</span> <span class="pre">-&gt;</span> <span class="pre">unpadded.PacketStatus</span></code>: read from a byte getter until a packet is dropped on resolved</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">write_to(self,</span> <span class="pre">putter:</span> <span class="pre">Callable[[int],</span> <span class="pre">None])</span> <span class="pre">-&gt;</span> <span class="pre">None</span></code>: write to a byte putter until the internal output buffer is exhausted</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">put(self,</span> <span class="pre">x:</span> <span class="pre">int)</span> <span class="pre">-&gt;</span> <span class="pre">None</span></code>: put a single byte into the input internal buffer and return the status of the current packet</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get(self)</span> <span class="pre">-&gt;</span> <span class="pre">int</span></code>: get a single byte from the ouput interna buffer</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">is_loaded(self)</span> <span class="pre">-&gt;</span> <span class="pre">bool</span></code>: check whether a packet is loaded in the output buffer</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">replace(self,</span> <span class="pre">key,</span> <span class="pre">f:</span> <span class="pre">Callable)</span> <span class="pre">-&gt;</span> <span class="pre">None</span></code>: replace the behavior of the action designated by <code class="docutils literal notranslate"><span class="pre">key</span></code> by <code class="docutils literal notranslate"><span class="pre">f</span></code> (Python callbacks are supported)</p></li>
+</ul>
+</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The provided keyring is unpacked.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>Keyring</strong> – Keyring holding the keys to expose </p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>name</strong> – Name for the Python class bound to the dispatcher </p></li>
+<li><p><strong>pymodule</strong> – Python module inside of which the classes will be defined </p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 </section>
@@ -176,76 +114,83 @@
 </section>
 
 
-	    </div>
-            <footer>
-  
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-      
-        <a href="serialization.html" class="btn btn-neutral" title="Serialization tools"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Unpadded</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="shared.html">Sharing RPC convention</a></li>
+<li class="toctree-l1"><a class="reference internal" href="caller.html">Implementing caller side</a></li>
+<li class="toctree-l1"><a class="reference internal" href="callee.html">Implementing callee side</a></li>
+<li class="toctree-l1"><a class="reference internal" href="serialization.html">Serialization tools</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Extending Unpadded to Python</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#exposing-keyrings-and-dispatchers-to-python">Exposing keyrings and dispatchers to Python</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#lazily-compile-your-python-extension-modules">Lazily compile your Python extension modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#api-references">API References</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#unpack-keyring"><code class="docutils literal notranslate"><span class="pre">unpack_keyring</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#declare-dispatcher"><code class="docutils literal notranslate"><span class="pre">declare_dispatcher</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="serialization.html" title="previous chapter">Serialization tools</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
     </div>
-  
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
 
-  <hr/>
 
-  <div role="contentinfo">
-    <p>
-        &copy; Copyright .
-    </p>
-  </div>
 
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/jucacrispim/sphinx_pdj_theme">theme</a> provided by <a href="http://poraodojuca.net">Porão do Juca</a>.
 
-</footer>
-	</div>
-	</div>
-	  
 
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'./',
-            VERSION:'',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
-        };
-    </script>
-    <script type="text/javascript" src="_static/documentation_options.js">
 
-    </script>
-    <script type="text/javascript" src="_static/jquery.js">
 
-    </script>
-    <script type="text/javascript" src="_static/underscore.js">
 
-    </script>
-    <script type="text/javascript" src="_static/_sphinx_javascript_frameworks_compat.js">
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.0.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+      |
+      <a href="_sources/python.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
 
-    </script>
-    <script type="text/javascript" src="_static/doctools.js">
+    
 
-    </script>
-    <script type="text/javascript" src="_static/sphinx_highlight.js">
-
-    </script>
-
-  
-
-   <script type="text/javascript"
-           src="_static/js/theme.js"></script>
-
-   <script type="text/javascript"
-           src="_static/js/pdj.js"></script>
-
-  
-  
-  <script type="text/javascript">
-      jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
-      });
-  </script>
-   
-
+    
   </body>
 </html>
