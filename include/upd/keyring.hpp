@@ -76,6 +76,8 @@ public:
   constexpr explicit keyring(upd::flist_t<unevaluated<Fs, Functions>...>,
                              endianess_h<Endianess>,
                              signed_mode_h<Signed_Mode>) {}
+
+  constexpr explicit keyring(upd::flist_t<unevaluated<Fs, Functions>...> fl) {}
 #endif // __cplusplus >= 201703L
 
   //! \brief Make a key associated with the given unevaluated reference to a callback
@@ -98,6 +100,9 @@ public:
 #if __cplusplus >= 201703L
 template<typename... Hs, endianess Endianess, signed_mode Signed_Mode>
 keyring(flist_t<Hs...>, endianess_h<Endianess>, signed_mode_h<Signed_Mode>) -> keyring<Endianess, Signed_Mode, Hs...>;
+
+template<typename... Hs>
+keyring(flist_t<Hs...>) -> keyring<endianess::LITTLE, signed_mode::TWOS_COMPLEMENT, Hs...>;
 #endif // __cplusplus >= 201703L
 
 //! \brief Make a keyring objects
