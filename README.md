@@ -14,6 +14,20 @@ Unpadded is best used with protocol that can handle byte streams easily, such as
 - TCP protocol
 - ...
 
+## Features
+
+- **Header-only**: You can but do not need to use CMake to integrate Unpadded in your own project. Pick the include/ directory, put it anywhere you like inside your project and you are good.
+- **Easy to integrate**: The only dependency of Unpadded is the C++ standard library and a standard-compliant C++11 compiler. Some optional dependencies can be enabled to bind Unpadded to Python, but are not required.
+- **Easy to interface with any protocol**: Unpadded is not meant to provide protocol implementation right out of the box, because it would be too difficult to support every chip and framework available. Instead, Unpadded provide you with a way to interface it with almost any protocol.
+- **Use C++17 features but is C++11 compatible**: This library use some C++17 features in order to improve compilation time and make it easier to use. However, if you are using an old toolchain, you can also use Unpadded with a C++11 compiler
+- **Macro free**: If you are compiling with C++17, then Unpadded will not make you use any macro.
+- **Works well with bare-metal application**: Unpadded has been designed to work with hardware interrupts.
+- **Optional usage of dynamic allocation**: Can't use dynamic allocation? Then Unpadded will only use the stack. For example, the front page example does not make any dynamic allocation.
+- **Additional tools for implementing protocols for non-programmable devices**: Sensors and actuators must sometime be controlled through a communication bus. Unpadded provides you with tools that can be used to implement any communication protocol.
+- **Minimizes the quantity of data sent**: Since the signatures of the remotely invocable functions are known at compile-time by both side, Unpadded produces very little information when generating packets.
+- **Allows to serialize any user-provided type**: Unpadded natively supports primitive types and arrays of primitive types. Users can define additional serialization rules for any type they want, as long as the number of bytes needed to describe the type is known at compile-time.
+- **[Documentation available](https://starqtius.github.io/Unpadded/)**: Albeit a bit sloppy for the moment, every part of the public API is documented. The documentation also includes a step-by-step tutorial.
+
 ## Quick example with Arduino
 
 Do note that the Arduino framework is not necessarlily shipped with an implementatio of the standard library, so you might have to provide one yourself if you want to run this example.
