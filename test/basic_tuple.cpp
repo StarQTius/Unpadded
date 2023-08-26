@@ -1,24 +1,11 @@
-#include "upd/basic_tuple.hpp"
+#include "utility/generators.hpp"
+#include "utility/mocking.hpp"
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators_all.hpp>
 #include <fakeit.hpp>
+#include <upd/basic_tuple.hpp>
 
 using namespace fakeit;
-
-#define GENERATE_VALUES(TYPE, ...) GENERATE(values({(TYPE)__VA_ARGS__}))
-
-template<typename C>
-auto iterate(C &c) noexcept {
-  using std::begin;
-  using std::end;
-
-  auto retval = [&, it = begin(c)](auto...) mutable {
-    REQUIRE(it != end(c));
-    return *it++;
-  };
-
-  return retval;
-}
 
 struct serializer_interface {
   virtual void serialize_unsigned(unsigned long long value, std::size_t size, std::byte *output) = 0;
