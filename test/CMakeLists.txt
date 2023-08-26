@@ -75,5 +75,6 @@ add_custom_target(check_revamp COMMAND ctest -L check_revamp
 add_executable(basic_tuple basic_tuple.cpp)
 target_link_libraries(basic_tuple PRIVATE Unpadded Catch2::Catch2WithMain
                                           FakeIt::FakeIt-catch)
+set_target_properties(basic_tuple PROPERTIES CXX_STANDARD 17)
 add_dependencies(check_revamp basic_tuple)
 catch_discover_tests(basic_tuple PROPERTIES LABELS check_revamp)
