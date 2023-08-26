@@ -1,6 +1,5 @@
-#include <upd/detail/serialization.hpp>
-
 #include "utility.hpp"
+#include <upd/detail/serialization.hpp>
 
 template<typename Int, Int V, upd::endianess Endianess, upd::signed_mode Signed_Mode, upd::byte_t... Expected_Bytes>
 static void unaligned_data_DO_serialize_data_EXPECT_correct_raw_data() {

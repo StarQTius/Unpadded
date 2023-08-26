@@ -1,15 +1,7 @@
-//! \file
-
 #pragma once
 
 #include <cstddef>
 #include <memory>
-
-#include "format.hpp"
-#include "tuple.hpp"
-#include "type.hpp"
-#include "unevaluated.hpp"
-#include "upd.hpp"
 
 #include "detail/function_reference.hpp"
 #include "detail/io/immediate_process.hpp"
@@ -18,6 +10,11 @@
 #include "detail/type_traits/input_tuple.hpp"
 #include "detail/type_traits/require.hpp"
 #include "detail/type_traits/signature.hpp"
+#include "format.hpp"
+#include "tuple.hpp"
+#include "type.hpp"
+#include "unevaluated.hpp"
+#include "upd.hpp"
 
 // IWYU pragma: no_include "upd/detail/value_h.hpp"
 

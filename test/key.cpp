@@ -1,9 +1,8 @@
+#include "utility.hpp"
 #include <upd/key.hpp>
 #include <upd/keyring.hpp>
 #include <upd/typelist.hpp>
 #include <upd/unevaluated.hpp>
-
-#include "utility.hpp"
 
 struct object_t {
   uint8_t a;

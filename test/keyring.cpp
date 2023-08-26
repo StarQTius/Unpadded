@@ -1,7 +1,6 @@
+#include "utility.hpp"
 #include <upd/keyring.hpp>
 #include <upd/unevaluated.hpp>
-
-#include "utility.hpp"
 
 template<typename R, typename... Args>
 struct callable {
