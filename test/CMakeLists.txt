@@ -1,4 +1,8 @@
 FetchContent_MakeAvailable(Unity)
+FetchContent_MakeAvailable(Catch2)
+FetchContent_MakeAvailable(FakeIt)
+
+include(Catch)
 
 function(add_cpp11_and_cpp17_test TEST_NAME)
   add_executable(run_${TEST_NAME}_cpp11 ${TEST_NAME}.cpp)

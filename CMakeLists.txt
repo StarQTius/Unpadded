@@ -12,6 +12,14 @@ include(GNUInstallDirs)
 include(FetchContent)
 
 if(NOT ${PROJECT_NAME}_INSTALL)
+  FetchContent_Declare(
+    Catch2
+    GIT_REPOSITORY https://github.com/catchorg/Catch2
+    GIT_TAG v3.4.0)
+  FetchContent_Declare(
+    FakeIt
+    GIT_REPOSITORY https://github.com/eranpeer/FakeIt
+    GIT_TAG 2.4.0)
   FetchContent_Declare(Unity
                        GIT_REPOSITORY https://github.com/ThrowTheSwitch/Unity)
   FetchContent_Declare(ArduinoFake
@@ -20,6 +28,8 @@ if(NOT ${PROJECT_NAME}_INSTALL)
     pybind11
     GIT_REPOSITORY https://github.com/pybind/pybind11
     GIT_TAG v2.10.0)
+
+  list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
 endif()
 
 add_subdirectory(include)
