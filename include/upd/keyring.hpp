@@ -2,17 +2,16 @@
 
 #pragma once
 
-#include "format.hpp"
-
-#include "upd/detail/type_traits/remove_cv_ref.hpp"
 #include <type_traits>
 
 #include "detail/type_traits/signature.hpp"
 #include "detail/type_traits/smallest.hpp"
 #include "detail/type_traits/typelist.hpp"
+#include "format.hpp"
 #include "key.hpp"
 #include "typelist.hpp"
 #include "unevaluated.hpp" // IWYU pragma: keep
+#include "upd/detail/type_traits/remove_cv_ref.hpp"
 
 // IWYU pragma: no_forward_declare unevaluated
 

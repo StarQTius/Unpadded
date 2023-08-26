@@ -1,6 +1,5 @@
-#include <upd/tuple.hpp>
-
 #include "utility.hpp"
+#include <upd/tuple.hpp>
 
 static void tuple_view_DO_bind_to_buffer_EXPECT_reading_correct_value() {
   using namespace upd;

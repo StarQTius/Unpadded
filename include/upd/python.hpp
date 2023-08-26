@@ -1,19 +1,12 @@
 #pragma once
 
 #include <cstdlib>
-#include <cxxabi.h>
 #include <functional>
 #include <regex>
 #include <stdexcept>
 #include <string>
 #include <typeinfo>
 #include <utility>
-
-#include <pybind11/cast.h>
-#include <pybind11/functional.h> // IWYU pragma: keep
-#include <pybind11/pybind11.h>
-#include <pybind11/pytypes.h>
-#include <pybind11/stl.h> // IWYU pragma: keep
 
 #include "action.hpp"
 #include "buffered_dispatcher.hpp"
@@ -23,6 +16,12 @@
 #include "key.hpp"
 #include "policy.hpp"
 #include "type.hpp"
+#include <cxxabi.h>
+#include <pybind11/cast.h>
+#include <pybind11/functional.h> // IWYU pragma: keep
+#include <pybind11/pybind11.h>
+#include <pybind11/pytypes.h>
+#include <pybind11/stl.h> // IWYU pragma: keep
 
 // IWYU pragma: no_include <pybind11/detail/descr.h>
 

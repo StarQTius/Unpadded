@@ -1,5 +1,12 @@
 #pragma once
 
+#include <algorithm> // IWYU pragma: keep
+#include <array>
+#include <cstddef>
+#include <functional>
+#include <type_traits>
+#include <utility>
+
 #include "detail/serialization.hpp"
 #include "detail/type_traits/require.hpp"
 #include "detail/type_traits/signature.hpp"
@@ -10,12 +17,6 @@
 #include "upd.hpp"
 #include "upd/detail/type_traits/is_array.hpp"
 #include "upd/index_type.hpp"
-#include <algorithm> // IWYU pragma: keep
-#include <array>
-#include <cstddef>
-#include <functional>
-#include <type_traits>
-#include <utility>
 
 #define UPD_ALWAYS_FALSE ([] {}, false)
 

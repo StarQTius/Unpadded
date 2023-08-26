@@ -1,9 +1,8 @@
 #pragma once
 
+#include "product.hpp"
 #include <unity.h>
 #include <upd/typelist.hpp>
-
-#include "product.hpp"
 
 #define MAKE_MULTIOPT(FUNCTION_NAME)                                                                                   \
   template<upd::endianess... Endianesses, upd::signed_mode... Signed_Modes>                                            \

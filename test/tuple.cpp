@@ -1,6 +1,5 @@
-#include <upd/tuple.hpp>
-
 #include "utility.hpp"
+#include <upd/tuple.hpp>
 
 struct object_t {
   uint8_t x;

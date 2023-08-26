@@ -5,10 +5,9 @@
 #include <cstddef>
 #include <type_traits>
 
+#include "../../upd.hpp"
 #include "detector.hpp"
 #include "typelist.hpp"
-
-#include "../../upd.hpp"
 
 namespace upd {
 namespace detail {

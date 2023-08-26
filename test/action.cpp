@@ -1,6 +1,5 @@
-#include <upd/action.hpp>
-
 #include "utility.hpp"
+#include <upd/action.hpp>
 
 static void action_DO_serialize_argument_into_stream_EXPECT_action_getting_unaltered_argument() {
   using namespace upd;

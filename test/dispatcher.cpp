@@ -1,9 +1,8 @@
+#include "utility.hpp"
 #include <upd/dispatcher.hpp>
 #include <upd/format.hpp>
 #include <upd/keyring.hpp>
 #include <upd/unevaluated.hpp>
-
-#include "utility.hpp"
 
 int get_8() { return 8; }
 int get_16() { return 16; }
