@@ -78,3 +78,11 @@ target_link_libraries(basic_tuple PRIVATE Unpadded Catch2::Catch2WithMain
 set_target_properties(basic_tuple PROPERTIES CXX_STANDARD 17)
 add_dependencies(check_revamp basic_tuple)
 catch_discover_tests(basic_tuple PROPERTIES LABELS check_revamp)
+
+add_executable(detail_variadic_clean detail/variadic/clean.cpp)
+target_link_libraries(
+  detail_variadic_clean PRIVATE Unpadded Catch2::Catch2WithMain
+                                FakeIt::FakeIt-catch)
+set_target_properties(detail_variadic_clean PROPERTIES CXX_STANDARD 17)
+add_dependencies(check_revamp detail_variadic_clean)
+catch_discover_tests(detail_variadic_clean PROPERTIES LABELS check_revamp)
