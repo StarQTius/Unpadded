@@ -69,10 +69,11 @@ add_cpp11_and_cpp17_static_test(static)
 
 # Revamp tests
 
-add_custom_target(check_revamp COMMAND ctest --output-on-failure)
+add_custom_target(check_revamp COMMAND ctest -L check_revamp
+                                       --output-on-failure)
 
 add_executable(basic_tuple basic_tuple.cpp)
 target_link_libraries(basic_tuple PRIVATE Unpadded Catch2::Catch2WithMain
                                           FakeIt::FakeIt-catch)
 add_dependencies(check_revamp basic_tuple)
-catch_discover_tests(basic_tuple)
+catch_discover_tests(basic_tuple PROPERTIES LABELS check_revamp)

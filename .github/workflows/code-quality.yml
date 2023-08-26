@@ -21,9 +21,9 @@ jobs:
     - run: sudo apt install ccache gcc-11
     - run: pip install pytest pytest-asyncio cppimport
     - run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=gcc-11 -DCMAKE_CXX_COMPILER=g++-11
-    - run: cmake --build ${{github.workspace}}/build -t check
+    - run: cmake --build ${{github.workspace}}/build -t check_revamp
     - run: cmake -B ${{github.workspace}}/build -DUnpadded_PLATFORM_ENDIANESS=LITTLE -DUnpadded_PLATFORM_SIGNED_MODE=TWOS_COMPLEMENT
-    - run: cmake --build ${{github.workspace}}/build -t check
+    - run: cmake --build ${{github.workspace}}/build -t check_revamp
   check-clang-11:
     runs-on: ubuntu-latest
     steps:
@@ -31,6 +31,6 @@ jobs:
     - run: sudo apt install ccache clang-11
     - run: pip install pytest pytest-asyncio cppimport
     - run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang-11 -DCMAKE_CXX_COMPILER=clang++-11
-    - run: cmake --build ${{github.workspace}}/build -t check
+    - run: cmake --build ${{github.workspace}}/build -t check_revamp
     - run: cmake -B ${{github.workspace}}/build -DUnpadded_PLATFORM_ENDIANESS=LITTLE -DUnpadded_PLATFORM_SIGNED_MODE=TWOS_COMPLEMENT
-    - run: cmake --build ${{github.workspace}}/build -t check
+    - run: cmake --build ${{github.workspace}}/build -t check_revamp
