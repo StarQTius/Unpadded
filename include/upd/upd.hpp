@@ -36,3 +36,5 @@ constexpr struct {
 
 template<typename>
 struct upd_extension; // IWYU pragma: keep
+
+namespace upd::detail {};

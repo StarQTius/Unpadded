@@ -15,7 +15,6 @@
 #include "type.hpp"
 #include "typelist.hpp"
 #include "upd.hpp"
-#include "upd/detail/type_traits/is_array.hpp"
 #include "upd/index_type.hpp"
 
 #define UPD_ALWAYS_FALSE ([] {}, false)
