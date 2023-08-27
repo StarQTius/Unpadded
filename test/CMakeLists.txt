@@ -69,20 +69,18 @@ add_cpp11_and_cpp17_static_test(static)
 
 # Revamp tests
 
+function(add_revamp_test TEST_NAME TEST_FILE)
+  add_executable(${TEST_NAME} ${TEST_FILE})
+  target_link_libraries(${TEST_NAME} PRIVATE Unpadded Catch2::Catch2WithMain
+                                             FakeIt::FakeIt-catch)
+  set_target_properties(${TEST_NAME} PROPERTIES CXX_STANDARD 17)
+  add_dependencies(check_revamp ${TEST_NAME})
+  catch_discover_tests(${TEST_NAME} PROPERTIES LABELS check_revamp)
+endfunction()
+
 add_custom_target(check_revamp COMMAND ctest -L check_revamp
                                        --output-on-failure)
 
-add_executable(basic_tuple basic_tuple.cpp)
-target_link_libraries(basic_tuple PRIVATE Unpadded Catch2::Catch2WithMain
-                                          FakeIt::FakeIt-catch)
-set_target_properties(basic_tuple PROPERTIES CXX_STANDARD 17)
-add_dependencies(check_revamp basic_tuple)
-catch_discover_tests(basic_tuple PROPERTIES LABELS check_revamp)
-
-add_executable(detail_variadic_clean detail/variadic/clean.cpp)
-target_link_libraries(
-  detail_variadic_clean PRIVATE Unpadded Catch2::Catch2WithMain
-                                FakeIt::FakeIt-catch)
-set_target_properties(detail_variadic_clean PROPERTIES CXX_STANDARD 17)
-add_dependencies(check_revamp detail_variadic_clean)
-catch_discover_tests(detail_variadic_clean PROPERTIES LABELS check_revamp)
+add_revamp_test(basic_tuple basic_tuple.cpp)
+add_revamp_test(detail_variadic_clean detail/variadic/clean.cpp)
+add_revamp_test(detail_variadic_clip detail/variadic/clip.cpp)
