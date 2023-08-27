@@ -4,16 +4,18 @@
 #include <array>
 #include <cstddef>
 #include <functional>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 
 #include "detail/serialization.hpp"
 #include "detail/type_traits/require.hpp"
 #include "detail/type_traits/signature.hpp"
-#include "detail/type_traits/typelist.hpp"
+#include "detail/variadic/at.hpp"
+#include "detail/variadic/clip.hpp"
+#include "detail/variadic/sum.hpp" // IWYU pragma: keep
 #include "format.hpp"
 #include "type.hpp"
-#include "typelist.hpp"
 #include "upd.hpp"
 #include "upd/index_type.hpp"
 
@@ -22,6 +24,9 @@
 namespace upd {
 
 namespace detail {
+
+template<auto Value>
+using integral_constant_t = std::integral_constant<decltype(Value), Value>;
 
 template<typename, typename = void>
 struct is_iterable : std::false_type {};
@@ -49,9 +54,7 @@ constexpr std::size_t serialization_size_impl(int) {
 }
 
 template<typename T>
-struct serialization_size {
-  constexpr static auto value = serialization_size_impl<T>(0);
-};
+using serialization_size_t = detail::integral_constant_t<serialization_size_impl<T>(0)>;
 
 template<typename Storage_T, typename Serializer_T, typename... Ts>
 class basic_tuple {
@@ -62,13 +65,13 @@ class basic_tuple {
                 "Some of the provided types are not serializable (serializable types are integer types, types with "
                 "user-defined extension and array types of any of these)");
 
-  using types_t = upd::typelist_t<Ts...>;
-  using sizes_t = upd::typelist_t<serialization_size<Ts>...>;
-
-  template<std::size_t I>
-  using arg_t = detail::at<types_t, I>;
+  using elements_t = std::tuple<Ts...>;
+  using sizes_t = std::tuple<detail::integral_constant_t<0u>, serialization_size_t<Ts>...>;
 
 public:
+  template<std::size_t I>
+  using element_t = detail::variadic::at_t<elements_t, I>;
+
   explicit basic_tuple(Storage_T storage, Serializer_T serializer, const Ts &...values)
       : m_storage{UPD_FWD(storage)}, m_serializer{UPD_FWD(serializer)} {
     set_all(std::make_index_sequence<sizeof...(Ts)>{}, values...);
@@ -76,14 +79,11 @@ public:
 
   template<std::size_t I>
   [[nodiscard]] auto get(index_type<I>) const noexcept {
-    using namespace upd::detail;
+    using sizes_up_to_element_t = detail::variadic::clip_t<sizes_t, 0, I + 1>;
 
-    using detail::clip;
-    using detail::sum;
+    constexpr auto offset = detail::variadic::sum_v<sizes_up_to_element_t>;
 
-    constexpr auto offset = sum<clip<sizes_t, 0, I>>::value;
-
-    return read_as<arg_t<I>>(offset);
+    return read_as<detail::variadic::at_t<elements_t, I>>(offset);
   }
 
   template<typename F>
@@ -92,27 +92,21 @@ public:
   }
 
   template<std::size_t I>
-  void set(index_type<I>, const arg_t<I> &value) noexcept {
-    using namespace upd::detail;
+  void set(index_type<I>, const element_t<I> &value) noexcept {
+    using sizes_up_to_element_t = detail::variadic::clip_t<sizes_t, 0, I + 1>;
 
-    using detail::clip;
-    using detail::sum;
-
-    constexpr auto offset = sum<clip<sizes_t, 0, I>>::value;
+    constexpr auto offset = detail::variadic::sum_v<sizes_up_to_element_t>;
 
     write_as(value, offset);
   }
 
   template<std::size_t I, typename T, std::size_t N>
   void set(index_type<I>, const std::array<T, N> &value) noexcept {
-    static_assert(std::is_same_v<T[N], arg_t<I>>, "The `I`th element type is not `T[N]`");
+    static_assert(std::is_same_v<T[N], detail::variadic::at_t<elements_t, I>>, "The `I`th element type is not `T[N]`");
 
-    using namespace upd::detail;
+    using sizes_up_to_element_t = detail::variadic::clip_t<sizes_t, 0, I + 1>;
 
-    using detail::clip;
-    using detail::sum;
-
-    constexpr auto offset = sum<clip<sizes_t, 0, I>>::value;
+    constexpr auto offset = detail::variadic::sum_v<sizes_up_to_element_t>;
 
     write_as(value, offset);
   }
