@@ -5,7 +5,7 @@
 #include <tuple>
 #include <utility>
 
-#include "leaf.hpp"
+#include "at.hpp"
 
 namespace upd::detail::variadic {
 
@@ -16,16 +16,6 @@ struct clean;
 
 template<typename... Ts>
 struct clean<std::tuple<Ts...>> {
-  template<std::size_t... Is>
-  [[nodiscard]] constexpr static auto aggregated_leaves(std::index_sequence<Is...>) {
-    struct : leaf<Is, Ts>... {
-      using leaf<Is, Ts>::at...;
-      using leaf<Is, Ts>::find...;
-    } retval;
-
-    return retval;
-  }
-
   template<std::size_t... Is>
   [[nodiscard]] constexpr static auto kept_element_truth_array(std::index_sequence<Is...>) noexcept {
     std::array<bool, sizeof...(Ts)> retval{};
@@ -69,11 +59,9 @@ struct clean<std::tuple<Ts...>> {
   template<std::size_t... Is>
   [[nodiscard]] constexpr static auto kept_element_tuple(std::index_sequence<Is...>) {
     std::make_index_sequence<sizeof...(Ts)> iseq;
-
-    constexpr auto leaves = aggregated_leaves(iseq);
     constexpr auto indices = kept_element_indices();
 
-    return std::tuple<decltype(leaves.at(index_type_v<indices.at(Is)>))...>{};
+    return std::tuple<at_t<std::tuple<Ts...>, indices.at(Is)>...>{};
   }
 
   constexpr static std::make_index_sequence<kept_element_count()> cleaned_iseq{};
