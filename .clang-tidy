@@ -1,0 +1,10 @@
+Checks: '
+  bugprone-*,
+  cppcoreguidelines-*,
+  misc-*,
+  modernize-*,
+  performance-*,
+  portability-*,
+  readbility-*'
+WarningsAsErrors: '*'
+HeaderFilterRegex: '.*include/upd/.*'
