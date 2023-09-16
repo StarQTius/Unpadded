@@ -2,6 +2,7 @@ import os
 from shutil import which
 from sysconfig import get_config_var
 
+from ._details import *
 from .client import *
 from .hook import *
 
@@ -13,7 +14,3 @@ if which("ccache") is not None:
     os.environ["CC"] = "ccache " + os.environ["CC"]
 else:
     raise EnvironmentError("`Unpadded` requires `ccache` which is not installed.")
-
-""" _details come last in order to be compiled """
-
-from ._details import *

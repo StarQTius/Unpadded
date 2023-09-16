@@ -5,13 +5,10 @@ set(PYTEST_COMMAND ${Python3_EXECUTABLE} -B -m pytest --color=yes -s -p
 add_test(
   NAME python_test
   COMMAND ${PYTEST_COMMAND} ${CMAKE_CURRENT_SOURCE_DIR}/test.py
-  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/py)
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/py)
 
 set_tests_properties(
-  python_test
-  PROPERTIES
-    LABELS
-    check
-    ENVIRONMENT
-    "PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR};CC=${CMAKE_C_COMPILER};CXX=${CMAKE_CXX_COMPILER}"
-)
+  python_test PROPERTIES LABELS check ENVIRONMENT
+                         "PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}")
+
+add_dependencies(check _details)

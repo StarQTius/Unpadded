@@ -1,5 +1,3 @@
-// cppimport
-
 #include <upd/python.hpp>
 
 using namespace upd;
@@ -12,5 +10,3 @@ PYBIND11_MODULE(_details, pymodule) {
       .value("RESOLVED_PACKET", packet_status::RESOLVED_PACKET)
       .value("DROPPED_PACKET", packet_status::DROPPED_PACKET);
 }
-
-<% setup_unpadded(cfg) %>
