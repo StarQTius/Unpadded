@@ -4,7 +4,7 @@ set(PYTEST_COMMAND ${Python3_EXECUTABLE} -B -m pytest --color=yes -s -p
 
 add_custom_target(
   check_python
-  COMMAND ctest -L check_python --output-on-failure
+  COMMAND ctest -L ^check_python$$ --output-on-failure
   DEPENDS _details)
 
 add_test(

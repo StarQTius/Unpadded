@@ -43,11 +43,11 @@ target_compile_options(
             -fcolor-diagnostics>)
 target_link_libraries(unit_testing INTERFACE unity::framework ${PROJECT_NAME})
 
-add_custom_target(static_check COMMAND ctest -L static_check
+add_custom_target(static_check COMMAND ctest -L ^static_check$$
                                        --output-on-failure)
 add_custom_target(
   check
-  COMMAND ctest -L check --output-on-failure
+  COMMAND ctest -L ^check$$ --output-on-failure
   DEPENDS static_check)
 
 add_subdirectory(py)
