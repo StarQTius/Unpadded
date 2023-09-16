@@ -1,16 +1,16 @@
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="en" data-content_root="./">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <title>Unpadded &#8212; Unpadded  documentation</title>
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/sphinx_highlight.js"></script>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=4f649999" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=039e1c02" />
+    <script src="_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Sharing RPC convention" href="shared.html" />
@@ -31,11 +31,11 @@
           <div class="body" role="main">
             
   <section id="unpadded">
-<h1>Unpadded<a class="headerlink" href="#unpadded" title="Permalink to this heading">¶</a></h1>
+<h1>Unpadded<a class="headerlink" href="#unpadded" title="Link to this heading">¶</a></h1>
 <p>Unpadded is a header-only RPC library appropriate for embedded software and compatible with C++11 (with syntactic sugar for C++17).</p>
 <p>Unpadded does not require code generation, so it is easy to integrate in any project. It provides compile-time safety mechanisms to avoid silly mistakes while striving for low memory usage.</p>
 <section id="what-unpadded-is-good-for-and-what-it-cannot-do">
-<h2>What Unpadded is good for and what it cannot do<a class="headerlink" href="#what-unpadded-is-good-for-and-what-it-cannot-do" title="Permalink to this heading">¶</a></h2>
+<h2>What Unpadded is good for and what it cannot do<a class="headerlink" href="#what-unpadded-is-good-for-and-what-it-cannot-do" title="Link to this heading">¶</a></h2>
 <p>This library does not provide ready-to-use RPC support by itself. It does not implement any protocol like I2C, SPI, TCP etc… Therefore, one downside of Unpadded is that you must implement a “driver” for the protocol or peripheral you want to use Unpadded with.</p>
 <p>Unpadded is best used with protocol that can handle byte streams easily, such as:</p>
 <ul class="simple">
@@ -45,8 +45,24 @@
 <li><p>…</p></li>
 </ul>
 </section>
+<section id="features">
+<h2>Features<a class="headerlink" href="#features" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><strong>Header-only</strong>: You can but do not need to use CMake to integrate Unpadded in your own project. Pick the include/ directory, put it anywhere you like inside your project and you are good.</p></li>
+<li><p><strong>Easy to integrate</strong>: The only dependency of Unpadded is the C++ standard library and a standard-compliant C++11 compiler. Some optional dependencies can be enabled to bind Unpadded to Python, but are not required.</p></li>
+<li><p><strong>Easy to interface with any protocol</strong>: Unpadded is not meant to provide protocol implementation right out of the box, because it would be too difficult to support every chip and framework available. Instead, Unpadded provide you with a way to interface it with almost any protocol.</p></li>
+<li><p><strong>Use C++17 features but is C++11 compatible</strong>: This library use some C++17 features in order to improve compilation time and make it easier to use. However, if you are using an old toolchain, you can also use Unpadded with a C++11 compiler</p></li>
+<li><p><strong>Macro free</strong>: If you are compiling with C++17, then Unpadded will not make you use any macro.</p></li>
+<li><p><strong>Works well with bare-metal application</strong>: Unpadded has been designed to work with hardware interrupts.</p></li>
+<li><p><strong>Optional usage of dynamic allocation</strong>: Can’t use dynamic allocation? Then Unpadded will only use the stack. For example, the front page example does not make any dynamic allocation.</p></li>
+<li><p><strong>Additional tools for implementing protocols for non-programmable devices</strong>: Sensors and actuators must sometime be controlled through a communication bus. Unpadded provides you with tools that can be used to implement any communication protocol.</p></li>
+<li><p><strong>Minimizes the quantity of data sent</strong>: Since the signatures of the remotely invocable functions are known at compile-time by both side, Unpadded produces very little information when generating packets.</p></li>
+<li><p><strong>Allows to serialize any user-provided type</strong>: Unpadded natively supports primitive types and arrays of primitive types. Users can define additional serialization rules for any type they want, as long as the number of bytes needed to describe the type is known at compile-time.</p></li>
+<li><p><strong>`Documentation available &lt;https://starqtius.github.io/Unpadded/&gt;`_</strong>: Albeit a bit sloppy for the moment, every part of the public API is documented. The documentation also includes a step-by-step tutorial.</p></li>
+</ul>
+</section>
 <section id="quick-example-with-arduino">
-<h2>Quick example with Arduino<a class="headerlink" href="#quick-example-with-arduino" title="Permalink to this heading">¶</a></h2>
+<h2>Quick example with Arduino<a class="headerlink" href="#quick-example-with-arduino" title="Link to this heading">¶</a></h2>
 <p>Do note that the Arduino framework is not necessarlily shipped with an implementatio of the standard library, so you might have to provide one yourself if you want to run this example.</p>
 <p>In the following example, we have an Arduino board connected through I²C to another Arduino board. The latter is managing a traffic light with its GPIOs.</p>
 <p>The project is divided in three files:</p>
@@ -56,7 +72,7 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">callee.cpp</span></code> which implements the functions that can be called remotely and the dispatching of the caller requests to the correct function.</p></li>
 </ul>
 <section id="shared-hpp">
-<h3>shared.hpp<a class="headerlink" href="#shared-hpp" title="Permalink to this heading">¶</a></h3>
+<h3>shared.hpp<a class="headerlink" href="#shared-hpp" title="Link to this heading">¶</a></h3>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#pragma once</span>
 
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cstdint&gt;</span>
@@ -77,7 +93,7 @@
 </div>
 </section>
 <section id="caller-cpp">
-<h3>caller.cpp<a class="headerlink" href="#caller-cpp" title="Permalink to this heading">¶</a></h3>
+<h3>caller.cpp<a class="headerlink" href="#caller-cpp" title="Link to this heading">¶</a></h3>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;Arduino.h&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;Wire.h&gt;</span>
 
@@ -130,7 +146,7 @@
 </div>
 </section>
 <section id="callee-cpp">
-<h3>callee.cpp<a class="headerlink" href="#callee-cpp" title="Permalink to this heading">¶</a></h3>
+<h3>callee.cpp<a class="headerlink" href="#callee-cpp" title="Link to this heading">¶</a></h3>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;Arduino.h&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;Wire.h&gt;</span>
 
@@ -186,9 +202,32 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="shared.html#api-references">API References</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="shared.html#keyring"><code class="docutils literal notranslate"><span class="pre">keyring</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="shared.html#unevaluated"><code class="docutils literal notranslate"><span class="pre">unevaluated</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="shared.html#flist"><code class="docutils literal notranslate"><span class="pre">flist</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="shared.html#keyring"><code class="docutils literal notranslate"><span class="pre">keyring</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="shared.html#_CPPv4I_9endianess_11signed_modeDpEN3upd7keyringE"><code class="docutils literal notranslate"><span class="pre">keyring</span></code></a><ul>
+<li class="toctree-l5"><a class="reference internal" href="shared.html#_CPPv4N3upd7keyring7flist_tE"><code class="docutils literal notranslate"><span class="pre">keyring::flist_t</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="shared.html#_CPPv4N3upd7keyring12signatures_tE"><code class="docutils literal notranslate"><span class="pre">keyring::signatures_t</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="shared.html#_CPPv4N3upd7keyring7index_tE"><code class="docutils literal notranslate"><span class="pre">keyring::index_t</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="shared.html#_CPPv4I0EN3upd7keyring5key_tE"><code class="docutils literal notranslate"><span class="pre">keyring::key_t</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="shared.html#_CPPv4N3upd7keyring7keyringEN3upd7flist_tIDp11unevaluatedI2Fs9FunctionsEEE11endianess_hI9EndianessE13signed_mode_hI11Signed_ModeE"><code class="docutils literal notranslate"><span class="pre">keyring::keyring()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="shared.html#_CPPv4I0ENK3upd7keyring3getE5key_tI1HE1H"><code class="docutils literal notranslate"><span class="pre">keyring::get()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="shared.html#_CPPv4I_RDaENK3upd7keyring3getEDav"><code class="docutils literal notranslate"><span class="pre">keyring::get()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="shared.html#_CPPv4N3upd7keyring4sizeE"><code class="docutils literal notranslate"><span class="pre">keyring::size</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="shared.html#_CPPv4N3upd7keyring9endianessE"><code class="docutils literal notranslate"><span class="pre">keyring::endianess</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="shared.html#_CPPv4N3upd7keyring11signed_modeE"><code class="docutils literal notranslate"><span class="pre">keyring::signed_mode</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="shared.html#_CPPv4I_9endianess_11signed_modeDpEN3upd7keyring12make_keyringE7keyringI9Endianess11Signed_ModeDp2HsE7flist_tIDp2HsE11endianess_hI9EndianessE13signed_mode_hI11Signed_ModeE"><code class="docutils literal notranslate"><span class="pre">keyring::make_keyring()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="shared.html#unevaluated"><code class="docutils literal notranslate"><span class="pre">unevaluated</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="shared.html#_CPPv4I0_1TEN3upd11unevaluatedE"><code class="docutils literal notranslate"><span class="pre">unevaluated</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="shared.html#flist"><code class="docutils literal notranslate"><span class="pre">flist</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="shared.html#_CPPv4I_DpRDaEN3upd5flistE"><code class="docutils literal notranslate"><span class="pre">flist</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="shared.html#_CPPv4IDp_Dp2FsEN3upd7flist_tIDp11unevaluatedI2Fs9FunctionsEEE"><code class="docutils literal notranslate"><span class="pre">flist_t</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -204,9 +243,46 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="caller.html#api-references">API References</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="caller.html#key"><code class="docutils literal notranslate"><span class="pre">key</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="caller.html#action"><code class="docutils literal notranslate"><span class="pre">action</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="caller.html#no-storage-action"><code class="docutils literal notranslate"><span class="pre">no_storage_action</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="caller.html#key"><code class="docutils literal notranslate"><span class="pre">key</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="caller.html#_CPPv4I0_7Index_T0_9endianess_11signed_modeEN3upd3keyE"><code class="docutils literal notranslate"><span class="pre">key</span></code></a><ul>
+<li class="toctree-l5"><a class="reference internal" href="caller.html#_CPPv4N3upd3key7index_tE"><code class="docutils literal notranslate"><span class="pre">key::index_t</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="caller.html#_CPPv4N3upd3key11signature_tE"><code class="docutils literal notranslate"><span class="pre">key::signature_t</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="caller.html#_CPPv4N3upd3key8return_tE"><code class="docutils literal notranslate"><span class="pre">key::return_t</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="caller.html#_CPPv4N3upd3key7tuple_tE"><code class="docutils literal notranslate"><span class="pre">key::tuple_t</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="caller.html#_CPPv4NK3upd3keyclEDpRK4Args"><code class="docutils literal notranslate"><span class="pre">key::operator()()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="caller.html#_CPPv4I0ENK3upd3key9read_fromE8return_tRR3Src"><code class="docutils literal notranslate"><span class="pre">key::read_from()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="caller.html#_CPPv4I0ENK3upd3key9with_hookE6actionRR1F"><code class="docutils literal notranslate"><span class="pre">key::with_hook()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="caller.html#_CPPv4I0_1FENK3upd3key9with_hookE17no_storage_action11unevaluatedI1F4FtorE"><code class="docutils literal notranslate"><span class="pre">key::with_hook()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="caller.html#_CPPv4I_RDaENK3upd3key9with_hookEDav"><code class="docutils literal notranslate"><span class="pre">key::with_hook()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="caller.html#_CPPv4N3upd3key5indexE"><code class="docutils literal notranslate"><span class="pre">key::index</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="caller.html#_CPPv4N3upd3key9endianessE"><code class="docutils literal notranslate"><span class="pre">key::endianess</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="caller.html#_CPPv4N3upd3key11signed_modeE"><code class="docutils literal notranslate"><span class="pre">key::signed_mode</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="caller.html#_CPPv4N3upd3key14payload_lengthE"><code class="docutils literal notranslate"><span class="pre">key::payload_length</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="caller.html#action"><code class="docutils literal notranslate"><span class="pre">action</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="caller.html#_CPPv4N3upd6actionE"><code class="docutils literal notranslate"><span class="pre">action</span></code></a><ul>
+<li class="toctree-l5"><a class="reference internal" href="caller.html#_CPPv4I_9endianess_11signed_mode0EN3upd6action6actionERR1F11endianess_hI9EndianessE13signed_mode_hI11Signed_ModeE"><code class="docutils literal notranslate"><span class="pre">action::action()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="caller.html#_CPPv4I00ENK3upd6actionclEvRR3SrcRR4Dest"><code class="docutils literal notranslate"><span class="pre">action::operator()()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="caller.html#_CPPv4I0ENK3upd6actionclEvRR5Input"><code class="docutils literal notranslate"><span class="pre">action::operator()()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="caller.html#_CPPv4NK3upd6action10input_sizeEv"><code class="docutils literal notranslate"><span class="pre">action::input_size()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="caller.html#_CPPv4NK3upd6action11output_sizeEv"><code class="docutils literal notranslate"><span class="pre">action::output_size()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="caller.html#no-storage-action"><code class="docutils literal notranslate"><span class="pre">no_storage_action</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="caller.html#_CPPv4N3upd17no_storage_actionE"><code class="docutils literal notranslate"><span class="pre">no_storage_action</span></code></a><ul>
+<li class="toctree-l5"><a class="reference internal" href="caller.html#_CPPv4I0_1F_9endianess_11signed_modeEN3upd17no_storage_action17no_storage_actionE11unevaluatedI1F4FtorE11endianess_hI9EndianessE13signed_mode_hI11Signed_ModeE"><code class="docutils literal notranslate"><span class="pre">no_storage_action::no_storage_action()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="caller.html#_CPPv4I00ENK3upd17no_storage_actionclEvRR3SrcRR4Dest"><code class="docutils literal notranslate"><span class="pre">no_storage_action::operator()()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="caller.html#_CPPv4NK3upd17no_storage_action10input_sizeEv"><code class="docutils literal notranslate"><span class="pre">no_storage_action::input_size()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="caller.html#_CPPv4NK3upd17no_storage_action11output_sizeEv"><code class="docutils literal notranslate"><span class="pre">no_storage_action::output_size()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -221,11 +297,93 @@
 <li class="toctree-l2"><a class="reference internal" href="callee.html#hot-swapping-callbacks">Hot swapping callbacks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="callee.html#storage-policy">Storage policy</a></li>
 <li class="toctree-l2"><a class="reference internal" href="callee.html#api-references">API References</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="callee.html#dispatcher"><code class="docutils literal notranslate"><span class="pre">dispatcher</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="callee.html#buffered-dispatcher"><code class="docutils literal notranslate"><span class="pre">buffered_dispatcher</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="callee.html#single-buffered-dispatcher"><code class="docutils literal notranslate"><span class="pre">single_buffered_dispatcher</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="callee.html#double-buffered-dispatcher"><code class="docutils literal notranslate"><span class="pre">double_buffered_dispatcher</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="callee.html#packet-status"><code class="docutils literal notranslate"><span class="pre">packet_status</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="callee.html#dispatcher"><code class="docutils literal notranslate"><span class="pre">dispatcher</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="callee.html#_CPPv4I0_15action_featuresEN3upd10dispatcherE"><code class="docutils literal notranslate"><span class="pre">dispatcher</span></code></a><ul>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4N3upd10dispatcher12signatures_tE"><code class="docutils literal notranslate"><span class="pre">dispatcher::signatures_t</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4N3upd10dispatcher7index_tE"><code class="docutils literal notranslate"><span class="pre">dispatcher::index_t</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4N3upd10dispatcher10dispatcherE7Keyring17action_features_hI15Action_FeaturesE"><code class="docutils literal notranslate"><span class="pre">dispatcher::dispatcher()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4N3upd10dispatcher10dispatcherEv"><code class="docutils literal notranslate"><span class="pre">dispatcher::dispatcher()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4I00EN3upd10dispatcherclE7index_tRR3SrcRR4Dest"><code class="docutils literal notranslate"><span class="pre">dispatcher::operator()()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4I0EN3upd10dispatcher10get_actionEP8action_tRR3Src"><code class="docutils literal notranslate"><span class="pre">dispatcher::get_action()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4I0ENK3upd10dispatcher9get_indexE7index_tRR3Src"><code class="docutils literal notranslate"><span class="pre">dispatcher::get_index()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4I_7index_t0_1FEN3upd10dispatcher7replaceEv11unevaluatedI1F4FtorE"><code class="docutils literal notranslate"><span class="pre">dispatcher::replace()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4I_7index_t_RDaEN3upd10dispatcher7replaceEvv"><code class="docutils literal notranslate"><span class="pre">dispatcher::replace()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4I_7index_t0EN3upd10dispatcher7replaceEvRR1F"><code class="docutils literal notranslate"><span class="pre">dispatcher::replace()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4N3upd10dispatcherixE7index_t"><code class="docutils literal notranslate"><span class="pre">dispatcher::operator[]()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4NK3upd10dispatcherixE7index_t"><code class="docutils literal notranslate"><span class="pre">dispatcher::operator[]()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4N3upd10dispatcher4sizeE"><code class="docutils literal notranslate"><span class="pre">dispatcher::size</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4N3upd10dispatcher9endianessE"><code class="docutils literal notranslate"><span class="pre">dispatcher::endianess</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4N3upd10dispatcher11signed_modeE"><code class="docutils literal notranslate"><span class="pre">dispatcher::signed_mode</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4I0_15action_featuresEN3upd10dispatcher15make_dispatcherE"><code class="docutils literal notranslate"><span class="pre">dispatcher::make_dispatcher</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="callee.html#buffered-dispatcher"><code class="docutils literal notranslate"><span class="pre">buffered_dispatcher</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="callee.html#_CPPv4I00EN3upd19buffered_dispatcherE"><code class="docutils literal notranslate"><span class="pre">buffered_dispatcher</span></code></a><ul>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4N3upd19buffered_dispatcher7index_tE"><code class="docutils literal notranslate"><span class="pre">buffered_dispatcher::index_t</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4I0_15action_featuresEN3upd19buffered_dispatcher19buffered_dispatcherE7Keyring17action_features_hI15Action_FeaturesE"><code class="docutils literal notranslate"><span class="pre">buffered_dispatcher::buffered_dispatcher()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4N3upd19buffered_dispatcher19buffered_dispatcherEv"><code class="docutils literal notranslate"><span class="pre">buffered_dispatcher::buffered_dispatcher()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4NK3upd19buffered_dispatcher9is_loadedEv"><code class="docutils literal notranslate"><span class="pre">buffered_dispatcher::is_loaded()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4I0EN3upd19buffered_dispatcher9read_fromE13packet_statusRR3Src"><code class="docutils literal notranslate"><span class="pre">buffered_dispatcher::read_from()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4N3upd19buffered_dispatcher3putE6byte_t"><code class="docutils literal notranslate"><span class="pre">buffered_dispatcher::put()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4I0EN3upd19buffered_dispatcher8write_toEvRR4Dest"><code class="docutils literal notranslate"><span class="pre">buffered_dispatcher::write_to()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4N3upd19buffered_dispatcher3getEv"><code class="docutils literal notranslate"><span class="pre">buffered_dispatcher::get()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4I_7index_t0_1FEN3upd19buffered_dispatcher7replaceEv11unevaluatedI1F4FtorE"><code class="docutils literal notranslate"><span class="pre">buffered_dispatcher::replace()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4I00EN3upd19buffered_dispatcherclE13packet_statusRR3SrcRR4Dest"><code class="docutils literal notranslate"><span class="pre">buffered_dispatcher::operator()()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4I_7index_t_RDaEN3upd19buffered_dispatcher7replaceEvv"><code class="docutils literal notranslate"><span class="pre">buffered_dispatcher::replace()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4I_7index_t0EN3upd19buffered_dispatcher7replaceEvRR1F"><code class="docutils literal notranslate"><span class="pre">buffered_dispatcher::replace()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4I00EN3upd19buffered_dispatcher5replyEbRR6Output3Key"><code class="docutils literal notranslate"><span class="pre">buffered_dispatcher::reply()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4N3upd19buffered_dispatcherixE7index_t"><code class="docutils literal notranslate"><span class="pre">buffered_dispatcher::operator[]()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4NK3upd19buffered_dispatcherixE7index_t"><code class="docutils literal notranslate"><span class="pre">buffered_dispatcher::operator[]()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="callee.html#single-buffered-dispatcher"><code class="docutils literal notranslate"><span class="pre">single_buffered_dispatcher</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="callee.html#_CPPv4I0EN3upd26single_buffered_dispatcherE"><code class="docutils literal notranslate"><span class="pre">single_buffered_dispatcher</span></code></a><ul>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4I0_15action_featuresEN3upd26single_buffered_dispatcher26single_buffered_dispatcherE7Keyring17action_features_hI15Action_FeaturesE"><code class="docutils literal notranslate"><span class="pre">single_buffered_dispatcher::single_buffered_dispatcher()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4N3upd26single_buffered_dispatcher26single_buffered_dispatcherEv"><code class="docutils literal notranslate"><span class="pre">single_buffered_dispatcher::single_buffered_dispatcher()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4NK3upd26single_buffered_dispatcher9is_loadedEv"><code class="docutils literal notranslate"><span class="pre">single_buffered_dispatcher::is_loaded()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4N3upd26single_buffered_dispatcher9read_fromERR3Src"><code class="docutils literal notranslate"><span class="pre">single_buffered_dispatcher::read_from()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4N3upd26single_buffered_dispatcher3putE6byte_t"><code class="docutils literal notranslate"><span class="pre">single_buffered_dispatcher::put()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4N3upd26single_buffered_dispatcher8write_toERR4Dest"><code class="docutils literal notranslate"><span class="pre">single_buffered_dispatcher::write_to()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4N3upd26single_buffered_dispatcher3getEv"><code class="docutils literal notranslate"><span class="pre">single_buffered_dispatcher::get()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4N3upd26single_buffered_dispatcherclERR3SrcRR4Dest"><code class="docutils literal notranslate"><span class="pre">single_buffered_dispatcher::operator()()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4N3upd26single_buffered_dispatcher5replyERR6Output3Key"><code class="docutils literal notranslate"><span class="pre">single_buffered_dispatcher::reply()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4N3upd26single_buffered_dispatcher11buffer_sizeE"><code class="docutils literal notranslate"><span class="pre">single_buffered_dispatcher::buffer_size</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4I0_15action_featuresEN3upd26single_buffered_dispatcher31make_single_buffered_dispatcherEDa7Keyring17action_features_hI15Action_FeaturesE"><code class="docutils literal notranslate"><span class="pre">single_buffered_dispatcher::make_single_buffered_dispatcher()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="callee.html#double-buffered-dispatcher"><code class="docutils literal notranslate"><span class="pre">double_buffered_dispatcher</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="callee.html#_CPPv4I0EN3upd26double_buffered_dispatcherE"><code class="docutils literal notranslate"><span class="pre">double_buffered_dispatcher</span></code></a><ul>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4I0_15action_featuresEN3upd26double_buffered_dispatcher26double_buffered_dispatcherE7Keyring17action_features_hI15Action_FeaturesE"><code class="docutils literal notranslate"><span class="pre">double_buffered_dispatcher::double_buffered_dispatcher()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4N3upd26double_buffered_dispatcher26double_buffered_dispatcherEv"><code class="docutils literal notranslate"><span class="pre">double_buffered_dispatcher::double_buffered_dispatcher()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4NK3upd26double_buffered_dispatcher9is_loadedEv"><code class="docutils literal notranslate"><span class="pre">double_buffered_dispatcher::is_loaded()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4N3upd26double_buffered_dispatcher9read_fromERR3Src"><code class="docutils literal notranslate"><span class="pre">double_buffered_dispatcher::read_from()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4N3upd26double_buffered_dispatcher3putE6byte_t"><code class="docutils literal notranslate"><span class="pre">double_buffered_dispatcher::put()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4N3upd26double_buffered_dispatcher8write_toERR4Dest"><code class="docutils literal notranslate"><span class="pre">double_buffered_dispatcher::write_to()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4N3upd26double_buffered_dispatcher3getEv"><code class="docutils literal notranslate"><span class="pre">double_buffered_dispatcher::get()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4N3upd26double_buffered_dispatcherclERR3SrcRR4Dest"><code class="docutils literal notranslate"><span class="pre">double_buffered_dispatcher::operator()()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4N3upd26double_buffered_dispatcher5replyERR6Output3Key"><code class="docutils literal notranslate"><span class="pre">double_buffered_dispatcher::reply()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4N3upd26double_buffered_dispatcher17input_buffer_sizeE"><code class="docutils literal notranslate"><span class="pre">double_buffered_dispatcher::input_buffer_size</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4N3upd26double_buffered_dispatcher18output_buffer_sizeE"><code class="docutils literal notranslate"><span class="pre">double_buffered_dispatcher::output_buffer_size</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4I0_15action_featuresEN3upd26double_buffered_dispatcher31make_double_buffered_dispatcherEDa7Keyring17action_features_hI15Action_FeaturesE"><code class="docutils literal notranslate"><span class="pre">double_buffered_dispatcher::make_double_buffered_dispatcher()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="callee.html#packet-status"><code class="docutils literal notranslate"><span class="pre">packet_status</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="callee.html#_CPPv4N3upd13packet_statusE"><code class="docutils literal notranslate"><span class="pre">packet_status</span></code></a><ul>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4N3upd13packet_status14LOADING_PACKETE"><code class="docutils literal notranslate"><span class="pre">packet_status::LOADING_PACKET</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4N3upd13packet_status14DROPPED_PACKETE"><code class="docutils literal notranslate"><span class="pre">packet_status::DROPPED_PACKET</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="callee.html#_CPPv4N3upd13packet_status15RESOLVED_PACKETE"><code class="docutils literal notranslate"><span class="pre">packet_status::RESOLVED_PACKET</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="callee.html#policies">Policies</a></li>
 </ul>
 </li>
@@ -239,12 +397,84 @@
 <li class="toctree-l2"><a class="reference internal" href="serialization.html#make-a-view-of-a-part-of-a-tuple-or-out-of-an-existing-buffer-using-upd-tuple-view">Make a view of a part of a tuple or out of an existing buffer using <code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">upd::tuple_view</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="serialization.html#customization-points-defining-serialization-processes-for-foreign-types">Customization points: defining serialization processes for foreign types</a></li>
 <li class="toctree-l2"><a class="reference internal" href="serialization.html#api-references">API References</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="serialization.html#tuple"><code class="docutils literal notranslate"><span class="pre">tuple</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="serialization.html#view-tuple"><code class="docutils literal notranslate"><span class="pre">view_tuple</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="serialization.html#get"><code class="docutils literal notranslate"><span class="pre">get</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="serialization.html#set"><code class="docutils literal notranslate"><span class="pre">set</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="serialization.html#serialization-parameters">Serialization parameters</a></li>
-<li class="toctree-l3"><a class="reference internal" href="serialization.html#other">Other</a></li>
+<li class="toctree-l3"><a class="reference internal" href="serialization.html#tuple"><code class="docutils literal notranslate"><span class="pre">tuple</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="serialization.html#_CPPv4I_9endianess_11signed_modeDpEN3upd5tupleE"><code class="docutils literal notranslate"><span class="pre">tuple</span></code></a><ul>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4N3upd5tuple5arg_tE"><code class="docutils literal notranslate"><span class="pre">tuple::arg_t</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4N3upd5tuple5tupleEv"><code class="docutils literal notranslate"><span class="pre">tuple::tuple()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4N3upd5tuple5tupleEDpRK2Ts"><code class="docutils literal notranslate"><span class="pre">tuple::tuple()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4N3upd5tuple5tupleE11endianess_hI9EndianessE13signed_mode_hI11Signed_ModeEDpRK2Ts"><code class="docutils literal notranslate"><span class="pre">tuple::tuple()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4N3upd5tuple5beginEv"><code class="docutils literal notranslate"><span class="pre">tuple::begin()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4NK3upd5tuple5beginEv"><code class="docutils literal notranslate"><span class="pre">tuple::begin()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4N3upd5tuple3endEv"><code class="docutils literal notranslate"><span class="pre">tuple::end()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4NK3upd5tuple3endEv"><code class="docutils literal notranslate"><span class="pre">tuple::end()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4N3upd5tupleixENSt6size_tE"><code class="docutils literal notranslate"><span class="pre">tuple::operator[]()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4NK3upd5tupleixENSt6size_tE"><code class="docutils literal notranslate"><span class="pre">tuple::operator[]()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4N3upd5tuple3srcEv"><code class="docutils literal notranslate"><span class="pre">tuple::src()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4NK3upd5tuple3srcEv"><code class="docutils literal notranslate"><span class="pre">tuple::src()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4I_NSt6size_tE_NSt6size_tEEN3upd5tuple4viewEDav"><code class="docutils literal notranslate"><span class="pre">tuple::view()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4I_NSt6size_tE_NSt6size_tEENK3upd5tuple4viewEDav"><code class="docutils literal notranslate"><span class="pre">tuple::view()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4NK3upd5tuple3getEv"><code class="docutils literal notranslate"><span class="pre">tuple::get()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4N3upd5tuple3setERK5arg_tI1IE"><code class="docutils literal notranslate"><span class="pre">tuple::set()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4NK3upd5tuple6invokeERR1F"><code class="docutils literal notranslate"><span class="pre">tuple::invoke()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4N3upd5tuple4sizeE"><code class="docutils literal notranslate"><span class="pre">tuple::size</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4N3upd5tuple17storage_endianessE"><code class="docutils literal notranslate"><span class="pre">tuple::storage_endianess</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4N3upd5tuple19storage_signed_modeE"><code class="docutils literal notranslate"><span class="pre">tuple::storage_signed_mode</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4IDp_9endianess_11signed_modeEN3upd5tuple10make_tupleE"><code class="docutils literal notranslate"><span class="pre">tuple::make_tuple</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4I_9endianess_11signed_modeDpEN3upd5tuple10make_tupleE5tupleI9Endianess11Signed_ModeDp4ArgsE11endianess_hI9EndianessE13signed_mode_hI11Signed_ModeEDpRK4Args"><code class="docutils literal notranslate"><span class="pre">tuple::make_tuple()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="serialization.html#view-tuple"><code class="docutils literal notranslate"><span class="pre">view_tuple</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="serialization.html#_CPPv4I0_9endianess_11signed_modeDpEN3upd10tuple_viewE"><code class="docutils literal notranslate"><span class="pre">tuple_view</span></code></a><ul>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4N3upd10tuple_view7types_tE"><code class="docutils literal notranslate"><span class="pre">tuple_view::types_t</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4N3upd10tuple_view7sizes_tE"><code class="docutils literal notranslate"><span class="pre">tuple_view::sizes_t</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4N3upd10tuple_view5arg_tE"><code class="docutils literal notranslate"><span class="pre">tuple_view::arg_t</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4N3upd10tuple_view10tuple_viewERK2It"><code class="docutils literal notranslate"><span class="pre">tuple_view::tuple_view()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4NK3upd10tuple_view5beginEv"><code class="docutils literal notranslate"><span class="pre">tuple_view::begin()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4NK3upd10tuple_view3endEv"><code class="docutils literal notranslate"><span class="pre">tuple_view::end()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4NK3upd10tuple_view3srcEv"><code class="docutils literal notranslate"><span class="pre">tuple_view::src()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4NK3upd10tuple_view3getEv"><code class="docutils literal notranslate"><span class="pre">tuple_view::get()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4N3upd10tuple_view3setERK5arg_tI1IE"><code class="docutils literal notranslate"><span class="pre">tuple_view::set()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4NK3upd10tuple_view6invokeERR1F"><code class="docutils literal notranslate"><span class="pre">tuple_view::invoke()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4N3upd10tuple_view4sizeE"><code class="docutils literal notranslate"><span class="pre">tuple_view::size</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4N3upd10tuple_view17storage_endianessE"><code class="docutils literal notranslate"><span class="pre">tuple_view::storage_endianess</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4N3upd10tuple_view19storage_signed_modeE"><code class="docutils literal notranslate"><span class="pre">tuple_view::storage_signed_mode</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4IDp0_9endianess_11signed_modeEN3upd10tuple_view9make_viewE10tuple_viewI2It9Endianess11Signed_ModeDp2TsE11endianess_hI9EndianessE13signed_mode_hI11Signed_ModeERK2It"><code class="docutils literal notranslate"><span class="pre">tuple_view::make_view()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4I_NSt6size_tE_NSt6size_tE_9endianess_11signed_modeDpEN3upd10tuple_view9make_viewEDaR5tupleI9Endianess11Signed_ModeDp2TsE"><code class="docutils literal notranslate"><span class="pre">tuple_view::make_view()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="serialization.html#get"><code class="docutils literal notranslate"><span class="pre">get</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="serialization.html#_CPPv4I_NSt6size_tE0_9endianess_11signed_modeDpEN3upd3getEDaRKN6detail10tuple_baseI1D9Endianess11Signed_ModeDp2TsEE"><code class="docutils literal notranslate"><span class="pre">get()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="serialization.html#set"><code class="docutils literal notranslate"><span class="pre">set</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="serialization.html#_CPPv4I_NSt6size_tE0_9endianess_11signed_modeDp0EN3upd3setEvRN6detail10tuple_baseI1D9Endianess11Signed_ModeDp2TsEERR1U"><code class="docutils literal notranslate"><span class="pre">set()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="serialization.html#serialization-parameters">Serialization parameters</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="serialization.html#_CPPv4N3upd9endianessE"><code class="docutils literal notranslate"><span class="pre">endianess</span></code></a><ul>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4N3upd9endianess6LITTLEE"><code class="docutils literal notranslate"><span class="pre">endianess::LITTLE</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4N3upd9endianess3BIGE"><code class="docutils literal notranslate"><span class="pre">endianess::BIG</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="serialization.html#_CPPv4N3upd11signed_modeE"><code class="docutils literal notranslate"><span class="pre">signed_mode</span></code></a><ul>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4N3upd11signed_mode16SIGNED_MAGNITUDEE"><code class="docutils literal notranslate"><span class="pre">signed_mode::SIGNED_MAGNITUDE</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4N3upd11signed_mode15ONES_COMPLEMENTE"><code class="docutils literal notranslate"><span class="pre">signed_mode::ONES_COMPLEMENT</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4N3upd11signed_mode15TWOS_COMPLEMENTE"><code class="docutils literal notranslate"><span class="pre">signed_mode::TWOS_COMPLEMENT</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="serialization.html#_CPPv4N3upd11signed_mode13OFFSET_BINARYE"><code class="docutils literal notranslate"><span class="pre">signed_mode::OFFSET_BINARY</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="serialization.html#_CPPv4I_9endianessEN3upd11endianess_hE"><code class="docutils literal notranslate"><span class="pre">endianess_h</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="serialization.html#_CPPv4I_11signed_modeEN3upd13signed_mode_hE"><code class="docutils literal notranslate"><span class="pre">signed_mode_h</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="serialization.html#other">Other</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="serialization.html#_CPPv4N3upd6byte_tE"><code class="docutils literal notranslate"><span class="pre">byte_t</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -253,8 +483,14 @@
 <li class="toctree-l2"><a class="reference internal" href="python.html#exposing-keyrings-and-dispatchers-to-python">Exposing keyrings and dispatchers to Python</a></li>
 <li class="toctree-l2"><a class="reference internal" href="python.html#lazily-compile-your-python-extension-modules">Lazily compile your Python extension modules</a></li>
 <li class="toctree-l2"><a class="reference internal" href="python.html#api-references">API References</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="python.html#unpack-keyring"><code class="docutils literal notranslate"><span class="pre">unpack_keyring</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="python.html#declare-dispatcher"><code class="docutils literal notranslate"><span class="pre">declare_dispatcher</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="python.html#unpack-keyring"><code class="docutils literal notranslate"><span class="pre">unpack_keyring</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="python.html#_CPPv4I0EN3upd2py14unpack_keyringEvRN8pybind116moduleE7Keyring"><code class="docutils literal notranslate"><span class="pre">unpack_keyring()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="python.html#declare-dispatcher"><code class="docutils literal notranslate"><span class="pre">declare_dispatcher</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="python.html#_CPPv4I0EN3upd2py18declare_dispatcherEvRN8pybind116moduleEPKc7Keyring"><code class="docutils literal notranslate"><span class="pre">declare_dispatcher()</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -324,7 +560,7 @@
       &copy;.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.0.0</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.6</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
       
       |
