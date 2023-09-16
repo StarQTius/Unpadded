@@ -19,7 +19,7 @@ if(NOT ${PROJECT_NAME}_INSTALL)
   FetchContent_Declare(
     pybind11
     GIT_REPOSITORY https://github.com/pybind/pybind11
-    GIT_TAG v2.10.0)
+    GIT_TAG v2.11.1)
 endif()
 
 add_subdirectory(include)
