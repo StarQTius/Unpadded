@@ -9,6 +9,8 @@
 
 // IWYU pragma: no_forward_declare unevaluated
 
+// NOLINTBEGIN
+
 namespace upd {
 
 template<endianess, signed_mode, typename...>
@@ -26,3 +28,5 @@ struct is_keyring : decltype(is_keyring_impl(std::declval<T>())) {};
 
 } // namespace detail
 } // namespace upd
+
+// NOLINTEND

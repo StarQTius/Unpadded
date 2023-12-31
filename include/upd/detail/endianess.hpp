@@ -10,6 +10,8 @@
 #include "../upd.hpp"
 #include "type_traits/require.hpp"
 
+// NOLINTBEGIN
+
 namespace upd {
 namespace detail {
 
@@ -73,3 +75,5 @@ void to_endianess(byte_t *raw_data, const T &x, std::size_t n) {
 
 } // namespace detail
 } // namespace upd
+
+// NOLINTEND

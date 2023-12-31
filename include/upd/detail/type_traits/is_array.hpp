@@ -6,6 +6,8 @@
 #include <cstddef>
 #include <type_traits>
 
+// NOLINTBEGIN
+
 namespace upd {
 namespace detail {
 
@@ -23,3 +25,5 @@ struct is_array<std::array<T, N>> : std::true_type {};
 
 } // namespace detail
 } // namespace upd
+
+// NOLINTEND

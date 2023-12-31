@@ -6,6 +6,8 @@
 #include "../upd.hpp"
 #include "type_traits/require.hpp"
 
+// NOLINTBEGIN
+
 namespace upd {
 namespace detail {
 
@@ -79,3 +81,5 @@ unsigned long long to_signed_mode(T value) {
 
 } // namespace detail
 } // namespace upd
+
+// NOLINTEND

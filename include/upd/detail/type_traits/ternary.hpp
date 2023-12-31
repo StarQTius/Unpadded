@@ -2,6 +2,7 @@
 
 #pragma once
 
+// NOLINTNEXTLINE(modernize-concat-nested-namespaces)
 namespace upd {
 namespace detail {
 

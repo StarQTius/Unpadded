@@ -5,6 +5,8 @@
 #include <fakeit.hpp>
 #include <upd/basic_tuple.hpp>
 
+// NOLINTBEGIN
+
 using namespace fakeit;
 
 struct serializer_interface {
@@ -96,3 +98,5 @@ TEST_CASE("Testing a basic_tuple that contains a few integers", "[basic_tuple]")
     }
   }
 }
+
+// NOLINTEND

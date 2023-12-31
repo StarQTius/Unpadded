@@ -8,6 +8,8 @@
 #include <utility>
 #endif // __cplusplus >= 201402L
 
+// NOLINTBEGIN
+
 namespace upd {
 namespace detail {
 
@@ -42,3 +44,5 @@ struct make_index_sequence<0, Is...> : index_sequence<Is...> {};
 
 } // namespace detail
 } // namespace upd
+
+// NOLINTEND

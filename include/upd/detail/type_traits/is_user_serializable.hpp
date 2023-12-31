@@ -7,6 +7,8 @@
 #include "../../upd.hpp"
 #include "detector.hpp"
 
+// NOLINTBEGIN
+
 namespace upd {
 namespace detail {
 
@@ -20,3 +22,5 @@ struct is_user_serializable : std::integral_constant<bool, decltype(is_not_user_
 
 } // namespace detail
 } // namespace upd
+
+// NOLINTEND

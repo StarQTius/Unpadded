@@ -2,6 +2,8 @@
 
 #include "format.hpp"
 
+// NOLINTBEGIN
+
 #define UPD_FWD(x) static_cast<decltype(x) &&>(x)
 #define UPD_PACK(...) __VA_ARGS__
 #define UPD_SCOPE_OPERATOR(LHS, RHS) LHS::RHS
@@ -38,3 +40,5 @@ template<typename>
 struct upd_extension; // IWYU pragma: keep
 
 namespace upd::detail {};
+
+// NOLINTEND

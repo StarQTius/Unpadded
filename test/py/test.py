@@ -6,7 +6,6 @@ from random import getrandbits
 os.environ["CPPFLAGS"] = "-I" + str(Path(__file__).parent.parent.parent) + "/include"
 
 import pytest
-
 import unpadded as upd
 
 pytest_plugins = ("pytest_asyncio",)
