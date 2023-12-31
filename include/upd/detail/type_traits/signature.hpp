@@ -9,6 +9,8 @@
 #include "detector.hpp"
 #include "typelist.hpp"
 
+// NOLINTBEGIN
+
 namespace upd {
 namespace detail {
 
@@ -145,3 +147,5 @@ struct has_signature<F, R(Args...)> : decltype(has_signature_impl<F, R, Args...>
 
 } // namespace detail
 } // namespace upd
+
+// NOLINTEND

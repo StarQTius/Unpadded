@@ -2,6 +2,8 @@
 
 #pragma once
 
+// NOLINTBEGIN
+
 //! \brief Bind an object with static storage duration to a compile-time reference
 //! \related unevaluated
 #define UPD_CTREF(VALUE)                                                                                               \
@@ -21,3 +23,5 @@ struct unevaluated {
 };
 
 } // namespace upd
+
+// NOLINTEND

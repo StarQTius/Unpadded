@@ -5,6 +5,8 @@ Checks: '
   modernize-*,
   performance-*,
   portability-*,
-  readbility-*'
+  readbility-*,
+  -cppcoreguidelines-avoid-c-arrays,
+  -modernize-avoid-c-arrays'
 WarningsAsErrors: '*'
 HeaderFilterRegex: '.*include/upd/.*'

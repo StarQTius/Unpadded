@@ -1,19 +1,20 @@
 name: Check code quality
 on: push
 jobs:
-  check-format:
+  check-lint:
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ${{github.workspace}}
     steps:
     - uses: actions/checkout@v2
-    - run: sudo apt install clang-format
+    - run: sudo apt install clang-format clang-tidy
     - run: pip install cmakelang
     - run: clang-format --dry-run $(git ls-files | grep -E "\.(hpp|cpp)$")
     - run: cmake-format --check $(git ls-files | grep -E "(CMakeLists.txt|\.cmake)$")
     - run: cmake -B ${{github.workspace}}/build
     - run: cmake --build build -t iwyu
+    - run: git ls-files | grep -E "\.cpp$" | xargs clang-tidy -p ${{github.workspace}}/build --extra-arg="-std=c++17" --extra-arg="-I${{github.workspace}}/include" --use-color
   check-gcc-11:
     runs-on: ubuntu-latest
     steps:

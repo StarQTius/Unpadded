@@ -15,6 +15,8 @@
 #include "signature.hpp"
 #include "typelist.hpp"
 
+// NOLINTBEGIN
+
 #if !defined(DOXYGEN)
 
 #define UPD_REQUIRE(...) ::upd::detail::require<__VA_ARGS__> = 0
@@ -128,3 +130,5 @@ using require_key = require<is_key<T>::value, U>;
 
 } // namespace detail
 } // namespace upd
+
+// NOLINTEND

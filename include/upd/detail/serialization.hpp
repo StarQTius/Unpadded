@@ -14,6 +14,8 @@
 #include "type_traits/require.hpp"
 #include "type_traits/signature.hpp"
 
+// NOLINTBEGIN
+
 namespace upd {
 
 template<typename It, endianess Endianess, signed_mode Signed_Mode, typename... Args>
@@ -195,3 +197,5 @@ using require_is_serializable = require<is_serializable<T>::value, U>;
 
 } // namespace detail
 } // namespace upd
+
+// NOLINTEND

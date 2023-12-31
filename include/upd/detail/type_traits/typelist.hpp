@@ -8,10 +8,13 @@
 
 #include "ternary.hpp" // IWYU pragma: keep
 
+// NOLINTBEGIN
+
 #if __cplusplus >= 201703L
 #include "index_sequence.hpp"
 #endif // __cplusplus >= 201703L
 
+// NOLINTNEXTLINE(modernize-concat-nested-namespaces)
 namespace upd {
 namespace detail {
 
@@ -264,3 +267,5 @@ using max_p = max<tlist_t<Ts...>>;
 
 } // namespace detail
 } // namespace upd
+
+// NOLINTEND

@@ -41,12 +41,12 @@ constexpr inline bool is_iterable_v = is_iterable<T>::value;
 } // namespace detail
 
 template<typename T, detail::require_is_serializable<T> = 0>
-constexpr std::size_t serialization_size_impl(...) {
+constexpr auto serialization_size_impl(...) -> std::size_t {
   return sizeof(T);
 }
 
 template<typename T, detail::require_is_user_serializable<T> = 0>
-constexpr std::size_t serialization_size_impl(int) {
+constexpr auto serialization_size_impl(int) -> std::size_t {
   using namespace upd::detail;
 
   return decltype(make_view_for<endianess::LITTLE, signed_mode::TWOS_COMPLEMENT>(
@@ -87,7 +87,7 @@ public:
   }
 
   template<typename F>
-  decltype(auto) invoke(F &&f) const {
+  auto invoke(F &&f) const -> decltype(auto) {
     return invoke_on_some(UPD_FWD(f), std::make_index_sequence<sizeof...(Ts)>{});
   }
 
@@ -119,7 +119,7 @@ private:
     } else if constexpr (std::is_signed_v<T>) {
       return m_serializer.deserialize_signed(m_storage.data() + offset, sizeof(T));
     } else if constexpr (std::is_array_v<T>) {
-      using element_t = std::remove_reference_t<decltype(*std::declval<T>())>;
+      using element_t = std::remove_pointer_t<std::decay_t<T>>;
       using retval_t = std::array<element_t, sizeof(T) / sizeof(element_t)>;
 
       retval_t retval{};
@@ -139,7 +139,7 @@ private:
   }
 
   template<typename F, std::size_t... Is>
-  decltype(auto) invoke_on_some(F &&f, std::index_sequence<Is...>) const {
+  auto invoke_on_some(F &&f, std::index_sequence<Is...>) const -> decltype(auto) {
     return std::invoke(UPD_FWD(f), get(index_type_v<Is>)...);
   }
 
