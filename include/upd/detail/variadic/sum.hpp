@@ -1,6 +1,5 @@
 #pragma once
 
-#include <type_traits>
 #include <utility>
 
 namespace upd::detail::variadic {
@@ -8,9 +7,9 @@ namespace upd::detail::variadic {
 template<typename>
 struct sum;
 
-template<typename... Ts, Ts... Values>
-struct sum<std::tuple<std::integral_constant<Ts, Values>...>> {
-  constexpr static auto value = (Values + ...);
+template<typename... Integral_Constant_Ts>
+struct sum<std::tuple<Integral_Constant_Ts...>> {
+  constexpr static auto value = (Integral_Constant_Ts::value + ...);
 };
 
 template<typename T>
