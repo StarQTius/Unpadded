@@ -2,8 +2,7 @@
 
 #include <type_traits>
 
-namespace upd {
-namespace detail {
+namespace upd::detail {
 
 //! \brief Remove any cv-qualifier or ref-qualifier
 template<typename T>
@@ -13,5 +12,4 @@ using remove_cv_ref_t = typename std::remove_cv<typename std::remove_reference<T
 template<typename T>
 using decay_t = typename std::decay<T>::type;
 
-} // namespace detail
-} // namespace upd
+} // namespace upd::detail

@@ -8,53 +8,19 @@
 #include <type_traits>
 #include <utility>
 
+#include "detail/always_false.hpp"
+#include "detail/integral_constant.hpp"
+#include "detail/is_iterable.hpp" // IWYU pragma: keep
 #include "detail/serialization.hpp"
-#include "detail/type_traits/require.hpp"
-#include "detail/type_traits/signature.hpp"
+#include "detail/serialized_size.hpp"
+#include "detail/type_traits/remove_cv_ref.hpp"
 #include "detail/variadic/at.hpp"
 #include "detail/variadic/clip.hpp"
 #include "detail/variadic/sum.hpp" // IWYU pragma: keep
-#include "format.hpp"
-#include "type.hpp"
+#include "index_type.hpp"
 #include "upd.hpp"
-#include "upd/index_type.hpp"
-
-#define UPD_ALWAYS_FALSE ([] {}, false)
 
 namespace upd {
-
-namespace detail {
-
-template<auto Value>
-using integral_constant_t = std::integral_constant<decltype(Value), Value>;
-
-template<typename, typename = void>
-struct is_iterable : std::false_type {};
-
-template<typename T>
-struct is_iterable<T, std::void_t<decltype(std::begin(std::declval<T>())), decltype(std::end(std::declval<T>()))>>
-    : std::true_type {};
-
-template<typename T>
-constexpr inline bool is_iterable_v = is_iterable<T>::value;
-
-} // namespace detail
-
-template<typename T, detail::require_is_serializable<T> = 0>
-constexpr auto serialization_size_impl(...) -> std::size_t {
-  return sizeof(T);
-}
-
-template<typename T, detail::require_is_user_serializable<T> = 0>
-constexpr auto serialization_size_impl(int) -> std::size_t {
-  using namespace upd::detail;
-
-  return decltype(make_view_for<endianess::LITTLE, signed_mode::TWOS_COMPLEMENT>(
-      (byte_t *)nullptr, examine_invocable<decltype(upd_extension<T>::unserialize)>{}))::size;
-}
-
-template<typename T>
-using serialization_size_t = detail::integral_constant_t<serialization_size_impl<T>(0)>;
 
 template<typename Storage_T, typename Serializer_T, typename... Ts>
 class basic_tuple {
@@ -66,7 +32,6 @@ class basic_tuple {
                 "user-defined extension and array types of any of these)");
 
   using elements_t = std::tuple<Ts...>;
-  using sizes_t = std::tuple<detail::integral_constant_t<0u>, serialization_size_t<Ts>...>;
 
 public:
   template<std::size_t I>
@@ -79,11 +44,7 @@ public:
 
   template<std::size_t I>
   [[nodiscard]] auto get(index_type<I>) const noexcept {
-    using sizes_up_to_element_t = detail::variadic::clip_t<sizes_t, 0, I + 1>;
-
-    constexpr auto offset = detail::variadic::sum_v<sizes_up_to_element_t>;
-
-    return read_as<detail::variadic::at_t<elements_t, I>>(offset);
+    return read_as<detail::variadic::at_t<elements_t, I>>(offset_for<I>());
   }
 
   template<typename F>
@@ -93,39 +54,35 @@ public:
 
   template<std::size_t I>
   void set(index_type<I>, const element_t<I> &value) noexcept {
-    using sizes_up_to_element_t = detail::variadic::clip_t<sizes_t, 0, I + 1>;
-
-    constexpr auto offset = detail::variadic::sum_v<sizes_up_to_element_t>;
-
-    write_as(value, offset);
+    write_as(value, offset_for<I>());
   }
 
   template<std::size_t I, typename T, std::size_t N>
   void set(index_type<I>, const std::array<T, N> &value) noexcept {
     static_assert(std::is_same_v<T[N], detail::variadic::at_t<elements_t, I>>, "The `I`th element type is not `T[N]`");
 
-    using sizes_up_to_element_t = detail::variadic::clip_t<sizes_t, 0, I + 1>;
-
-    constexpr auto offset = detail::variadic::sum_v<sizes_up_to_element_t>;
-
-    write_as(value, offset);
+    write_as(value, offset_for<I>());
   }
 
 private:
   template<typename T>
   [[nodiscard]] auto read_as(std::size_t offset) const noexcept {
     if constexpr (std::is_unsigned_v<T>) {
-      return m_serializer.deserialize_unsigned(m_storage.data() + offset, sizeof(T));
+      constexpr auto serialized_size = detail::serialized_size<T>();
+      const auto *src = m_storage.data() + offset;
+      return m_serializer.deserialize_unsigned(src, serialized_size);
     } else if constexpr (std::is_signed_v<T>) {
-      return m_serializer.deserialize_signed(m_storage.data() + offset, sizeof(T));
+      constexpr auto serialized_size = detail::serialized_size<T>();
+      const auto *src = m_storage.data() + offset;
+      return m_serializer.deserialize_signed(src, serialized_size);
     } else if constexpr (std::is_array_v<T>) {
       using element_t = std::remove_pointer_t<std::decay_t<T>>;
       using retval_t = std::array<element_t, sizeof(T) / sizeof(element_t)>;
 
       retval_t retval{};
-      auto f = [&, i = 0]() mutable {
-        auto element = read_as<element_t>(offset + i * sizeof(element_t));
-        ++i;
+      auto f = [&, reading_offset = offset]() mutable {
+        auto element = read_as<element_t>(reading_offset);
+        reading_offset += detail::serialized_size<element_t>();
 
         return element;
       };
@@ -151,20 +108,37 @@ private:
   template<typename T>
   void write_as(const T &value, std::size_t offset) noexcept {
     if constexpr (std::is_unsigned_v<T>) {
-      return m_serializer.serialize_unsigned(value, sizeof value, m_storage.data() + offset);
+      constexpr auto size = detail::serialized_size<T>();
+      auto *dest = m_storage.data() + offset;
+      return m_serializer.serialize_unsigned(value, size, dest);
     } else if constexpr (std::is_signed_v<T>) {
-      return m_serializer.serialize_signed(value, sizeof value, m_storage.data() + offset);
+      constexpr auto size = detail::serialized_size<T>();
+      auto *dest = m_storage.data() + offset;
+      return m_serializer.serialize_signed(value, size, dest);
     } else if constexpr (detail::is_iterable_v<T &>) {
       auto begin = std::begin(value);
       auto end = std::end(value);
-      auto f = [&, i = 0](const auto &v) mutable {
-        write_as(v, offset + i * sizeof v);
-        ++i;
+      auto f = [&, writing_offset = offset](const auto &v) mutable {
+        using arg_t = detail::remove_cv_ref_t<decltype(v)>;
+        write_as(v, writing_offset);
+        writing_offset += detail::serialized_size<arg_t>();
       };
 
       std::for_each(begin, end, f);
     } else {
       static_assert(UPD_ALWAYS_FALSE, "`T` cannot be serialized");
+    }
+  }
+
+  template<std::size_t I>
+  constexpr static auto offset_for() noexcept -> std::size_t {
+    using sizes_t = detail::integral_constant_tuple_t<detail::serialized_size<Ts>()...>;
+    using sizes_up_to_element_t = detail::variadic::clip_t<sizes_t, 0, I>;
+
+    if constexpr (I == 0) {
+      return 0;
+    } else {
+      return detail::variadic::sum_v<sizes_up_to_element_t>;
     }
   }
 

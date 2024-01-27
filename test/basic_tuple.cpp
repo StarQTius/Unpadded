@@ -17,13 +17,15 @@ struct serializer_interface {
 };
 
 TEST_CASE("Testing a basic_tuple that contains a few integers", "[basic_tuple]") {
-  using storage_t = std::array<std::byte, sizeof(int) + sizeof(int[4])>;
+  using storage_t = std::array<std::byte, sizeof(int) + sizeof(unsigned int) + sizeof(int[4])>;
 
   Mock<serializer_interface> mock_serializer;
   When(Method(mock_serializer, serialize_signed).Using(0, _, _)).AlwaysReturn();
   When(Method(mock_serializer, serialize_unsigned).Using(0, _, _)).AlwaysReturn();
-  upd::basic_tuple<storage_t, serializer_interface &, int, unsigned int, int[4]> tuple{
-      {}, mock_serializer.get(), {}, {}, {}};
+  storage_t storage{};
+  upd::basic_tuple<storage_t &, serializer_interface &, int, unsigned int, int[4]> tuple{
+      storage, mock_serializer.get(), {}, {}, {}};
+  mock_serializer.Reset();
 
   SECTION("Get a signed integer") {
     int value = GENERATE(0, 0xabc, -0xabc);
@@ -96,6 +98,13 @@ TEST_CASE("Testing a basic_tuple that contains a few integers", "[basic_tuple]")
     for (auto v : value) {
       Verify(Method(mock_serializer, serialize_signed).Using(v, sizeof v, _));
     }
+  }
+
+  SECTION("Set a value at the right location") {
+    auto *writing_location = storage.data() + sizeof(int);
+    When(Method(mock_serializer, serialize_unsigned).Using(_, _, writing_location)).Return();
+    tuple.set(upd::index_type_v<1>, 0);
+    Verify(Method(mock_serializer, serialize_unsigned).Using(_, _, writing_location)).Once();
   }
 }
 
