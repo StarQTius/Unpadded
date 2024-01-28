@@ -4,18 +4,22 @@
 #include <array>
 #include <cstddef>
 #include <functional>
+#include <iterator>
 #include <tuple>
 #include <type_traits>
 #include <utility>
 
 #include "detail/always_false.hpp"
+#include "detail/integral_constant.hpp" // IWYU pragma: keep
 #include "detail/integral_constant.hpp"
-#include "detail/is_iterable.hpp" // IWYU pragma: keep
-#include "detail/serialized_size.hpp"
+#include "detail/is_iterable.hpp"            // IWYU pragma: keep
+#include "detail/is_serializable_object.hpp" // IWYU pragma: keep
+#include "detail/type_traits/is_array.hpp"
 #include "detail/type_traits/remove_cv_ref.hpp"
 #include "detail/type_traits/signature.hpp"
 #include "detail/variadic/at.hpp"
 #include "detail/variadic/clip.hpp"
+#include "detail/variadic/map.hpp"
 #include "detail/variadic/sum.hpp" // IWYU pragma: keep
 #include "index_type.hpp"
 #include "span.hpp"
@@ -72,40 +76,60 @@ public:
 private:
   template<typename T>
   [[nodiscard]] auto read_as(std::size_t offset) const noexcept {
-    if constexpr (std::is_unsigned_v<T>) {
-      constexpr auto size = detail::serialized_size<T, Serializer_T>();
-      const auto *src = m_storage.data() + offset;
-      return m_serializer.deserialize_unsigned(src, size);
-    } else if constexpr (std::is_signed_v<T>) {
-      constexpr auto size = detail::serialized_size<T, Serializer_T>();
-      const auto *src = m_storage.data() + offset;
-      return m_serializer.deserialize_signed(src, size);
+    if constexpr (std::is_signed_v<T>) {
+      return read_as_signed<T>(offset);
+    } else if constexpr (std::is_unsigned_v<T>) {
+      return read_as_unsigned<T>(offset);
     } else if constexpr (std::is_array_v<T>) {
-      using element_t = std::remove_pointer_t<std::decay_t<T>>;
-      using retval_t = std::array<element_t, sizeof(T) / sizeof(element_t)>;
-
-      retval_t retval{};
-      auto f = [&, reading_offset = offset]() mutable {
-        auto element = read_as<element_t>(reading_offset);
-        reading_offset += detail::serialized_size<element_t, Serializer_T>();
-
-        return element;
-      };
-
-      std::generate(retval.begin(), retval.end(), f);
-
-      return retval;
+      return read_as_array<T>(offset);
     } else if constexpr (detail::is_serializable_object_v<T, Serializer_T>) {
-      using deserialize_t = decltype(&detail::remove_cv_ref_t<Serializer_T>::template deserialize_object<T>);
-      using args_t = typename detail::examine_invocable<deserialize_t>::args;
-
-      auto view = view_from_variadic(offset, (args_t *)nullptr);
-      auto deserialize = [&](auto... args) { return m_serializer.template deserialize_object<T>(std::move(args)...); };
-
-      return view.invoke(deserialize);
+      return read_as_object<T>(offset);
     } else {
       static_assert(UPD_ALWAYS_FALSE, "`T` cannot be serialized");
     }
+  }
+
+  template<typename T>
+  [[nodiscard]] auto read_as_signed(std::size_t offset) const noexcept {
+    constexpr auto size = serialized_size<T>();
+    const auto *src = m_storage.data() + offset;
+    return m_serializer.deserialize_signed(src, size);
+  }
+
+  template<typename T>
+  [[nodiscard]] auto read_as_unsigned(std::size_t offset) const noexcept {
+    constexpr auto size = serialized_size<T>();
+    const auto *src = m_storage.data() + offset;
+    return m_serializer.deserialize_unsigned(src, size);
+  }
+
+  template<typename T>
+  [[nodiscard]] auto read_as_array(std::size_t offset) const noexcept {
+    using element_t = std::remove_pointer_t<std::decay_t<T>>;
+    using retval_t = std::array<element_t, sizeof(T) / sizeof(element_t)>;
+
+    retval_t retval{};
+    auto f = [&, reading_offset = offset]() mutable {
+      auto element = read_as<element_t>(reading_offset);
+      reading_offset += serialized_size<element_t>();
+
+      return element;
+    };
+
+    std::generate(retval.begin(), retval.end(), f);
+
+    return retval;
+  }
+
+  template<typename T>
+  [[nodiscard]] auto read_as_object(std::size_t offset) const noexcept {
+    using deserialize_t = decltype(&detail::remove_cv_ref_t<Serializer_T>::template deserialize_object<T>);
+    using args_t = typename detail::examine_invocable<deserialize_t>::args;
+
+    auto view = view_from_variadic(offset, (args_t *)nullptr);
+    auto deserialize = [&](auto... args) { return m_serializer.template deserialize_object<T>(std::move(args)...); };
+
+    return view.invoke(deserialize);
   }
 
   template<template<typename...> typename TT, typename... Us>
@@ -113,7 +137,7 @@ private:
     using byte_span_t = span<std::byte>;
     using retval_t = basic_tuple<byte_span_t, Serializer_T, Us...>;
 
-    constexpr auto size = (detail::serialized_size<Us, Serializer_T>() + ...);
+    constexpr auto size = (serialized_size<Us>() + ...);
 
     auto begin = m_storage.data() + offset;
     byte_span_t span{begin, size};
@@ -126,7 +150,7 @@ private:
     using byte_span_t = span<const std::byte>;
     using retval_t = basic_tuple<byte_span_t, Serializer_T, Us...>;
 
-    constexpr auto size = (detail::serialized_size<Us, Serializer_T>() + ...);
+    constexpr auto size = (serialized_size<Us>() + ...);
 
     auto begin = m_storage.data() + offset;
     byte_span_t span{begin, size};
@@ -146,44 +170,82 @@ private:
 
   template<typename T>
   void write_as(const T &value, std::size_t offset) noexcept {
-    if constexpr (std::is_unsigned_v<T>) {
-      constexpr auto size = detail::serialized_size<T, Serializer_T>();
-      auto *dest = m_storage.data() + offset;
-      return m_serializer.serialize_unsigned(value, size, dest);
-    } else if constexpr (std::is_signed_v<T>) {
-      constexpr auto size = detail::serialized_size<T, Serializer_T>();
-      auto *dest = m_storage.data() + offset;
-      return m_serializer.serialize_signed(value, size, dest);
-    } else if constexpr (detail::is_iterable_v<T &>) {
-      auto begin = std::begin(value);
-      auto end = std::end(value);
-      auto f = [&, writing_offset = offset](const auto &v) mutable {
-        using arg_t = detail::remove_cv_ref_t<decltype(v)>;
-        write_as(v, writing_offset);
-        writing_offset += detail::serialized_size<arg_t, Serializer_T>();
-      };
-
-      std::for_each(begin, end, f);
+    if constexpr (std::is_signed_v<T>) {
+      write_as_signed(value, offset);
+    } else if constexpr (std::is_unsigned_v<T>) {
+      write_as_unsigned(value, offset);
+    } else if constexpr (detail::is_array<T>::value) {
+      write_as_array(value, offset);
     } else if constexpr (detail::is_serializable_object_v<T, Serializer_T>) {
-      using deserialize_t = decltype(&detail::remove_cv_ref_t<Serializer_T>::template deserialize_object<T>);
-      using args_t = typename detail::examine_invocable<deserialize_t>::args;
-
-      auto view = view_from_variadic(offset, (args_t *)nullptr);
-      m_serializer.serialize_object(value, view);
+      write_as_object(value, offset);
     } else {
       static_assert(UPD_ALWAYS_FALSE, "`T` cannot be serialized");
     }
   }
 
+  template<typename T>
+  void write_as_signed(T value, std::size_t offset) noexcept {
+    constexpr auto size = serialized_size<T>();
+    auto *dest = m_storage.data() + offset;
+    return m_serializer.serialize_signed(value, size, dest);
+  }
+
+  template<typename T>
+  void write_as_unsigned(T value, std::size_t offset) noexcept {
+    constexpr auto size = serialized_size<T>();
+    auto *dest = m_storage.data() + offset;
+    return m_serializer.serialize_unsigned(value, size, dest);
+  }
+
+  template<typename T>
+  void write_as_array(const T &value, std::size_t offset) noexcept {
+    using element_t = detail::remove_cv_ref_t<decltype(*std::data(value))>;
+    constexpr auto element_size = serialized_size<element_t>();
+
+    auto begin = std::begin(value);
+    auto end = std::end(value);
+    auto f = [&, writing_offset = offset](const auto &v) mutable {
+      write_as(v, writing_offset);
+      writing_offset += element_size;
+    };
+
+    std::for_each(begin, end, f);
+  }
+
+  template<typename T>
+  void write_as_object(const T &value, std::size_t offset) {
+    using deserialize_t = decltype(&detail::remove_cv_ref_t<Serializer_T>::template deserialize_object<T>);
+    using args_t = typename detail::examine_invocable<deserialize_t>::args;
+
+    auto view = view_from_variadic(offset, (args_t *)nullptr);
+    m_serializer.serialize_object(value, view);
+  }
+
   template<std::size_t I>
   [[nodiscard]] constexpr static auto offset_for() noexcept -> std::size_t {
-    using sizes_t = detail::integral_constant_tuple_t<detail::serialized_size<Ts, Serializer_T>()...>;
+    using sizes_t = detail::integral_constant_tuple_t<serialized_size<Ts>()...>;
     using sizes_up_to_element_t = detail::variadic::clip_t<sizes_t, 0, I>;
 
     if constexpr (I == 0) {
       return 0;
     } else {
       return detail::variadic::sum_v<sizes_up_to_element_t>;
+    }
+  }
+
+  template<typename T>
+  [[nodiscard]] constexpr static auto serialized_size() noexcept -> std::size_t {
+    if constexpr (std::is_integral_v<T> || detail::is_array<T>::value) {
+      return sizeof(T);
+    } else if constexpr (detail::is_serializable_object_v<T, Serializer_T>) {
+      auto f = [](auto x) { return detail::integral_constant_t<serialized_size<decltype(x)>()>{}; };
+
+      using deserialize_t = decltype(&detail::remove_cv_ref_t<Serializer_T>::template deserialize_object<T>);
+      using args_t = typename detail::examine_invocable<deserialize_t>::args;
+      using sizes_t = detail::variadic::mapf_t<args_t, decltype(f)>;
+      return detail::variadic::sum_v<sizes_t>;
+    } else {
+      static_assert(UPD_ALWAYS_FALSE, "Type is not serializable");
     }
   }
 
