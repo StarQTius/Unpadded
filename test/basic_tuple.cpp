@@ -9,11 +9,29 @@
 
 using namespace fakeit;
 
+struct object {
+  int x;
+};
+
 struct serializer_interface {
   virtual void serialize_unsigned(unsigned long long value, std::size_t size, std::byte *output) = 0;
   virtual void serialize_signed(long long value, std::size_t size, std::byte *output) = 0;
   virtual unsigned long long deserialize_unsigned(const std::byte *input, std::size_t size) = 0;
   virtual long long deserialize_signed(const std::byte *input, std::size_t size) = 0;
+
+  template<typename View_T>
+  void serialize_object(object object, View_T view) {
+    view.set(upd::index_type_v<0>, object.x);
+  }
+
+  template<typename T>
+  T deserialize_object(int x) {
+    if constexpr (std::is_same_v<T, object>) {
+      return object{x};
+    } else {
+      static_assert(UPD_ALWAYS_FALSE);
+    }
+  }
 };
 
 TEST_CASE("Testing a basic_tuple that contains a few integers", "[basic_tuple]") {
@@ -105,6 +123,32 @@ TEST_CASE("Testing a basic_tuple that contains a few integers", "[basic_tuple]")
     When(Method(mock_serializer, serialize_unsigned).Using(_, _, writing_location)).Return();
     tuple.set(upd::index_type_v<1>, 0);
     Verify(Method(mock_serializer, serialize_unsigned).Using(_, _, writing_location)).Once();
+  }
+}
+
+TEST_CASE("Testing object serialization") {
+  using storage_t = std::array<std::byte, sizeof(int)>;
+
+  Mock<serializer_interface> mock_serializer;
+  When(Method(mock_serializer, serialize_signed).Using(0, sizeof(int), _)).AlwaysReturn();
+  storage_t storage{};
+  upd::basic_tuple<storage_t &, serializer_interface &, object> tuple{storage, mock_serializer.get(), {}};
+  mock_serializer.Reset();
+
+  SECTION("Get an object") {
+    int value = GENERATE(0, 0xabc, -0xabc);
+
+    When(Method(mock_serializer, deserialize_signed).Using(_, sizeof value)).Return(value);
+
+    REQUIRE(tuple.get(upd::index_type_v<0>).x == value);
+  }
+
+  SECTION("Set an object") {
+    int value = GENERATE(0, 0xabc, -0xabc);
+
+    When(Method(mock_serializer, serialize_signed).Using(value, sizeof value, _)).AlwaysReturn();
+    tuple.set(upd::index_type_v<0>, object{value});
+    Verify(Method(mock_serializer, serialize_signed).Using(value, sizeof value, _));
   }
 }
 
