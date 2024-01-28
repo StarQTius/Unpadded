@@ -124,6 +124,16 @@ TEST_CASE("Testing a basic_tuple that contains a few integers", "[basic_tuple]")
     tuple.set(upd::index_type_v<1>, 0);
     Verify(Method(mock_serializer, serialize_unsigned).Using(_, _, writing_location)).Once();
   }
+
+  SECTION("Bind names to the tuple elements") {
+    When(Method(mock_serializer, deserialize_signed).Using(_, sizeof(int))).AlwaysReturn(-64);
+    When(Method(mock_serializer, deserialize_unsigned).Using(_, sizeof(unsigned int))).Return(64);
+
+    auto [a, b, c] = tuple;
+    REQUIRE(a == -64);
+    REQUIRE(b == 64);
+    REQUIRE(c == std::array{-64, -64, -64, -64});
+  }
 }
 
 TEST_CASE("Testing object serialization") {

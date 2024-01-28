@@ -56,6 +56,11 @@ public:
     return read_as<detail::variadic::at_t<elements_t, I>>(offset_for<I>());
   }
 
+  template<std::size_t I>
+  [[nodiscard]] auto get() const noexcept {
+    return get(index_type_v<I>);
+  }
+
   template<typename F>
   auto invoke(F &&f) const -> decltype(auto) {
     return invoke_on_some(UPD_FWD(f), std::make_index_sequence<sizeof...(Ts)>{});
