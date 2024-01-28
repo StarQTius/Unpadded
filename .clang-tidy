@@ -7,6 +7,7 @@ Checks: '
   portability-*,
   readbility-*,
   -cppcoreguidelines-avoid-c-arrays,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
   -modernize-avoid-c-arrays'
 WarningsAsErrors: '*'
 HeaderFilterRegex: '.*include/upd/.*'

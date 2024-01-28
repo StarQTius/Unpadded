@@ -3,6 +3,7 @@
 #pragma once
 
 #include <cstddef>
+#include <tuple>
 #include <type_traits>
 
 #include "../../upd.hpp"
@@ -26,6 +27,7 @@ template<typename R, typename... Args>
 struct signature<R(Args...)> {
   using type = R(Args...);
   using return_type = R;
+  using args = std::tuple<Args...>;
 };
 
 //! @}
