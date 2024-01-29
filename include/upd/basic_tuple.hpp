@@ -240,8 +240,11 @@ private:
 
   template<typename T>
   [[nodiscard]] constexpr static auto serialized_size() noexcept -> std::size_t {
-    if constexpr (std::is_integral_v<T> || detail::is_array<T>::value) {
+    if constexpr (std::is_integral_v<T>) {
       return sizeof(T);
+    } else if constexpr (detail::is_array<T>::value) {
+      using element_t = decltype(std::declval<T>()[0]);
+      return sizeof(T) / sizeof(element_t) * serialized_size<element_t>();
     } else if constexpr (detail::is_serializable_object_v<T, Serializer_T>) {
       auto f = [](auto x) { return detail::integral_constant_t<serialized_size<decltype(x)>()>{}; };
 
