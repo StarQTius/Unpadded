@@ -82,5 +82,6 @@ add_custom_target(check_revamp COMMAND ctest -L check_revamp
                                        --output-on-failure)
 
 add_revamp_test(basic_tuple basic_tuple.cpp)
+add_revamp_test(basic_ibytestream basic_ibytestream.cpp)
 add_revamp_test(detail_variadic_clean detail/variadic/clean.cpp)
 add_revamp_test(detail_variadic_clip detail/variadic/clip.cpp)
