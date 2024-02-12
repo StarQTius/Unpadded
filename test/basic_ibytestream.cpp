@@ -37,12 +37,12 @@ namespace upd {
 namespace detail {
 
 template<typename T, T... Xs, typename F>
-constexpr auto transform_to_tuple(std::integer_sequence<T, Xs...>, F &&f) noexcept {
+[[nodiscard]] constexpr auto transform_to_tuple(std::integer_sequence<T, Xs...>, F &&f) noexcept {
   return std::make_tuple(std::invoke(f, integral_constant_t<Xs>{})...);
 }
 
 template<std::size_t Begin, std::size_t End, typename Tuple>
-constexpr auto subtuple(Tuple &tuple) noexcept {
+[[nodiscard]] constexpr auto subtuple(Tuple &tuple) noexcept {
   constexpr auto subtuple_size = End - Begin;
   constexpr auto seq = std::make_index_sequence<subtuple_size>{};
 
@@ -86,7 +86,7 @@ constexpr auto is_bounded_array_v = is_bounded_array<T>::value;
 } // namespace detail
 
 template<typename T, typename Serializer_T>
-constexpr static auto max_serialized_size() noexcept -> std::size_t {
+[[nodiscard]] constexpr static auto max_serialized_size() noexcept -> std::size_t {
   if constexpr (std::is_integral_v<T>) {
     return sizeof(T);
   } else if constexpr (detail::is_bounded_array_v<T>) {
@@ -119,20 +119,20 @@ public:
       : m_producer{UPD_FWD(producer)}, m_serializer{UPD_FWD(serializer)}, m_oracle{UPD_FWD(oracle)} {}
 
   template<typename... Ts>
-  auto decode(description_t<Ts...>) {
+  [[nodiscard]] auto decode(description_t<Ts...>) {
     auto descr = description<Ts...>;
     auto seq = std::make_index_sequence<sizeof...(Ts)>{};
     return decode_description(descr, seq);
   }
 
   template<typename T>
-  auto decode() {
+  [[nodiscard]] auto decode() {
     return decode_with_prefix<T>(std::tuple{});
   }
 
 private:
   template<typename T, typename Prefix_T>
-  auto decode_with_prefix(const Prefix_T &prefix) {
+  [[nodiscard]] auto decode_with_prefix(const Prefix_T &prefix) {
     if constexpr (std::is_signed_v<T>) {
       return decode_signed<T>(prefix);
     } else if constexpr (std::is_unsigned_v<T>) {
@@ -147,7 +147,7 @@ private:
   }
 
   template<typename... Ts, std::size_t... Is>
-  auto decode_description(description_t<Ts...>, std::index_sequence<Is...>) {
+  [[nodiscard]] auto decode_description(description_t<Ts...>, std::index_sequence<Is...>) {
     auto retval = std::tuple<std::optional<decltype(decode<Ts>())>...>{};
     auto deref_and_tie_opts = [](const auto &...opts) {
       UPD_ASSERT((opts && ...));
@@ -164,7 +164,7 @@ private:
   }
 
   template<typename T, typename Prefix_T>
-  auto decode_signed(const Prefix_T &) -> T {
+  [[nodiscard]] auto decode_signed(const Prefix_T &) -> T {
     auto buffer = std::array<std::byte, sizeof(T)>{};
     auto adv = [this]() { return advance(); };
 
@@ -174,7 +174,7 @@ private:
   }
 
   template<typename T, typename Prefix_T>
-  auto decode_unsigned(const Prefix_T &) -> T {
+  [[nodiscard]] auto decode_unsigned(const Prefix_T &) -> T {
     auto buffer = std::array<std::byte, sizeof(T)>{};
     auto adv = [this]() { return advance(); };
 
@@ -184,7 +184,7 @@ private:
   }
 
   template<typename T, typename Prefix_T>
-  auto decode_bounded_array(const Prefix_T &prefix) {
+  [[nodiscard]] auto decode_bounded_array(const Prefix_T &prefix) {
     using element_t = std::remove_pointer_t<std::decay_t<T>>;
 
     constexpr auto size = sizeof(T) / sizeof(element_t);
@@ -200,7 +200,7 @@ private:
   }
 
   template<typename T, typename Prefix_T>
-  auto decode_at_most(const Prefix_T &prefix) {
+  [[nodiscard]] auto decode_at_most(const Prefix_T &prefix) {
     using element_t = typename T::type;
 
     auto retval = upd::static_vector<element_t, T::max>{};
@@ -213,7 +213,7 @@ private:
     return retval;
   }
 
-  auto advance() -> std::byte { return *m_producer++; }
+  [[nodiscard]] auto advance() -> std::byte { return *m_producer++; }
 
 private:
   Producer_T m_producer;
