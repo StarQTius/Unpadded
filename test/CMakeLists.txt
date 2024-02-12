@@ -76,6 +76,11 @@ function(add_revamp_test TEST_NAME TEST_FILE)
   set_target_properties(${TEST_NAME} PROPERTIES CXX_STANDARD 17)
   add_dependencies(check_revamp ${TEST_NAME})
   catch_discover_tests(${TEST_NAME} PROPERTIES LABELS check_revamp)
+  target_compile_options(
+    ${TEST_NAME}
+    PRIVATE -Wall -Werror $<$<CXX_COMPILER_ID:GNU>: -fdiagnostics-color=always>
+            $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>:
+            -fcolor-diagnostics>)
 endfunction()
 
 add_custom_target(check_revamp COMMAND ctest -L check_revamp
