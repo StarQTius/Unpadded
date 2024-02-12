@@ -58,8 +58,7 @@ struct clean<std::tuple<Ts...>> {
 
   template<std::size_t... Is>
   [[nodiscard]] constexpr static auto kept_element_tuple(std::index_sequence<Is...>) {
-    std::make_index_sequence<sizeof...(Ts)> iseq;
-    constexpr auto indices = kept_element_indices();
+    [[maybe_unused]] constexpr auto indices = kept_element_indices();
 
     return std::tuple<at_t<std::tuple<Ts...>, indices.at(Is)>...>{};
   }
