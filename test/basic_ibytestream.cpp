@@ -6,6 +6,8 @@
 
 #include <any>
 #include <optional>
+#include <utility>
+#include <variant>
 
 #include "utility/generators.hpp"
 #include "utility/mocking.hpp"
@@ -14,6 +16,8 @@
 #include <fakeit.hpp>
 #include <upd/basic_tuple.hpp>
 #include <upd/detail/assertion.hpp>
+#include <upd/detail/variadic/map.hpp>
+#include <upd/detail/variadic/max.hpp>
 #include <upd/static_vector.hpp>
 
 using namespace fakeit;
@@ -36,9 +40,26 @@ namespace upd {
 
 namespace detail {
 
+template<template<typename...> typename, typename>
+struct instantiate_from;
+
+template<template<typename...> typename TT, typename... Ts>
+struct instantiate_from<TT, std::tuple<Ts...>> {
+  using type = TT<Ts...>;
+};
+
+template<template<typename...> typename TT, typename Tuple_T>
+using instantiate_from_t = typename instantiate_from<TT, Tuple_T>::type;
+
 template<typename T, T... Xs, typename F>
-[[nodiscard]] constexpr auto transform_to_tuple(std::integer_sequence<T, Xs...>, F &&f) noexcept {
-  return std::make_tuple(std::invoke(f, integral_constant_t<Xs>{})...);
+[[nodiscard]] constexpr auto transform_to_tuple(std::integer_sequence<T, Xs...>, F &&f) {
+  return std::tuple<std::invoke_result_t<F, integral_constant_t<Xs>>...>{std::invoke(f, integral_constant_t<Xs>{})...};
+}
+
+template<typename T, T... Xs, typename F>
+[[nodiscard]] constexpr auto transform_to_array(std::integer_sequence<T, Xs...>, F &&f) {
+  using result_t = std::common_type_t<std::invoke_result_t<F, integral_constant_t<Xs>>...>;
+  return std::array<result_t, sizeof...(Xs)>{std::invoke(f, integral_constant_t<Xs>{})...};
 }
 
 template<std::size_t Begin, std::size_t End, typename Tuple>
@@ -46,10 +67,7 @@ template<std::size_t Begin, std::size_t End, typename Tuple>
   constexpr auto subtuple_size = End - Begin;
   constexpr auto seq = std::make_index_sequence<subtuple_size>{};
 
-  auto get_element = [&](auto iconst) {
-    auto &element = std::get<Begin + iconst.value>(tuple);
-    return std::ref(element);
-  };
+  auto get_element = [&](auto iconst) -> auto & { return std::get<Begin + iconst.value>(tuple); };
 
   return transform_to_tuple(seq, get_element);
 }
@@ -74,7 +92,14 @@ constexpr auto is_instance_of_v = is_instance_of<T, TT>::value;
 template<typename T, std::size_t Max>
 using at_most = detail::at_most_t<T, detail::integral_constant_t<Max>>;
 
+template<typename... Ts>
+struct one_of {
+  using alternative_ts = std::tuple<Ts...>;
+  constexpr static auto alternative_count = sizeof...(Ts);
+};
+
 namespace detail {
+
 template<typename>
 struct is_bounded_array : std::false_type {};
 
@@ -83,6 +108,30 @@ struct is_bounded_array<T[N]> : std::true_type {};
 
 template<typename T>
 constexpr auto is_bounded_array_v = is_bounded_array<T>::value;
+
+template<typename T>
+struct convert_placeholder {
+  using type = T;
+};
+
+template<typename T, std::size_t N>
+struct convert_placeholder<T[N]> {
+  using type = std::array<typename convert_placeholder<T>::type, N>;
+};
+
+template<typename T, std::size_t Max>
+struct convert_placeholder<at_most<T, Max>> {
+  using type = static_vector<typename convert_placeholder<T>::type, Max>;
+};
+
+template<typename... Ts>
+struct convert_placeholder<one_of<Ts...>> {
+  using type = std::variant<typename convert_placeholder<Ts>::type...>;
+};
+
+template<typename T>
+using convert_placeholder_t = typename convert_placeholder<T>::type;
+
 } // namespace detail
 
 template<typename T, typename Serializer_T>
@@ -96,6 +145,15 @@ template<typename T, typename Serializer_T>
     return count * size;
   } else if constexpr (detail::is_instance_of_v<T, detail::at_most_t>) {
     return max_serialized_size<typename T::type, Serializer_T>() * T::max;
+  } else if constexpr (detail::is_instance_of_v<T, one_of>) {
+    auto integral_max_size = [](auto &&x) {
+      using type = std::remove_reference_t<std::remove_cv_t<decltype(x)>>;
+      constexpr auto retval = max_serialized_size<type, Serializer_T>();
+      return detail::integral_constant_t<retval>{};
+    };
+
+    using max_sizes = detail::variadic::mapf_t<typename T::alternative_ts, decltype(integral_max_size)>;
+    return detail::variadic::max_v<max_sizes>;
   } else {
     static_assert(UPD_ALWAYS_FALSE, "Type is not serializable");
   }
@@ -141,6 +199,8 @@ private:
       return decode_bounded_array<T>(prefix);
     } else if constexpr (detail::is_instance_of_v<T, detail::at_most_t>) {
       return decode_at_most<T>(prefix);
+    } else if constexpr (detail::is_instance_of_v<T, one_of>) {
+      return decode_one_of<T>(prefix);
     } else {
       static_assert(UPD_ALWAYS_FALSE, "`T` cannot be serialized");
     }
@@ -211,6 +271,26 @@ private:
     std::generate_n(inserter, count, dec);
 
     return retval;
+  }
+
+  template<typename T, typename Prefix_T>
+  [[nodiscard]] auto decode_one_of(const Prefix_T &prefix) {
+    using converted_alternative_ts = detail::variadic::map_t<typename T::alternative_ts, detail::convert_placeholder_t>;
+
+    auto index = std::invoke(m_oracle, T{}, prefix);
+    auto seq = std::make_index_sequence<T::alternative_count>{};
+    auto generate_variant_maker = [](auto iconst) {
+      using alternative_t = std::tuple_element_t<iconst.value, typename T::alternative_ts>;
+      using converted_alternative_t = std::tuple_element_t<iconst.value, converted_alternative_ts>;
+      using variant_t = detail::instantiate_from_t<std::variant, converted_alternative_ts>;
+
+      return +[](basic_ibytestream &self, const Prefix_T &prefix) {
+        return variant_t{std::in_place_type<converted_alternative_t>, self.decode_with_prefix<alternative_t>(prefix)};
+      };
+    };
+    auto variant_makers = detail::transform_to_array(seq, generate_variant_maker);
+
+    return std::invoke(variant_makers.at(index), *this, prefix);
   }
 
   [[nodiscard]] auto advance() -> std::byte { return *m_producer++; }
@@ -287,6 +367,33 @@ TEST_CASE("Deserializing a packet...") {
     When(Method(mock_serializer, deserialize_unsigned).Using(_, _)).AlwaysDo(iterate(unsigned_value));
     REQUIRE(bstream.decode(descr) ==
             std::tuple{-64, 48, upd::static_vector<short, 3>{7, -8}, std::array<char, 4>{-1, 2, -3, 4}});
+  }
+
+  SECTION("...containing one `one_of` element") {
+    auto descr = upd::description<int, unsigned int, upd::one_of<char, unsigned int, short[2]>, char[4]>;
+    auto size = descr.max_serialized_size<serializer_interface>();
+    auto signed_value = std::array{-64, -1, 2, -3, 4};
+    auto unsigned_value = std::array{48, 78};
+
+    storage.resize(size);
+    storage_begin = storage.begin();
+
+    // NOLINTNEXTLINE(clang-analyzer-deadcode.DeadStores,bugprone-easily-swappable-parameters)
+    callback = [](const std::any &query, const std::any &prefix) -> std::size_t {
+      const auto &[a, b] = std::any_cast<std::tuple<const int &, const unsigned int &>>(prefix);
+      REQUIRE(query.type() == typeid(upd::one_of<char, unsigned int, short[2]>));
+      REQUIRE(a == -64);
+      REQUIRE(b == 48);
+      return 1;
+    };
+
+    When(Method(mock_serializer, deserialize_signed).Using(_, _)).AlwaysDo(iterate(signed_value));
+    When(Method(mock_serializer, deserialize_unsigned).Using(_, _)).AlwaysDo(iterate(unsigned_value));
+    REQUIRE(bstream.decode(descr) ==
+            std::tuple{-64,
+                       48,
+                       std::variant<char, unsigned int, std::array<short, 2>>{std::in_place_type<unsigned int>, 78},
+                       std::array<char, 4>{-1, 2, -3, 4}});
   }
 }
 
