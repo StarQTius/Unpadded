@@ -24,7 +24,7 @@ public:
   constexpr explicit static_vector(It first, It last) {
     auto range_size = std::distance(first, last);
     UPD_ASSERT(range_size >= 0);
-    UPD_ASSERT(static_cast<std::uintmax_t>(range_size) < m_content.size());
+    UPD_ASSERT(static_cast<std::uintmax_t>(range_size) <= m_content.size());
 
     std::copy(first, last, m_content.begin());
     m_size = range_size;
