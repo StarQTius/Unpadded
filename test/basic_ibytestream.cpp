@@ -132,6 +132,10 @@ struct convert_placeholder<one_of<Ts...>> {
 template<typename T>
 using convert_placeholder_t = typename convert_placeholder<T>::type;
 
+constexpr inline auto fail_on_invoke = [](const auto &...) {
+  static_assert(UPD_ALWAYS_FALSE, "This invocable should not have been invoked");
+};
+
 } // namespace detail
 
 template<typename T, typename Serializer_T>
@@ -170,45 +174,55 @@ struct description_t {
 template<typename... Ts>
 constexpr auto description = description_t<Ts...>{};
 
-template<typename Producer_T, typename Serializer_T, typename Oracle_T>
+template<typename Producer_T, typename Serializer_T>
 class basic_ibytestream {
 public:
-  explicit basic_ibytestream(Producer_T producer, Serializer_T serializer, Oracle_T oracle) noexcept
-      : m_producer{UPD_FWD(producer)}, m_serializer{UPD_FWD(serializer)}, m_oracle{UPD_FWD(oracle)} {}
+  explicit basic_ibytestream(Producer_T producer, Serializer_T serializer) noexcept
+      : m_producer{UPD_FWD(producer)}, m_serializer{UPD_FWD(serializer)} {}
 
   template<typename... Ts>
-  [[nodiscard]] auto decode(description_t<Ts...>) {
+  [[nodiscard]] auto decode(description_t<Ts...> descr) {
+    return decode(descr, detail::fail_on_invoke);
+  }
+
+  template<typename... Ts, typename Oracle_T>
+  [[nodiscard]] auto decode(description_t<Ts...>, Oracle_T &oracle) {
     auto descr = description<Ts...>;
     auto seq = std::make_index_sequence<sizeof...(Ts)>{};
-    return decode_description(descr, seq);
+    return decode_description(descr, seq, oracle);
   }
 
   template<typename T>
   [[nodiscard]] auto decode() {
-    return decode_with_prefix<T>(std::tuple{});
+    return decode<T>(detail::fail_on_invoke);
+  }
+
+  template<typename T, typename Oracle_T>
+  [[nodiscard]] auto decode(Oracle_T &oracle) {
+    return decode_with_prefix<T>(oracle, std::tuple{});
   }
 
 private:
-  template<typename T, typename Prefix_T>
-  [[nodiscard]] auto decode_with_prefix(const Prefix_T &prefix) {
+  template<typename T, typename Oracle_T, typename Prefix_T>
+  [[nodiscard]] auto decode_with_prefix(Oracle_T &oracle, const Prefix_T &prefix) {
     if constexpr (std::is_signed_v<T>) {
       return decode_signed<T>(prefix);
     } else if constexpr (std::is_unsigned_v<T>) {
       return decode_unsigned<T>(prefix);
     } else if constexpr (detail::is_bounded_array_v<T>) {
-      return decode_bounded_array<T>(prefix);
+      return decode_bounded_array<T>(oracle, prefix);
     } else if constexpr (detail::is_instance_of_v<T, detail::at_most_t>) {
-      return decode_at_most<T>(prefix);
+      return decode_at_most<T>(oracle, prefix);
     } else if constexpr (detail::is_instance_of_v<T, one_of>) {
-      return decode_one_of<T>(prefix);
+      return decode_one_of<T>(oracle, prefix);
     } else {
       static_assert(UPD_ALWAYS_FALSE, "`T` cannot be serialized");
     }
   }
 
-  template<typename... Ts, std::size_t... Is>
-  [[nodiscard]] auto decode_description(description_t<Ts...>, std::index_sequence<Is...>) {
-    auto retval = std::tuple<std::optional<decltype(decode<Ts>())>...>{};
+  template<typename... Ts, std::size_t... Is, typename Oracle_T>
+  [[nodiscard]] auto decode_description(description_t<Ts...>, std::index_sequence<Is...>, Oracle_T &oracle) {
+    auto retval = std::tuple<std::optional<decltype(decode<Ts>(oracle))>...>{};
     auto deref_and_tie_opts = [](const auto &...opts) {
       UPD_ASSERT((opts && ...));
       return std::tie(*opts...);
@@ -218,7 +232,8 @@ private:
       return std::tuple{*std::move(opts)...};
     };
 
-    ((std::get<Is>(retval) = decode_with_prefix<Ts>(std::apply(deref_and_tie_opts, detail::subtuple<0, Is>(retval)))),
+    ((std::get<Is>(retval) =
+          decode_with_prefix<Ts>(oracle, std::apply(deref_and_tie_opts, detail::subtuple<0, Is>(retval)))),
      ...);
     return std::apply(deref_opts, std::move(retval));
   }
@@ -243,13 +258,13 @@ private:
     return m_serializer.deserialize_unsigned(buffer.data(), buffer.size());
   }
 
-  template<typename T, typename Prefix_T>
-  [[nodiscard]] auto decode_bounded_array(const Prefix_T &prefix) {
+  template<typename T, typename Oracle_T, typename Prefix_T>
+  [[nodiscard]] auto decode_bounded_array(Oracle_T &oracle, const Prefix_T &prefix) {
     using element_t = std::remove_pointer_t<std::decay_t<T>>;
 
     constexpr auto size = sizeof(T) / sizeof(element_t);
     auto retval = std::array<std::optional<element_t>, size>{};
-    auto dec = [&]() { return decode_with_prefix<element_t>(prefix); };
+    auto dec = [&]() { return decode_with_prefix<element_t>(oracle, prefix); };
     auto is_valid = [](const auto &opt) { return opt.has_value(); };
     auto deref_opts = [](auto &&...opts) { return std::array{*std::move(opts)...}; };
 
@@ -259,13 +274,13 @@ private:
     return std::apply(deref_opts, retval);
   }
 
-  template<typename T, typename Prefix_T>
-  [[nodiscard]] auto decode_at_most(const Prefix_T &prefix) {
+  template<typename T, typename Oracle_T, typename Prefix_T>
+  [[nodiscard]] auto decode_at_most(Oracle_T &oracle, const Prefix_T &prefix) {
     using element_t = typename T::type;
 
     auto retval = upd::static_vector<element_t, T::max>{};
     auto inserter = std::back_inserter(retval);
-    auto count = std::invoke(m_oracle, T{}, prefix);
+    auto count = std::invoke(oracle, T{}, prefix);
     auto dec = [&]() { return decode<element_t>(); };
 
     std::generate_n(inserter, count, dec);
@@ -273,24 +288,25 @@ private:
     return retval;
   }
 
-  template<typename T, typename Prefix_T>
-  [[nodiscard]] auto decode_one_of(const Prefix_T &prefix) {
+  template<typename T, typename Oracle_T, typename Prefix_T>
+  [[nodiscard]] auto decode_one_of(Oracle_T &oracle, const Prefix_T &prefix) {
     using converted_alternative_ts = detail::variadic::map_t<typename T::alternative_ts, detail::convert_placeholder_t>;
 
-    auto index = std::invoke(m_oracle, T{}, prefix);
+    auto index = std::invoke(oracle, T{}, prefix);
     auto seq = std::make_index_sequence<T::alternative_count>{};
     auto generate_variant_maker = [](auto iconst) {
       using alternative_t = std::tuple_element_t<iconst.value, typename T::alternative_ts>;
       using converted_alternative_t = std::tuple_element_t<iconst.value, converted_alternative_ts>;
       using variant_t = detail::instantiate_from_t<std::variant, converted_alternative_ts>;
 
-      return +[](basic_ibytestream &self, const Prefix_T &prefix) {
-        return variant_t{std::in_place_type<converted_alternative_t>, self.decode_with_prefix<alternative_t>(prefix)};
+      return +[](basic_ibytestream &self, Oracle_T &oracle, const Prefix_T &prefix) {
+        return variant_t{std::in_place_type<converted_alternative_t>,
+                         self.decode_with_prefix<alternative_t>(oracle, prefix)};
       };
     };
     auto variant_makers = detail::transform_to_array(seq, generate_variant_maker);
 
-    return std::invoke(variant_makers.at(index), *this, prefix);
+    return std::invoke(variant_makers.at(index), *this, oracle, prefix);
   }
 
   [[nodiscard]] auto advance() -> std::byte { return *m_producer++; }
@@ -298,7 +314,6 @@ private:
 private:
   Producer_T m_producer;
   Serializer_T m_serializer;
-  Oracle_T m_oracle;
 };
 } // namespace upd
 
@@ -308,13 +323,10 @@ TEST_CASE("Deserializing a packet...") {
   auto storage = std::vector<std::byte>{};
   auto storage_begin = storage.begin();
   auto mock_serializer = Mock<serializer_interface>{};
-  auto callback = +[](const std::any &, const std::any &) -> std::size_t { throw std::exception{}; };
 
   auto &producer = storage_begin;
   auto &serializer = mock_serializer.get();
-  auto &oracle = callback;
-  auto bstream =
-      upd::basic_ibytestream<decltype(producer), decltype(serializer), decltype(oracle)>{producer, serializer, oracle};
+  auto bstream = upd::basic_ibytestream<decltype(producer), decltype(serializer)>{producer, serializer};
 
   SECTION("...containing only integers") {
     auto descr = upd::description<int, unsigned int, unsigned short, char>;
@@ -355,7 +367,7 @@ TEST_CASE("Deserializing a packet...") {
     storage_begin = storage.begin();
 
     // NOLINTNEXTLINE(clang-analyzer-deadcode.DeadStores,bugprone-easily-swappable-parameters)
-    callback = [](const std::any &query, const std::any &prefix) -> std::size_t {
+    auto oracle = [](const std::any &query, const std::any &prefix) -> std::size_t {
       const auto &[a, b] = std::any_cast<std::tuple<const int &, const unsigned int &>>(prefix);
       REQUIRE(query.type() == typeid(upd::at_most<short, 3>));
       REQUIRE(a == -64);
@@ -365,7 +377,7 @@ TEST_CASE("Deserializing a packet...") {
 
     When(Method(mock_serializer, deserialize_signed).Using(_, _)).AlwaysDo(iterate(signed_value));
     When(Method(mock_serializer, deserialize_unsigned).Using(_, _)).AlwaysDo(iterate(unsigned_value));
-    REQUIRE(bstream.decode(descr) ==
+    REQUIRE(bstream.decode(descr, oracle) ==
             std::tuple{-64, 48, upd::static_vector<short, 3>{7, -8}, std::array<char, 4>{-1, 2, -3, 4}});
   }
 
@@ -379,7 +391,7 @@ TEST_CASE("Deserializing a packet...") {
     storage_begin = storage.begin();
 
     // NOLINTNEXTLINE(clang-analyzer-deadcode.DeadStores,bugprone-easily-swappable-parameters)
-    callback = [](const std::any &query, const std::any &prefix) -> std::size_t {
+    auto oracle = [](const std::any &query, const std::any &prefix) -> std::size_t {
       const auto &[a, b] = std::any_cast<std::tuple<const int &, const unsigned int &>>(prefix);
       REQUIRE(query.type() == typeid(upd::one_of<char, unsigned int, short[2]>));
       REQUIRE(a == -64);
@@ -389,7 +401,7 @@ TEST_CASE("Deserializing a packet...") {
 
     When(Method(mock_serializer, deserialize_signed).Using(_, _)).AlwaysDo(iterate(signed_value));
     When(Method(mock_serializer, deserialize_unsigned).Using(_, _)).AlwaysDo(iterate(unsigned_value));
-    REQUIRE(bstream.decode(descr) ==
+    REQUIRE(bstream.decode(descr, oracle) ==
             std::tuple{-64,
                        48,
                        std::variant<char, unsigned int, std::array<short, 2>>{std::in_place_type<unsigned int>, 78},
