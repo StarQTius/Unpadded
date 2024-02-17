@@ -40,6 +40,9 @@ namespace upd {
 
 namespace detail {
 
+template<auto X>
+constexpr auto integral_constant_v = integral_constant_t<X>{};
+
 template<template<typename...> typename, typename>
 struct instantiate_from;
 
@@ -72,6 +75,27 @@ template<std::size_t Begin, std::size_t End, typename Tuple>
   return transform_to_tuple(seq, get_element);
 }
 
+template<typename Result_Ts, std::size_t... Is, typename F>
+constexpr auto accumulate_tuple(std::index_sequence<Is...>, F &&f) {
+  auto retval = detail::variadic::map_t<Result_Ts, std::optional>{};
+  auto deref_opts = [](auto &...opts) {
+    UPD_ASSERT((opts.has_value() && ...));
+    return std::make_tuple(std::cref(*opts)...);
+  };
+  auto unwrap_opts = [](auto... opts) {
+    UPD_ASSERT((opts.has_value() && ...));
+    return std::tuple{*std::move(opts)...};
+  };
+  auto invoke_on_subtuple = [&](auto iconst) {
+    auto subtpl = subtuple<0, iconst>(retval);
+    auto ref_tuple = std::apply(deref_opts, subtpl);
+    return std::invoke(f, ref_tuple);
+  };
+
+  ((std::get<Is>(retval) = invoke_on_subtuple(integral_constant_v<Is>)), ...);
+  return std::apply(unwrap_opts, std::move(retval));
+}
+
 template<typename T, typename Integral_Constant_T>
 struct at_most_t {
   using type = T;
@@ -96,6 +120,12 @@ template<typename... Ts>
 struct one_of {
   using alternative_ts = std::tuple<Ts...>;
   constexpr static auto alternative_count = sizeof...(Ts);
+};
+
+template<typename... Ts>
+struct group {
+  using types = std::tuple<Ts...>;
+  constexpr static auto size = sizeof...(Ts);
 };
 
 namespace detail {
@@ -129,6 +159,11 @@ struct convert_placeholder<one_of<Ts...>> {
   using type = std::variant<typename convert_placeholder<Ts>::type...>;
 };
 
+template<typename... Ts>
+struct convert_placeholder<group<Ts...>> {
+  using type = std::tuple<typename convert_placeholder<Ts>::type...>;
+};
+
 template<typename T>
 using convert_placeholder_t = typename convert_placeholder<T>::type;
 
@@ -158,6 +193,15 @@ template<typename T, typename Serializer_T>
 
     using max_sizes = detail::variadic::mapf_t<typename T::alternative_ts, decltype(integral_max_size)>;
     return detail::variadic::max_v<max_sizes>;
+  } else if constexpr (detail::is_instance_of_v<T, group>) {
+    auto integral_max_size = [](auto &&x) {
+      using type = std::remove_reference_t<std::remove_cv_t<decltype(x)>>;
+      constexpr auto retval = max_serialized_size<type, Serializer_T>();
+      return detail::integral_constant_t<retval>{};
+    };
+
+    using max_sizes = detail::variadic::mapf_t<typename T::types, decltype(integral_max_size)>;
+    return detail::variadic::sum_v<max_sizes>;
   } else {
     static_assert(UPD_ALWAYS_FALSE, "Type is not serializable");
   }
@@ -215,27 +259,24 @@ private:
       return decode_at_most<T>(oracle, prefixes...);
     } else if constexpr (detail::is_instance_of_v<T, one_of>) {
       return decode_one_of<T>(oracle, prefixes...);
+    } else if constexpr (detail::is_instance_of_v<T, group>) {
+      return decode_group<T>(oracle, prefixes...);
     } else {
       static_assert(UPD_ALWAYS_FALSE, "`T` cannot be serialized");
     }
   }
 
   template<typename... Ts, std::size_t... Is, typename Oracle_T>
-  [[nodiscard]] auto decode_description(description_t<Ts...>, std::index_sequence<Is...>, Oracle_T &oracle) {
-    auto retval = std::tuple<std::optional<decltype(decode<Ts>(oracle))>...>{};
-    auto deref_and_tie_opts = [](const auto &...opts) {
-      UPD_ASSERT((opts && ...));
-      return std::tie(*opts...);
-    };
-    auto deref_opts = [](auto &&...opts) {
-      UPD_ASSERT((opts && ...));
-      return std::tuple{*std::move(opts)...};
+  [[nodiscard]] auto decode_description(description_t<Ts...>, std::index_sequence<Is...> seq, Oracle_T &oracle) {
+    using converted_ts = std::tuple<detail::convert_placeholder_t<Ts>...>;
+
+    auto dec = [&](auto prefix) {
+      auto index_iconst = std::tuple_size<decltype(prefix)>{};
+      using type = detail::variadic::at_t<std::tuple<Ts...>, index_iconst>;
+      return decode_with_prefix<type>(oracle, prefix);
     };
 
-    ((std::get<Is>(retval) =
-          decode_with_prefix<Ts>(oracle, std::apply(deref_and_tie_opts, detail::subtuple<0, Is>(retval)))),
-     ...);
-    return std::apply(deref_opts, std::move(retval));
+    return detail::accumulate_tuple<converted_ts>(seq, dec);
   }
 
   template<typename T>
@@ -309,6 +350,20 @@ private:
     auto variant_makers = detail::transform_to_array(seq, generate_variant_maker);
 
     return std::invoke(variant_makers.at(index), *this, oracle, prefixes...);
+  }
+
+  template<typename T, typename Oracle_T, typename... Prefix_Ts>
+  [[nodiscard]] auto decode_group(Oracle_T &oracle, const Prefix_Ts &...prefixes) {
+    using converted_ts = detail::variadic::map_t<typename T::types, detail::convert_placeholder_t>;
+    auto seq = std::make_index_sequence<std::tuple_size_v<converted_ts>>{};
+
+    auto dec = [&](auto prefix) {
+      auto index_iconst = std::tuple_size<decltype(prefix)>{};
+      using converted_t = detail::variadic::at_t<converted_ts, index_iconst>;
+      return decode_with_prefix<converted_t>(oracle, prefixes..., prefix);
+    };
+
+    return detail::accumulate_tuple<converted_ts>(seq, dec);
   }
 
   [[nodiscard]] auto advance() -> std::byte { return *m_producer++; }
@@ -456,7 +511,7 @@ TEST_CASE("Deserializing a packet...") {
     auto oracle = [](auto query, const auto &...prefixes) -> std::size_t {
       using query_t = decltype(query);
 
-      auto prefix_tuple = std::make_tuple(std::ref(prefixes)...);
+      auto prefix_tuple = std::make_tuple(std::cref(prefixes)...);
 
       if constexpr (upd::detail::is_instance_of_v<query_t, upd::detail::at_most_t>) {
         static_assert(sizeof...(prefixes) == 1);
@@ -532,6 +587,24 @@ TEST_CASE("Deserializing a packet...") {
                                   std::variant<int, unsigned int>{std::in_place_type<unsigned int>, 16},
                                   std::variant<int, unsigned int>{std::in_place_type<int>, -64},
                                   std::variant<int, unsigned int>{std::in_place_type<unsigned int>, 32}}});
+  }
+
+  SECTION("...containing a nested group in a `one_of`") {
+    auto descr = upd::description<upd::one_of<upd::group<int, unsigned short>, unsigned int>>;
+    auto size = descr.max_serialized_size<serializer_interface>();
+    auto signed_value = std::array{-64};
+    auto unsigned_value = std::array{16};
+
+    storage.resize(size);
+    storage_begin = storage.begin();
+
+    // NOLINTNEXTLINE(clang-analyzer-deadcode.DeadStores,bugprone-easily-swappable-parameters)
+    auto oracle = [](auto, std::tuple<>) -> std::size_t { return 0; };
+
+    When(Method(mock_serializer, deserialize_signed).Using(_, _)).AlwaysDo(iterate(signed_value));
+    When(Method(mock_serializer, deserialize_unsigned).Using(_, _)).AlwaysDo(iterate(unsigned_value));
+    REQUIRE(bstream.decode(descr, oracle) == std::tuple{std::variant<std::tuple<int, unsigned short>, unsigned int>{
+                                                 std::tuple{int{-64}, (unsigned short)16}}});
   }
 }
 
