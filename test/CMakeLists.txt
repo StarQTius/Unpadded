@@ -3,6 +3,7 @@ FetchContent_MakeAvailable(Catch2)
 FetchContent_MakeAvailable(FakeIt)
 
 include(Catch)
+include(Unpadded)
 
 function(add_cpp11_and_cpp17_test TEST_NAME)
   add_executable(run_${TEST_NAME}_cpp11 ${TEST_NAME}.cpp)
@@ -81,6 +82,7 @@ function(add_revamp_test TEST_NAME TEST_FILE)
     PRIVATE -Wall -Werror $<$<CXX_COMPILER_ID:GNU>: -fdiagnostics-color=always>
             $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>:
             -fcolor-diagnostics>)
+  add_iwyu_target(${TEST_FILE} ${TEST_NAME})
 endfunction()
 
 add_custom_target(check_revamp COMMAND ctest -L check_revamp

@@ -4,24 +4,17 @@
     throw std::exception{};                                                                                            \
   }
 
-#include <any>
+#include <cstddef>
+#include <exception>
 #include <iterator>
-#include <optional>
-#include <utility>
-#include <variant>
+#include <vector>
 
 #include "mock/serializer_interface.hpp"
-#include "utility/generators.hpp"
-#include "utility/mocking.hpp"
 #include <catch2/catch_test_macros.hpp>
-#include <catch2/generators/catch_generators_all.hpp>
 #include <fakeit.hpp>
 #include <upd/basic_ibytestream.hpp>
 #include <upd/basic_obytestream.hpp>
-#include <upd/basic_tuple.hpp>
 #include <upd/detail/assertion.hpp>
-#include <upd/detail/variadic/map.hpp>
-#include <upd/detail/variadic/max.hpp>
 #include <upd/static_vector.hpp>
 
 using namespace fakeit;
