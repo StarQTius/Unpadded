@@ -55,4 +55,18 @@ constexpr auto accumulate_tuple(std::index_sequence<Is...>, F &&f) {
   return std::apply(unwrap_opts, std::move(retval));
 }
 
+template<std::size_t... Is, typename F>
+[[nodiscard]] constexpr auto transform_orderly_to_tuple(std::index_sequence<Is...> seq, F &&f) {
+  using result_ts = std::tuple<std::invoke_result_t<F, integral_constant_t<Is>>...>;
+
+  auto forward_tuple_size = [&](auto &&ref_tuple) {
+    using ref_tuple_t = std::decay_t<decltype(ref_tuple)>;
+
+    auto iconst = std::tuple_size<ref_tuple_t>{};
+    return std::invoke(f, iconst);
+  };
+
+  return accumulate_tuple<result_ts>(seq, forward_tuple_size);
+}
+
 } // namespace upd::detail

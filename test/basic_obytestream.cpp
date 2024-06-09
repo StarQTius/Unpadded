@@ -12,7 +12,6 @@
 #include "mock/serializer_interface.hpp"
 #include <catch2/catch_test_macros.hpp>
 #include <fakeit.hpp>
-#include <upd/basic_ibytestream.hpp>
 #include <upd/basic_obytestream.hpp>
 #include <upd/detail/assertion.hpp>
 #include <upd/static_vector.hpp>
