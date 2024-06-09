@@ -15,10 +15,12 @@ namespace upd::detail {
   }
 
   if ('a' <= c && c <= 'f') {
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers)
     return c - 'a' + 0xa;
   }
 
   if ('A' <= c && c <= 'F') {
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers)
     return c - 'A' + 0xa;
   }
 
@@ -30,14 +32,19 @@ template<typename It>
   auto range_size = std::distance(begin, end);
   auto first_char = range_size >= 1 ? *begin : 0;
   auto second_char = range_size >= 2 ? *std::next(begin) : 0;
+
   auto [radix, digit_begin] = [&] {
     if (first_char == '0' && second_char == 'b') {
+      // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers)
       return std::pair{2, std::next(begin, 2)};
     } else if (first_char == '0' && (second_char == 'x' || second_char == 'X')) {
+      // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers)
       return std::pair{16, std::next(begin, 2)};
     } else if (first_char == '0') {
+      // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers)
       return std::pair{8, std::next(begin)};
     } else {
+      // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers)
       return std::pair{10, begin};
     }
   }();
