@@ -9,7 +9,7 @@ struct sum;
 
 template<typename... Integral_Constant_Ts>
 struct sum<std::tuple<Integral_Constant_Ts...>> {
-  constexpr static auto value = (Integral_Constant_Ts::value + ...);
+  constexpr static auto value = (Integral_Constant_Ts::value + ... + 0);
 };
 
 template<typename T>

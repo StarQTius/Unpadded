@@ -13,18 +13,9 @@ struct at;
 
 template<typename... Ts, std::size_t I>
 struct at<std::tuple<Ts...>, I> {
-  template<std::size_t... Is>
-  [[nodiscard]] constexpr static auto aggregated_leaves(std::index_sequence<Is...>) {
-    struct : leaf<Is, Ts>... {
-      using leaf<Is, Ts>::at...;
-      using leaf<Is, Ts>::find...;
-    } retval;
-
-    return retval;
-  }
-
-  using type =
-      std::remove_pointer_t<decltype(aggregated_leaves(std::make_index_sequence<sizeof...(Ts)>{}).at(index_type_v<I>))>;
+  using type = std::remove_pointer_t<decltype(aggregated_leaves(std::declval<std::tuple<Ts...>>(),
+                                                                std::make_index_sequence<sizeof...(Ts)>{})
+                                                  .at(index_type_v<I>))>;
 };
 
 template<typename T, std::size_t I>
