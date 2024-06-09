@@ -37,16 +37,20 @@ template<typename It>
     if (first_char == '0' && second_char == 'b') {
       // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers)
       return std::pair{2, std::next(begin, 2)};
-    } else if (first_char == '0' && (second_char == 'x' || second_char == 'X')) {
+    }
+
+    if (first_char == '0' && (second_char == 'x' || second_char == 'X')) {
       // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers)
       return std::pair{16, std::next(begin, 2)};
-    } else if (first_char == '0') {
+    }
+
+    if (first_char == '0') {
       // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers)
       return std::pair{8, std::next(begin)};
-    } else {
-      // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers)
-      return std::pair{10, begin};
     }
+
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers)
+    return std::pair{10, begin};
   }();
 
   auto retval = std::intmax_t{0};

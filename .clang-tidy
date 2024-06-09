@@ -5,9 +5,14 @@ Checks: '
   modernize-*,
   performance-*,
   portability-*,
-  readbility-*,
+  readability-*,
   -cppcoreguidelines-avoid-c-arrays,
   -cppcoreguidelines-pro-bounds-pointer-arithmetic,
-  -modernize-avoid-c-arrays'
+  -modernize-avoid-c-arrays,
+  -readability-named-parameter,
+  -readability-identifier-length,
+  -readability-static-accessed-through-instance,
+  -readability-magic-numbers,
+'
 WarningsAsErrors: '*'
 HeaderFilterRegex: '.*include/upd/.*'
