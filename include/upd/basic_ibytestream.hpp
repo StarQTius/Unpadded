@@ -73,7 +73,7 @@ template<typename... Named_Tuple_Ts>
 [[nodiscard]] constexpr auto concat_named_tuple(Named_Tuple_Ts &&...named_tuples) {
   using id_ts = detail::variadic::concat_t<typename Named_Tuple_Ts::id_ts...>;
 
-  auto content = std::tuple_cat(named_tuples.m_content...);
+  auto content = std::tuple_cat(UPD_FWD(named_tuples).m_content...);
   auto name_content = [&](auto... id_iconsts) { return name_tuple<id_iconsts.value...>(std::move(content)); };
 
   return std::apply(name_content, id_ts{});
