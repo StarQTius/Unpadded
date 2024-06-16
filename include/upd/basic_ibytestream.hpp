@@ -13,9 +13,10 @@
 #include "detail/is_instance_of.hpp"   // IWYU pragma: keep
 #include "detail/tuple_operations.hpp"
 #include "detail/variadic/concat.hpp"
-#include "detail/variadic/find.hpp" // IWYU pragma: keep
-#include "detail/variadic/max.hpp"  // IWYU pragma: keep
-#include "detail/variadic/sum.hpp"  // IWYU pragma: keep
+#include "detail/variadic/count.hpp" // IWYU pragma: keep
+#include "detail/variadic/find.hpp"  // IWYU pragma: keep
+#include "detail/variadic/max.hpp"   // IWYU pragma: keep
+#include "detail/variadic/sum.hpp"   // IWYU pragma: keep
 #include "integer.hpp"
 #include "upd.hpp"
 
@@ -25,13 +26,13 @@ template<typename Tuple_T, auto... Ids>
 class named_tuple {
   using id_ts = detail::integral_constant_tuple_t<Ids...>;
 
+  template<auto..., typename... Ts>
+  friend constexpr auto name_tuple(std::tuple<Ts...>) noexcept;
+
   template<typename... Named_Tuple_Ts>
   friend constexpr auto concat_named_tuple(Named_Tuple_Ts &&...);
 
 public:
-  constexpr explicit named_tuple(Tuple_T content, detail::integral_constant_tuple_t<Ids...>)
-      : m_content{UPD_FWD(content)} {}
-
   template<auto Id>
   [[nodiscard]] constexpr auto get() noexcept -> auto & {
     using id_t = detail::integral_constant_t<Id>;
@@ -49,16 +50,33 @@ public:
   }
 
 private:
+  constexpr explicit named_tuple(Tuple_T content, detail::integral_constant_tuple_t<Ids...>)
+      : m_content{UPD_FWD(content)} {}
+
   Tuple_T m_content;
 };
+
+template<auto... Ids, typename... Ts>
+[[nodiscard]] constexpr auto name_tuple(std::tuple<Ts...> tuple) noexcept {
+  using id_ts = detail::integral_constant_tuple_t<Ids...>;
+
+  if constexpr (sizeof...(Ids) != sizeof...(Ts)) {
+    static_assert(UPD_ALWAYS_FALSE, "`Ids` and `Ts` must contain the same number of elements");
+  } else if constexpr (((detail::variadic::count_v<id_ts, detail::integral_constant_t<Ids>> != 1) || ...)) {
+    static_assert(UPD_ALWAYS_FALSE, "Each element in `Ids` must be unique");
+  } else {
+    return named_tuple{std::move(tuple), id_ts{}};
+  }
+}
 
 template<typename... Named_Tuple_Ts>
 [[nodiscard]] constexpr auto concat_named_tuple(Named_Tuple_Ts &&...named_tuples) {
   using id_ts = detail::variadic::concat_t<typename Named_Tuple_Ts::id_ts...>;
 
   auto content = std::tuple_cat(named_tuples.m_content...);
+  auto name_content = [&](auto... id_iconsts) { return name_tuple<id_iconsts.value...>(std::move(content)); };
 
-  return named_tuple{std::move(content), id_ts{}};
+  return std::apply(name_content, id_ts{});
 }
 
 template<typename Producer_T, typename Serializer_T>
@@ -83,7 +101,7 @@ public:
 
   template<typename... Field_Ts>
   [[nodiscard]] auto decode(const description<Field_Ts...> &descr) {
-    return decode_element(descr);
+    return decode_description(descr);
   }
 
 private:
@@ -118,7 +136,7 @@ private:
     static_assert(field.width % byte_width == 0, "A field width must be a multiple of a byte width");
 
     constexpr auto field_size = field.width / byte_width;
-    constexpr auto id_tuple = detail::integral_constant_tuple_t<Field_T::id>{};
+    constexpr auto id = Field_T::id;
 
     auto buffer = std::array<byte_t, field_size>{};
     auto adv = [this]() { return advance(); };
@@ -128,11 +146,11 @@ private:
     if constexpr (field.is_signed) {
       auto value = m_serializer.deserialize_signed(buffer.data(), buffer.size());
       auto value_tuple = std::tuple{value};
-      return named_tuple{value_tuple, id_tuple};
+      return name_tuple<id>(value_tuple);
     } else {
       auto value = m_serializer.deserialize_unsigned(buffer.data(), buffer.size());
       auto value_tuple = std::tuple{value};
-      return named_tuple{value_tuple, id_tuple};
+      return name_tuple<id>(value_tuple);
     }
   }
 
