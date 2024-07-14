@@ -70,13 +70,26 @@ add_cpp11_and_cpp17_static_test(static)
 
 # Revamp tests
 
+if(CMAKE_HOST_SYSTEM_NAME STREQUAL Windows)
+  set(COLOR_MODE win32)
+else()
+  set(COLOR_MODE ansi)
+endif()
+
 function(add_revamp_test TEST_NAME TEST_FILE)
   add_executable(${TEST_NAME} ${TEST_FILE})
   target_link_libraries(${TEST_NAME} PRIVATE Unpadded Catch2::Catch2WithMain
                                              FakeIt::FakeIt-catch)
   set_target_properties(${TEST_NAME} PROPERTIES CXX_STANDARD 17)
   add_dependencies(check_revamp ${TEST_NAME})
-  catch_discover_tests(${TEST_NAME} PROPERTIES LABELS check_revamp)
+  catch_discover_tests(
+    ${TEST_NAME}
+    EXTRA_ARGS
+    --colour-mode
+    ${COLOR_MODE}
+    PROPERTIES
+    LABELS
+    check_revamp)
   target_compile_options(
     ${TEST_NAME}
     PRIVATE -Wall -Werror $<$<CXX_COMPILER_ID:GNU>: -fdiagnostics-color=always>
