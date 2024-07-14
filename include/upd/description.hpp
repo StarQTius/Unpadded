@@ -7,33 +7,14 @@
 #include <tuple>
 #include <type_traits>
 
+#include "detail/always_false.hpp"
 #include "detail/integral_constant.hpp"
+#include "detail/variadic/map.hpp"
+#include "detail/variadic/product.hpp"
 #include "upd.hpp"
 #include "upd/description.hpp"
 
 namespace upd {
-
-template<typename... Ts>
-class description {
-  template<typename... Ts_, typename... Us>
-  friend constexpr auto operator|(description<Ts_...> lhs, description<Us...> rhs) noexcept;
-
-public:
-  explicit constexpr description(Ts... xs) : m_fields{UPD_FWD(xs)...} {}
-
-  [[nodiscard]] constexpr auto fields() const & -> std::tuple<Ts...> { return m_fields; }
-
-  [[nodiscard]] constexpr auto fields() && -> std::tuple<Ts...> { return std::move(m_fields); }
-
-private:
-  std::tuple<Ts...> m_fields;
-};
-
-template<typename... Ts, typename... Us>
-constexpr inline auto operator|(description<Ts...> lhs, description<Us...> rhs) noexcept {
-  auto fields = std::tuple_cat(std::move(lhs.m_fields), std::move(rhs.m_fields));
-  return std::make_from_tuple<description<Ts..., Us...>>(std::move(fields));
-}
 
 template<bool Is_Signed>
 struct signedness_t {};
@@ -47,11 +28,51 @@ struct width_t {};
 template<std::size_t Width>
 constexpr auto width = width_t<Width>{};
 
+template<typename... Ts>
+class description {
+  template<typename... Ts_, typename... Us>
+  friend constexpr auto operator|(description<Ts_...> lhs, description<Us...> rhs) noexcept;
+
+  template<auto, bool Is_Signed, std::size_t Width>
+  friend constexpr auto field(signedness_t<Is_Signed>, width_t<Width>) noexcept;
+
+public:
+  constexpr static auto ids = [] { return std::tuple_cat(Ts::ids...); }();
+
+  [[nodiscard]] constexpr auto fields() const & -> std::tuple<Ts...> { return m_fields; }
+
+  [[nodiscard]] constexpr auto fields() && -> std::tuple<Ts...> { return std::move(m_fields); }
+
+private:
+  explicit constexpr description(Ts... xs) : m_fields{UPD_FWD(xs)...} {}
+
+  std::tuple<Ts...> m_fields;
+};
+
+template<typename... Ts, typename... Us>
+[[nodiscard]] constexpr inline auto operator|(description<Ts...> lhs, description<Us...> rhs) noexcept {
+  auto fields = std::tuple_cat(std::move(lhs.m_fields), std::move(rhs.m_fields));
+  auto get_ids = [](auto x) { return x.ids; };
+
+  using id_ts = detail::variadic::flatmapf_t<decltype(fields), decltype(get_ids)>;
+  using id_squared_ts = detail::variadic::product_t<id_ts, id_ts>;
+  using is_same_ts = detail::variadic::binmap_t<id_squared_ts, std::is_same>;
+  constexpr auto are_unique = detail::variadic::sum_v<is_same_ts> == std::tuple_size_v<id_ts>;
+
+  if constexpr (are_unique) {
+    auto make_description = [](auto... fields) { return description{std::move(fields)...}; };
+    return std::apply(make_description, std::move(fields));
+  } else {
+    static_assert(UPD_ALWAYS_FALSE, "Merging these descriptions would result in duplicate IDs");
+  }
+}
+
 template<typename Id, typename Is_Signed, typename Width>
 struct field_t {
   constexpr static auto id = Id::value;
   constexpr static auto is_signed = Is_Signed::value;
   constexpr static auto width = Width::value;
+  constexpr static auto ids = std::tuple<Id>{};
 };
 
 template<auto Id, bool Is_Signed, std::size_t Width>

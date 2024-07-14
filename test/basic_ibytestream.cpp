@@ -18,6 +18,7 @@
 #include <upd/basic_ibytestream.hpp>
 #include <upd/description.hpp>
 #include <upd/detail/assertion.hpp>
+#include <upd/literals.hpp>
 #include <upd/static_vector.hpp>
 
 using namespace fakeit;
