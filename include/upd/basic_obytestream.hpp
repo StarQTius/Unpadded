@@ -4,9 +4,9 @@
 #include <array>
 #include <cstddef>
 
-#include "upd/detail/always_false.hpp"
-#include "upd/detail/is_bounded_array.hpp" // IWYU pragma: keep
-#include "upd/upd.hpp"
+#include "detail/always_false.hpp"
+#include "detail/is_bounded_array.hpp" // IWYU pragma: keep
+#include "upd.hpp"
 
 namespace upd {
 

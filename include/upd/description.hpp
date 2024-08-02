@@ -12,7 +12,6 @@
 #include "detail/variadic/map.hpp"
 #include "detail/variadic/product.hpp"
 #include "upd.hpp"
-#include "upd/description.hpp"
 
 namespace upd {
 

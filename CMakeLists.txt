@@ -1,7 +1,7 @@
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.27)
 
 project(Unpadded LANGUAGES CXX)
-list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/tool)
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/module)
 option(${PROJECT_NAME}_INSTALL "Only make what is needed for installing" OFF)
 option(${PROJECT_NAME}_PLATFORM_ENDIANESS
        "Provide platform endianess and allow serialization optimization" OFF)

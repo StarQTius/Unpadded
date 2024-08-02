@@ -95,7 +95,6 @@ function(add_revamp_test TEST_NAME TEST_FILE)
     PRIVATE -Wall -Werror $<$<CXX_COMPILER_ID:GNU>: -fdiagnostics-color=always>
             $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>:
             -fcolor-diagnostics>)
-  add_iwyu_target(${TEST_FILE} ${TEST_NAME})
 endfunction()
 
 add_custom_target(check_revamp COMMAND ctest -L check_revamp

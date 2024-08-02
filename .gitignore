@@ -5,7 +5,7 @@
 !include/
 !py/
 !test/
-!tool/
+!cmake/
 !.clang-format
 !.clang-tidy
 !.gitignore

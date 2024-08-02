@@ -2,11 +2,13 @@ file(
   GLOB_RECURSE HEADERS
   RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
   CONFIGURE_DEPENDS *.hpp)
+list(REMOVE_ITEM HEADERS upd/python.hpp)
 
 add_library(${PROJECT_NAME} INTERFACE)
 target_include_directories(
   ${PROJECT_NAME} INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
                             $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIRS}>)
+target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_17)
 
 if(${PROJECT_NAME}_PLATFORM_ENDIANESS)
   target_compile_definitions(
@@ -23,7 +25,6 @@ endif()
 if(${PROJECT_NAME}_IS_TOP_LEVEL)
   include(Unpadded)
 
-  foreach(HEADER IN LISTS HEADERS)
-    add_iwyu_target(${HEADER} ${PROJECT_NAME})
-  endforeach()
+  add_iwyu_target(iwyu ${PROJECT_NAME})
+  target_lintables(iwyu ${HEADERS})
 endif()
