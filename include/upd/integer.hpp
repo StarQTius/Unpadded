@@ -23,7 +23,7 @@ constexpr auto has_value_member_v = has_value_member<T>::value;
 namespace upd {
 
 template<typename Bitsize, typename Underlying_T>
-class integer_t {
+class extended_integer {
   static_assert(detail::has_value_member_v<Bitsize>, "`Bitsize` must has a `value` member");
   static_assert(std::is_same_v<decltype(Bitsize::value), std::size_t>,
                 "`Bitsize::value` must be of type `std::size_t`");
@@ -34,7 +34,7 @@ public:
   constexpr static auto is_signed = std::is_signed_v<Underlying_T>;
 
   template<typename T, T Value>
-  constexpr integer_t(std::integral_constant<T, Value>) noexcept : m_value{Value} {
+  constexpr extended_integer(std::integral_constant<T, Value>) noexcept : m_value{Value} {
     if constexpr (Value > 0) {
       static_assert(Value >> bitsize == 0, "`Value` cannot be represented with `Bitsize` bits");
     } else {
@@ -55,9 +55,12 @@ private:
 };
 
 template<std::size_t Bitsize>
-using int_t = integer_t<detail::integral_constant_t<Bitsize>, std::intmax_t>;
+using xint = extended_integer<detail::integral_constant_t<Bitsize>, std::intmax_t>;
 
 template<std::size_t Bitsize>
-using uint_t = integer_t<detail::integral_constant_t<Bitsize>, std::uintmax_t>;
+using xuint = extended_integer<detail::integral_constant_t<Bitsize>, std::uintmax_t>;
+
+template<std::size_t Bitsize, typename Underlying>
+using xinteger = extended_integer<detail::integral_constant_t<Bitsize>, Underlying>;
 
 } // namespace upd

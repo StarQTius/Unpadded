@@ -84,14 +84,14 @@ class basic_ibytestream {
   using byte_t = std::remove_reference_t<decltype(*std::declval<Producer_T>())>;
 
   constexpr static auto byte_width = [] {
-    if constexpr (detail::is_instance_of_v<byte_t, integer_t>) {
+    if constexpr (detail::is_instance_of_v<byte_t, extended_integer>) {
       return byte_t::width;
     } else if constexpr (std::is_integral_v<byte_t>) {
       return std::numeric_limits<byte_t>::digits;
     } else if constexpr (std::is_enum_v<byte_t>) {
       return std::numeric_limits<std::underlying_type_t<byte_t>>::digits;
     } else {
-      static_assert(UPD_ALWAYS_FALSE, "Producers can only produce `integer_t` values, integral values or enumerators");
+      static_assert(UPD_ALWAYS_FALSE, "Producers can only produce `extended_integer` values, integral values or enumerators");
     }
   }();
 
