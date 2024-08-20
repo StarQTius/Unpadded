@@ -35,16 +35,13 @@ struct flatten<std::tuple<Tuple_Ts...>> {
     return retval;
   }
 
-  constexpr static auto aggregated = aggregate(std::index_sequence_for<Tuple_Ts...>{});
-
   template<std::size_t... Is>
   [[nodiscard]] constexpr static auto concat(std::index_sequence<Is...>) noexcept {
+    auto aggregated = aggregate(std::index_sequence_for<Tuple_Ts...>{});
     return std::tuple<std::remove_pointer_t<decltype(aggregated.at(integral_constant_v<Is>))>...>{};
   }
 
-  constexpr static auto concatenation = concat(std::make_index_sequence<sum_v<size_ts>>{});
-
-  using type = std::remove_const_t<decltype(concatenation)>;
+  using type = std::remove_const_t<decltype(concat(std::make_index_sequence<sum_v<size_ts>>{}))>;
 };
 
 template<typename... Tuple_Ts>
