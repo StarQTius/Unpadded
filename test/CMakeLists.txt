@@ -70,7 +70,7 @@ add_cpp11_and_cpp17_static_test(static)
 
 # Revamp tests
 
-if(CMAKE_HOST_SYSTEM_NAME STREQUAL Windows)
+if(NOT DEFINED COLOR_MODE AND CMAKE_HOST_SYSTEM_NAME STREQUAL Windows)
   set(COLOR_MODE win32)
 else()
   set(COLOR_MODE ansi)
@@ -107,4 +107,5 @@ add_revamp_test(detail_variadic_clean detail/variadic/clean.cpp)
 add_revamp_test(detail_variadic_clip detail/variadic/clip.cpp)
 add_revamp_test(detail_variadic_concat detail/variadic/concat.cpp)
 add_revamp_test(detail_variadic_product detail/variadic/product.cpp)
+add_revamp_test(integer integer.cpp)
 add_revamp_test(literals literals.cpp)

@@ -59,6 +59,10 @@ template<typename It>
   auto rend = std::reverse_iterator{digit_begin};
 
   for (auto c : range{rbegin, rend}) {
+    if (c == '\'') {
+      continue;
+    }
+
     retval += ascii_to_digit(c) * pow_acc;
     pow_acc *= radix;
   }
