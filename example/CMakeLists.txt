@@ -1,0 +1,3 @@
+add_executable(dynamixel_protocol_20 dynamixel-protocol-2.0.cpp)
+add_dependencies(check_revamp dynamixel_protocol_20)
+target_link_libraries(dynamixel_protocol_20 PRIVATE Unpadded)

@@ -8,6 +8,18 @@
 #define UPD_PACK(...) __VA_ARGS__
 #define UPD_SCOPE_OPERATOR(LHS, RHS) LHS::RHS
 
+#if !defined(UPD_NOEXCEPT)
+
+#define UPD_NOEXCEPT noexcept
+
+#endif // !defined(UPD_NOEXCEPT)
+
+#if !defined(UPD_ASSERT)
+
+#define UPD_ASSERT(...)
+
+#endif // !defined(UPD_ASSERT)
+
 namespace upd {
 
 //! \brief Contains the platform-specific information provided by the user

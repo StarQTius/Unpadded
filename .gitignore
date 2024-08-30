@@ -2,6 +2,7 @@
 !.git/
 !.github/
 !doc/
+!example/
 !include/
 !py/
 !test/

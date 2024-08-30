@@ -5,27 +5,158 @@
 #include <functional>
 #include <limits>
 #include <tuple>
+#include <variant>
 #include <type_traits>
 
+#include "detail/has_value_member.hpp"
 #include "detail/always_false.hpp"
 #include "detail/integral_constant.hpp"
 #include "detail/variadic/map.hpp"
 #include "detail/variadic/product.hpp"
+#include "detail/variadic/diff.hpp"
+#include "detail/variadic/to_array.hpp"
+#include "detail/variadic/equals.hpp"
 #include "upd.hpp"
+#include "token.hpp"
+#include "named_value.hpp"
+#include "integer.hpp"
 
 namespace upd {
 
-template<bool Is_Signed>
-struct signedness_t {};
+enum class error {
+  none,
+};
 
-constexpr inline auto signed_int = signedness_t<true>{};
-constexpr inline auto unsigned_int = signedness_t<false>{};
+template<typename E>
+class unexpected {
+public:
+  constexpr explicit unexpected(E e) noexcept:
+    m_error{std::move(e)}
+  {}
+  
+  [[nodiscard]] constexpr auto error() noexcept -> E {
+    return m_error;
+  }
 
-template<std::size_t Width>
-struct width_t {};
+private:
+  E m_error;
+};
 
-template<std::size_t Width>
-constexpr auto width = width_t<Width>{};
+template<typename T, typename E = error>
+class expected {
+public:
+  constexpr explicit expected(T x) noexcept:
+    m_value_or_error{std::in_place_index<0>, std::move(x)}
+  {}
+  
+  constexpr expected(unexpected<E> e) noexcept:
+    m_value_or_error{std::in_place_index<1>, e.error()}
+  {}
+
+  [[nodiscard]] constexpr operator bool() const noexcept {
+    return value_if() != nullptr;
+  }
+
+  [[nodiscard]] constexpr auto operator*() noexcept -> T& {
+    return value();
+  }
+
+  [[nodiscard]] constexpr auto operator*() const noexcept -> const T& {
+    return value();
+  }
+
+  [[nodiscard]] constexpr auto operator->() noexcept -> T* {
+    return &value();
+  }
+
+  [[nodiscard]] constexpr auto operator->() const noexcept -> const T* {
+    return &value();
+  }
+
+  [[nodiscard]] constexpr auto value() & noexcept -> T& {
+    auto *v = value_if();
+    UPD_ASSERT(v != nullptr);
+    
+    return *v;
+  }
+
+  [[nodiscard]] constexpr auto value() const & noexcept -> const T& {
+    const auto *v = value_if();
+    UPD_ASSERT(v != nullptr);
+    
+    return *v;
+  }
+
+  [[nodiscard]] constexpr auto value() && noexcept -> T&& {
+    auto *v = value_if();
+    UPD_ASSERT(v != nullptr);
+    
+    return std::move(*v);
+  }
+
+  [[nodiscard]] constexpr auto error() & noexcept -> E& {
+    auto *e = error_if();
+    UPD_ASSERT(e != nullptr);
+    
+    return *e;
+  }
+
+  [[nodiscard]] constexpr auto error() const & noexcept -> const E& {
+    const auto *e = error_if();
+    UPD_ASSERT(e != nullptr);
+    
+    return *e;
+  }
+
+  [[nodiscard]] constexpr auto error() && noexcept -> E&& {
+    auto *e = error_if();
+    UPD_ASSERT(e != nullptr);
+    
+    return std::move(*e);
+  }
+
+  [[nodiscard]] constexpr auto value_if() noexcept -> T* {
+    return std::get_if<0>(&m_value_or_error);
+  }
+
+  [[nodiscard]] constexpr auto value_if() const noexcept -> const T* {
+    return std::get_if<0>(&m_value_or_error);
+  }
+
+  [[nodiscard]] constexpr auto error_if() noexcept -> E* {
+    return std::get_if<1>(&m_value_or_error);
+  }
+
+  [[nodiscard]] constexpr auto error_if() const noexcept -> const E* {
+    return std::get_if<1>(&m_value_or_error);
+  }
+
+private:
+  std::variant<T, E> m_value_or_error;
+
+};
+
+} // namespace upd
+
+namespace upd::descriptor {
+
+template<auto, bool Is_Signed, std::size_t Width>
+constexpr auto field(signedness_t<Is_Signed>, width_t<Width>) noexcept;
+
+} // namespace upd::descriptor
+
+namespace upd {
+
+template<typename Range>
+[[nodiscard]] constexpr auto all_of(const Range &range) noexcept -> bool {
+  for (const auto &e: range) {
+    if (!e) {
+      return false;
+    }
+  }
+
+  return true;
+}
 
 template<typename... Ts>
 class description {
@@ -33,7 +164,7 @@ class description {
   friend constexpr auto operator|(description<Ts_...> lhs, description<Us...> rhs) noexcept;
 
   template<auto, bool Is_Signed, std::size_t Width>
-  friend constexpr auto field(signedness_t<Is_Signed>, width_t<Width>) noexcept;
+  friend constexpr auto descriptor::field(signedness_t<Is_Signed>, width_t<Width>) noexcept;
 
 public:
   constexpr static auto ids = [] { return std::tuple_cat(Ts::ids...); }();
@@ -41,6 +172,17 @@ public:
   [[nodiscard]] constexpr auto fields() const & -> std::tuple<Ts...> { return m_fields; }
 
   [[nodiscard]] constexpr auto fields() && -> std::tuple<Ts...> { return std::move(m_fields); }
+
+  template<typename... NamedValues>
+  [[nodiscard]] constexpr auto instantiate(NamedValues... nvs) const noexcept {
+    using identifier_types = std::decay_t<decltype(ids)>;
+    using value_name_types = std::tuple<detail::integral_constant_t<nvs.identifier>...>;
+
+    static_assert((detail::is_instance_of_v<NamedValues, named_value> && ...), "`nvs` must be a pack of `named_value` instances");
+    static_assert(detail::variadic::equals_v<identifier_types, value_name_types>, "`nvs.identifier...` must match the content of `ids` in order");
+
+    return expected{(std::move(nvs).map([](auto n){ return typename Ts::underlying{n}; }), ...)};
+  }
 
 private:
   explicit constexpr description(Ts... xs) : m_fields{UPD_FWD(xs)...} {}
@@ -66,12 +208,18 @@ template<typename... Ts, typename... Us>
   }
 }
 
+} // namespace upd
+
+namespace upd::descriptor {
+
 template<typename Id, typename Is_Signed, typename Width>
 struct field_t {
   constexpr static auto id = Id::value;
   constexpr static auto is_signed = Is_Signed::value;
   constexpr static auto width = Width::value;
   constexpr static auto ids = std::tuple<Id>{};
+
+  using underlying = xinteger<width, std::uintmax_t>;
 };
 
 template<auto Id, bool Is_Signed, std::size_t Width>
@@ -84,50 +232,7 @@ template<auto Id, bool Is_Signed, std::size_t Width>
   return description{retval};
 }
 
-template<auto Id, bool Is_Signed, std::size_t Width, typename Get_Value_F>
-class constrained_field_t {
-public:
-  constexpr explicit constrained_field_t(Get_Value_F get_value) : m_get_value{UPD_FWD(get_value)} {}
-
-  constexpr static auto id = Id;
-  constexpr static auto is_signed = Is_Signed;
-  constexpr static auto width = Width;
-
-private:
-  Get_Value_F m_get_value;
-};
-
-template<auto Id, bool Is_Signed, std::size_t Width, typename Get_Value_F>
-[[nodiscard]] constexpr auto
-constrained_field(signedness_t<Is_Signed>, width_t<Width>, Get_Value_F &&get_value) noexcept {
-  auto retval = constrained_field_t<Id, Is_Signed, Width, Get_Value_F>{UPD_FWD(get_value)};
-  return description{retval};
-}
-
-template<auto Id, typename Decorator_F, typename... Ts>
-class group_t {
-public:
-  explicit constexpr group_t(Decorator_F decorator, description<Ts...> descr) noexcept
-      : m_decorator{UPD_FWD(decorator)}, m_descr(std::move(descr)) {}
-
-  template<typename It, typename... Us>
-  [[nodiscard]] constexpr auto decorate(It &it, const description<Us...> &parent_descr) noexcept {
-    return std::invoke(m_decorator, it, parent_descr);
-  }
-
-private:
-  Decorator_F m_decorator;
-  description<Ts...> m_descr;
-};
-
-template<auto Id, typename Decorator_F, typename... Ts>
-[[nodiscard]] constexpr auto group(Decorator_F &&decorator, description<Ts...> descr) {
-  auto retval = group_t<Id, std::decay_t<Decorator_F>, Ts...>{std::move(descr)};
-
-  return description{UPD_FWD(decorator), std::move(retval)};
-}
-
-} // namespace upd
+} // namespace upd::descriptor
 
 namespace upd::literals {
 

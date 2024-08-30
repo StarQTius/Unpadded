@@ -9,21 +9,14 @@
 #include <cmath>
 
 #include "detail/integral_constant.hpp"
-#include "description.hpp"
+#include "detail/has_value_member.hpp"
 #include "literals.hpp"
 #include "detail/is_instance_of.hpp"
+#include "token.hpp"
 #include "detail/always_false.hpp"
+#include "upd.hpp"
 
 namespace upd::detail {
-
-template<typename, typename = void>
-struct has_value_member : std::false_type {};
-
-template<typename T>
-struct has_value_member<T, std::void_t<decltype(T::value)>> : std::true_type {};
-
-template<typename T>
-constexpr auto has_value_member_v = has_value_member<T>::value;
 
 template<typename T, std::size_t Bitsize>
 constexpr auto bitmask_v = ((T) 1 << Bitsize) - 1;
@@ -45,6 +38,9 @@ class extended_integer;
 template<typename T>
 constexpr auto to_extended_integer(T) noexcept;
 
+template<typename, typename XInteger>
+constexpr auto decompose_into_xuint(XInteger) UPD_NOEXCEPT;
+
 template<std::size_t Bitsize, typename Underlying>
 using xinteger = extended_integer<detail::integral_constant_t<Bitsize>, Underlying>;
 
@@ -56,6 +52,9 @@ using xint = extended_integer<detail::integral_constant_t<Bitsize>, std::intmax_
 
 template<std::size_t Bitsize>
 using xuint = extended_integer<detail::integral_constant_t<Bitsize>, std::uintmax_t>;
+
+template<typename T>
+using representation_t = typename decltype(to_extended_integer(std::declval<T>()))::underlying;
 
 template<typename T>
 constexpr auto bitsize_v = decltype(to_extended_integer(std::declval<T>()))::bitsize;
@@ -99,12 +98,16 @@ public:
     m_value = static_cast<Underlying_T>(n % pow2);
   }
 
-  template<typename T>
+  template<typename T, typename = std::enable_if_t<std::is_integral_v<T> || std::is_enum_v<T>>>
   constexpr operator T() const noexcept {
-    static_assert(std::is_integral_v<T>, "`T` is not an integer type");
-    static_assert(std::numeric_limits<T>::digits >= bitsize, "`T` cannot hold an integer with `Bitsize` bits");
-
-    return m_value;
+    if constexpr (std::is_integral_v<T>) {
+      static_assert(std::numeric_limits<T>::digits >= bitsize, "`T` cannot hold an integer with `Bitsize` bits");
+      return static_cast<T>(m_value);
+    } else {
+      using underlying = std::underlying_type_t<T>;
+      static_assert(std::numeric_limits<underlying>::digits >= bitsize, "`T` cannot hold an integer with `Bitsize` bits");
+      return static_cast<T>(m_value);
+    }
   }
 
   [[nodiscard]] constexpr auto value() const noexcept -> underlying {
@@ -113,38 +116,16 @@ public:
 
   template<std::size_t Bytewidth>
   [[nodiscard]] constexpr auto decompose(std::integral_constant<std::size_t, Bytewidth>) const noexcept {
-    using byte = xinteger<Bytewidth, Underlying_T>;
+    using byte = xinteger<Bytewidth, underlying>;
 
-    return decompose<byte>();
+    return decompose_into_xuint<byte>(*this);
   }
 
-  template<typename Byte>
-  [[nodiscard]] constexpr auto decompose() const {
-    using namespace literals;
-
-    constexpr auto bytewidth = bitsize_v<Byte>;
-
-    static_assert(!is_signed, "`decompose()` only works on unsigned values");
-    static_assert(!is_signed_v<Byte>, "`Byte` must be unsigned");
-    static_assert(bitsize % bytewidth == 0, "The value must be decomposable into a sequence of `Byte` values without any padding");
-
-    constexpr auto byte_count = bitsize / bytewidth;
-    constexpr auto byte_bitmask = detail::bitmask_v<Underlying_T, bytewidth>;
-
-    auto retval = std::array<Byte, byte_count>{};
-    auto value = m_value;
-    auto first = retval.rbegin();
-    auto last = retval.rend();
-    auto range = detail::range{first, last};
-
-    for (auto &b : range) {
-      b = value & byte_bitmask;
-      value >>= bitsize_v<Byte>;
-    }
-
-    UPD_ASSERT(value == 0);
-
-    return retval;
+  template<std::size_t ByteCount>
+  [[nodiscard]] constexpr auto decompose(width_t<ByteCount>) const UPD_NOEXCEPT {
+    using byte = xinteger<bitsize / ByteCount, underlying>;
+ 
+    return decompose_into_xuint<byte>(*this);
   }
 
   [[nodiscard]] constexpr auto abs() const noexcept {
@@ -184,6 +165,15 @@ public:
   template<std::size_t Offset>
   [[nodiscard]] constexpr auto enlarge(width_t<Offset>) const noexcept {
     return xinteger<bitsize + Offset, underlying>{m_value};
+  }
+
+  template<typename Serializer, typename OutputIt>
+  constexpr void serialize(Serializer &ser, OutputIt dest) const noexcept {
+    if constexpr (is_signed) {
+      ser.serialize_signed(*this, dest);
+    } else {
+      ser.serialize_unsigned(*this, dest);
+    }
   }
 
   template<typename T>
@@ -244,6 +234,32 @@ template<typename T>
   } else {
     static_assert(false, "`n` must be an `extended_integer` instance or integral value");
   }
+}
+
+template<typename Byte, typename XInteger>
+[[nodiscard]] constexpr auto decompose_into_xuint(XInteger xn) UPD_NOEXCEPT {
+  using namespace literals;
+
+  static_assert(!is_signed_v<XInteger>, "`decompose()` only works on unsigned values");
+  static_assert(!is_signed_v<Byte>, "Can only decompose `xn` into sequence of unsigned values");
+
+  using underlying = representation_t<Byte>;
+
+  constexpr auto bytewidth = bitsize_v<Byte>;
+  constexpr auto byte_count = bitsize_v<XInteger> / bytewidth;
+  constexpr auto byte_bitmask = detail::bitmask_v<underlying, bytewidth>;
+
+  auto retval = std::array<Byte, byte_count>{};
+  auto value = xn.value();
+
+  for (auto &b : retval) {
+    b = value & byte_bitmask;
+    value >>= bytewidth;
+  }
+
+  UPD_ASSERT(value == 0);
+
+  return retval;
 }
 
 template<typename T, std::size_t N>

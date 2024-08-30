@@ -61,10 +61,11 @@ TEST_CASE("Deserializing a packet...") {
 
   SECTION("...containing only integers") {
     using namespace upd::literals;
+    using namespace upd::descriptor;
 
     auto descr =
-        upd::field<"a"_h>(upd::signed_int, upd::width<16>) | upd::field<"b"_h>(upd::unsigned_int, upd::width<8>) |
-        upd::field<"c"_h>(upd::unsigned_int, upd::width<16>) | upd::field<"d"_h>(upd::signed_int, upd::width<8>);
+        field<"a"_h>(upd::signed_int, upd::width<16>) | field<"b"_h>(upd::unsigned_int, upd::width<8>) |
+        field<"c"_h>(upd::unsigned_int, upd::width<16>) | field<"d"_h>(upd::signed_int, upd::width<8>);
     auto signed_value = std::array{-64, 1};
     auto unsigned_value = std::array{48, 16};
 

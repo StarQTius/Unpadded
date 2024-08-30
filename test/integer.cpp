@@ -4,6 +4,8 @@
     throw std::exception{};                                                                                            \
   }
 
+#define UPD_NOEXCEPT
+
 #include <fakeit.hpp>
 #include <upd/integer.hpp>
 
@@ -29,9 +31,9 @@ TEST_CASE("Decompose an extended integer") {
     .resize(upd::width<20>)
     .value();
 
-  REQUIRE(x.decompose<byte8>() == std::array<byte8, 4>{0b10110, 0b00010, 0b01110, 0b00111});
-  REQUIRE(x.decompose<byte16>() == std::array<byte16, 2>{0b1011000010, 0b0111000111});
-  REQUIRE(x.decompose<byte32>() == std::array<byte32, 10>{0b10, 0b11, 0b00, 0b00, 0b10, 0b01, 0b11, 0b00, 0b01, 0b11});
+  REQUIRE(upd::decompose_into_xuint<byte8>(x) == std::array<byte8, 4>{0b00111, 0b01110, 0b00010, 0b10110});
+  REQUIRE(upd::decompose_into_xuint<byte16>(x) == std::array<byte16, 2>{0b0111000111, 0b1011000010});
+  REQUIRE(upd::decompose_into_xuint<byte32>(x) == std::array<byte32, 10>{0b11, 0b01, 0b00, 0b11, 0b01, 0b10, 0b00, 0b00, 0b11, 0b10});
 }
 
 TEST_CASE("Recompose an extended integer") {

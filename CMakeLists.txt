@@ -41,6 +41,7 @@ if(NOT ${PROJECT_NAME}_INSTALL)
     add_subdirectory(doc EXCLUDE_FROM_ALL)
     add_subdirectory(py/unpadded EXCLUDE_FROM_ALL)
     add_subdirectory(test EXCLUDE_FROM_ALL)
+    add_subdirectory(example EXCLUDE_FROM_ALL)
   endif()
 endif()
 

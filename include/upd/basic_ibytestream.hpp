@@ -22,63 +22,6 @@
 
 namespace upd {
 
-template<typename Tuple_T, auto... Ids>
-class named_tuple {
-  using id_ts = detail::integral_constant_tuple_t<Ids...>;
-
-  template<auto..., typename... Ts>
-  friend constexpr auto name_tuple(std::tuple<Ts...>) noexcept;
-
-  template<typename... Named_Tuple_Ts>
-  friend constexpr auto concat_named_tuple(Named_Tuple_Ts &&...);
-
-public:
-  template<auto Id>
-  [[nodiscard]] constexpr auto get() noexcept -> auto & {
-    using id_t = detail::integral_constant_t<Id>;
-    constexpr auto id_pos = detail::variadic::find_v<id_ts, id_t>;
-
-    return std::get<id_pos>(m_content);
-  }
-
-  template<auto Id>
-  [[nodiscard]] constexpr auto get() const noexcept -> const auto & {
-    using id_t = detail::integral_constant_t<Id>;
-    constexpr auto id_pos = detail::variadic::find_v<id_ts, id_t>;
-
-    return std::get<id_pos>(m_content);
-  }
-
-private:
-  constexpr explicit named_tuple(Tuple_T content, detail::integral_constant_tuple_t<Ids...>)
-      : m_content{UPD_FWD(content)} {}
-
-  Tuple_T m_content;
-};
-
-template<auto... Ids, typename... Ts>
-[[nodiscard]] constexpr auto name_tuple(std::tuple<Ts...> tuple) noexcept {
-  using id_ts = detail::integral_constant_tuple_t<Ids...>;
-
-  if constexpr (sizeof...(Ids) != sizeof...(Ts)) {
-    static_assert(UPD_ALWAYS_FALSE, "`Ids` and `Ts` must contain the same number of elements");
-  } else if constexpr (((detail::variadic::count_v<id_ts, detail::integral_constant_t<Ids>> != 1) || ...)) {
-    static_assert(UPD_ALWAYS_FALSE, "Each element in `Ids` must be unique");
-  } else {
-    return named_tuple{std::move(tuple), id_ts{}};
-  }
-}
-
-template<typename... Named_Tuple_Ts>
-[[nodiscard]] constexpr auto concat_named_tuple(Named_Tuple_Ts &&...named_tuples) {
-  using id_ts = detail::variadic::concat_t<typename Named_Tuple_Ts::id_ts...>;
-
-  auto content = std::tuple_cat(UPD_FWD(named_tuples).m_content...);
-  auto name_content = [&](auto... id_iconsts) { return name_tuple<id_iconsts.value...>(std::move(content)); };
-
-  return std::apply(name_content, id_ts{});
-}
-
 template<typename Producer_T, typename Serializer_T>
 class basic_ibytestream {
   using byte_t = std::remove_reference_t<decltype(*std::declval<Producer_T>())>;
@@ -109,7 +52,7 @@ private:
   [[nodiscard]] auto decode_element(const Element_T &element) {
     if constexpr (detail::is_instance_of_v<Element_T, description>) {
       return decode_description(element);
-    } else if constexpr (detail::is_instance_of_v<Element_T, field_t>) {
+    } else if constexpr (detail::is_instance_of_v<Element_T, descriptor::field_t>) {
       return decode_field(element);
     } else {
       static_assert(UPD_ALWAYS_FALSE, "`T` cannot be serialized");

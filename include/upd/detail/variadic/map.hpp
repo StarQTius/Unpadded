@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "flatten.hpp"
+#include "all_of.hpp"
 
 namespace upd::detail::variadic {
 
@@ -53,5 +54,12 @@ struct flatmapf<std::tuple<Ts...>, F> {
 
 template<typename T, typename F>
 using flatmapf_t = typename mapf<T, F>::type;
+
+template<typename Tuple, typename F>
+constexpr void for_each(Tuple, F) {
+  using are_voids = map_t<Tuple, std::is_void>;
+  
+  static_assert(all_of_v<are_voids>, "`F` should always return `void`");
+}
 
 } // namespace upd::detail::variadic
