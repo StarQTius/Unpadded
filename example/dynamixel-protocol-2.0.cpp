@@ -17,7 +17,7 @@ constexpr auto description = [] {
   using namespace upd::descriptor;
 
   return 
-    field<"header"_h>(unsigned_int, width<32>) |
+    constant<"header"_h>(0xfdffff, width<32>) |
     field<"id"_h > (unsigned_int, width<8>) |
     field<"length"_h>(unsigned_int, width<16>) |
     field<"instruction"_h>(unsigned_int, width<8>) |
@@ -30,7 +30,7 @@ constexpr auto answer_description = [] {
   using namespace upd::descriptor;
 
   return 
-    field<"header"_h>(unsigned_int, width<32>) |
+    constant<"header"_h>(0xfdffff, width<32>) |
     field<"id"_h > (unsigned_int, width<8>) |
     field<"length"_h>(unsigned_int, width<16>) |
     field<"instruction"_h>(unsigned_int, width<8>) |

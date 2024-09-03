@@ -43,6 +43,8 @@ public:
     using id_t = detail::integral_constant_t<Id>;
     constexpr auto id_pos = detail::variadic::find_v<id_ts, id_t>;
 
+    static_assert(id_pos != detail::variadic::not_found, "`Id` does not belong to `Ids`");
+
     return std::get<id_pos>(m_content);
   }
 
@@ -50,6 +52,8 @@ public:
   [[nodiscard]] constexpr auto get() const noexcept -> const auto & {
     using id_t = detail::integral_constant_t<Id>;
     constexpr auto id_pos = detail::variadic::find_v<id_ts, id_t>;
+
+    static_assert(id_pos != detail::variadic::not_found, "`Id` does not belong to `Ids`");
 
     return std::get<id_pos>(m_content);
   }
