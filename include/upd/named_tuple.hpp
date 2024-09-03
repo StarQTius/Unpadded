@@ -18,6 +18,9 @@
 
 namespace upd {
 
+template<typename>
+struct kw_t;
+
 template<auto..., typename... Ts>
 [[nodiscard]] constexpr auto name_tuple(std::tuple<Ts...>) noexcept;
 
@@ -49,6 +52,16 @@ public:
     constexpr auto id_pos = detail::variadic::find_v<id_ts, id_t>;
 
     return std::get<id_pos>(m_content);
+  }
+
+  template<typename Identifier>
+  [[nodiscard]] constexpr auto operator[](kw_t<Identifier>) noexcept(release) -> auto & {
+    return get<Identifier::value>();
+  }
+
+  template<typename Identifier>
+  [[nodiscard]] constexpr auto operator[](kw_t<Identifier>) const noexcept(release) -> const auto & {
+    return get<Identifier::value>();
   }
 
   template<typename Serializer, typename OutputIt>

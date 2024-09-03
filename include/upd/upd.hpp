@@ -8,6 +8,8 @@
 #define UPD_PACK(...) __VA_ARGS__
 #define UPD_SCOPE_OPERATOR(LHS, RHS) LHS::RHS
 
+namespace upd {
+
 #if !defined(UPD_NOEXCEPT)
 
 #define UPD_NOEXCEPT noexcept
@@ -18,9 +20,13 @@
 
 #define UPD_ASSERT(...)
 
-#endif // !defined(UPD_ASSERT)
+constexpr auto release = true;
 
-namespace upd {
+#else // !defined(UPD_ASSERT)
+
+constexpr auto release = false;
+
+#endif // !defined(UPD_ASSERT)
 
 //! \brief Contains the platform-specific information provided by the user
 //!

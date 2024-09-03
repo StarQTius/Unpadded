@@ -89,13 +89,20 @@ public:
   constexpr extended_integer() noexcept = default;
   
   template<typename T>
-  constexpr extended_integer(T n) noexcept {
-    static_assert(std::is_integral_v<T>, "`n` must be an integer");
-    
-    using pow2_type = std::conditional_t<std::is_signed_v<T>, std::intmax_t, std::uintmax_t>;
-    
-    auto pow2 = (pow2_type) 1 << bitsize;
-    m_value = static_cast<Underlying_T>(n % pow2);
+  constexpr extended_integer(T n) noexcept(release) {
+    if constexpr (std::is_integral_v<T>) {
+      using pow2_type = std::conditional_t<std::is_signed_v<T>, std::intmax_t, std::uintmax_t>;
+      auto pow2 = (pow2_type) 1 << bitsize;
+      m_value = static_cast<Underlying_T>(n % pow2);
+    } else if constexpr (std::is_enum_v<T>) {
+      using enum_underlying = std::underlying_type_t<T>;
+      using pow2_type = std::conditional_t<std::is_signed_v<enum_underlying>, std::intmax_t, std::uintmax_t>;
+      auto value = static_cast<enum_underlying>(n);
+      auto pow2 = (pow2_type) 1 << bitsize;
+      m_value = static_cast<Underlying_T>(value % pow2);
+    } else {
+      static_assert(UPD_ALWAYS_FALSE, "`n` must be an integer or an enumerator");
+    }
   }
 
   template<typename T, typename = std::enable_if_t<std::is_integral_v<T> || std::is_enum_v<T>>>
@@ -231,8 +238,21 @@ template<typename T>
   } else if constexpr (std::is_integral_v<T>) {
     constexpr auto digits = std::numeric_limits<T>::digits;
     return xinteger<digits, T>{n};
+  } else if constexpr (std::is_enum_v<T>) {
+    using underlying = std::underlying_type_t<T>;
+    constexpr auto digits = std::numeric_limits<underlying>::digits;
+    return xinteger<digits, underlying>{n};
   } else {
-    static_assert(false, "`n` must be an `extended_integer` instance or integral value");
+    static_assert(UPD_ALWAYS_FALSE, "`n` must be an `extended_integer` instance or integral value");
+  }
+}
+
+template<typename XInteger, typename InputIt, typename Serializer>
+[[nodiscard]] constexpr auto deserialize_into_xinteger(InputIt src, Serializer &ser) -> XInteger {
+  if constexpr (XInteger::is_signed) {
+    return ser.deserialize_signed(src, width<XInteger::bitsize>);
+  } else {
+    return ser.deserialize_unsigned(src, width<XInteger::bitsize>);
   }
 }
 

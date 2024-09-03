@@ -21,6 +21,49 @@
 #include "named_value.hpp"
 #include "integer.hpp"
 
+namespace upd::detail {
+
+template<typename Iter>
+class iterator_reference {
+public:
+  using iterator_type = Iter;
+  using iterator_category = std::input_iterator_tag;
+  using value_type = typename std::iterator_traits<Iter>::value_type;
+  using difference_type = typename std::iterator_traits<Iter>::difference_type;
+  using pointer = typename std::iterator_traits<Iter>::pointer;
+  using reference = typename std::iterator_traits<Iter>::reference;
+
+  constexpr explicit iterator_reference(iterator_type &iter):
+    m_cache{*iter},
+    m_iter{iter}
+  {
+    ++iter;
+  }
+
+  [[nodiscard]] constexpr auto operator*() const -> value_type {
+    return m_cache;
+  }
+
+  [[nodiscard]] constexpr auto operator++() -> iterator_reference& {
+    m_cache = *m_iter;
+    ++m_iter.get();
+    return *this;
+  }
+
+  [[nodiscard]] constexpr auto operator++() const -> const iterator_reference& {
+    m_cache = *m_iter;
+    ++m_iter.get();
+    return *this;
+  }
+
+private:
+  std::reference_wrapper<iterator_type> m_iter;
+  value_type m_cache;
+
+};
+
+} // namespace upd::detail
+
 namespace upd {
 
 enum class error {
@@ -182,6 +225,16 @@ public:
     static_assert(detail::variadic::equals_v<identifier_types, value_name_types>, "`nvs.identifier...` must match the content of `ids` in order");
 
     return expected{(std::move(nvs).map([](auto n){ return typename Ts::underlying{n}; }), ...)};
+  }
+
+  template<typename InputIt, typename Serializer>
+  [[nodiscard]] constexpr auto decode(InputIt src, Serializer &ser) const {
+    auto impl = [&](auto... identifiers) {
+      return ((kw<identifiers.value> = deserialize_into_xinteger<typename Ts::underlying>(detail::iterator_reference{src}, ser)), ...);
+    };
+
+    auto retval = std::apply(impl, ids);
+    return expected{std::move(retval)};
   }
 
 private:
