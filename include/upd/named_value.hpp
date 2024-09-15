@@ -12,12 +12,13 @@
 #include "detail/tuple_operations.hpp"
 #include "detail/variadic/concat.hpp"
 #include "integer.hpp"
-#include "upd.hpp"
 #include "named_tuple.hpp"
+#include "upd.hpp"
 
 namespace upd {
 
-template<typename> struct kw_t;
+template<typename>
+struct kw_t;
 
 template<auto Identifier>
 constexpr auto kw = kw_t<detail::integral_constant_t<Identifier>>{};
@@ -61,7 +62,7 @@ struct named_value {
   }
 
   template<typename NamedObject>
-  [[nodiscard]] constexpr auto operator,(NamedObject nobj) && noexcept {
+  [[nodiscard]] constexpr auto operator,(NamedObject nobj) &&noexcept {
     if constexpr (detail::is_instance_of_v<NamedObject, named_value>) {
       auto values = std::tuple{std::move(value), std::move(nobj.value)};
       return name_tuple<identifier, nobj.identifier>(std::move(values));

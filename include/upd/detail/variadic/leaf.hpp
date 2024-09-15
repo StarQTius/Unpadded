@@ -4,8 +4,8 @@
 #include <utility>
 
 #include "../../index_type.hpp"
-#include "../integral_constant.hpp"
 #include "../../literals.hpp"
+#include "../integral_constant.hpp"
 #include "../range.hpp"
 
 namespace upd::detail::variadic {

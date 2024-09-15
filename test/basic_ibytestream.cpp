@@ -63,9 +63,8 @@ TEST_CASE("Deserializing a packet...") {
     using namespace upd::literals;
     using namespace upd::descriptor;
 
-    auto descr =
-        field<"a"_h>(upd::signed_int, upd::width<16>) | field<"b"_h>(upd::unsigned_int, upd::width<8>) |
-        field<"c"_h>(upd::unsigned_int, upd::width<16>) | field<"d"_h>(upd::signed_int, upd::width<8>);
+    auto descr = field<"a"_h>(upd::signed_int, upd::width<16>) | field<"b"_h>(upd::unsigned_int, upd::width<8>) |
+                 field<"c"_h>(upd::unsigned_int, upd::width<16>) | field<"d"_h>(upd::signed_int, upd::width<8>);
     auto signed_value = std::array{-64, 1};
     auto unsigned_value = std::array{48, 16};
 

@@ -13,9 +13,7 @@ using namespace fakeit;
 
 template<typename Bitsize, typename Underlying>
 struct Catch::StringMaker<upd::extended_integer<Bitsize, Underlying>> {
-    constexpr static auto convert = [](auto xn) {
-      return std::to_string(xn.value());
-    };
+  constexpr static auto convert = [](auto xn) { return std::to_string(xn.value()); };
 };
 
 // NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers)
@@ -27,13 +25,12 @@ TEST_CASE("Decompose an extended integer") {
   using byte16 = upd::xinteger<10, std::uint16_t>;
   using byte32 = upd::xinteger<2, std::uint32_t>;
 
-  auto x = upd::xinteger_fit<std::uint32_t>{0b1011'0000'1001'1100'0111}
-    .resize(upd::width<20>)
-    .value();
+  auto x = upd::xinteger_fit<std::uint32_t>{0b1011'0000'1001'1100'0111}.resize(upd::width<20>).value();
 
   REQUIRE(upd::decompose_into_xuint<byte8>(x) == std::array<byte8, 4>{0b00111, 0b01110, 0b00010, 0b10110});
   REQUIRE(upd::decompose_into_xuint<byte16>(x) == std::array<byte16, 2>{0b0111000111, 0b1011000010});
-  REQUIRE(upd::decompose_into_xuint<byte32>(x) == std::array<byte32, 10>{0b11, 0b01, 0b00, 0b11, 0b01, 0b10, 0b00, 0b00, 0b11, 0b10});
+  REQUIRE(upd::decompose_into_xuint<byte32>(x) ==
+          std::array<byte32, 10>{0b11, 0b01, 0b00, 0b11, 0b01, 0b10, 0b00, 0b00, 0b11, 0b10});
 }
 
 TEST_CASE("Recompose an extended integer") {

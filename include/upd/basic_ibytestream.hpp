@@ -34,7 +34,8 @@ class basic_ibytestream {
     } else if constexpr (std::is_enum_v<byte_t>) {
       return std::numeric_limits<std::underlying_type_t<byte_t>>::digits;
     } else {
-      static_assert(UPD_ALWAYS_FALSE, "Producers can only produce `extended_integer` values, integral values or enumerators");
+      static_assert(UPD_ALWAYS_FALSE,
+                    "Producers can only produce `extended_integer` values, integral values or enumerators");
     }
   }();
 

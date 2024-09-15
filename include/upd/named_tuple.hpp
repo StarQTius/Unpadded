@@ -11,8 +11,8 @@
 #include "detail/integral_constant.hpp"
 #include "detail/tuple_operations.hpp"
 #include "detail/variadic/concat.hpp"
-#include "detail/variadic/find.hpp"
 #include "detail/variadic/count.hpp"
+#include "detail/variadic/find.hpp"
 #include "integer.hpp"
 #include "upd.hpp"
 
@@ -69,10 +69,8 @@ public:
   }
 
   template<typename Serializer, typename OutputIt>
-  constexpr void serialize(Serializer &ser, OutputIt output)  {
-    auto serialize_pack = [&] (const auto &... xs) {
-      (xs.serialize(ser, output), ...);
-    };
+  constexpr void serialize(Serializer &ser, OutputIt output) {
+    auto serialize_pack = [&](const auto &...xs) { (xs.serialize(ser, output), ...); };
 
     std::apply(serialize_pack, m_content);
   }
@@ -85,10 +83,10 @@ private:
 };
 
 template<typename>
-struct is_named_tuple_instance: std::false_type {};
+struct is_named_tuple_instance : std::false_type {};
 
 template<typename Tuple, auto... Identifiers>
-struct is_named_tuple_instance<named_tuple<Tuple, Identifiers...>>: std::true_type {};
+struct is_named_tuple_instance<named_tuple<Tuple, Identifiers...>> : std::true_type {};
 
 template<auto... Ids, typename... Ts>
 [[nodiscard]] constexpr auto name_tuple(std::tuple<Ts...> tuple) noexcept {

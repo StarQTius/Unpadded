@@ -1,25 +1,25 @@
 #pragma once
 
+#include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <limits>
-#include <type_traits>
-#include <algorithm>
 #include <optional>
-#include <cmath>
+#include <type_traits>
 
-#include "detail/integral_constant.hpp"
-#include "detail/has_value_member.hpp"
-#include "literals.hpp"
-#include "detail/is_instance_of.hpp"
-#include "token.hpp"
 #include "detail/always_false.hpp"
+#include "detail/has_value_member.hpp"
+#include "detail/integral_constant.hpp"
+#include "detail/is_instance_of.hpp"
+#include "literals.hpp"
+#include "token.hpp"
 #include "upd.hpp"
 
 namespace upd::detail {
 
 template<typename T, std::size_t Bitsize>
-constexpr auto bitmask_v = ((T) 1 << Bitsize) - 1;
+constexpr auto bitmask_v = ((T)1 << Bitsize) - 1;
 
 } // namespace upd::detail
 
@@ -40,6 +40,15 @@ constexpr auto to_extended_integer(T) noexcept;
 
 template<typename, typename XInteger>
 constexpr auto decompose_into_xuint(XInteger) UPD_NOEXCEPT;
+
+template<typename Scalar>
+[[nodiscard]] constexpr auto reduce_scalar(Scalar, std::size_t) noexcept;
+
+template<typename Integer>
+[[nodiscard]] constexpr auto reduce_integer(Integer n, std::size_t bitsize) noexcept;
+
+template<typename Enum>
+[[nodiscard]] constexpr auto reduce_enum(Enum e, std::size_t bitsize) noexcept;
 
 template<std::size_t Bitsize, typename Underlying>
 using xinteger = extended_integer<detail::integral_constant_t<Bitsize>, Underlying>;
@@ -75,10 +84,10 @@ class extended_integer {
 
   static_assert(detail::has_value_member_v<Bitsize>, "`Bitsize` must has a `value` member");
   static_assert(std::is_integral_v<decltype(Bitsize::value)>, "`Bitsize::value` must be an integer");
-  static_assert(Bitsize::value >= 0,
-                "`Bitsize::value` must be a positive integer");
+  static_assert(Bitsize::value >= 0, "`Bitsize::value` must be a positive integer");
   static_assert(std::is_integral_v<Underlying_T>, "`Underlying_T` must be an integral type");
-  static_assert(Bitsize::value <= std::numeric_limits<Underlying_T>::digits, "`Bitsize::value` should be lesser or equal to the number of digits in `Underlying_T`");
+  static_assert(Bitsize::value <= std::numeric_limits<Underlying_T>::digits,
+                "`Bitsize::value` should be lesser or equal to the number of digits in `Underlying_T`");
 
 public:
   using underlying = Underlying_T;
@@ -87,22 +96,10 @@ public:
   constexpr static auto is_signed = std::is_signed_v<underlying>;
 
   constexpr extended_integer() noexcept = default;
-  
+
   template<typename T>
-  constexpr extended_integer(T n) noexcept(release) {
-    if constexpr (std::is_integral_v<T>) {
-      using pow2_type = std::conditional_t<std::is_signed_v<T>, std::intmax_t, std::uintmax_t>;
-      auto pow2 = (pow2_type) 1 << bitsize;
-      m_value = static_cast<Underlying_T>(n % pow2);
-    } else if constexpr (std::is_enum_v<T>) {
-      using enum_underlying = std::underlying_type_t<T>;
-      using pow2_type = std::conditional_t<std::is_signed_v<enum_underlying>, std::intmax_t, std::uintmax_t>;
-      auto value = static_cast<enum_underlying>(n);
-      auto pow2 = (pow2_type) 1 << bitsize;
-      m_value = static_cast<Underlying_T>(value % pow2);
-    } else {
-      static_assert(UPD_ALWAYS_FALSE, "`n` must be an integer or an enumerator");
-    }
+  constexpr extended_integer(T n) noexcept(release) : m_value{(underlying)reduce_scalar(n, bitsize)} {
+    static_assert(std::is_integral_v<T> || std::is_enum_v<T>, "`n` must be an integer or an enumerator");
   }
 
   template<typename T, typename = std::enable_if_t<std::is_integral_v<T> || std::is_enum_v<T>>>
@@ -112,14 +109,13 @@ public:
       return static_cast<T>(m_value);
     } else {
       using underlying = std::underlying_type_t<T>;
-      static_assert(std::numeric_limits<underlying>::digits >= bitsize, "`T` cannot hold an integer with `Bitsize` bits");
+      static_assert(std::numeric_limits<underlying>::digits >= bitsize,
+                    "`T` cannot hold an integer with `Bitsize` bits");
       return static_cast<T>(m_value);
     }
   }
 
-  [[nodiscard]] constexpr auto value() const noexcept -> underlying {
-    return m_value;
-  }
+  [[nodiscard]] constexpr auto value() const noexcept -> underlying { return m_value; }
 
   template<std::size_t Bytewidth>
   [[nodiscard]] constexpr auto decompose(std::integral_constant<std::size_t, Bytewidth>) const noexcept {
@@ -131,7 +127,7 @@ public:
   template<std::size_t ByteCount>
   [[nodiscard]] constexpr auto decompose(width_t<ByteCount>) const UPD_NOEXCEPT {
     using byte = xinteger<bitsize / ByteCount, underlying>;
- 
+
     return decompose_into_xuint<byte>(*this);
   }
 
@@ -148,9 +144,7 @@ public:
     }
   }
 
-  [[nodiscard]] constexpr auto signbit() const noexcept -> bool {
-    return std::signbit(m_value);
-  }
+  [[nodiscard]] constexpr auto signbit() const noexcept -> bool { return std::signbit(m_value); }
 
   template<std::size_t NewBitsize>
   [[nodiscard]] constexpr auto resize(width_t<NewBitsize>) const noexcept {
@@ -196,25 +190,25 @@ public:
 
   [[nodiscard]] constexpr auto operator~() const noexcept {
     static_assert(!is_signed, "Bitwise operators only work on unsigned values");
-  
+
     return xinteger<bitsize, underlying>{~m_value};
   }
 
-  constexpr auto operator<<=(std::size_t offset) noexcept -> extended_integer& {
+  constexpr auto operator<<=(std::size_t offset) noexcept -> extended_integer & {
     static_assert(!is_signed, "Bitwise operators only work on unsigned values");
-  
+
     m_value <<= offset;
 
     return *this;
   }
 
   template<typename T>
-  constexpr auto operator|=(T rhs) noexcept -> extended_integer& {
+  constexpr auto operator|=(T rhs) noexcept -> extended_integer & {
     auto xrhs = to_extended_integer(rhs);
-    
+
     static_assert(!is_signed && !xrhs.is_signed, "Bitwise operators only work on unsigned values");
     static_assert(xrhs.bitsize <= bitsize, "Such an operation would cause a narrowing conversion");
-  
+
     m_value |= xrhs.m_value;
 
     return *this;
@@ -285,7 +279,7 @@ template<typename Byte, typename XInteger>
 template<typename T, std::size_t N>
 [[nodiscard]] constexpr auto recompose_into_xuint(const std::array<T, N> &byteseq) noexcept {
   using namespace upd::literals;
-  
+
   auto retval = xuint<bitsize_v<T> * N>{0};
   auto first = byteseq.rbegin();
   auto last = byteseq.rend();
@@ -297,6 +291,41 @@ template<typename T, std::size_t N>
   }
 
   return retval;
+}
+
+template<typename Scalar>
+[[nodiscard]] constexpr auto reduce_scalar(Scalar s, std::size_t bitsize) noexcept {
+  static_assert(std::is_scalar_v<Scalar>, "`s` must be a scalar type");
+
+  if constexpr (std::is_integral_v<Scalar>) {
+    return reduce_integer(s, bitsize);
+  } else if constexpr (std::is_enum_v<Scalar>) {
+    return reduce_enum(s, bitsize);
+  } else {
+    static_assert(UPD_ALWAYS_FALSE, "`s` has an unsupported type");
+  }
+}
+
+template<typename Integer>
+[[nodiscard]] constexpr auto reduce_integer(Integer n, std::size_t bitsize) noexcept {
+  static_assert(std::is_integral_v<Integer>, "`n` must be an integer");
+
+  using pow2_type = std::conditional_t<std::is_signed_v<Integer>, std::intmax_t, std::uintmax_t>;
+
+  auto pow2 = (pow2_type)1 << bitsize;
+
+  return n % pow2;
+}
+
+template<typename Enum>
+[[nodiscard]] constexpr auto reduce_enum(Enum e, std::size_t bitsize) noexcept {
+  static_assert(std::is_enum_v<Enum>, "`e` must be an enumerator");
+
+  using underlying = std::underlying_type_t<Enum>;
+
+  auto value = static_cast<underlying>(e);
+
+  return reduce_integer(value, bitsize);
 }
 
 } // namespace upd
