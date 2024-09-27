@@ -39,7 +39,7 @@ template<typename T>
 constexpr auto to_extended_integer(T) noexcept;
 
 template<typename, typename XInteger>
-constexpr auto decompose_into_xuint(XInteger) UPD_NOEXCEPT;
+constexpr auto decompose_into_xuint(XInteger) noexcept(release);
 
 template<typename Scalar>
 [[nodiscard]] constexpr auto reduce_scalar(Scalar, std::size_t) noexcept;
@@ -130,7 +130,7 @@ public:
   }
 
   template<std::size_t ByteCount>
-  [[nodiscard]] constexpr auto decompose(width_t<ByteCount>) const UPD_NOEXCEPT {
+  [[nodiscard]] constexpr auto decompose(width_t<ByteCount>) const noexcept(release) {
     using byte = xinteger<bitsize / ByteCount, underlying>;
 
     return decompose_into_xuint<byte>(*this);
@@ -300,7 +300,7 @@ template<typename XInteger, typename InputIt, typename Serializer>
 }
 
 template<typename Byte, typename XInteger>
-[[nodiscard]] constexpr auto decompose_into_xuint(XInteger xn) UPD_NOEXCEPT {
+[[nodiscard]] constexpr auto decompose_into_xuint(XInteger xn) noexcept(release) {
   using namespace literals;
 
   static_assert(!is_signed_v<XInteger>, "`decompose()` only works on unsigned values");

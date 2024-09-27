@@ -44,7 +44,7 @@ public:
   using reference = typename std::iterator_traits<Iter>::reference;
   using iterator_category = std::input_iterator_tag;
   
-  constexpr explicit iterator_reference(iterator_type &iter) : m_cache{*iter}, m_iter{iter} {
+  constexpr explicit iterator_reference(iterator_type &iter) : m_iter{iter}, m_cache{*iter} {
     ++iter;
   }
 
@@ -201,42 +201,42 @@ public:
 
   [[nodiscard]] constexpr auto operator->() const noexcept -> const T * { return &value(); }
 
-  [[nodiscard]] constexpr auto value() &noexcept -> T & {
+  [[nodiscard]] constexpr auto value() & noexcept(release) -> T & {
     auto *v = value_if();
     UPD_ASSERT(v != nullptr);
 
     return *v;
   }
 
-  [[nodiscard]] constexpr auto value() const &noexcept -> const T & {
+  [[nodiscard]] constexpr auto value() const & noexcept(release) -> const T & {
     const auto *v = value_if();
     UPD_ASSERT(v != nullptr);
 
     return *v;
   }
 
-  [[nodiscard]] constexpr auto value() &&noexcept -> T && {
+  [[nodiscard]] constexpr auto value() && noexcept(release) -> T && {
     auto *v = value_if();
     UPD_ASSERT(v != nullptr);
 
     return std::move(*v);
   }
 
-  [[nodiscard]] constexpr auto error() &noexcept -> E & {
+  [[nodiscard]] constexpr auto error() & noexcept(release) -> E & {
     auto *e = error_if();
     UPD_ASSERT(e != nullptr);
 
     return *e;
   }
 
-  [[nodiscard]] constexpr auto error() const &noexcept -> const E & {
+  [[nodiscard]] constexpr auto error() const & noexcept(release) -> const E & {
     const auto *e = error_if();
     UPD_ASSERT(e != nullptr);
 
     return *e;
   }
 
-  [[nodiscard]] constexpr auto error() &&noexcept -> E && {
+  [[nodiscard]] constexpr auto error() && noexcept(release) -> E && {
     auto *e = error_if();
     UPD_ASSERT(e != nullptr);
 

@@ -8,8 +8,6 @@
 #include <iterator>
 #include <optional>
 
-#include "detail/assertion.hpp"
-
 namespace upd {
 
 template<typename T, std::size_t Capacity>

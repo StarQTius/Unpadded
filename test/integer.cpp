@@ -1,11 +1,3 @@
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define UPD_ASSERT(...)                                                                                                \
-  if (!(__VA_ARGS__)) {                                                                                                \
-    throw std::exception{};                                                                                            \
-  }
-
-#define UPD_NOEXCEPT
-
 #include <fakeit.hpp>
 #include <upd/integer.hpp>
 

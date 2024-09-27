@@ -95,6 +95,7 @@ function(add_revamp_test TEST_NAME TEST_FILE)
     PRIVATE -Wall -Werror $<$<CXX_COMPILER_ID:GNU>: -fdiagnostics-color=always>
             $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>:
             -fcolor-diagnostics>)
+  target_compile_definitions(${TEST_NAME} PRIVATE UPD_DEBUG)
 endfunction()
 
 add_custom_target(check_revamp COMMAND ctest -L check_revamp

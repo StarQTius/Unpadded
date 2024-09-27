@@ -1,9 +1,3 @@
-// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define UPD_ASSERT(...)                                                                                                \
-  if (!(__VA_ARGS__)) {                                                                                                \
-    throw std::exception{};                                                                                            \
-  }
-
 #include <array>
 #include <cstddef>
 #include <exception>
@@ -17,7 +11,6 @@
 #include <fakeit.hpp>
 #include <upd/basic_ibytestream.hpp>
 #include <upd/description.hpp>
-#include <upd/detail/assertion.hpp>
 #include <upd/literals.hpp>
 #include <upd/static_vector.hpp>
 

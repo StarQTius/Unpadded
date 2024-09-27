@@ -2,6 +2,29 @@
 
 #include "format.hpp" // IWYU pragma: keep
 
+namespace upd {
+
+#if defined(UPD_DEBUG)
+
+constexpr auto release = false;
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define UPD_ASSERT(...)                                                                                                \
+  if (!(__VA_ARGS__)) {                                                                                                \
+    throw std::exception{};                                                                                            \
+  }
+
+#else // defined(UPD_DEBUG)
+
+constexpr auto release = true;
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define UPD_ASSERT(...)
+
+#endif // defined(UPD_DEBUG)
+
+} // namespace upd
+
 // NOLINTBEGIN
 
 #define UPD_FWD(x) static_cast<decltype(x) &&>(x)
@@ -9,24 +32,6 @@
 #define UPD_SCOPE_OPERATOR(LHS, RHS) LHS::RHS
 
 namespace upd {
-
-#if !defined(UPD_NOEXCEPT)
-
-#define UPD_NOEXCEPT noexcept
-
-#endif // !defined(UPD_NOEXCEPT)
-
-#if !defined(UPD_ASSERT)
-
-#define UPD_ASSERT(...)
-
-constexpr auto release = true;
-
-#else // !defined(UPD_ASSERT)
-
-constexpr auto release = false;
-
-#endif // !defined(UPD_ASSERT)
 
 //! \brief Contains the platform-specific information provided by the user
 //!
