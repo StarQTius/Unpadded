@@ -1,6 +1,8 @@
 #pragma once
 
 #include <array>
+#include <ranges>
+#include <string>
 #include <limits>
 #include <tuple>
 #include <type_traits>
@@ -18,27 +20,41 @@
 
 namespace upd {
 
-template<typename>
+template<std::size_t N>
+struct name {
+  constexpr name(const char (&s)[N]): value{} {
+    std::ranges::copy(s, value);
+  }
+
+  template<std::size_t M>
+  [[nodiscard]] constexpr auto operator==(const name<M> &rhs) const noexcept -> bool {
+    return std::string_view{value} == std::string_view{rhs.value};
+  };
+
+  char value[N];
+};
+
+template<name>
 struct kw_t;
 
-template<auto..., typename... Ts>
+template<name..., typename... Ts>
 [[nodiscard]] constexpr auto name_tuple(std::tuple<Ts...>) noexcept;
 
 template<typename... Named_Tuple_Ts>
 [[nodiscard]] constexpr auto concat_named_tuple(Named_Tuple_Ts &&...);
 
-template<typename Tuple_T, auto... Ids>
+template<typename Tuple_T, name... Ids>
 class named_tuple {
   using id_ts = detail::integral_constant_tuple_t<Ids...>;
 
-  template<auto..., typename... Ts>
+  template<name..., typename... Ts>
   friend constexpr auto name_tuple(std::tuple<Ts...>) noexcept;
 
   template<typename... Named_Tuple_Ts>
   friend constexpr auto concat_named_tuple(Named_Tuple_Ts &&...);
 
 public:
-  template<auto Id>
+  template<name Id>
   [[nodiscard]] constexpr auto get() noexcept -> auto & {
     using id_t = detail::integral_constant_t<Id>;
     constexpr auto id_pos = detail::variadic::find_v<id_ts, id_t>;
@@ -48,7 +64,7 @@ public:
     return std::get<id_pos>(m_content);
   }
 
-  template<auto Id>
+  template<name Id>
   [[nodiscard]] constexpr auto get() const noexcept -> const auto & {
     using id_t = detail::integral_constant_t<Id>;
     constexpr auto id_pos = detail::variadic::find_v<id_ts, id_t>;
@@ -58,14 +74,14 @@ public:
     return std::get<id_pos>(m_content);
   }
 
-  template<typename Identifier>
+  template<name Identifier>
   [[nodiscard]] constexpr auto operator[](kw_t<Identifier>) noexcept(release) -> auto & {
-    return get<Identifier::value>();
+    return get<Identifier>();
   }
 
-  template<typename Identifier>
+  template<name Identifier>
   [[nodiscard]] constexpr auto operator[](kw_t<Identifier>) const noexcept(release) -> const auto & {
-    return get<Identifier::value>();
+    return get<Identifier>();
   }
 
   template<typename Serializer, typename OutputIt>
@@ -85,10 +101,10 @@ private:
 template<typename>
 struct is_named_tuple_instance : std::false_type {};
 
-template<typename Tuple, auto... Identifiers>
+template<typename Tuple, name... Identifiers>
 struct is_named_tuple_instance<named_tuple<Tuple, Identifiers...>> : std::true_type {};
 
-template<auto... Ids, typename... Ts>
+template<name... Ids, typename... Ts>
 [[nodiscard]] constexpr auto name_tuple(std::tuple<Ts...> tuple) noexcept {
   using id_ts = detail::integral_constant_tuple_t<Ids...>;
 

@@ -17,43 +17,53 @@
 
 namespace upd {
 
-template<typename>
+template<name>
 struct kw_t;
 
-template<auto Identifier>
-constexpr auto kw = kw_t<detail::integral_constant_t<Identifier>>{};
+template<name Identifier>
+constexpr auto kw = kw_t<Identifier>{};
 
-template<typename Identifier, typename T>
-struct named_value {
-  static_assert(detail::has_value_member_v<Identifier>, "`Identifier` must have a `value` member");
+template<name Identifier, typename T>
+class named_value {
+public:
+  constexpr static auto identifier = Identifier;
 
-  constexpr static auto identifier = Identifier::value;
+  template<typename... Args>
+  constexpr explicit named_value(std::in_place_t, Args &&... args): m_value{UPD_FWD(args)...} {}
 
   template<typename F>
   [[nodiscard]] constexpr auto map(F &&f) & {
-    decltype(auto) mapped_value = std::invoke(UPD_FWD(f), value);
+    decltype(auto) mapped_value = std::invoke(UPD_FWD(f), m_value);
     return kw<identifier> = UPD_FWD(mapped_value);
   }
 
   template<typename F>
   [[nodiscard]] constexpr auto map(F &&f) const & {
-    decltype(auto) mapped_value = std::invoke(UPD_FWD(f), value);
+    decltype(auto) mapped_value = std::invoke(UPD_FWD(f), m_value);
     return kw<identifier> = UPD_FWD(mapped_value);
   }
 
   template<typename F>
   [[nodiscard]] constexpr auto map(F &&f) && {
-    decltype(auto) mapped_value = std::invoke(UPD_FWD(f), std::move(value));
+    decltype(auto) mapped_value = std::invoke(UPD_FWD(f), std::move(m_value));
     return kw<identifier> = UPD_FWD(mapped_value);
+  }
+
+  [[nodiscard]] constexpr auto value() const & noexcept -> const T& {
+    return m_value;
+  }
+
+  [[nodiscard]] constexpr auto value() && noexcept -> T {
+    return std::move(m_value);
   }
 
   template<typename NamedObject>
   [[nodiscard]] constexpr auto operator,(NamedObject nobj) const & {
-    if constexpr (detail::is_instance_of_v<NamedObject, named_value>) {
-      auto values = std::tuple{value, std::move(nobj.value)};
+    if constexpr (requires { upd::named_value{nobj}; }) {
+      auto values = std::tuple{m_value, std::move(nobj).value()};
       return name_tuple<identifier, nobj.identifier>(std::move(values));
     } else if constexpr (is_named_tuple_instance<NamedObject>::value) {
-      auto tail = std::tuple{value};
+      auto tail = std::tuple{m_value};
       auto named_tail = name_tuple<identifier>(std::move(tail));
       return concat_named_tuple(std::move(named_tail), std::move(nobj));
     } else {
@@ -63,11 +73,11 @@ struct named_value {
 
   template<typename NamedObject>
   [[nodiscard]] constexpr auto operator,(NamedObject nobj) &&noexcept {
-    if constexpr (detail::is_instance_of_v<NamedObject, named_value>) {
-      auto values = std::tuple{std::move(value), std::move(nobj.value)};
+    if constexpr (requires { upd::named_value{nobj}; }) {
+      auto values = std::tuple{std::move(m_value), std::move(nobj).value()};
       return name_tuple<identifier, nobj.identifier>(std::move(values));
     } else if constexpr (is_named_tuple_instance<NamedObject>::value) {
-      auto tail = std::tuple{std::move(value)};
+      auto tail = std::tuple{std::move(m_value)};
       auto named_tail = name_tuple<identifier>(std::move(tail));
       return concat_named_tuple(std::move(named_tail), std::move(nobj));
     } else {
@@ -75,18 +85,17 @@ struct named_value {
     }
   }
 
-  T value;
+private:
+  T m_value;
 };
 
-template<typename Identifier>
+template<name Identifier>
 struct kw_t {
-  static_assert(detail::has_value_member_v<Identifier>, "`Identifier` must have a `value` member");
-
-  constexpr static auto identifier = Identifier::value;
+  constexpr static auto identifier = Identifier;
 
   template<typename T>
   [[nodiscard]] constexpr auto operator=(T x) const noexcept -> named_value<Identifier, T> {
-    return named_value<Identifier, T>{UPD_FWD(x)};
+    return named_value<Identifier, T>{std::in_place, UPD_FWD(x)};
   }
 };
 

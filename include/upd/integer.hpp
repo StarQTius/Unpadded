@@ -32,7 +32,7 @@ constexpr auto nth_bit = 1 << Bitpos;
 
 namespace upd {
 
-template<typename, typename>
+template<std::size_t, typename>
 class extended_integer;
 
 template<typename T>
@@ -51,16 +51,16 @@ template<typename Enum>
 [[nodiscard]] constexpr auto reduce_enum(Enum e, std::size_t bitsize) noexcept;
 
 template<std::size_t Bitsize, typename Underlying>
-using xinteger = extended_integer<detail::integral_constant_t<Bitsize>, Underlying>;
+using xinteger = extended_integer<Bitsize, Underlying>;
 
 template<typename Underlying>
 using xinteger_fit = xinteger<std::numeric_limits<Underlying>::digits, Underlying>;
 
 template<std::size_t Bitsize>
-using xint = extended_integer<detail::integral_constant_t<Bitsize>, std::intmax_t>;
+using xint = extended_integer<Bitsize, std::intmax_t>;
 
 template<std::size_t Bitsize>
-using xuint = extended_integer<detail::integral_constant_t<Bitsize>, std::uintmax_t>;
+using xuint = extended_integer<Bitsize, std::uintmax_t>;
 
 template<typename T>
 using representation_t = typename decltype(to_extended_integer(std::declval<T>()))::underlying;
@@ -72,34 +72,39 @@ template<typename T>
 constexpr auto is_signed_v = decltype(to_extended_integer(std::declval<T>()))::is_signed;
 
 template<typename T>
-constexpr auto is_extended_integer_v = detail::is_instance_of_v<T, extended_integer>;
+constexpr auto is_extended_integer_v = requires(T x) { {extended_integer{x}} -> std::same_as<T>; };
 
-template<typename Bitsize, typename Underlying_T>
+template<std::size_t Bitsize, typename Underlying_T>
 class extended_integer {
-  template<typename, typename>
+  template<std::size_t, typename>
   friend class extended_integer;
 
   template<typename T>
   friend constexpr auto to_extended_integer(T) noexcept;
 
-  static_assert(detail::has_value_member_v<Bitsize>, "`Bitsize` must has a `value` member");
-  static_assert(std::is_integral_v<decltype(Bitsize::value)>, "`Bitsize::value` must be an integer");
-  static_assert(Bitsize::value >= 0, "`Bitsize::value` must be a positive integer");
+  static_assert(std::is_integral_v<decltype(Bitsize)>, "`Bitsize` must be an integer");
+  static_assert(Bitsize >= 0, "`Bitsize` must be a positive integer");
   static_assert(std::is_integral_v<Underlying_T>, "`Underlying_T` must be an integral type");
-  static_assert(Bitsize::value <= std::numeric_limits<Underlying_T>::digits,
-                "`Bitsize::value` should be lesser or equal to the number of digits in `Underlying_T`");
+  static_assert(Bitsize <= std::numeric_limits<Underlying_T>::digits,
+                "`Bitsize` should be lesser or equal to the number of digits in `Underlying_T`");
 
 public:
   using underlying = Underlying_T;
 
-  constexpr static auto bitsize = Bitsize::value;
+  constexpr static auto bitsize = Bitsize;
   constexpr static auto is_signed = std::is_signed_v<underlying>;
 
   constexpr extended_integer() noexcept = default;
 
   template<typename T>
-  constexpr extended_integer(T n) noexcept(release) : m_value{(underlying)reduce_scalar(n, bitsize)} {
-    static_assert(std::is_integral_v<T> || std::is_enum_v<T>, "`n` must be an integer or an enumerator");
+  constexpr extended_integer(T n) noexcept(release) {
+    if constexpr (std::is_integral_v<T> || std::is_enum_v<T>) {
+      m_value = (underlying) reduce_scalar(n, bitsize);
+    } else if constexpr (is_extended_integer_v<T>) {
+      m_value = (underlying) reduce_scalar(n.m_value, bitsize);
+    } else {
+      static_assert(UPD_ALWAYS_FALSE, "`n` must be an integer, an enumerator, or an extended integer");
+    }
   }
 
   template<typename T, typename = std::enable_if_t<std::is_integral_v<T> || std::is_enum_v<T>>>
@@ -179,10 +184,54 @@ public:
 
   template<typename T>
   [[nodiscard]] constexpr auto operator+(T rhs) const noexcept {
-    constexpr auto xrhs = to_extended_integer(rhs);
+    auto xrhs = to_extended_integer(rhs);
     constexpr auto retval_bitsize = std::max(bitsize, xrhs.bitsize);
 
     auto retval = m_value + xrhs.m_value;
+    using retval_type = decltype(retval);
+
+    return xinteger<retval_bitsize, retval_type>{retval};
+  }
+
+  template<typename T>
+  [[nodiscard]] constexpr auto operator&(T rhs) const noexcept {
+    auto xrhs = to_extended_integer(rhs);
+    constexpr auto retval_bitsize = std::max(bitsize, xrhs.bitsize);
+
+    auto retval = m_value & xrhs.m_value;
+    using retval_type = decltype(retval);
+
+    return xinteger<retval_bitsize, retval_type>{retval};
+  }
+
+  template<typename T>
+  [[nodiscard]] constexpr auto operator^(T rhs) const noexcept {
+    auto xrhs = to_extended_integer(rhs);
+    constexpr auto retval_bitsize = std::max(bitsize, xrhs.bitsize);
+
+    auto retval = m_value ^ xrhs.m_value;
+    using retval_type = decltype(retval);
+
+    return xinteger<retval_bitsize, retval_type>{retval};
+  }
+
+  template<typename T>
+  [[nodiscard]] constexpr auto operator<<(T rhs) const noexcept {
+    auto xrhs = to_extended_integer(rhs);
+    constexpr auto retval_bitsize = std::max(bitsize, xrhs.bitsize);
+
+    auto retval = m_value << xrhs.m_value;
+    using retval_type = decltype(retval);
+
+    return xinteger<retval_bitsize, retval_type>{retval};
+  }
+
+  template<typename T>
+  [[nodiscard]] constexpr auto operator>>(T rhs) const noexcept {
+    auto xrhs = to_extended_integer(rhs);
+    constexpr auto retval_bitsize = std::max(bitsize, xrhs.bitsize);
+
+    auto retval = m_value >> xrhs.m_value;
     using retval_type = decltype(retval);
 
     return xinteger<retval_bitsize, retval_type>{retval};
@@ -227,7 +276,7 @@ private:
 
 template<typename T>
 [[nodiscard]] constexpr auto to_extended_integer(T n) noexcept {
-  if constexpr (detail::is_instance_of_v<T, extended_integer>) {
+  if constexpr (is_extended_integer_v<T>) {
     return n;
   } else if constexpr (std::is_integral_v<T>) {
     constexpr auto digits = std::numeric_limits<T>::digits;

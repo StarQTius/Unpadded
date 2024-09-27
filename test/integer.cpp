@@ -11,7 +11,7 @@
 
 using namespace fakeit;
 
-template<typename Bitsize, typename Underlying>
+template<std::size_t Bitsize, typename Underlying>
 struct Catch::StringMaker<upd::extended_integer<Bitsize, Underlying>> {
   constexpr static auto convert = [](auto xn) { return std::to_string(xn.value()); };
 };
