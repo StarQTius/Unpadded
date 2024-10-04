@@ -107,6 +107,10 @@ public:
     }
   }
 
+  [[nodiscard]] constexpr operator bool() const noexcept(release) {
+    return static_cast<bool>(m_value);
+  }
+
   template<typename T, typename = std::enable_if_t<std::is_integral_v<T> || std::is_enum_v<T>>>
   constexpr operator T() const noexcept {
     if constexpr (std::is_integral_v<T>) {
@@ -134,6 +138,10 @@ public:
     using byte = xinteger<bitsize / ByteCount, underlying>;
 
     return decompose_into_xuint<byte>(*this);
+  }
+
+  [[nodiscard]] constexpr auto as_signed() const noexcept(release) {
+    return xinteger<bitsize, std::make_signed_t<underlying>>{m_value};
   }
 
   [[nodiscard]] constexpr auto abs() const noexcept {
@@ -180,6 +188,10 @@ public:
     } else {
       ser.serialize_unsigned(*this, dest);
     }
+  }
+
+  [[nodiscard]] constexpr auto operator-() const noexcept(release) {
+    return xint<bitsize>{-m_value};
   }
 
   template<typename T>
@@ -378,3 +390,20 @@ template<typename Enum>
 }
 
 } // namespace upd
+
+namespace upd::literals {
+
+template<char... Cs>
+[[nodiscard]] constexpr auto operator ""_xui() noexcept(release) {
+  constexpr auto characters = std::array {Cs...};
+  constexpr auto integer = (std::uintmax_t) detail::ascii_to_integer(characters.begin(), characters.end());
+  constexpr auto bitsize = [] {
+    auto shift_count = std::size_t{0};
+    for (auto acc = integer; acc > 0; ++shift_count, acc >>= 1);
+    return shift_count;
+  }();
+
+  return xuint<bitsize>{integer};
+} 
+
+} // namespace upd::literals

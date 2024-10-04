@@ -73,9 +73,6 @@ private:
 
 namespace upd {
 
-template<typename T, template<typename...> typename TT>
-concept instance_of = detail::is_instance_of_v<T, TT>;
-
 template<typename>
 class invoker_iterator;
 
@@ -311,41 +308,41 @@ public:
   constexpr static auto identifiers = typelist<Ts...>{}
     .transform_const([](auto field_type) { return field_type->identifier; });
 
-  template<typename Serializer, typename... NamedValues>
-  [[nodiscard]] constexpr auto instantiate(Serializer &ser, NamedValues... nvs) const noexcept {
+  template<typename Serializer, named_value_instance... NamedValues>
+  [[nodiscard]] constexpr auto instantiate(Serializer &ser, NamedValues &&... nvs) const noexcept {
     static_assert((requires { named_value{nvs}; } && ...),
                   "`nvs` must be a pack of `named_value` instances");
 
-    auto named_args = (nvs, ...);
+    auto named_args = named_tuple{UPD_FWD(nvs)...};
     auto first_pass = [&](const auto &field) {
       if constexpr (field.tag == field_tag::pure_field) {
         constexpr auto width = field.width;
         using representation = std::conditional_t<field.is_signed, xint<width>, xuint<width>>;
-        auto value = named_args[kw<field.identifier>];
-        return kw<field.identifier> = representation{value};
+        auto value = named_args[keyword<field.identifier>{}];
+        return keyword<field.identifier>{} = representation{value};
       } else if constexpr (field.tag == field_tag::constant) {
-        return kw<field.identifier> = field.value;
+        return keyword<field.identifier>{} = field.value;
       } else if constexpr (field.tag == field_tag::checksum) {
         constexpr auto width = field.width;
-        return kw<field.identifier> = xuint<width>{field.init};
+        return keyword<field.identifier>{} = xuint<width>{field.init};
       } else {
         static_assert(UPD_ALWAYS_FALSE, "`field` is not a field object");
       }
     };
 
-    auto make_named_tuple = [](auto &&...nvs) { return name_tuple<nvs.identifier...>(std::tuple{UPD_FWD(nvs).value()...}); };
+    auto make_named_tuple = [](auto &&...nvs) { return named_tuple{UPD_FWD(nvs)...}; };
     auto retval = m_fields.transform(first_pass).apply(make_named_tuple);
     auto second_pass = [&](const auto &field) {
       if constexpr (field.tag == field_tag::checksum) {
         constexpr auto identifier = field.identifier;
         auto &[op, init, get_range] = field;
-        auto &acc = retval[kw<identifier>];
+        auto &acc = retval[keyword<identifier>{}];
         auto folder = invoker_iterator{
           [&, op=op](auto x) { acc = op(acc, x); }
         };
 
         get_range(identifiers).for_each([&](auto id) {
-          return retval[kw<id.value>].serialize(ser, folder);
+          return retval[keyword<id.value>{}].serialize(ser, folder);
         });
       }
     };
@@ -358,19 +355,19 @@ public:
   [[nodiscard]] constexpr auto decode(InputIt src, Serializer &ser) const noexcept(release) {
     auto err = unexpected{};
     auto accumulators = m_fields
-      .filter([](auto field_type) { return field_type->tag == field_tag::checksum; })
+      .filter([](const auto &field) { return expr<field.tag == field_tag::checksum>; })
       .apply([](auto &&... checksum_fields) {
-          return name_tuple<checksum_fields.identifier...>(std::tuple{checksum_fields.init...});
+          return named_tuple { (keyword<checksum_fields.identifier>{} = checksum_fields.init)...};
         }
       );
 
     auto first_pass = [&](const auto &field) {
       if constexpr (field.tag == field_tag::checksum) {
         const auto &[op, init, get_range] = field;
-        auto &acc = accumulators[kw<field.identifier>];
+        auto &acc = accumulators[keyword<field.identifier>{}];
         auto range = get_range(identifiers);
         auto accumulate = [&, &op = op](auto identifier, const auto &value) {
-          constexpr auto p = [=](auto id_type) { return auto_constant<id_type->value == identifier>{}; };
+          constexpr auto p = [=](const auto &id) { return auto_constant<id.value == identifier>{}; };
           if constexpr (range.filter(p).size() > 0) {
             acc = op(acc, value);
           }
@@ -393,7 +390,7 @@ public:
             return value;
           }
         };
-        return kw<identifier> = deserialize_into_xinteger<representation>(decorated_src, ser);
+        return keyword<identifier>{} = deserialize_into_xinteger<representation>(decorated_src, ser);
       } else if constexpr (field.tag == field_tag::constant) {
         constexpr auto width = field.width;
         using representation = std::conditional_t<field.is_signed, xint<width>, xuint<width>>;
@@ -413,7 +410,7 @@ public:
         constexpr auto width = field.width;
         using representation = std::conditional_t<field.is_signed, xint<width>, xuint<width>>;
         auto received = deserialize_into_xinteger<representation>(detail::iterator_reference{src}, ser);
-        if (!err && accumulators[kw<identifier>] != received) {
+        if (!err && accumulators[keyword<identifier>{}] != received) {
           err = error::checksum_mismatch;
         }
       } else {
@@ -423,7 +420,7 @@ public:
 
     auto retval = m_fields
       .transform(second_pass, filter_void)
-      .apply([](auto &&... nvs) { return name_tuple<nvs.identifier...>(std::tuple{UPD_FWD(nvs).value()...}); });
+      .apply([](auto &&... nvs) { return named_tuple{UPD_FWD(nvs)...}; });
     return err ? err : expected{std::move(retval)};
   }
 
@@ -444,7 +441,7 @@ template<typename... Ts, typename... Us>
   auto self_comparison_count = fields.type_only()
                                    .transform_const(get_identifier)
                                    .square()
-                                   .transform(unpack | equal_to)
+                                   .transform(unpack | [](auto lhs, auto rhs) { return expr<lhs == rhs>; })
                                    .fold_const(auto_constant<std::size_t{0}>{}, plus);
 
   static_assert(self_comparison_count == fields.size(), "Merging these descriptions would result in duplicate IDs");
@@ -500,7 +497,7 @@ struct checksum_t {
 
 template<name Identifier, typename BinaryOp, std::size_t Width, typename Init>
 [[nodiscard]] constexpr auto checksum(BinaryOp op, width_t<Width>, Init init, all_fields_t) noexcept(release) {
-  auto get_range = [](auto identifiers) { return identifiers.filter([](auto id_type) { return id_type->value != Identifier; }); };
+  auto get_range = [](auto identifiers) { return identifiers.filter([](auto id) { return auto_constant<id != Identifier>{}; }); };
   auto retval = checksum_t<Identifier, BinaryOp, Width,
        Init, decltype(get_range)>{std::move(op), init, get_range};
   

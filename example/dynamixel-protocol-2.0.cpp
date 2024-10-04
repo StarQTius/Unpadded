@@ -124,6 +124,8 @@ struct serializer {
 
   template<typename InputIt, std::size_t Bitsize>
   auto deserialize_signed(InputIt input, upd::width_t<Bitsize>) {
+    using namespace upd::literals;
+
     static_assert((Bitsize + 1) % bytewidth == 0, "`Bitsize` must be a multiple of `bytewidth`");
 
     constexpr auto size = (Bitsize + 1) / bytewidth;
@@ -135,9 +137,9 @@ struct serializer {
 
     auto raw = upd::recompose_into_xuint(byteseq);
     auto sign = ((raw & upd::nth_bit<Bitsize>) != 0);
-    auto abs = (raw & upd::nth_bit<Bitsize>) ? ~raw + 1 : raw;
+    auto abs = (raw & upd::nth_bit<Bitsize>) ? ~raw + 1_xui : raw;
 
-    return sign ? -abs : abs;
+    return sign ? -abs : abs.as_signed();
   }
 };
 
@@ -158,7 +160,7 @@ int main() {
   std::cout << std::hex;
 
   auto ping_ex1 = description.instantiate(ser,
-      upd::kw<"id"> = 1, upd::kw<"length"> = 3, upd::kw<"instruction"> = 1);
+      "id"_kw = 1, "length"_kw = 3, "instruction"_kw = 1);
   if (!ping_ex1) {
     return (int)ping_ex1.error();
   }
@@ -174,12 +176,12 @@ int main() {
   }
 
   std::printf("Answer 1: \n");
-  std::printf("- id: %" PRIx8 "\n", (std::uint8_t)(*answer1)[upd::kw<"id">]);
-  std::printf("- length: %" PRIx16 "\n", (std::uint16_t)(*answer1)[upd::kw<"length">]);
-  std::printf("- instruction: %" PRIx8 "\n", (std::uint8_t)(*answer1)[upd::kw<"instruction">]);
-  std::printf("- error: %" PRIx8 "\n", (std::uint8_t)(*answer1)[upd::kw<"error">]);
-  std::printf("- model number: %" PRIx16 "\n", (std::uint16_t)(*answer1)[upd::kw<"model_number">]);
-  std::printf("- firmware version: %" PRIx8 "\n", (std::uint8_t)(*answer1)[upd::kw<"firmware_version">]);
+  std::printf("- id: %" PRIx8 "\n", (std::uint8_t)(*answer1)["id"_kw]);
+  std::printf("- length: %" PRIx16 "\n", (std::uint16_t)(*answer1)["length"_kw]);
+  std::printf("- instruction: %" PRIx8 "\n", (std::uint8_t)(*answer1)["instruction"_kw]);
+  std::printf("- error: %" PRIx8 "\n", (std::uint8_t)(*answer1)["error"_kw]);
+  std::printf("- model number: %" PRIx16 "\n", (std::uint16_t)(*answer1)["model_number"_kw]);
+  std::printf("- firmware version: %" PRIx8 "\n", (std::uint8_t)(*answer1)["firmware_version"_kw]);
   std::printf("\n\n");
 
   auto answer2_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x02, 0x07, 0x00, 0x55, 0x00, 0x06, 0x04, 0x26, 0x6f, 0x6d};
@@ -189,11 +191,11 @@ int main() {
   }
 
   std::printf("Answer 2: \n");
-  std::printf("- id: %" PRIx8 "\n", (std::uint8_t)(*answer2)[upd::kw<"id">]);
-  std::printf("- length: %" PRIx16 "\n", (std::uint16_t)(*answer2)[upd::kw<"length">]);
-  std::printf("- instruction: %" PRIx8 "\n", (std::uint8_t)(*answer2)[upd::kw<"instruction">]);
-  std::printf("- error: %" PRIx8 "\n", (std::uint8_t)(*answer2)[upd::kw<"error">]);
-  std::printf("- model number: %" PRIx16 "\n", (std::uint16_t)(*answer2)[upd::kw<"model_number">]);
-  std::printf("- firmware version: %" PRIx8 "\n", (std::uint8_t)(*answer2)[upd::kw<"firmware_version">]);
+  std::printf("- id: %" PRIx8 "\n", (std::uint8_t)(*answer2)["id"_kw]);
+  std::printf("- length: %" PRIx16 "\n", (std::uint16_t)(*answer2)["length"_kw]);
+  std::printf("- instruction: %" PRIx8 "\n", (std::uint8_t)(*answer2)["instruction"_kw]);
+  std::printf("- error: %" PRIx8 "\n", (std::uint8_t)(*answer2)["error"_kw]);
+  std::printf("- model number: %" PRIx16 "\n", (std::uint16_t)(*answer2)["model_number"_kw]);
+  std::printf("- firmware version: %" PRIx8 "\n", (std::uint8_t)(*answer2)["firmware_version"_kw]);
   std::printf("\n\n");
 }

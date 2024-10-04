@@ -8,17 +8,33 @@
 #include "detail/variadic/leaf.hpp"
 #include "detail/variadic/clean.hpp"
 #include "detail/is_instance_of.hpp"
-
-namespace upd::detail {
-
-template<typename F, std::size_t... Is>
-[[nodiscard]] constexpr auto apply_on_index_sequence(F &&f, std::index_sequence<Is...>) -> decltype(auto) {
-  return UPD_FWD(f)(std::integral_constant<std::size_t, Is>{}...);
-}
-
-} // namespace upd::detail
+#include "upd.hpp"
 
 namespace upd {
+
+template<typename T, template<typename...> typename TT>
+concept instance_of = detail::is_instance_of_v<T, TT>;
+
+template<typename T> requires std::is_reference_v<T>
+class ref {
+public:
+  using qualified_type = T;
+
+  constexpr explicit ref(T target) noexcept(release): m_target{UPD_FWD(target)} {}
+
+  [[nodiscard]] constexpr operator T() noexcept(release) {
+    return UPD_FWD(m_target);
+  }
+  
+private:
+  T m_target;
+};
+
+template<typename T>
+explicit ref(T &&) -> ref<T &&>;
+
+template<typename>
+class tuple_implementation;
 
 template<typename T, template<typename...> typename TT>
 concept cvref_instance_of = detail::is_instance_of_v<std::remove_cvref_t<T>, TT>;
@@ -51,9 +67,6 @@ struct filter_void_t {};
 
 constexpr auto filter_void = filter_void_t{};
 
-template<typename Tuple, typename F>
-[[nodiscard]] constexpr auto apply(Tuple &&, F &&);
-
 struct encapsulate_t {};
 
 constexpr auto encapsulate = encapsulate_t{};
@@ -75,17 +88,6 @@ struct preserve_value_category_t {};
 constexpr auto preserve_value_category = preserve_value_category_t{};
 
 struct unpack_t {};
-
-
-
-template<typename F>
-[[nodiscard]] constexpr auto operator|(unpack_t, F &&f) {
-  auto impl = [&](auto &&t) {
-    return upd::apply(UPD_FWD(t), UPD_FWD(f));
-  };
-
-  return impl;
-}
 
 constexpr auto unpack = unpack_t{};
 
@@ -112,19 +114,24 @@ struct auto_constant {
   }
 };
 
+template<auto Expr>
+constexpr auto expr = auto_constant<Expr>{};
+
+template<typename T>
+concept auto_constant_instance = requires(T x) {
+  { auto_constant{x} } -> std::same_as<T>;
+};
+
 template<auto Lhs, auto Rhs>
-[[nodiscard]] constexpr auto operator==(auto_constant<Lhs>, auto_constant<Rhs>) noexcept -> decltype(auto) {
-  return auto_constant<Lhs == Rhs>{};
+requires std::equality_comparable_with<decltype(Lhs), decltype(Rhs)>
+[[nodiscard]] constexpr auto operator==(auto_constant<Lhs>, auto_constant<Rhs>) noexcept(release) {
+  return expr<Lhs == Rhs>;
 }
 
-template<auto Lhs, typename Rhs>
-[[nodiscard]] constexpr auto operator==(auto_constant<Lhs>, Rhs &&rhs) -> decltype(auto) {
-  return Lhs == UPD_FWD(rhs);
-}
-
-template<typename Lhs, auto Rhs>
-[[nodiscard]] constexpr auto operator==(Lhs &&lhs, auto_constant<Rhs>) -> decltype(auto) {
-  return UPD_FWD(lhs) == Rhs;
+template<auto_constant_instance Lhs, typename Rhs>
+requires requires { Lhs::value == std::declval<Rhs>(); }
+[[nodiscard]] consteval auto operator==(Lhs lhs, Rhs rhs) -> bool {
+  return lhs.value == rhs;
 }
 
 template<auto Lhs, auto Rhs>
@@ -196,8 +203,9 @@ using indexlist = constlist<Is...>;
 template<typename T>
 struct typebox {
   using type = T;
+  using unqualified_type = std::remove_cvref_t<T>;
 
-  constexpr auto operator->() const noexcept -> const type * { return nullptr; }
+  constexpr auto operator->() const noexcept -> const unqualified_type * { return nullptr; }
 };
 
 } // namespace upd
@@ -205,9 +213,9 @@ struct typebox {
 namespace upd {
 
 template<std::size_t N>
-constexpr auto sequence = detail::apply_on_index_sequence(
-    [](auto... is) { return indexlist<is.value...>{}; },
-    std::make_index_sequence<N>{});
+constexpr auto sequence = []<std::size_t... Is>(std::index_sequence<Is...>) {
+  return indexlist<Is...>{};
+}(std::make_index_sequence<N>{});
 
 using false_type = auto_constant<false>;
 using true_type = auto_constant<true>;
@@ -248,71 +256,85 @@ template<std::size_t, typename Tuple>
 
 } // namespace upd
 
-namespace upd::detail {
-
-template<typename T>
-class is_tuple_like {
-  constexpr static auto has_tuple_size = has_value_member_v<std::tuple_size<T>>;
-  constexpr static auto tuple_size = constant_value_or<std::tuple_size<T>, 0>;
-
-  template<std::size_t I>
-  constexpr static auto has_tuple_element = has_type_member_v<std::tuple_element<I, T>>;
-
-  template<std::size_t I>
-  constexpr static auto is_nth_gettable(...) noexcept -> bool {
-    return false;
-  }
-
-  template<std::size_t I, typename = decltype((void) get<I>(std::declval<T>()))>
-  constexpr static auto is_nth_gettable(int) noexcept -> bool {
-    return true;
-  }
- 
-public:
-  constexpr static auto value = has_tuple_size && sequence<tuple_size>
-    .all_of([](auto i) { return has_tuple_element<i> && is_nth_gettable<i>(0); });
-};
-
-} // namespace upd::detail
-
 namespace upd {
 
 template<typename T>
-using is_tuple_like = auto_constant<detail::is_tuple_like<T>::value>;
+concept tuple_like = requires(std::remove_reference_t<T> x) {
+  std::tuple_size<decltype(x)>::value;
+  { std::tuple_size_v<decltype(x)> } -> std::convertible_to<std::size_t>;
+}
+&& []<std::size_t... Is>(std::index_sequence<Is...>) {
+  auto has_tuple_element = [](auto i) {
+    return requires(std::remove_reference_t<T> x) {
+      typename std::tuple_element_t<i, decltype(x)>;
+    };
+  };
+  return (has_tuple_element(auto_constant<Is>{}) && ...);
+} (std::make_index_sequence<std::tuple_size_v<std::remove_reference_t<T>>>{})
+&&  requires(std::remove_reference_t<T> x) {
+  { get<0>(x) } -> std::same_as<std::tuple_element_t<0, decltype(x)> &>;
+}
+&& []<std::size_t... Is>(std::index_sequence<Is...>) {
+  auto is_nth_gettable = [](auto i) {
+    return requires(std::remove_reference_t<T> x) {
+      { get<i>(x) } -> std::same_as<std::tuple_element_t<i, decltype(x)> &>;
+    };
+  };
+  return (is_nth_gettable(auto_constant<Is>{}) && ...);
+} (std::make_index_sequence<std::tuple_size_v<std::remove_reference_t<T>>>{})
+&& []<std::size_t... Is>(std::index_sequence<Is...>) {
+  auto is_nth_moved_gettable = [](auto i) {
+    return requires(std::remove_reference_t<T> x) {
+      { get<i>(std::move(x)) } -> std::same_as<std::tuple_element_t<i, decltype(x)> &&>;
+    };
+  };
+  return (is_nth_moved_gettable(auto_constant<Is>{}) && ...);
+} (std::make_index_sequence<std::tuple_size_v<std::remove_reference_t<T>>>{});
 
-template<typename T>
-constexpr auto is_tuple_like_v = is_tuple_like<T>::value;
+template<typename T, template<typename> typename Base>
+concept implementer = std::derived_from<T, Base<T>>;
+
+template<tuple_like Tuple, typename F, typename Aggregator>
+constexpr auto transform_and_apply(Tuple &&t, F &&f, Aggregator &&agg) -> decltype(auto) {
+  auto impl = [&](auto &&... xs) -> decltype(auto) {
+    return std::invoke(
+      UPD_FWD(agg),
+      std::invoke(f, UPD_FWD(xs))...
+    );
+  };
+
+  return apply(UPD_FWD(t), impl);
+}
+
+template<tuple_like Tuple, typename F>
+constexpr auto apply(Tuple &&t, F &&f) -> decltype(auto) {
+  constexpr auto size = std::tuple_size_v<std::remove_reference_t<Tuple>>;
+  constexpr auto seq = std::make_index_sequence<size>{};
+
+  return [&]<std::size_t... Is>(std::index_sequence<Is...>) -> decltype(auto) {
+    return UPD_FWD(f)(get<Is>(UPD_FWD(t))...);
+  }(seq);
+}
+
+template<typename F>
+[[nodiscard]] constexpr auto operator|(unpack_t, F &&f) {
+  auto impl = [&](auto &&t) -> decltype(auto) {
+    return apply(UPD_FWD(t), UPD_FWD(f));
+  };
+
+  return impl;
+}
 
 } // namespace upd
 
-template<typename... Ts>
-struct std::tuple_size<upd::tuple<Ts...>> {
-  constexpr static auto value = sizeof...(Ts);
+template<upd::implementer<upd::tuple_implementation> T>
+struct std::tuple_size<T> {
+  constexpr static auto value = T::size();
 };
 
-template<std::size_t I, typename... Ts>
-struct std::tuple_element<I, upd::tuple<Ts...>> {
-  using type = upd::detail::variadic::at_t<std::tuple<Ts...>, I>;
-};
-
-template<typename... Ts>
-struct std::tuple_size<upd::typelist<Ts...>> {
-  constexpr static auto value = sizeof...(Ts);
-};
-
-template<std::size_t I, typename... Ts>
-struct std::tuple_element<I, upd::typelist<Ts...>> {
-  using type = upd::detail::variadic::at_t<std::tuple<Ts...>, I>;
-};
-
-template<auto... Vs>
-struct std::tuple_size<upd::constlist<Vs...>> {
-  constexpr static auto value = sizeof...(Vs);
-};
-
-template<std::size_t I, auto... Vs>
-struct std::tuple_element<I, upd::constlist<Vs...>> {
-  using type = upd::detail::variadic::at_t<std::tuple<upd::auto_constant<Vs>...>, I>;
+template<std::size_t I, upd::implementer<upd::tuple_implementation> T>
+struct std::tuple_element<I, T> {
+  using type = typename T::template raw_type<I>;
 };
 
 namespace upd::detail {
@@ -438,7 +460,7 @@ public:
   [[nodiscard]] constexpr auto clean() const {
     using namespace std::ranges::views;
 
-    constexpr auto truth_table = sequence<size()>
+    constexpr auto truth_table = sequence<Derived::size()>
       .apply([](auto... is) {
           return std::array {
             !std::same_as<
@@ -469,11 +491,10 @@ public:
   }
 
   template<typename Pred>
-  [[nodiscard]] constexpr auto filter(Pred p) const {
+  [[nodiscard]] constexpr auto filter(Pred &&p) const {
     auto impl = [&](auto &&x) -> decltype(auto) {
-      using unqual_type = std::remove_cvref_t<decltype(x)>;
-
-      if constexpr (p(typebox<unqual_type>{})) {
+      auto truth = std::invoke(UPD_FWD(p), std::as_const(x));
+      if constexpr (truth) {
         return UPD_FWD(x);
       } else {
         return detail::variadic::marked_for_cleaning_t{};
@@ -523,6 +544,25 @@ public:
     return shape_seq.transform(get_subelement);
   }
 
+  template<typename UnaryPred>
+  [[nodiscard]] constexpr auto find_const(UnaryPred p) const noexcept(release) {
+    auto elligibles = derived()
+      .enumerate()
+      .filter(unpack | [p](auto, auto type) { return std::invoke(p, type); })
+      .transform(unpack | [](auto i, const auto &) { return i; });
+
+    if constexpr (elligibles.size() > 0) {
+      return elligibles[auto_constant<0>{}];
+    } else {
+      return auto_constant<Derived::size()>{};
+    }
+  }
+
+  [[nodiscard]] constexpr auto enumerate() const noexcept(release) {
+    return sequence<Derived::size()>
+      .transform([&](auto i) { return tuple{i, ref(UPD_FWD(at(i)))}; });
+  }
+
   template<typename Init, typename BinaryOp>
   [[nodiscard]] constexpr auto fold_const(Init init, BinaryOp op) const noexcept {
     auto impl = [](auto init, auto op, auto... xs) {
@@ -564,12 +604,12 @@ public:
       return typebox<result>{};
     };
 
-    return sequence<size()>.transform(apply_and_box_type);
+    return sequence<Derived::size()>.transform(apply_and_box_type);
   }
 
   [[nodiscard]] constexpr auto reverse() const {
     constexpr auto rindices = []() {
-      auto rindices = std::array<std::size_t, size()>{};
+      auto rindices = std::array<std::size_t, Derived::size()>{};
       auto first = rindices.rbegin();
       auto last = rindices.rend();
       auto i = std::size_t{0};
@@ -583,11 +623,11 @@ public:
     auto get_element = [&](auto i) -> auto && {
       return get<rindices[i]>(derived());
     };
-    return sequence<size()>.transform(get_element, preserve_value_category);
+    return sequence<Derived::size()>.transform(get_element, preserve_value_category);
   }
 
   [[nodiscard]] constexpr auto square() {
-    auto seq = sequence<size()>;
+    auto seq = sequence<Derived::size()>;
     auto pair_up = [&](auto i) { return seq.transform([&](auto j) { return indexlist<i, j>{}; }); };
 
     auto squared_seq = seq.transform(pair_up).flatten();
@@ -662,7 +702,7 @@ public:
 
   template<typename F>
   [[nodiscard]] constexpr auto transform_const(F f) const noexcept {
-    auto apply_const = [&](auto x) { return auto_constant<f(x)>{}; };
+    auto apply_const = [f](auto x) { return expr<std::invoke(f, x)>; };
 
     return derived().transform(apply_const);
   }
@@ -676,7 +716,7 @@ public:
       return typebox<result>{};
     };
 
-    return sequence<size()>.transform(apply_and_box_type);
+    return sequence<Derived::size()>.transform(apply_and_box_type);
   }
 
   [[nodiscard]] constexpr static auto type_only() noexcept {
@@ -685,7 +725,7 @@ public:
       return typebox<raw>{};
     };
 
-    return sequence<size()>.transform(apply_and_box_type);
+    return sequence<Derived::size()>.transform(apply_and_box_type);
   }
 
   template<typename F>
@@ -746,8 +786,6 @@ public:
   constexpr void for_each(F &&f) const && {
     upd::for_each(std::move(derived()), UPD_FWD(f));
   }
-
-  [[nodiscard]] constexpr static auto size() noexcept -> std::size_t { return std::tuple_size_v<Derived>; }
 };
 
 template<typename... Ts>
@@ -766,11 +804,41 @@ public:
     return fittest_tuple_like(UPD_FWD(tuple));
   }
 
-  explicit constexpr tuple(Ts... xs) noexcept : m_leaves{std::move(xs)...} {}
+  [[nodiscard]] constexpr static auto size() noexcept -> std::size_t {
+    return sizeof...(Ts);
+  }
+
+  template<typename ...Us>
+  constexpr explicit tuple(Us &&... xs) noexcept(release) : m_leaves{UPD_FWD(xs)...} {}
+
+  template<typename ...Us>
+  constexpr explicit tuple(std::in_place_t, Us &&... xs) noexcept(release) : m_leaves{UPD_FWD(xs)...} {}
 
 private:
   leaves m_leaves;
 };
+
+template<typename ...Ts>
+explicit tuple(Ts...) -> tuple<
+  typename decltype([] {
+      if constexpr (cvref_instance_of<Ts, ref>) {
+        return typebox<typename Ts::qualified_type>{};
+      } else {
+        return typebox<Ts>{};
+      }
+  } ())::type...
+>;
+
+template<typename ...Ts>
+explicit tuple(std::in_place_t, Ts...) -> tuple<
+  typename decltype([] {
+      if constexpr (cvref_instance_of<Ts, ref>) {
+        return typebox<typename Ts::qualified_type>{};
+      } else {
+        return typebox<Ts>{};
+      }
+  } ())::type...
+>;
 
 template<typename... Ts>
 class typelist : public tuple_implementation<typelist<Ts...>> {
@@ -781,11 +849,15 @@ class typelist : public tuple_implementation<typelist<Ts...>> {
 
 public:
   template<std::size_t I>
-  using raw_type = typename leaves::template raw_type<I>::type;
+  using raw_type = typename leaves::template raw_type<I>;
 
   template<typename Tuple>
   [[nodiscard]] constexpr static auto normalize(Tuple &&tuple) {
     return fittest_tuple_like(UPD_FWD(tuple));
+  }
+
+  [[nodiscard]] constexpr static auto size() noexcept -> std::size_t {
+    return sizeof...(Ts);
   }
 
   constexpr typelist() noexcept = default;
@@ -810,11 +882,19 @@ public:
     return fittest_tuple_like(UPD_FWD(tuple));
   }
 
+  [[nodiscard]] constexpr static auto size() noexcept -> std::size_t {
+    return sizeof...(Vs);
+  }
+
   constexpr constlist() noexcept = default;
 
 private:
   leaves m_leaves;
 };
+
+template<tuple_like auto TupleLike>
+constexpr auto as_constlist = sequence<std::tuple_size_v<decltype(TupleLike)>>
+  .transform_const([](auto i) { return std::get<i>(TupleLike); });
 
 template<typename... Ts>
 [[nodiscard]] constexpr auto fittest_tuple_like(Ts &&...xs) {
@@ -823,7 +903,7 @@ template<typename... Ts>
   } else if constexpr ((is_auto_constant_v<Ts> && ...)) {
     return constlist<xs.value...>{};
   } else {
-    return tuple{UPD_FWD(xs)...};
+    return tuple{std::in_place, UPD_FWD(xs)...};
   }
 }
 
@@ -849,28 +929,7 @@ template<std::size_t I, typename Tuple>
   using retval_type = decltype(retval);
   static_assert(!std::is_same_v<retval_type, detail::variadic::not_found_t &&>, "`I` is not a valid index for `tuple`");
 
-  return retval;
-}
-
-template<typename Tuple, typename F, typename Aggregator>
-[[nodiscard]] constexpr auto transform_and_apply(Tuple &&t, F &&f, Aggregator &&agg) {
-  constexpr auto size = std::tuple_size_v<std::remove_reference_t<Tuple>>;
-  constexpr auto seq = std::make_index_sequence<size>{};
-
-  auto invoke_f_once = [&](auto i) -> decltype(auto) { return f(get<i>(UPD_FWD(t))); };
-  auto invoke_f_on_each = [&](auto... is) -> decltype(auto) { return UPD_FWD(agg)(invoke_f_once(is)...); };
-
-  return detail::apply_on_index_sequence(invoke_f_on_each, seq);
-}
-
-template<typename Tuple, typename F>
-[[nodiscard]] constexpr auto apply(Tuple &&t, F &&f) {
-  constexpr auto size = std::tuple_size_v<std::remove_reference_t<Tuple>>;
-  constexpr auto seq = std::make_index_sequence<size>{};
-
-  auto apply_f = [&](auto... is) -> decltype(auto) { return UPD_FWD(f)(get<is>(UPD_FWD(t))...); };
-
-  return detail::apply_on_index_sequence(apply_f, seq);
+  return UPD_FWD(retval);
 }
 
 template<typename Tuple, typename F>
@@ -908,6 +967,16 @@ template<typename Tuple, typename F>
   };
 
   return upd::apply(UPD_FWD(t), impl).clean();
+}
+
+template<tuple_like... Tuples>
+[[nodiscard]] constexpr auto zip(Tuples &&... ts) {
+  constexpr auto min_size = std::min(ts.size()...);
+
+  return sequence<min_size>
+    .transform([&](auto i) {
+        return tuple{ref{UPD_FWD(ts).at(i)}...};
+    });
 }
 
 } // namespace upd
