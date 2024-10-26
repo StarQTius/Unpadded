@@ -306,7 +306,7 @@ class description {
 
 public:
   constexpr static auto identifiers = typelist<Ts...>{}
-    .transform_const([](auto field_type) { return field_type->identifier; });
+    .transform([](auto field_type) { return expr<field_type->identifier>; });
 
   template<typename Serializer, named_value_instance... NamedValues>
   [[nodiscard]] constexpr auto instantiate(Serializer &ser, NamedValues &&... nvs) const noexcept {
@@ -367,8 +367,10 @@ public:
         auto &acc = accumulators[keyword<field.identifier>{}];
         auto range = get_range(identifiers);
         auto accumulate = [&, &op = op](auto identifier, const auto &value) {
-          constexpr auto p = [=](const auto &id) { return auto_constant<id.value == identifier>{}; };
-          if constexpr (range.filter(p).size() > 0) {
+          auto position = range
+            .find_if(to_metafunction([=](auto id) { return id == identifier; }));
+
+          if constexpr (position < range.size()) {
             acc = op(acc, value);
           }
         };
@@ -433,16 +435,16 @@ private:
 template<typename... Ts, typename... Us>
 [[nodiscard]] constexpr inline auto operator|(description<Ts...> lhs, description<Us...> rhs) noexcept {
   auto fields = std::move(lhs.m_fields) + std::move(rhs.m_fields);
-  auto get_identifier = [](auto field_type) { return field_type->identifier; };
 
   // For each identifier of the merged description, we count how often it
   // appears. If the total is not equal to the number of fields, we know that
   // there are duplicate identifiers.
-  auto self_comparison_count = fields.type_only()
-                                   .transform_const(get_identifier)
-                                   .square()
-                                   .transform(unpack | [](auto lhs, auto rhs) { return expr<lhs == rhs>; })
-                                   .fold_const(auto_constant<std::size_t{0}>{}, plus);
+  auto self_comparison_count = fields
+    .type_only()
+    .transform([]<typename T>(typebox<T>) { return expr<T::identifier>; })
+    .square()
+    .transform(unpack | equal_to)
+    .fold_left(expr<0uz>, plus);
 
   static_assert(self_comparison_count == fields.size(), "Merging these descriptions would result in duplicate IDs");
 

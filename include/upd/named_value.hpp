@@ -30,18 +30,7 @@
 #include "detail/variadic/find.hpp"
 #include "integer.hpp"
 #include "upd.hpp"
-
-namespace upd::detail {
-
-template<template<typename...> typename, typename>
-struct instantiate_variadic;
-
-template<template<typename...> typename TT, template<typename...> typename UT, typename... Ts>
-struct instantiate_variadic<TT, UT<Ts...>> {
-  using type = TT<Ts...>;
-};
-
-} // namespace upd::detail
+#include "template_traits.hpp"
 
 namespace upd {
 
@@ -163,14 +152,6 @@ template<names, typename... Ts>
 template<typename... Named_Tuple_Ts>
 [[nodiscard]] constexpr auto concat_named_tuple(Named_Tuple_Ts &&...);
 
-template<typename T>
-concept variadic_instance = requires(T x) { 
-  []<template<typename...> typename TT, typename... Ts>(const TT<Ts...> *) {} (&x);
-};
-
-template<template<typename...> typename TT, typename Args>
-using instantiate_variadic = typename detail::instantiate_variadic<TT, Args>::type;
-
 template<names Identifiers, typename... Ts>
 requires (std::size(Identifiers.strings) == sizeof...(Ts))
 class named_tuple {
@@ -178,7 +159,8 @@ class named_tuple {
     .transform(unpack | []<typename T>(auto i, typebox<T>) {
         using type = named_value<Identifiers.strings[i.value], T>;
         return typebox<type>{};
-    });
+    })
+    .to_typelist();
 
   using content_type = instantiate_variadic<tuple, std::remove_cvref_t<decltype(element_types)>>;
 
@@ -187,48 +169,13 @@ public:
   constexpr explicit named_tuple(NamedValues && ...nvs): m_nvs{UPD_FWD(nvs)...} {}
 
   template<name Identifier>
-  [[nodiscard]] constexpr auto get() & noexcept -> auto & {
-    auto position = m_nvs
-      .find_const([](auto nv) { return auto_constant<nv.identifier == Identifier>{}; });
+  [[nodiscard]] constexpr auto get() & noexcept -> auto && {
+    auto position = m_nvs.find_if([](const auto &nv) {
+      return expr<nv.identifier == Identifier>;
+    });
 
     if constexpr (position < m_nvs.size()) {
       return m_nvs.at(position).value();
-    } else {
-      static_assert(UPD_ALWAYS_FALSE, "There are no element named `Identifier`");
-    }
-  }
-
-  template<name Identifier>
-  [[nodiscard]] constexpr auto get() const & noexcept -> const auto & {
-    auto position = m_nvs
-      .find_const([](auto nv) { return auto_constant<nv.identifier == Identifier>{}; });
-
-    if constexpr (position < m_nvs.size()) {
-      return m_nvs.at(position).value();
-    } else {
-      static_assert(UPD_ALWAYS_FALSE, "There are no element named `Identifier`");
-    }
-  }
-
-  template<name Identifier>
-  [[nodiscard]] constexpr auto get() && noexcept -> auto && {
-    auto position = m_nvs
-      .find_const([](auto nv) { return auto_constant<nv.identifier == Identifier>{}; });
-
-    if constexpr (position < m_nvs.size()) {
-      return std::move(m_nvs).at(position).value();
-    } else {
-      static_assert(UPD_ALWAYS_FALSE, "There are no element named `Identifier`");
-    }
-  }
-
-  template<name Identifier>
-  [[nodiscard]] constexpr auto get() const && noexcept -> const auto && {
-    auto position = m_nvs
-      .find_const([](auto nv) { return auto_constant<nv.identifier == Identifier>{}; });
-
-    if constexpr (position < m_nvs.size()) {
-      return std::move(m_nvs).at(position).value();
     } else {
       static_assert(UPD_ALWAYS_FALSE, "There are no element named `Identifier`");
     }
