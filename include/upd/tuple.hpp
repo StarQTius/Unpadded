@@ -106,7 +106,7 @@ constexpr struct unpack_t {} unpack;
 template<typename F>
 [[nodiscard]] constexpr auto to_metafunction(F f) {
   return [=]<metavalue... Metas>(Metas...) {
-    return expr<std::invoke(f, Metas::value...)>;
+    return expr<UPD_INVOKE(f, Metas::value...)>;
   };
 }
 
@@ -147,12 +147,12 @@ class accumulable_t {
 
 template<typename T, typename U, std::invocable<T, U> BinaryOp>
 [[nodiscard]] constexpr auto operator,(accumulable_t<T, BinaryOp> &&acc, U &&x) -> decltype(auto) {
-  return std::invoke(UPD_FWD(acc.m_op), UPD_FWD(acc.m_value), UPD_FWD(x));
+  return UPD_INVOKE(UPD_FWD(acc.m_op), UPD_FWD(acc.m_value), UPD_FWD(x));
 }
 
 template<typename U, typename T, std::invocable<U, T> BinaryOp>
 [[nodiscard]] constexpr auto operator,(U &&x, accumulable_t<T, BinaryOp> &&acc) -> decltype(auto) {
-  return std::invoke(UPD_FWD(acc.m_op), UPD_FWD(x), UPD_FWD(acc.m_value));
+  return UPD_INVOKE(UPD_FWD(acc.m_op), UPD_FWD(x), UPD_FWD(acc.m_value));
 }
 
 template<typename T, typename BinaryOp>
@@ -490,7 +490,7 @@ public:
     struct cleanme_t {} cleanme;
 
     auto filter_one = [&](auto &&x) -> decltype(auto) {
-      auto keep = std::invoke(p, std::as_const(x));
+      auto keep = UPD_INVOKE(p, std::as_const(x));
       if constexpr (keep) {
         return UPD_FWD(x);
       } else {
@@ -509,7 +509,7 @@ public:
   template<const_predicate_on_each<Derived> UnaryPred> 
   [[nodiscard]] constexpr auto find_if(UnaryPred &&p) const {
     auto filtered = zip(sequence<size()>, derived())
-      .filter(unpack | [&](auto, const auto &x) { return std::invoke(p, x); })
+      .filter(unpack | [&](auto, const auto &x) { return UPD_INVOKE(p, x); })
       .clone();
 
     if constexpr (filtered.size() > 0) {
@@ -668,7 +668,7 @@ public:
       if constexpr (std::is_void_v<std::invoke_result_t<F &, T>>) {
         return cleanme;
       } else {
-        return std::invoke(f, UPD_FWD(x));
+        return UPD_INVOKE(f, UPD_FWD(x));
       }
     };
 
@@ -685,7 +685,7 @@ public:
     auto seq = std::make_index_sequence<size()>{};
 
     return [&]<std::size_t ...Is>(std::index_sequence<Is...>) -> decltype(auto) {
-      return std::invoke(UPD_FWD(f), UPD_FWD(self).at(expr<Is>)...);
+      return UPD_INVOKE(UPD_FWD(f), UPD_FWD(self).at(expr<Is>)...);
     } (seq);
   }
 
@@ -904,7 +904,7 @@ struct unpacker {
     constexpr auto size = std::tuple_size_v<noref_type>;
     
     return [&]<auto... Is>(constlist<Is...>) -> decltype(auto) {
-      return std::invoke(UPD_FWD(self).invocable, get<Is>(UPD_FWD(t))...);
+      return UPD_INVOKE(UPD_FWD(self).invocable, get<Is>(UPD_FWD(t))...);
     }(sequence<size>);
   }
 

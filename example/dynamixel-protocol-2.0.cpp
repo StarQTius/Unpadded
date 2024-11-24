@@ -1,4 +1,5 @@
 #include <cinttypes>
+#include <print>
 #include <iostream>
 
 #include <upd/description.hpp>
@@ -11,6 +12,43 @@ ostream &operator<<(ostream &os, byte b) { return os << static_cast<int>(b); }
 } // namespace std
 
 using crc = upd::xuint<16>;
+
+template<>
+struct std::formatter<upd::no_error> {
+  constexpr static auto parse(std::format_parse_context &ctx) {
+    return ctx.begin();
+  }
+
+  static auto format(upd::no_error, std::format_context &ctx) {
+    return std::format_to(ctx.out(), "No error");
+  }
+};
+
+template<>
+struct std::formatter<upd::not_matching_deduction> {
+  constexpr static auto parse(std::format_parse_context &ctx) {
+    return ctx.begin();
+  }
+
+  static auto format(const upd::not_matching_deduction &err, std::format_context &ctx) {
+    return std::format_to(ctx.out(), "`{}` field actual and deduced value do not match", err.identifier);
+  }
+};
+
+template<>
+struct std::formatter<upd::error> {
+  constexpr static auto parse(std::format_parse_context &ctx) {
+    return ctx.begin();
+  }
+
+  static auto format(const upd::error &err, std::format_context &ctx) {
+    auto format_error_data = [&](const auto &err_data) {
+      return std::format_to(ctx.out(), "{}", err_data);
+    };
+
+    return err.visit(format_error_data);
+  }
+};
 
 constexpr auto accumulate_crc(crc acc, upd::xuint<8> byte) noexcept -> crc {
   constexpr auto crc_table = std::array {
@@ -61,7 +99,7 @@ constexpr auto description = [] {
   | field<"id">(unsigned_int, width<8>)
   | field<"length">(unsigned_int, width<16>)
   | field<"instruction">(unsigned_int, width<8>)
-  | checksum<"crc">(accumulate_crc, width<16>, 0, all_fields);
+  | checksum<"crc">(accumulate_crc, xuint<16>{0}, all_fields);
 }();
 
 constexpr auto answer_description = [] {
@@ -73,7 +111,7 @@ constexpr auto answer_description = [] {
          field<"length">(unsigned_int, width<16>) | field<"instruction">(unsigned_int, width<8>) |
          field<"error">(unsigned_int, width<8>) | field<"model_number">(unsigned_int, width<16>) |
          field<"firmware_version">(unsigned_int, width<8>) | 
-         checksum<"crc">(accumulate_crc, width<16>, 0, all_fields);
+         checksum<"crc">(accumulate_crc, xuint<16>{0}, all_fields);
 }();
 
 struct serializer {
@@ -152,7 +190,20 @@ struct bytearray : std::array<std::byte, N> {
 template<typename... Bytes>
 explicit bytearray(Bytes...) noexcept->bytearray<sizeof...(Bytes)>;
 
-int main() {
+auto ping_example() -> upd::error;
+
+auto main() -> int {
+  auto examples = std::array {ping_example};
+
+  for (auto ex : examples) {
+    auto err = ex();
+    if (err) {
+      std::println("Example resulted in the following error: {}", err);
+    }
+  }
+}
+
+auto ping_example() -> upd::error {
   using namespace upd::literals;
 
   auto ser = serializer{};
@@ -166,7 +217,7 @@ int main() {
   auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x07, 0x00, 0x55, 0x00, 0x06, 0x04, 0x26, 0x65, 0x5d};
   auto answer1 = answer_description.decode(answer1_seq.begin(), ser);
   if (!answer1) {
-    return (int)answer1.error();
+    return answer1.error();
   }
 
   std::printf("Answer 1: \n");
@@ -181,7 +232,7 @@ int main() {
   auto answer2_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x02, 0x07, 0x00, 0x55, 0x00, 0x06, 0x04, 0x26, 0x6f, 0x6d};
   auto answer2 = answer_description.decode(answer2_seq.begin(), ser);
   if (!answer2) {
-    return (int)answer2.error();
+    return answer2.error();
   }
 
   std::printf("Answer 2: \n");
@@ -192,4 +243,6 @@ int main() {
   std::printf("- model number: %" PRIx16 "\n", (std::uint16_t)(*answer2)["model_number"_kw]);
   std::printf("- firmware version: %" PRIx8 "\n", (std::uint8_t)(*answer2)["firmware_version"_kw]);
   std::printf("\n\n");
+
+  return upd::no_error{};
 }

@@ -142,6 +142,11 @@ class error {
       return !std::holds_alternative<no_error>(m_data);
     }
 
+    template<typename F>
+    constexpr auto visit(F &&f) const -> decltype(auto) {
+      return std::visit(UPD_FWD(f), m_data);
+    }
+
   private:
     data_type m_data;
 };
@@ -268,9 +273,6 @@ constexpr auto field(signedness_t<Is_Signed>, width_t<Width>) noexcept(release);
 template<name, typename T, std::size_t Width>
 constexpr auto constant(T, width_t<Width>) noexcept(release);
 
-template<name, typename BinaryOp, std::size_t Width, typename Init>
-constexpr auto checksum(BinaryOp, width_t<Width>, Init, all_fields_t) noexcept(release);
-
 } // namespace upd::descriptor
 
 namespace upd {
@@ -300,12 +302,20 @@ concept field_like = requires(T) {
   typename T::value_type;
 } && requires(T x) {
   { x.default_value() } -> std::same_as<typename T::value_type>;
-  { x.deduce(named_tuple{}) } -> std::same_as<typename T::value_type>;
 };
 
 template<typename T, typename Serializer>
-concept decodable_field = field_like<T>
+concept deducable_field = field_like<T>
 && serializer<Serializer>
+&& requires(
+    T x,
+    Serializer ser) {
+  { x.deduce(named_tuple{}, ser) } -> std::same_as<typename T::value_type>;
+};
+
+template<typename T, typename Serializer>
+concept decodable_field = serializer<Serializer>
+&& deducable_field<T, Serializer>
 && requires(
     T x,
     Serializer ser,
@@ -314,8 +324,8 @@ concept decodable_field = field_like<T>
 };
 
 template<typename T, typename Serializer>
-concept encodable_field = field_like<T>
-&& serializer<Serializer>
+concept encodable_field = serializer<Serializer>
+&& deducable_field<T, Serializer>
 && requires(
     T x,
     Serializer ser,
@@ -336,6 +346,7 @@ public:
   explicit constexpr description(Ts ...fields) : m_fields{std::move(fields)...} {}
 
   template<named_tuple_instance NamedTuple, serializer Serializer, std::output_iterator<byte_type<Serializer>> OutputIt>
+  requires (encodable_field<Ts, Serializer> && ...)
   constexpr void encode(const NamedTuple &nargs, Serializer &ser, OutputIt dest) const {
     auto packet = m_fields
       .transform([&]<typename Field>(const Field &field) {
@@ -351,7 +362,7 @@ public:
 
     zip(packet, m_fields)
       .for_each(unpack | [&](auto &field_value, const auto &field) {
-        UPD_WELL_FORMED(field_value.value() = field.deduce(std::as_const(packet)));
+        UPD_WELL_FORMED(field_value.value() = field.deduce(std::as_const(packet), ser));
       });
 
     zip(packet, m_fields)
@@ -361,6 +372,7 @@ public:
   }
 
   template<serializer Serializer, std::input_iterator InputIt>
+  requires (decodable_field<Ts, Serializer> && ...)
   [[nodiscard]] constexpr auto decode(InputIt src, Serializer &ser) const {
     auto err = error{};
     auto retval = m_fields
@@ -375,7 +387,7 @@ public:
 
     zip(retval, m_fields)
       .for_each(unpack | [&](const auto &field_value, const auto &field) {
-        if (!err && field_value.value() == field.deduce(retval)) {
+        if (!err && field_value.value() != field.deduce(retval, ser)) {
           err = not_matching_deduction{field_value.identifier.string};
         }
       });
@@ -424,8 +436,8 @@ struct field_t {
     return value_type{};
   }
 
-  template<named_tuple_like Packet>
-  [[nodiscard]] constexpr static auto deduce(const Packet &packet) -> value_type {
+  template<named_tuple_like Packet, serializer Serializer>
+  [[nodiscard]] constexpr static auto deduce(const Packet &packet, Serializer &) -> value_type {
     return packet.at(expr<identifier>);
   }
 
@@ -468,8 +480,8 @@ struct constant_t {
     return field_value;
   }
 
-  template<named_tuple_like Packet>
-  [[nodiscard]] constexpr static auto deduce(const Packet &packet) -> value_type {
+  template<named_tuple_like Packet, serializer Serializer>
+  [[nodiscard]] constexpr static auto deduce(const Packet &packet, Serializer &) -> value_type {
     return packet.at(expr<identifier>);
   }
 
@@ -490,7 +502,7 @@ template<name Identifier, typename T, std::size_t Width>
   return description{retval};
 }
 
-template<name Identifier, typename BinaryOp, std::size_t Width, typename Init, typename FieldFilter>
+template<name Identifier, typename BinaryOp, std::size_t Width, typename FieldFilter>
 struct checksum_t {
   constexpr static auto identifier = Identifier;
   constexpr static auto width = Width;
@@ -498,23 +510,28 @@ struct checksum_t {
   using value_type = xuint<width>;
 
   BinaryOp op;
-  Init init;
+  value_type init;
   FieldFilter identifier_filter;
 
   [[nodiscard]] constexpr static auto default_value() noexcept(release) -> value_type {
     return 0u;
   }
 
-  template<named_tuple_like Packet>
-  [[nodiscard]] constexpr auto deduce(const Packet &packet) const -> value_type {
+  template<named_tuple_like Packet, serializer Serializer>
+  [[nodiscard]] constexpr auto deduce(const Packet &packet, Serializer &ser) const -> value_type {
     auto field_filter = [&](const auto &nv) {
       return UPD_INVOKE(identifier_filter, expr<nv.identifier>);
     };
 
-    return packet
+    auto retval = init;
+    auto it = invoker_iterator {[&](auto byte) { retval = UPD_INVOKE(op, retval, byte); }};
+
+    packet
       .filter(field_filter)
       .transform([](const auto &named_field) -> const auto & { return named_field.value(); })
-      .fold_left(init, op);
+      .for_each([&](const auto &field_value) { field_value.serialize(ser, it); });
+  
+    return retval;
   }
 
   template<serializer Serializer, std::input_iterator InputIt>
@@ -528,14 +545,22 @@ struct checksum_t {
   }
 };
 
-template<name Identifier, typename BinaryOp, std::size_t Width, typename Init>
-[[nodiscard]] constexpr auto checksum(BinaryOp op, width_t<Width>, Init init, all_fields_t) noexcept(release) {
+template<name Identifier, typename BinaryOp, std::size_t Width>
+[[nodiscard]] constexpr auto checksum(
+    BinaryOp op,
+    xuint<Width> init,
+    all_fields_t
+) noexcept(release) {
   auto is_not_this_field = [](auto id) {
     return expr<id != Identifier>;
   };
 
-  auto retval = checksum_t<Identifier, BinaryOp, Width,
-       Init, decltype(is_not_this_field)>{std::move(op), init, is_not_this_field};
+  auto retval = checksum_t<
+    Identifier,
+    BinaryOp,
+    Width,
+    decltype(is_not_this_field)>
+  {std::move(op), init, is_not_this_field};
   
   return description{std::move(retval)};
 }
