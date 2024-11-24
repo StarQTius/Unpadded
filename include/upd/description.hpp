@@ -7,6 +7,8 @@
 #include <tuple>
 #include <type_traits>
 #include <variant>
+#include <expected>
+#include <iterator>
 
 #include "detail/always_false.hpp"
 #include "detail/has_value_member.hpp"
@@ -22,19 +24,16 @@
 #include "tuple.hpp"
 #include "upd.hpp"
 
-namespace upd::descriptor {
-
-template<name, bool, std::size_t>
-struct field_t;
-
-template<name, std::size_t>
-struct constant_t;
-
-} // namespace upd::descriptor
+#define UPD_WELL_FORMED(...) \
+  do { \
+    if (requires { __VA_ARGS__; }) { \
+      __VA_ARGS__; \
+    } \
+  } while (false)
 
 namespace upd::detail {
 
-template<typename Iter>
+template<std::input_or_output_iterator Iter>
 class iterator_reference {
 public:
   using iterator_type = Iter;
@@ -58,10 +57,12 @@ public:
     return *this;
   }
 
-  constexpr auto operator++() const -> const iterator_reference & {
+  constexpr auto operator++(int) -> iterator_reference {
+    auto retval = *this;
     m_cache = *m_iter;
     ++m_iter.get();
-    return *this;
+    
+    return retval;
   }
 
 private:
@@ -72,6 +73,99 @@ private:
 } // namespace upd::detail
 
 namespace upd {
+
+struct no_error {};
+
+struct not_matching_deduction {
+  const char *identifier;
+};
+
+using error_data_types = typelist<
+  no_error,
+  not_matching_deduction
+>;
+
+template<typename T>
+concept variadic_instance = requires(T x) {
+  []<template<typename ...> typename TT, typename ...Ts>(const TT<Ts...> &) {} (x);
+};
+
+template<typename T>
+using is_variadic_instance = auto_constant<variadic_instance<T>>;
+
+template<typename T>
+concept value_variadic_instance = requires(T x) {
+  []<template<auto ...> typename TT, auto ...Values>(const TT<Values...> &) {} (x);
+};
+
+template<typename T>
+using is_value_variadic_instance = auto_constant<value_variadic_instance<T>>;
+
+template<typename T, typename Variadic>
+concept element_of = variadic_instance<Variadic>
+&& instantiate_variadic<detail::lite_tuple, Variadic>::has_type(typebox<T>{});
+
+template<typename T, variadic_instance Variadic>
+using is_element_of = auto_constant<element_of<T, Variadic>>;
+
+template<auto Value, typename Variadic>
+concept value_element_of = value_variadic_instance<Variadic>
+&& instantiate_variadic<detail::lite_tuple, Variadic>::has_type(expr<Value>);
+
+template<auto Value, value_variadic_instance Variadic>
+using is_value_element_of = auto_constant<value_element_of<Value, Variadic>>;
+
+template<typename T>
+concept error_data = element_of<std::remove_cvref_t<T>, error_data_types>;
+
+class error {
+  using data_type = instantiate_variadic<std::variant, error_data_types>;
+
+  public:
+    constexpr error() noexcept(release) = default;
+    constexpr error(const error&) noexcept(release) = default;
+    constexpr error(error&&) noexcept(release) = default;
+
+    template<error_data ErrorData>
+    constexpr error(ErrorData &&err_data) noexcept(release) : m_data{UPD_FWD(err_data)} {}
+
+    constexpr auto operator=(const error&) noexcept(release) -> error & = default;
+    constexpr auto operator=(error&&) noexcept(release) -> error & = default;
+
+    template<error_data ErrorData>
+    constexpr auto operator=(ErrorData &&err_data) noexcept(release) -> error& {
+      m_data = UPD_FWD(err_data);
+      return *this;
+    }
+
+    [[nodiscard]] constexpr operator bool() const noexcept(release) {
+      return !std::holds_alternative<no_error>(m_data);
+    }
+
+  private:
+    data_type m_data;
+};
+
+template<typename T>
+using result = std::expected<T, error>;
+
+template<typename T>
+[[nodiscard]] constexpr auto result_if_no_error(T &&x, const error &err) -> result<std::remove_cvref_t<T>> {
+  if (err) {
+    return std::unexpected{err};
+  } else {
+    return UPD_FWD(x);
+  }
+}
+
+template<typename T>
+[[nodiscard]] constexpr auto result_if_no_error(T &&x, error &&err) -> result<std::remove_cvref_t<T>> {
+  if (err) {
+    return std::unexpected{std::move(err)};
+  } else {
+    return UPD_FWD(x);
+  }
+}
 
 template<typename>
 class invoker_iterator;
@@ -160,98 +254,6 @@ private:
   F m_f;
 };
 
-enum class error {
-  none,
-  checksum_mismatch,
-  constant_mismatch,
-};
-
-template<typename E = error>
-class unexpected {
-public:
-  constexpr unexpected() noexcept = default;
-
-  constexpr unexpected(E e) noexcept : m_error{std::move(e)} {}
-
-  [[nodiscard]] constexpr operator bool() const noexcept { return static_cast<bool>(m_error); }
-
-  [[nodiscard]] constexpr auto error() const noexcept -> E { return m_error; }
-
-private:
-  E m_error;
-};
-
-template<typename T, typename E = error>
-class expected {
-public:
-  constexpr explicit expected(T x) noexcept : m_value_or_error{std::in_place_index<0>, std::move(x)} {}
-
-  constexpr expected(unexpected<E> e) noexcept : m_value_or_error{std::in_place_index<1>, e.error()} {}
-
-  [[nodiscard]] constexpr operator bool() const noexcept { return value_if() != nullptr; }
-
-  [[nodiscard]] constexpr auto operator*() noexcept -> T & { return value(); }
-
-  [[nodiscard]] constexpr auto operator*() const noexcept -> const T & { return value(); }
-
-  [[nodiscard]] constexpr auto operator->() noexcept -> T * { return &value(); }
-
-  [[nodiscard]] constexpr auto operator->() const noexcept -> const T * { return &value(); }
-
-  [[nodiscard]] constexpr auto value() & noexcept(release) -> T & {
-    auto *v = value_if();
-    UPD_ASSERT(v != nullptr);
-
-    return *v;
-  }
-
-  [[nodiscard]] constexpr auto value() const & noexcept(release) -> const T & {
-    const auto *v = value_if();
-    UPD_ASSERT(v != nullptr);
-
-    return *v;
-  }
-
-  [[nodiscard]] constexpr auto value() && noexcept(release) -> T && {
-    auto *v = value_if();
-    UPD_ASSERT(v != nullptr);
-
-    return std::move(*v);
-  }
-
-  [[nodiscard]] constexpr auto error() & noexcept(release) -> E & {
-    auto *e = error_if();
-    UPD_ASSERT(e != nullptr);
-
-    return *e;
-  }
-
-  [[nodiscard]] constexpr auto error() const & noexcept(release) -> const E & {
-    const auto *e = error_if();
-    UPD_ASSERT(e != nullptr);
-
-    return *e;
-  }
-
-  [[nodiscard]] constexpr auto error() && noexcept(release) -> E && {
-    auto *e = error_if();
-    UPD_ASSERT(e != nullptr);
-
-    return std::move(*e);
-  }
-
-  [[nodiscard]] constexpr auto value_if() noexcept -> T * { return std::get_if<0>(&m_value_or_error); }
-
-  [[nodiscard]] constexpr auto value_if() const noexcept -> const T * { return std::get_if<0>(&m_value_or_error); }
-
-  [[nodiscard]] constexpr auto error_if() noexcept -> E * { return std::get_if<1>(&m_value_or_error); }
-
-  [[nodiscard]] constexpr auto error_if() const noexcept -> const E * { return std::get_if<1>(&m_value_or_error); }
-
-private:
-  std::variant<T, E> m_value_or_error;
-};
-
 } // namespace upd
 
 namespace upd::descriptor {
@@ -290,165 +292,120 @@ enum class field_tag {
   checksum,
 };
 
-template<typename... Ts>
+template<named_value_instance ...NamedValues>
+using named_value_bundle = decltype(named_tuple{std::declval<NamedValues>()...});
+
+template<typename T>
+concept field_like = requires(T) {
+  typename T::value_type;
+} && requires(T x) {
+  { x.default_value() } -> std::same_as<typename T::value_type>;
+  { x.deduce(named_tuple{}) } -> std::same_as<typename T::value_type>;
+};
+
+template<typename T, typename Serializer>
+concept decodable_field = field_like<T>
+&& serializer<Serializer>
+&& requires(
+    T x,
+    Serializer ser,
+    const byte_type<Serializer> *src) {
+  { x.decode(src, ser) } -> std::same_as<typename T::value_type>;
+};
+
+template<typename T, typename Serializer>
+concept encodable_field = field_like<T>
+&& serializer<Serializer>
+&& requires(
+    T x,
+    Serializer ser,
+    typename T::value_type value,
+    byte_type<Serializer> *dest) {
+  { x.encode(value, ser, dest) } -> std::same_as<void>;
+};
+
+template<field_like... Ts>
 class description {
-  template<typename... Ts_, typename... Us>
-  friend constexpr auto operator|(description<Ts_...> lhs, description<Us...> rhs) noexcept;
-
-  template<name, bool Is_Signed, std::size_t Width>
-  friend constexpr auto descriptor::field(signedness_t<Is_Signed>, width_t<Width>) noexcept(release);
-
-  template<name, typename T, std::size_t Width>
-  friend constexpr auto descriptor::constant(T, width_t<Width>) noexcept(release);
-
-  template<name, typename BinaryOp, std::size_t Width, typename Init>
-  friend constexpr auto descriptor::checksum(BinaryOp, width_t<Width>, Init, descriptor::all_fields_t) noexcept(release);
+  template<typename... _Ts, typename... Us>
+  friend constexpr auto operator|(description<_Ts...> lhs, description<Us...> rhs) noexcept(release);
 
 public:
   constexpr static auto identifiers = typelist<Ts...>{}
-    .transform([](auto field_type) { return expr<field_type->identifier>; });
+    .transform([]<typename T>(typebox<T>) { return expr<T::identifier>; });
 
-  template<typename Serializer, named_value_instance... NamedValues>
-  [[nodiscard]] constexpr auto instantiate(Serializer &ser, NamedValues &&... nvs) const noexcept {
-    static_assert((requires { named_value{nvs}; } && ...),
-                  "`nvs` must be a pack of `named_value` instances");
+  explicit constexpr description(Ts ...fields) : m_fields{std::move(fields)...} {}
 
-    auto named_args = named_tuple{UPD_FWD(nvs)...};
-    auto first_pass = [&](const auto &field) {
-      if constexpr (field.tag == field_tag::pure_field) {
-        constexpr auto width = field.width;
-        using representation = std::conditional_t<field.is_signed, xint<width>, xuint<width>>;
-        auto value = named_args[keyword<field.identifier>{}];
-        return keyword<field.identifier>{} = representation{value};
-      } else if constexpr (field.tag == field_tag::constant) {
-        return keyword<field.identifier>{} = field.value;
-      } else if constexpr (field.tag == field_tag::checksum) {
-        constexpr auto width = field.width;
-        return keyword<field.identifier>{} = xuint<width>{field.init};
-      } else {
-        static_assert(UPD_ALWAYS_FALSE, "`field` is not a field object");
-      }
-    };
+  template<named_tuple_instance NamedTuple, serializer Serializer, std::output_iterator<byte_type<Serializer>> OutputIt>
+  constexpr void encode(const NamedTuple &nargs, Serializer &ser, OutputIt dest) const {
+    auto packet = m_fields
+      .transform([&]<typename Field>(const Field &field) {
+        using value_type = typename Field::value_type;
+        auto id = expr<field.identifier>;
+        if constexpr (nargs.contains(id)) {
+          return keyword<field.identifier>{} = value_type{nargs[id]};
+        } else {
+          return keyword<field.identifier>{} = field.default_value();
+        }
+      })
+      .apply([](auto &&... field_values) { return named_tuple{UPD_FWD(field_values)...}; });
 
-    auto make_named_tuple = [](auto &&...nvs) { return named_tuple{UPD_FWD(nvs)...}; };
-    auto retval = m_fields.transform(first_pass).apply(make_named_tuple);
-    auto second_pass = [&](const auto &field) {
-      if constexpr (field.tag == field_tag::checksum) {
-        constexpr auto identifier = field.identifier;
-        auto &[op, init, get_range] = field;
-        auto &acc = retval[keyword<identifier>{}];
-        auto folder = invoker_iterator{
-          [&, op=op](auto x) { acc = op(acc, x); }
-        };
+    zip(packet, m_fields)
+      .for_each(unpack | [&](auto &field_value, const auto &field) {
+        UPD_WELL_FORMED(field_value.value() = field.deduce(std::as_const(packet)));
+      });
 
-        get_range(identifiers).for_each([&](auto id) {
-          return retval[keyword<id.value>{}].serialize(ser, folder);
-        });
-      }
-    };
-
-    m_fields.for_each(second_pass);
-    return expected{std::move(retval)};
+    zip(packet, m_fields)
+      .for_each(unpack | [&](const auto &field_value, const auto &field) {
+        field.encode(field_value.value(), ser, dest);
+      });
   }
 
-  template<typename InputIt, typename Serializer>
-  [[nodiscard]] constexpr auto decode(InputIt src, Serializer &ser) const noexcept(release) {
-    auto err = unexpected{};
-    auto accumulators = m_fields
-      .filter([](const auto &field) { return expr<field.tag == field_tag::checksum>; })
-      .apply([](auto &&... checksum_fields) {
-          return named_tuple { (keyword<checksum_fields.identifier>{} = checksum_fields.init)...};
-        }
-      );
-
-    auto first_pass = [&](const auto &field) {
-      if constexpr (field.tag == field_tag::checksum) {
-        const auto &[op, init, get_range] = field;
-        auto &acc = accumulators[keyword<field.identifier>{}];
-        auto range = get_range(identifiers);
-        auto accumulate = [&, &op = op](auto identifier, const auto &value) {
-          auto position = range
-            .find_if(to_metafunction([=](auto id) { return id == identifier; }));
-
-          if constexpr (position < range.size()) {
-            acc = op(acc, value);
-          }
-        };
-
-        return accumulate;
-      }
-    };
-    
-    auto checksum_accs = m_fields.transform(first_pass, filter_void);
-    auto second_pass = [&](const auto &field) {
-      constexpr auto identifier = field.identifier;
-      if constexpr (field.tag == field_tag::pure_field) {
-        constexpr auto width = field.width;
-        using representation = std::conditional_t<field.is_signed, xint<width>, xuint<width>>;
-        auto decorated_src = transformer_iterator{
-          detail::iterator_reference{src},
-          [&](const auto &value) {
-            checksum_accs.for_each([&](auto acc) { acc(auto_constant<identifier>{}, value); });
-            return value;
-          }
-        };
-        return keyword<identifier>{} = deserialize_into_xinteger<representation>(decorated_src, ser);
-      } else if constexpr (field.tag == field_tag::constant) {
-        constexpr auto width = field.width;
-        using representation = std::conditional_t<field.is_signed, xint<width>, xuint<width>>;
-        auto decorated_src = transformer_iterator{
-          detail::iterator_reference{src},
-          [&](const auto &value) {
-            checksum_accs.for_each([&](auto acc) { acc(auto_constant<identifier>{}, value); });
-            return value;
-          }
-        };
-
-        auto received = deserialize_into_xinteger<representation>(decorated_src, ser);
-        if (!err && received != field.value) {
-          err = error::constant_mismatch;
-        }
-      } else if constexpr (field.tag == field_tag::checksum) {
-        constexpr auto width = field.width;
-        using representation = std::conditional_t<field.is_signed, xint<width>, xuint<width>>;
-        auto received = deserialize_into_xinteger<representation>(detail::iterator_reference{src}, ser);
-        if (!err && accumulators[keyword<identifier>{}] != received) {
-          err = error::checksum_mismatch;
-        }
-      } else {
-        static_assert(UPD_ALWAYS_FALSE, "`field.tag` is not a valid `field_tag` enumerator");
-      }
-    };
-
+  template<serializer Serializer, std::input_iterator InputIt>
+  [[nodiscard]] constexpr auto decode(InputIt src, Serializer &ser) const {
+    auto err = error{};
     auto retval = m_fields
-      .transform(second_pass, filter_void)
-      .apply([](auto &&... nvs) { return named_tuple{UPD_FWD(nvs)...}; });
-    return err ? err : expected{std::move(retval)};
+      .apply([](const auto & ...fields) {
+          return named_tuple { (keyword<fields.identifier>{} = fields.default_value())... };
+      });
+
+    m_fields
+      .for_each([&](const auto &field) {
+        retval[expr<field.identifier>] = field.decode(detail::iterator_reference{src}, ser);
+      });
+
+    zip(retval, m_fields)
+      .for_each(unpack | [&](const auto &field_value, const auto &field) {
+        if (!err && field_value.value() == field.deduce(retval)) {
+          err = not_matching_deduction{field_value.identifier.string};
+        }
+      });
+
+    return result_if_no_error(std::move(retval), std::move(err));
   }
 
 private:
-  explicit constexpr description(tuple<Ts...> fields) : m_fields{std::move(fields)} {}
-
   tuple<Ts...> m_fields;
 };
 
 template<typename... Ts, typename... Us>
-[[nodiscard]] constexpr inline auto operator|(description<Ts...> lhs, description<Us...> rhs) noexcept {
-  auto fields = std::move(lhs.m_fields) + std::move(rhs.m_fields);
+[[nodiscard]] constexpr auto operator|(description<Ts...> lhs, description<Us...> rhs) noexcept(release) {
+  auto concatenated_fields = std::move(lhs.m_fields) + std::move(rhs.m_fields);
 
   // For each identifier of the merged description, we count how often it
   // appears. If the total is not equal to the number of fields, we know that
   // there are duplicate identifiers.
-  auto self_comparison_count = fields
+  auto self_comparison_count = concatenated_fields
     .type_only()
     .transform([]<typename T>(typebox<T>) { return expr<T::identifier>; })
     .square()
     .transform(unpack | equal_to)
     .fold_left(expr<0uz>, plus);
 
-  static_assert(self_comparison_count == fields.size(), "Merging these descriptions would result in duplicate IDs");
+  static_assert(self_comparison_count == concatenated_fields.size(), "Merging these descriptions would result in duplicate IDs");
 
-  return description{std::move(fields)};
+  return std::move(concatenated_fields).apply(
+    [](auto && ...fields) { return description{std::move(fields)...}; }
+  );
 }
 
 } // namespace upd
@@ -457,53 +414,130 @@ namespace upd::descriptor {
 
 template<name Identifier, bool Signedness, std::size_t Width>
 struct field_t {
-  constexpr static auto tag = field_tag::pure_field;
   constexpr static auto identifier = Identifier;
   constexpr static auto is_signed = Signedness;
   constexpr static auto width = Width;
+
+  using value_type = std::conditional_t<is_signed, xint<width>, xuint<width>>;
+
+  [[nodiscard]] constexpr static auto default_value() noexcept(release) -> value_type {
+    return value_type{};
+  }
+
+  template<named_tuple_like Packet>
+  [[nodiscard]] constexpr static auto deduce(const Packet &packet) -> value_type {
+    return packet.at(expr<identifier>);
+  }
+
+  template<serializer Serializer, std::input_iterator InputIt>
+  [[nodiscard]] constexpr static auto decode(InputIt src, Serializer &ser) -> value_type {
+    if constexpr (is_signed) {
+      return ser.deserialize_signed(src, upd::width<width>);
+    } else {
+      return ser.deserialize_unsigned(src, upd::width<width>);
+    }
+  }
+
+  template<serializer Serializer, std::output_iterator<byte_type<Serializer>> OutputIt>
+  constexpr static void encode(value_type value, Serializer &ser, OutputIt dest) {
+    if constexpr (is_signed) {
+      return ser.serialize_signed(value, dest);
+    } else {
+      return ser.serialize_unsigned(value, dest);
+    }
+  }
 };
 
 template<name Identifier, bool Signedness, std::size_t Width>
 [[nodiscard]] constexpr auto field(signedness_t<Signedness>, width_t<Width>) noexcept(release) {
-  auto retval = field_t<Identifier, Signedness, Width>{};
-  return description{tuple{retval}};
+  field_like auto retval = field_t<Identifier, Signedness, Width>{};
+
+  return description{retval};
 }
 
 template<name Identifier, std::size_t Width>
 struct constant_t {
-  constexpr static auto tag = field_tag::constant;
   constexpr static auto identifier = Identifier;
-  constexpr static auto is_signed = false;
   constexpr static auto width = Width;
 
-  xuint<width> value;
+  using value_type = xuint<width>;
+
+  value_type field_value;
+
+  [[nodiscard]] constexpr auto default_value() const noexcept(release) -> value_type {
+    return field_value;
+  }
+
+  template<named_tuple_like Packet>
+  [[nodiscard]] constexpr static auto deduce(const Packet &packet) -> value_type {
+    return packet.at(expr<identifier>);
+  }
+
+  template<serializer Serializer, std::input_iterator InputIt>
+  [[nodiscard]] constexpr static auto decode(InputIt src, Serializer &ser) -> value_type {
+    return ser.deserialize_unsigned(src, upd::width<width>);
+  }
+
+  template<serializer Serializer, std::output_iterator<byte_type<Serializer>> OutputIt>
+  constexpr static void encode(value_type value, Serializer &ser, OutputIt dest) {
+    return ser.serialize_unsigned(value, dest);
+  }
 };
 
 template<name Identifier, typename T, std::size_t Width>
 [[nodiscard]] constexpr auto constant(T n, width_t<Width>) noexcept(release) {
   auto retval = constant_t<Identifier, Width>{n};
-  return description{tuple{retval}};
+  return description{retval};
 }
 
-template<name Identifier, typename BinaryOp, std::size_t Width, typename Init, typename GetRange>
+template<name Identifier, typename BinaryOp, std::size_t Width, typename Init, typename FieldFilter>
 struct checksum_t {
-  constexpr static auto tag = field_tag::checksum;
   constexpr static auto identifier = Identifier;
-  constexpr static auto is_signed = false;
   constexpr static auto width = Width;
+
+  using value_type = xuint<width>;
 
   BinaryOp op;
   Init init;
-  GetRange get_range;
+  FieldFilter identifier_filter;
+
+  [[nodiscard]] constexpr static auto default_value() noexcept(release) -> value_type {
+    return 0u;
+  }
+
+  template<named_tuple_like Packet>
+  [[nodiscard]] constexpr auto deduce(const Packet &packet) const -> value_type {
+    auto field_filter = [&](const auto &nv) {
+      return UPD_INVOKE(identifier_filter, expr<nv.identifier>);
+    };
+
+    return packet
+      .filter(field_filter)
+      .transform([](const auto &named_field) -> const auto & { return named_field.value(); })
+      .fold_left(init, op);
+  }
+
+  template<serializer Serializer, std::input_iterator InputIt>
+  [[nodiscard]] constexpr static auto decode(InputIt src, Serializer &ser) -> value_type {
+    return ser.deserialize_unsigned(src, upd::width<width>);
+  }
+
+  template<serializer Serializer, std::output_iterator<byte_type<Serializer>> OutputIt>
+  constexpr static void encode(value_type value, Serializer &ser, OutputIt dest) {
+    return ser.serialize_unsigned(value, dest);
+  }
 };
 
 template<name Identifier, typename BinaryOp, std::size_t Width, typename Init>
 [[nodiscard]] constexpr auto checksum(BinaryOp op, width_t<Width>, Init init, all_fields_t) noexcept(release) {
-  auto get_range = [](auto identifiers) { return identifiers.filter([](auto id) { return auto_constant<id != Identifier>{}; }); };
+  auto is_not_this_field = [](auto id) {
+    return expr<id != Identifier>;
+  };
+
   auto retval = checksum_t<Identifier, BinaryOp, Width,
-       Init, decltype(get_range)>{std::move(op), init, get_range};
+       Init, decltype(is_not_this_field)>{std::move(op), init, is_not_this_field};
   
-  return description{tuple{retval}};
+  return description{std::move(retval)};
 }
 
 } // namespace upd::descriptor

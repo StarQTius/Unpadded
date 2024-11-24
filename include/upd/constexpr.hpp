@@ -25,7 +25,7 @@ struct auto_constant {
 
   constexpr static auto value = Value;
 
-  template<typename T>
+  template<typename T> requires std::convertible_to<value_type, T>
   [[nodiscard]] constexpr operator T() const {
     return static_cast<T>(value);
   }

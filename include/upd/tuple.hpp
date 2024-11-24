@@ -18,19 +18,31 @@
 #define UPD_CONSTEXPR_ASSERT(...) \
   (std::is_constant_evaluated() && (__VA_ARGS__) ? (void) 0 : throw)
 
+#define UPD_THIS_DEDUCTION_REQUIRES_WORKAROUND(...) \
+  static_assert(__VA_ARGS__)
+
+#define UPD_VARIADIC_CONSTRAINT_WORKAROUND(...) \
+  ((__VA_ARGS__) && ...)
+
+#define UPD_INVOKE(INVOCABLE, ...) ((INVOCABLE)(__VA_ARGS__))
+
 namespace upd::detail {
 
 template<std::size_t I, typename T>
-struct leaf {
+struct leaf{
   [[nodiscard]] constexpr auto at(auto_constant<I>) &noexcept -> T & { return value; }
 
   [[nodiscard]] constexpr auto at(auto_constant<I>) const &noexcept -> const T & { return value; }
 
-  [[nodiscard]] constexpr auto at(auto_constant<I>) &&noexcept -> T && { return std::move(value); }
+  [[nodiscard]] constexpr auto at(auto_constant<I>) &&noexcept -> T && { return UPD_FWD(value); }
 
-  [[nodiscard]] constexpr auto at(auto_constant<I>) const &&noexcept -> const T && { return std::move(value); }
+  [[nodiscard]] constexpr auto at(auto_constant<I>) const &&noexcept -> const T && { return UPD_FWD(value); }
 
   [[nodiscard]] constexpr static auto typebox_at(auto_constant<I>) noexcept -> typebox<T>;
+
+  [[nodiscard]] constexpr static auto has_type(typebox<T>) noexcept(release) -> bool {
+    return true;
+  }
 
   T value;
 };
@@ -42,8 +54,11 @@ template<std::size_t... Is, typename... Ts>
 struct leaves<std::index_sequence<Is...>, Ts...> : leaf<Is, Ts>... {
   using leaf<Is, Ts>::at...;
   using leaf<Is, Ts>::typebox_at...;
+  using leaf<Is, Ts>::has_type...;
 
   [[nodiscard]] constexpr auto typebox_at(...) const noexcept -> variadic::not_found_t { return variadic::not_found; }
+
+  [[nodiscard]] constexpr static auto has_type(...) noexcept(release) -> bool { return false; }
 
   template<std::size_t I>
   using raw_type = typename decltype(typebox_at(auto_constant<I>{}))::type;
@@ -113,16 +128,6 @@ struct reference_like<T, U&&> {
 template<typename T, typename U>
 using reference_like_t = typename reference_like<T, U>::type;
 
-template<std::size_t I, typename Tuple>
-[[nodiscard]] constexpr auto get(Tuple &&tuple) noexcept(release) -> auto && {
-  decltype(auto) retval = UPD_FWD(tuple).m_leaves.at(expr<I>);
-
-  using retval_type = decltype(retval);
-  static_assert(!std::is_same_v<retval_type, detail::variadic::not_found_t>, "`I` is not a valid index for `tuple`");
-
-  return UPD_FWD(retval);
-}
-
 template<typename T, typename BinaryOp>
 class accumulable_t {
   template<typename _T, typename U, std::invocable<_T, U> _BinaryOp>
@@ -180,8 +185,9 @@ concept tuple_like = requires(std::remove_reference_t<T> x) {
   };
   return (has_tuple_element(auto_constant<Is>{}) && ...);
 } (std::make_index_sequence<std::tuple_size_v<std::remove_reference_t<T>>>{})
-&& []<std::size_t... Is>(std::index_sequence<Is...>) {
-  [[maybe_unused]] auto is_nth_gettable = [](auto i) {
+&&
+[]<std::size_t... Is>(std::index_sequence<Is...>) {
+  [[maybe_unused]] auto is_nth_gettable = []([[maybe_unused]] auto i) {
     return requires(T &&x) {
       { get<i>(UPD_FWD(x)) } -> std::same_as<
         transfert_reference_t<std::tuple_element_t<i, std::remove_reference_t<T>> &&, T &&>
@@ -189,7 +195,12 @@ concept tuple_like = requires(std::remove_reference_t<T> x) {
     };
   };
   return (is_nth_gettable(auto_constant<Is>{}) && ...);
-} (std::make_index_sequence<std::tuple_size_v<std::remove_reference_t<T>>>{});
+}(std::make_index_sequence<std::tuple_size_v<std::remove_reference_t<T>>>{});
+
+template<std::size_t I, typename Tuple>
+[[nodiscard]] constexpr auto get(Tuple &&t) noexcept(release) -> auto && {
+  return UPD_FWD(t).template get<I, Tuple>();
+}
 
 template<std::size_t N>
 constexpr auto sequence = []<std::size_t... Is>(std::index_sequence<Is...>) {
@@ -250,6 +261,79 @@ concept constlist_like = tuple_like<T> && []<std::size_t... Is>(constlist<Is...>
   using noref_type [[maybe_unused]] = std::remove_reference_t<T>;
   return (metavalue<std::tuple_element_t<Is, T>> && ...);
 }(sequence_for<T>);
+
+template<std::size_t, typename>
+struct named_tuple_element;
+
+template<std::size_t I, typename Tuple>
+struct named_tuple_element<I, const Tuple> {
+  using type = const typename named_tuple_element<I, Tuple>::type;
+};
+
+template<std::size_t I, typename Tuple>
+struct named_tuple_element<I, volatile Tuple> {
+  using type = volatile typename named_tuple_element<I, Tuple>::type;
+};
+
+template<std::size_t I, typename Tuple>
+struct named_tuple_element<I, const volatile Tuple> {
+  using type = const volatile typename named_tuple_element<I, Tuple>::type;
+};
+
+template<std::size_t I, typename Tuple>
+using named_tuple_element_t = typename named_tuple_element<I, Tuple>::type;
+
+template<std::size_t, typename>
+struct named_tuple_identifier;
+
+template<std::size_t I, typename Tuple>
+struct named_tuple_identifier<I, const Tuple> {
+  constexpr static auto value = named_tuple_identifier<I, Tuple>::value;
+};
+
+template<std::size_t I, typename Tuple>
+struct named_tuple_identifier<I, volatile Tuple> {
+  constexpr static auto value = named_tuple_identifier<I, Tuple>::value;
+};
+
+template<std::size_t I, typename Tuple>
+struct named_tuple_identifier<I, const volatile Tuple> {
+  constexpr static auto value = named_tuple_identifier<I, Tuple>::value;
+};
+
+template<std::size_t I, typename Tuple>
+constexpr auto named_tuple_identifier_v = named_tuple_identifier<I, Tuple>::value;
+
+template<typename T>
+concept named_tuple_like = tuple_like<T>
+&& []<std::size_t... Is>(std::index_sequence<Is...>) {
+  [[maybe_unused]] auto has_tuple_identifier = [](auto i) {
+    return requires(std::remove_reference_t<T> x) {
+      named_tuple_identifier<i, decltype(x)>::value;
+    };
+  };
+  return (has_tuple_identifier(expr<Is>) && ...);
+} (std::make_index_sequence<std::tuple_size_v<std::remove_reference_t<T>>>{})
+&& []<std::size_t... Is>(std::index_sequence<Is...>) {
+  [[maybe_unused]] auto has_tuple_identifier = [](auto i) {
+    return requires(std::remove_reference_t<T> x) {
+      typename named_tuple_element<i, decltype(x)>::type;
+    };
+  };
+  return (has_tuple_identifier(expr<Is>) && ...);
+} (std::make_index_sequence<std::tuple_size_v<std::remove_reference_t<T>>>{})
+&& []<std::size_t... Is>(std::index_sequence<Is...>) {
+  [[maybe_unused]] auto is_nth_id_gettable = []([[maybe_unused]] auto i) {
+    using noref_type = std::remove_reference_t<T>;
+    [[maybe_unused]] constexpr auto identifier = named_tuple_identifier_v<i, noref_type>;
+    return requires(T &&x) {
+      { get<named_tuple_identifier_v<i, noref_type>>(UPD_FWD(x)) } -> std::same_as<
+        transfert_reference_t<named_tuple_element_t<i, noref_type> &&, T &&>
+      >;
+    };
+  };
+  return (is_nth_id_gettable(expr<Is>) && ...);
+}(std::make_index_sequence<std::tuple_size_v<std::remove_reference_t<T>>>{});
 
 template<typename T>
 concept array_like = tuple_like<T>
@@ -362,12 +446,12 @@ public:
 
   template<typename Self, metavalue I>
   [[nodiscard]] constexpr auto operator[](this Self &&self, I i) noexcept(release) -> auto && {
-    return get<i>(UPD_FWD(self).derived());
+    return UPD_FWD(self).at(i);
   }
 
   template<typename Self, metavalue I>
   [[nodiscard]] constexpr auto at(this Self &&self, I i) noexcept(release) -> auto && {
-    return get<i>(UPD_FWD(self).derived());
+    return UPD_FWD(self).derived().template get<i>();
   }
 
   template<typename T, typename Self>
@@ -417,10 +501,16 @@ public:
     return transform(filter_one).clean(typebox<cleanme_t>{});
   }
 
+  template<auto Value> requires constlist_like<Derived>
+  [[nodiscard]] constexpr auto find(auto_constant<Value>) const {
+    return find_if([](const auto &x) { return expr<x.value == Value>; });
+  }
+
   template<const_predicate_on_each<Derived> UnaryPred> 
   [[nodiscard]] constexpr auto find_if(UnaryPred &&p) const {
     auto filtered = zip(sequence<size()>, derived())
-      .filter(unpack | [&](auto, const auto &x) { return std::invoke(p, x); });
+      .filter(unpack | [&](auto, const auto &x) { return std::invoke(p, x); })
+      .clone();
 
     if constexpr (filtered.size() > 0) {
       return filtered[expr<0uz>][expr<0uz>];
@@ -554,7 +644,7 @@ public:
 
   template<typename Self, typename F>
   [[nodiscard]] constexpr auto transform(this Self &&self, F &&f) {
-    static_assert(transformer_on_each<F, Derived>);
+    UPD_THIS_DEDUCTION_REQUIRES_WORKAROUND(transformer_on_each<F, Derived>);
 
     auto invoke_f_at = [&](auto i) -> decltype(auto) {
       return f(UPD_FWD(self).at(i));
@@ -589,8 +679,9 @@ public:
     return upd::type_only(derived());
   }
 
-  template<typename Self, applicable<Derived> F>
+  template<typename Self, typename F>
   [[nodiscard]] constexpr auto apply(this Self &&self, F &&f) -> decltype(auto) {
+    // UPD_THIS_DEDUCTION_REQUIRES_WORKAROUND(applicable<F, Derived>);
     auto seq = std::make_index_sequence<size()>{};
 
     return [&]<std::size_t ...Is>(std::index_sequence<Is...>) -> decltype(auto) {
@@ -603,7 +694,7 @@ public:
     static_assert(invocable_on_each<F, Derived>);
 
     UPD_FWD(self).apply([&](auto &&... xs) {
-      ((void) std::invoke(f, UPD_FWD(xs)), ...);
+      ((void) UPD_INVOKE(f, UPD_FWD(xs)), ...);
     });
   }
 
@@ -614,9 +705,6 @@ public:
 
 template<typename... Ts>
 class tuple : public tuple_implementation<tuple<Ts...>> {
-  template<std::size_t, typename Tuple>
-  friend constexpr auto get(Tuple &&) noexcept(release) -> auto &&;
-
   using leaves = detail::leaves<std::index_sequence_for<Ts...>, Ts...>;
 
 public:
@@ -641,6 +729,16 @@ public:
   template<typename ...Us>
   constexpr explicit tuple(std::in_place_t, Us &&... xs): m_leaves{UPD_FWD(xs)...} {}
 
+  template<std::size_t I, typename Self>
+  [[nodiscard]] constexpr auto get(this Self &&self) noexcept(release) -> auto && {
+    decltype(auto) retval = UPD_FWD(self).m_leaves.at(expr<I>);
+
+    using retval_type = decltype(retval);
+    static_assert(!std::is_same_v<retval_type, detail::variadic::not_found_t>, "`I` is not a valid index for `tuple`");
+
+    return UPD_FWD(retval);
+  }
+
 private:
   leaves m_leaves;
 };
@@ -657,9 +755,6 @@ explicit tuple(std::in_place_t, Ts...) -> tuple<
 
 template<typename... Ts>
 class typelist : public tuple_implementation<typelist<Ts...>> {
-  template<std::size_t, typename Tuple>
-  friend constexpr auto get(Tuple &&) noexcept(release) -> auto &&;
-
   using leaves = detail::leaves<std::index_sequence_for<Ts...>, typebox<Ts>...>;
 
 public:
@@ -682,6 +777,16 @@ public:
 
   template<metatype... Metas>
   constexpr explicit typelist(Metas...) noexcept(release) {}
+
+  template<std::size_t I, typename Self>
+  [[nodiscard]] constexpr auto get(this Self &&self) noexcept(release) -> auto && {
+    decltype(auto) retval = UPD_FWD(self).m_leaves.at(expr<I>);
+
+    using retval_type = decltype(retval);
+    static_assert(!std::is_same_v<retval_type, detail::variadic::not_found_t>, "`I` is not a valid index for `tuple`");
+
+    return UPD_FWD(retval);
+  }
 
 private:
   leaves m_leaves;
@@ -720,6 +825,16 @@ public:
   template<metavalue... Metas>
   constexpr explicit constlist(Metas...) noexcept(release) {}
 
+  template<std::size_t I, typename Self>
+  [[nodiscard]] constexpr auto get(this Self &&self) noexcept(release) -> auto && {
+    decltype(auto) retval = UPD_FWD(self).m_leaves.at(expr<I>);
+
+    using retval_type = decltype(retval);
+    static_assert(!std::is_same_v<retval_type, detail::variadic::not_found_t>, "`I` is not a valid index for `tuple`");
+
+    return UPD_FWD(retval);
+  }
+
 private:
   leaves m_leaves;
 };
@@ -738,7 +853,7 @@ template<tuple_like Tuple>
     .apply([](auto ...types) { return typelist {types...}; });
 }
 
-template<tuple_like ...Tuples> requires (!(typelist_like<Tuples> && ...))
+template<tuple_like ...Tuples> requires (!UPD_VARIADIC_CONSTRAINT_WORKAROUND(typelist_like<Tuples> || named_tuple_like<Tuples>))
 [[nodiscard]] constexpr auto concat(Tuples &&... ts) noexcept(release) {
   auto element_types = concat(type_only(ts)...);
   using retval_type = instantiate_variadic<tuple, decltype(element_types)>;
@@ -783,7 +898,7 @@ template<typename F>
 struct unpacker {
   template<typename Self, typename Tuple>
   [[nodiscard]] constexpr auto operator()(this Self &&self, Tuple &&t) noexcept(release) -> decltype(auto) {
-    static_assert(applicable<F, Tuple>);
+    UPD_THIS_DEDUCTION_REQUIRES_WORKAROUND(applicable<F, Tuple>);
 
     using noref_type = std::remove_reference_t<Tuple>;
     constexpr auto size = std::tuple_size_v<noref_type>;

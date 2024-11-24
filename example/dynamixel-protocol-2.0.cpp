@@ -159,14 +159,8 @@ int main() {
   auto oit = std::ostream_iterator<std::byte>{std::cout, " "};
   std::cout << std::hex;
 
-  auto ping_ex1 = description.instantiate(ser,
-      "id"_kw = 1, "length"_kw = 3, "instruction"_kw = 1);
-  if (!ping_ex1) {
-    return (int)ping_ex1.error();
-  }
-
   std::printf("Ping: example 1\n");
-  ping_ex1->serialize(ser, oit);
+  description.encode(("id"_kw = 1, "length"_kw = 3, "instruction"_kw = 1), ser, oit);
   std::printf("\n\n");
 
   auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x07, 0x00, 0x55, 0x00, 0x06, 0x04, 0x26, 0x65, 0x5d};
