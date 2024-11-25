@@ -13,6 +13,21 @@ ostream &operator<<(ostream &os, byte b) { return os << static_cast<int>(b); }
 
 using crc = upd::xuint<16>;
 
+template<std::size_t Width, typename Underlying>
+struct std::formatter<upd::extended_integer<Width, Underlying>> {
+  std::formatter<Underlying> underlying_formatter;
+
+  consteval formatter() noexcept = default;
+
+  constexpr auto parse(std::format_parse_context &ctx) {
+    return underlying_formatter.parse(ctx);
+  }
+
+  auto format(upd::extended_integer<Width, Underlying> xi, std::format_context &ctx) const {
+    return underlying_formatter.format(xi.value(), ctx);
+  }
+};
+
 template<>
 struct std::formatter<upd::no_error> {
   constexpr static auto parse(std::format_parse_context &ctx) {
@@ -210,9 +225,10 @@ auto ping_example() -> upd::error {
   auto oit = std::ostream_iterator<std::byte>{std::cout, " "};
   std::cout << std::hex;
 
-  std::printf("Ping: example 1\n");
+  std::println("Ping: example 1");
   description.encode(("id"_kw = 1, "length"_kw = 3, "instruction"_kw = 1), ser, oit);
-  std::printf("\n\n");
+  std::println("");
+  std::println("");
 
   auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x07, 0x00, 0x55, 0x00, 0x06, 0x04, 0x26, 0x65, 0x5d};
   auto answer1 = answer_description.decode(answer1_seq.begin(), ser);
@@ -220,14 +236,14 @@ auto ping_example() -> upd::error {
     return answer1.error();
   }
 
-  std::printf("Answer 1: \n");
-  std::printf("- id: %" PRIx8 "\n", (std::uint8_t)(*answer1)["id"_kw]);
-  std::printf("- length: %" PRIx16 "\n", (std::uint16_t)(*answer1)["length"_kw]);
-  std::printf("- instruction: %" PRIx8 "\n", (std::uint8_t)(*answer1)["instruction"_kw]);
-  std::printf("- error: %" PRIx8 "\n", (std::uint8_t)(*answer1)["error"_kw]);
-  std::printf("- model number: %" PRIx16 "\n", (std::uint16_t)(*answer1)["model_number"_kw]);
-  std::printf("- firmware version: %" PRIx8 "\n", (std::uint8_t)(*answer1)["firmware_version"_kw]);
-  std::printf("\n\n");
+  std::println("Answer 1:");
+  std::println("- id: {:x}", (*answer1)["id"_kw]);
+  std::println("- length: {:x}", (*answer1)["length"_kw]);
+  std::println("- instruction: {:x}", (*answer1)["instruction"_kw]);
+  std::println("- error: {:x}", (*answer1)["error"_kw]);
+  std::println("- model number: {:x}", (*answer1)["model_number"_kw]);
+  std::println("- firmware version: {:x}", (*answer1)["firmware_version"_kw]);
+  std::println("");
 
   auto answer2_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x02, 0x07, 0x00, 0x55, 0x00, 0x06, 0x04, 0x26, 0x6f, 0x6d};
   auto answer2 = answer_description.decode(answer2_seq.begin(), ser);
@@ -235,14 +251,14 @@ auto ping_example() -> upd::error {
     return answer2.error();
   }
 
-  std::printf("Answer 2: \n");
-  std::printf("- id: %" PRIx8 "\n", (std::uint8_t)(*answer2)["id"_kw]);
-  std::printf("- length: %" PRIx16 "\n", (std::uint16_t)(*answer2)["length"_kw]);
-  std::printf("- instruction: %" PRIx8 "\n", (std::uint8_t)(*answer2)["instruction"_kw]);
-  std::printf("- error: %" PRIx8 "\n", (std::uint8_t)(*answer2)["error"_kw]);
-  std::printf("- model number: %" PRIx16 "\n", (std::uint16_t)(*answer2)["model_number"_kw]);
-  std::printf("- firmware version: %" PRIx8 "\n", (std::uint8_t)(*answer2)["firmware_version"_kw]);
-  std::printf("\n\n");
+  std::println("Answer 2:");
+  std::println("- id: {:x}", (*answer2)["id"_kw]);
+  std::println("- length: {:x}", (*answer2)["length"_kw]);
+  std::println("- instruction: {:x}", (*answer2)["instruction"_kw]);
+  std::println("- error: {:x}", (*answer2)["error"_kw]);
+  std::println("- model number: {:x}", (*answer2)["model_number"_kw]);
+  std::println("- firmware version: {:x}", (*answer2)["firmware_version"_kw]);
+  std::println("");
 
   return upd::no_error{};
 }
