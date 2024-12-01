@@ -24,8 +24,6 @@
 #define UPD_VARIADIC_CONSTRAINT_WORKAROUND(...) \
   ((__VA_ARGS__) && ...)
 
-#define UPD_INVOKE(INVOCABLE, ...) ((INVOCABLE)(__VA_ARGS__))
-
 namespace upd::detail {
 
 template<std::size_t I, typename T>
@@ -130,10 +128,10 @@ using reference_like_t = typename reference_like<T, U>::type;
 
 template<typename T, typename BinaryOp>
 class accumulable_t {
-  template<typename _T, typename U, std::invocable<_T, U> _BinaryOp>
+  template<typename _T, typename U, invocable<_T, U> _BinaryOp>
   friend constexpr auto operator,(accumulable_t<_T, _BinaryOp> &&, U &&) -> decltype(auto);
 
-  template<typename U, typename _T, std::invocable<U, _T> _BinaryOp>
+  template<typename U, typename _T, invocable<U, _T> _BinaryOp>
   friend constexpr auto operator,(U &&, accumulable_t<_T, _BinaryOp> &&) -> decltype(auto);
 
   template<typename _T, typename _BinaryOp>
@@ -145,12 +143,12 @@ class accumulable_t {
   BinaryOp m_op;
 };
 
-template<typename T, typename U, std::invocable<T, U> BinaryOp>
+template<typename T, typename U, invocable<T, U> BinaryOp>
 [[nodiscard]] constexpr auto operator,(accumulable_t<T, BinaryOp> &&acc, U &&x) -> decltype(auto) {
   return UPD_INVOKE(UPD_FWD(acc.m_op), UPD_FWD(acc.m_value), UPD_FWD(x));
 }
 
-template<typename U, typename T, std::invocable<U, T> BinaryOp>
+template<typename U, typename T, invocable<U, T> BinaryOp>
 [[nodiscard]] constexpr auto operator,(U &&x, accumulable_t<T, BinaryOp> &&acc) -> decltype(auto) {
   return UPD_INVOKE(UPD_FWD(acc.m_op), UPD_FWD(x), UPD_FWD(acc.m_value));
 }
@@ -360,7 +358,7 @@ using apply_result_t = typename apply_result<F, Tuple, decltype(sequence_for<Tup
 template<typename T, typename Tuple>
 concept applicable = tuple_like<Tuple>
 && []<std::size_t... Is>(constlist<Is...>) {
-  return std::invocable<T, std::tuple_element_t<Is, std::remove_reference_t<Tuple>>...>;
+  return invocable<T, std::tuple_element_t<Is, std::remove_reference_t<Tuple>>...>;
 }(sequence_for<Tuple>);
 
 template<typename T, typename Tuple, typename R>

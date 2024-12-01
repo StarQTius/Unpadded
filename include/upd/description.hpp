@@ -219,7 +219,7 @@ class invoker_iterator_proxy {
 public:
   using invocable_type = typename Parent::invocable_type;
 
-  template<typename T> requires std::invocable<invocable_type, T>
+  template<typename T> requires invocable<invocable_type, T>
   constexpr auto operator=(T &&x) const -> const invoker_iterator_proxy & {
     std::invoke(m_parent->m_f, UPD_FWD(x));
     return *this;

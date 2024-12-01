@@ -134,19 +134,19 @@ public:
 
   template<typename F>
   [[nodiscard]] constexpr auto map(F &&f) & {
-    decltype(auto) mapped_value = std::invoke(UPD_FWD(f), m_value);
+    decltype(auto) mapped_value = UPD_INVOKE(UPD_FWD(f), m_value);
     return keyword<identifier>{} = UPD_FWD(mapped_value);
   }
 
   template<typename F>
   [[nodiscard]] constexpr auto map(F &&f) const & {
-    decltype(auto) mapped_value = std::invoke(UPD_FWD(f), m_value);
+    decltype(auto) mapped_value = UPD_INVOKE(UPD_FWD(f), m_value);
     return keyword<identifier>{} = UPD_FWD(mapped_value);
   }
 
   template<typename F>
   [[nodiscard]] constexpr auto map(F &&f) && {
-    decltype(auto) mapped_value = std::invoke(UPD_FWD(f), std::move(m_value));
+    decltype(auto) mapped_value = UPD_INVOKE(UPD_FWD(f), std::move(m_value));
     return keyword<identifier>{} = UPD_FWD(mapped_value);
   }
 

@@ -24,6 +24,7 @@
 #include "index_type.hpp"
 #include "span.hpp"
 #include "upd.hpp"
+#include "functional.hpp"
 
 namespace upd {
 
@@ -165,7 +166,7 @@ private:
 
   template<typename F, std::size_t... Is>
   auto invoke_on_some(F &&f, std::index_sequence<Is...>) const -> decltype(auto) {
-    return std::invoke(UPD_FWD(f), get(index_type_v<Is>)...);
+    return UPD_INVOKE(UPD_FWD(f), get(index_type_v<Is>)...);
   }
 
   template<std::size_t... Is>

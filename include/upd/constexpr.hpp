@@ -30,14 +30,14 @@ struct auto_constant {
     return static_cast<T>(value);
   }
 
-  template<auto... Args> requires std::invocable<value_type, decltype(Args)...>
+  template<auto... Args> requires invocable<value_type, decltype(Args)...>
   [[nodiscard]] constexpr static auto operator()(auto_constant<Args>...) noexcept(release) {
-    return expr<std::invoke(value, Args...)>;
+    return expr<UPD_INVOKE(value, Args...)>;
   }
 
-  template<typename... Args> requires std::invocable<value_type, Args...>
+  template<typename... Args> requires invocable<value_type, Args...>
   [[nodiscard]] constexpr static auto operator()(Args && ... args) -> decltype(auto) {
-    return std::invoke(value, UPD_FWD(args)...);
+    return UPD_INVOKE(value, UPD_FWD(args)...);
   }
 
   template<auto... Args> requires requires { value[Args...]; }
