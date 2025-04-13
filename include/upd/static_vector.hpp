@@ -7,6 +7,7 @@
 #include <initializer_list>
 #include <iterator>
 #include <optional>
+#include <ranges>
 
 namespace upd {
 
@@ -15,17 +16,22 @@ class static_vector {
 public:
   using value_type = T;
 
-  constexpr explicit static_vector(std::initializer_list<T> init)
-      : static_vector{std::move_iterator{init.begin()}, std::move_iterator{init.end()}} {}
+  constexpr static_vector() noexcept(release) : m_content{}, m_size{0} {}
 
-  template<typename It>
-  constexpr explicit static_vector(It first, It last) {
-    auto range_size = std::distance(first, last);
-    UPD_ASSERT(range_size >= 0);
-    UPD_ASSERT(static_cast<std::uintmax_t>(range_size) <= m_content.size());
+  [[nodiscard]] constexpr auto begin() noexcept(release) -> value_type* {
+    return reinterpret_cast<value_type *>(m_content.begin());
+  }
 
-    std::copy(first, last, m_content.begin());
-    m_size = range_size;
+  [[nodiscard]] constexpr auto begin() const noexcept(release) -> const value_type* {
+    return reinterpret_cast<const value_type *>(m_content.begin());
+  }
+
+  [[nodiscard]] constexpr auto end() noexcept(release) -> value_type* {
+    return reinterpret_cast<value_type *>(m_content.begin()) + m_size;
+  }
+
+  [[nodiscard]] constexpr auto end() const noexcept(release) -> const value_type* {
+    return reinterpret_cast<const value_type *>(m_content.begin()) + m_size;
   }
 
   template<typename U, std::size_t N>
@@ -48,39 +54,39 @@ public:
   }
 
   [[nodiscard]] constexpr auto try_push_back(const T &value) -> bool {
-    auto *last_opt = get_opt(m_size);
-
-    if (last_opt) {
-      *last_opt = value;
-      ++m_size;
+    if (m_content.size() == m_size) {
+      return false;
     }
 
-    return last_opt;
+    m_content[m_size].value = value;
+
+    return true;
   }
 
   [[nodiscard]] constexpr auto try_push_back(T &&value) -> bool {
-    auto *last_opt = get_opt(m_size);
-
-    if (last_opt) {
-      *last_opt = std::move(value);
-      ++m_size;
+    if (m_content.size() == m_size) {
+      return false;
     }
 
-    return last_opt;
+    m_content[m_size].value = std::move(value);
+
+    return true;
+  }
+
+  ~static_vector() noexcept(release) {
+    namespace stdv = std::views;
+
+    for (auto &elem : m_content | stdv::take(m_size)) {
+      std::destroy_at(&elem.value);
+    }
   }
 
 private:
-  [[nodiscard]] constexpr auto get_opt(std::size_t i) noexcept -> std::optional<T> * {
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
-    return i < m_content.size() ? &m_content[i] : nullptr;
-  }
+  union stored_type {
+    value_type value;
+  };
 
-  [[nodiscard]] constexpr auto get_opt(std::size_t i) const noexcept -> const std::optional<T> * {
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
-    return i < m_content.size() ? &m_content[i] : nullptr;
-  }
-
-  std::array<std::optional<T>, Capacity> m_content;
+  std::array<stored_type, Capacity> m_content;
   std::size_t m_size{};
 };
 

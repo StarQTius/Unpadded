@@ -9,6 +9,14 @@ concept invocable = requires(T &&x, Args &&... args) {
   UPD_INVOKE(UPD_FWD(x), UPD_FWD(args)...);
 };
 
+template<typename F, typename... Args>
+struct invoke_result {
+  using type = decltype(UPD_INVOKE(std::declval<F>(), std::declval<Args>()...));
+};
+
+template<typename F, typename... Args>
+using invoke_result_t = typename invoke_result<F, Args...>::type;
+
 constexpr inline auto equal_to = [](auto &&lhs, auto &&rhs) {
   return UPD_FWD(lhs) == UPD_FWD(rhs);
 };

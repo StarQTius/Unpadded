@@ -46,7 +46,40 @@ struct std::formatter<upd::not_matching_deduction> {
   }
 
   static auto format(const upd::not_matching_deduction &err, std::format_context &ctx) {
-    return std::format_to(ctx.out(), "`{}` field actual and deduced value do not match", err.identifier);
+    return std::format_to(ctx.out(), "'{}' field actual and deduced value do not match", err.identifier);
+  }
+};
+
+template<>
+struct std::formatter<upd::invalid_code_in_one_of> {
+  constexpr static auto parse(std::format_parse_context &ctx) {
+    return ctx.begin();
+  }
+
+  static auto format(const upd::invalid_code_in_one_of &err, std::format_context &ctx) {
+    return std::format_to(ctx.out(), "{} is not a code of any alternative in one-of field '{}'", err.code, err.identifier);
+  }
+};
+
+template<>
+struct std::formatter<upd::negative_repetition_count> {
+  constexpr static auto parse(std::format_parse_context &ctx) {
+    return ctx.begin();
+  }
+
+  static auto format(const upd::negative_repetition_count &err, std::format_context &ctx) {
+    return std::format_to(ctx.out(), "Negative repetition count {} found for repetition field '{}'", err.count, err.identifier);
+  }
+};
+
+template<>
+struct std::formatter<upd::repeated_beyond_max> {
+  constexpr static auto parse(std::format_parse_context &ctx) {
+    return ctx.begin();
+  }
+
+  static auto format(const upd::repeated_beyond_max &err, std::format_context &ctx) {
+    return std::format_to(ctx.out(), "Field repeated {} time in '{}', beyond the maximum limit ({})", err.count, err.identifier, err.max);
   }
 };
 
@@ -62,6 +95,90 @@ struct std::formatter<upd::error> {
     };
 
     return err.visit(format_error_data);
+  }
+};
+
+template<typename... Ts>
+struct std::formatter<std::variant<Ts...>> {
+  constexpr static auto parse(std::format_parse_context &ctx) {
+    return ctx.begin();
+  }
+
+  static auto format(const std::variant<Ts...> &one_of_values, std::format_context &ctx) {
+    auto format_alt = [&](const auto &alt) { return std::format_to(ctx.out(), "{}", alt); };
+    return std::visit(format_alt, one_of_values);
+  }
+};
+
+template<auto Identifiers, typename... Ts>
+struct std::formatter<upd::named_tuple<Identifiers, Ts...>> {
+  consteval formatter() noexcept = default;
+  
+  constexpr static auto parse(std::format_parse_context &ctx) {
+    return ctx.begin();
+  }
+
+  static auto format(const upd::named_tuple<Identifiers, Ts...> &named_elems, std::format_context &ctx) {
+    auto it = ctx.out();
+    it = std::format_to(it, "(");
+    named_elems.for_each([&, first=true] (const auto &named_elem) mutable {
+        if (first) {
+          it = std::format_to(it, "{}", named_elem);
+          first = false;
+        } else {
+          it = std::format_to(it, ", {}", named_elem);
+        }
+    });
+    it = std::format_to(it, ")");
+
+    ctx.advance_to(it);
+    return it;
+  }
+};
+
+template<upd::name Identifier, typename T>
+struct std::formatter<upd::named_value<Identifier, T>> {
+  std::formatter<T> value_formatter;
+
+  consteval formatter() noexcept = default;
+
+  constexpr auto parse(std::format_parse_context &ctx) {
+    return ctx.begin();
+  }
+
+  static auto format(const upd::named_value<Identifier, T> &named_obj, std::format_context &ctx) {
+    return std::format_to(ctx.out(), "{} -> {}", named_obj.identifier.string, named_obj.value());
+  }
+};
+
+template<typename T, std::size_t Max>
+struct std::formatter<upd::static_vector<T, Max>> {
+  std::formatter<T> element_formatter;
+
+  consteval formatter() noexcept = default;
+
+  constexpr auto parse(std::format_parse_context &ctx) {
+    return element_formatter.parse(ctx);
+  }
+
+  auto format(const upd::static_vector<T, Max> &statvec, std::format_context &ctx) const {
+    auto it = ctx.out();
+    it = std::format_to(it, "{{");
+    
+    for (auto first=true; const auto &elem : statvec) {
+      if (first) {
+        first = false;
+      } else {
+        it = std::format_to(it, ", ");
+      }
+
+      ctx.advance_to(it);
+      it = element_formatter.format(elem, ctx);
+    }
+
+    it = std::format_to(it, "}}");
+    
+    return it;
   }
 };
 
@@ -105,15 +222,46 @@ constexpr auto accumulate_crc(crc acc, upd::xuint<8> byte) noexcept -> crc {
   return (acc << 8) ^ crc_table[i];
 }
 
+enum class instruction_code {
+  ping = 0x1,
+  read = 0x2,
+  status = 0x55,
+};
+
+template<>
+struct std::formatter<instruction_code> {
+  using underlying_type = std::underlying_type_t<instruction_code>;
+
+  std::formatter<underlying_type> underlying_formatter;
+
+  consteval formatter() noexcept = default;
+
+  constexpr auto parse(std::format_parse_context &ctx) {
+    return underlying_formatter.parse(ctx);
+  }
+
+  auto format(instruction_code code, std::format_context &ctx) const {
+    auto underlying_value = std::to_underlying(code);
+    return underlying_formatter.format(underlying_value, ctx);
+  }
+};
+
 constexpr auto description = [] {
   using namespace upd;
   using namespace upd::literals;
   using namespace upd::descriptor;
 
+  using enum instruction_code;
+
   return constant<"header">(0xfdffff, width<32>)
   | field<"id">(unsigned_int, width<8>)
-  | field<"length">(unsigned_int, width<16>)
-  | field<"instruction">(unsigned_int, width<8>)
+  | bound<"length">(unsigned_int, width<16>, length_of<"parameters"> / 8 + 3)
+  | bound<"instruction">(enumeration<instruction_code>, width<8>)
+  | one_of<"parameters">(value_of<"instruction">,
+    when<ping> = empty_description,
+    when<read> = field<"address">(unsigned_int, width<16>)
+               | field<"length">(unsigned_int, width<16>)
+  )
   | checksum<"crc">(accumulate_crc, xuint<16>{0}, all_fields);
 }();
 
@@ -122,11 +270,24 @@ constexpr auto answer_description = [] {
   using namespace upd::literals;
   using namespace upd::descriptor;
 
-  return constant<"header">(0xfdffff, width<32>) | field<"id">(unsigned_int, width<8>) |
-         field<"length">(unsigned_int, width<16>) | field<"instruction">(unsigned_int, width<8>) |
-         field<"error">(unsigned_int, width<8>) | field<"model_number">(unsigned_int, width<16>) |
-         field<"firmware_version">(unsigned_int, width<8>) | 
-         checksum<"crc">(accumulate_crc, xuint<16>{0}, all_fields);
+  using enum instruction_code;
+
+  return constant<"header">(0xfdffff, width<32>)
+    | field<"id">(unsigned_int, width<8>)
+    | bound<"length">(unsigned_int, width<16>, length_of<"parameters"> / 8 + 3)
+    | constant<"instruction">(0x55, width<8>)
+    | field<"error">(unsigned_int, width<8>)
+    | one_of<"parameters">(value_of<"status_of">,
+      when<ping> = empty_description,
+      when<read> = repeat<"data">(
+        field<"value">(unsigned_int, width<8>),
+        value_of<"length"> - 3,
+        at_most<1024>
+      )
+    )
+    | field<"model_number">(unsigned_int, width<16>)
+    | field<"firmware_version">(unsigned_int, width<8>)
+    | checksum<"crc">(accumulate_crc, xuint<16>{0}, all_fields);
 }();
 
 struct serializer {
@@ -199,7 +360,7 @@ struct serializer {
 template<std::size_t N>
 struct bytearray : std::array<std::byte, N> {
   template<typename... Bytes>
-  constexpr explicit bytearray(Bytes... bytes) noexcept : std::array<std::byte, N>{static_cast<std::byte>(bytes)...} {}
+  explicit bytearray(Bytes... bytes) noexcept : std::array<std::byte, N>{static_cast<std::byte>(bytes)...} {}
 };
 
 template<typename... Bytes>
@@ -231,7 +392,7 @@ auto ping_example() -> upd::error {
   std::println("");
 
   auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x07, 0x00, 0x55, 0x00, 0x06, 0x04, 0x26, 0x65, 0x5d};
-  auto answer1 = answer_description.decode(answer1_seq.begin(), ser);
+  auto answer1 = answer_description.decode(answer1_seq.begin(), upd::named_tuple{"status_of"_kw = instruction_code::ping}, ser);
   if (!answer1) {
     return answer1.error();
   }
@@ -241,12 +402,13 @@ auto ping_example() -> upd::error {
   std::println("- length: {:x}", (*answer1)["length"_kw]);
   std::println("- instruction: {:x}", (*answer1)["instruction"_kw]);
   std::println("- error: {:x}", (*answer1)["error"_kw]);
+  std::println("- parameters: {}", (*answer1)["parameters"_kw]);
   std::println("- model number: {:x}", (*answer1)["model_number"_kw]);
   std::println("- firmware version: {:x}", (*answer1)["firmware_version"_kw]);
   std::println("");
 
   auto answer2_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x02, 0x07, 0x00, 0x55, 0x00, 0x06, 0x04, 0x26, 0x6f, 0x6d};
-  auto answer2 = answer_description.decode(answer2_seq.begin(), ser);
+  auto answer2 = answer_description.decode(answer2_seq.begin(), upd::named_tuple{"status_of"_kw = instruction_code::ping}, ser);
   if (!answer2) {
     return answer2.error();
   }
@@ -256,6 +418,7 @@ auto ping_example() -> upd::error {
   std::println("- length: {:x}", (*answer2)["length"_kw]);
   std::println("- instruction: {:x}", (*answer2)["instruction"_kw]);
   std::println("- error: {:x}", (*answer2)["error"_kw]);
+  std::println("- parameters: {}", (*answer2)["parameters"_kw]);
   std::println("- model number: {:x}", (*answer2)["model_number"_kw]);
   std::println("- firmware version: {:x}", (*answer2)["firmware_version"_kw]);
   std::println("");

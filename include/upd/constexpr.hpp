@@ -58,7 +58,7 @@ template<auto LhsValue, auto RhsValue> requires requires { LhsValue == RhsValue;
 
 template<auto LhsValue, typename Rhs>
 requires requires { LhsValue == std::declval<Rhs>(); }
-[[nodiscard]] consteval auto operator==(auto_constant<LhsValue>, Rhs &&rhs) -> decltype(auto) {
+[[nodiscard]] constexpr auto operator==(auto_constant<LhsValue>, Rhs &&rhs) -> decltype(auto) {
   return LhsValue == UPD_FWD(rhs);
 }
 
@@ -70,7 +70,7 @@ requires requires { LhsValue <=> RhsValue; }
 
 template<auto LhsValue, typename Rhs>
 requires requires { LhsValue <=> std::declval<Rhs>(); }
-[[nodiscard]] consteval auto operator<=>(auto_constant<LhsValue>, Rhs &&rhs) -> decltype(auto) {
+[[nodiscard]] constexpr auto operator<=>(auto_constant<LhsValue>, Rhs &&rhs) -> decltype(auto) {
   return LhsValue <=> UPD_FWD(rhs);
 }
 

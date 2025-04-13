@@ -24,6 +24,53 @@
 #define UPD_VARIADIC_CONSTRAINT_WORKAROUND(...) \
   ((__VA_ARGS__) && ...)
 
+namespace upd {
+
+template<typename Target, typename From>
+struct transfert_reference {
+  using type = Target;
+};
+
+template<typename Target, typename From>
+struct transfert_reference<Target, From &> {
+  using type = Target &;
+};
+
+template<typename Target, typename From>
+struct transfert_reference<Target, From &&> {
+  using type = Target &&;
+};
+
+template<typename Target, typename From>
+using transfert_reference_t = typename transfert_reference<Target, From>::type;
+
+template<typename T>
+concept tuple_like = requires(std::remove_reference_t<T> x) {
+  std::tuple_size<decltype(x)>::value;
+  { std::tuple_size_v<decltype(x)> } -> std::convertible_to<std::size_t>;
+}
+&& []<std::size_t... Is>(std::index_sequence<Is...>) {
+  [[maybe_unused]] auto has_tuple_element = [](auto i) {
+    return requires(std::remove_reference_t<T> x) {
+      typename std::tuple_element_t<i, decltype(x)>;
+    };
+  };
+  return (has_tuple_element(auto_constant<Is>{}) && ...);
+} (std::make_index_sequence<std::tuple_size_v<std::remove_reference_t<T>>>{})
+&&
+[]<std::size_t... Is>(std::index_sequence<Is...>) {
+  [[maybe_unused]] auto is_nth_gettable = []([[maybe_unused]] auto i) {
+    return requires(T &&x) {
+      { get<i>(UPD_FWD(x)) } -> std::same_as<
+        transfert_reference_t<std::tuple_element_t<i, std::remove_reference_t<T>> &&, T &&>
+      >;
+    };
+  };
+  return (is_nth_gettable(auto_constant<Is>{}) && ...);
+}(std::make_index_sequence<std::tuple_size_v<std::remove_reference_t<T>>>{});
+
+} // namespace upd
+
 namespace upd::detail {
 
 template<std::size_t I, typename T>
@@ -66,13 +113,16 @@ struct leaves<std::index_sequence<Is...>, Ts...> : leaf<Is, Ts>... {
   constexpr leaves() = default;
 
   template<typename ...Us>
-  explicit constexpr leaves(Us &&... xs) : leaf<Is, Ts>{UPD_FWD(xs)}... {}
+  explicit constexpr leaves(std::in_place_t, Us &&... xs) : leaf<Is, Ts>{UPD_FWD(xs)}... {}
+
+  template<tuple_like Tuple>
+  explicit constexpr leaves(Tuple &&t) : leaf<Is, Ts>{get<Is>(UPD_FWD(t))}... {}
 
   [[nodiscard]] constexpr auto at(...) const noexcept -> variadic::not_found_t { return variadic::not_found; }
 };
 
 template<typename... Ts>
-explicit leaves(Ts...) -> leaves<Ts...>;
+explicit leaves(std::in_place_t, Ts...) -> leaves<Ts...>;
 
 template<typename... Ts>
 using lite_tuple = leaves<std::index_sequence_for<Ts...>, Ts...>;
@@ -80,24 +130,6 @@ using lite_tuple = leaves<std::index_sequence_for<Ts...>, Ts...>;
 } // namespace upd::detail
 
 namespace upd {
-
-template<typename Target, typename From>
-struct transfert_reference {
-  using type = Target;
-};
-
-template<typename Target, typename From>
-struct transfert_reference<Target, From &> {
-  using type = Target &;
-};
-
-template<typename Target, typename From>
-struct transfert_reference<Target, From &&> {
-  using type = Target &&;
-};
-
-template<typename Target, typename From>
-using transfert_reference_t = typename transfert_reference<Target, From>::type;
 
 constexpr struct unpack_t {} unpack;
 
@@ -170,31 +202,6 @@ class constlist;
 template<typename>
 class tuple_implementation;
 
-template<typename T>
-concept tuple_like = requires(std::remove_reference_t<T> x) {
-  std::tuple_size<decltype(x)>::value;
-  { std::tuple_size_v<decltype(x)> } -> std::convertible_to<std::size_t>;
-}
-&& []<std::size_t... Is>(std::index_sequence<Is...>) {
-  [[maybe_unused]] auto has_tuple_element = [](auto i) {
-    return requires(std::remove_reference_t<T> x) {
-      typename std::tuple_element_t<i, decltype(x)>;
-    };
-  };
-  return (has_tuple_element(auto_constant<Is>{}) && ...);
-} (std::make_index_sequence<std::tuple_size_v<std::remove_reference_t<T>>>{})
-&&
-[]<std::size_t... Is>(std::index_sequence<Is...>) {
-  [[maybe_unused]] auto is_nth_gettable = []([[maybe_unused]] auto i) {
-    return requires(T &&x) {
-      { get<i>(UPD_FWD(x)) } -> std::same_as<
-        transfert_reference_t<std::tuple_element_t<i, std::remove_reference_t<T>> &&, T &&>
-      >;
-    };
-  };
-  return (is_nth_gettable(auto_constant<Is>{}) && ...);
-}(std::make_index_sequence<std::tuple_size_v<std::remove_reference_t<T>>>{});
-
 template<std::size_t I, typename Tuple>
 [[nodiscard]] constexpr auto get(Tuple &&t) noexcept(release) -> auto && {
   return UPD_FWD(t).template get<I, Tuple>();
@@ -237,7 +244,7 @@ struct std::tuple_size<upd::constlist<Values...>> {
 
 template<std::size_t I, auto... Values>
 struct std::tuple_element<I, upd::constlist<Values...>> {
-  using type = decltype(auto{upd::detail::lite_tuple<upd::auto_constant<Values>...>{}.at(upd::expr<I>)});
+  using type = decltype(auto{upd::detail::lite_tuple<upd::auto_constant<Values>...>{}.at(upd::expr<I>)}) const &;
 };
 
 namespace upd {
@@ -257,7 +264,7 @@ concept typelist_like = tuple_like<T> && []<std::size_t... Is>(std::index_sequen
 template<typename T>
 concept constlist_like = tuple_like<T> && []<std::size_t... Is>(constlist<Is...>) {
   using noref_type [[maybe_unused]] = std::remove_reference_t<T>;
-  return (metavalue<std::tuple_element_t<Is, T>> && ...);
+  return (metavalue<std::remove_cvref_t<std::tuple_element_t<Is, noref_type>>> && ...);
 }(sequence_for<T>);
 
 template<std::size_t, typename>
@@ -377,7 +384,7 @@ const_applicable<T, Tuple>
 template<typename T, typename Tuple>
 concept invocable_on_each = tuple_like<Tuple>
 && []<std::size_t... Is>(constlist<Is...>) {
-  return (std::is_invocable_v<T &, std::tuple_element_t<Is, Tuple>> && ...);
+  return (invocable<T &, std::tuple_element_t<Is, Tuple>> && ...);
 }(sequence_for<Tuple>);
 
 template<typename T, typename Tuple>
@@ -402,9 +409,7 @@ transformer_on_each<T, Tuple>
 template<typename T, typename Tuple>
 concept const_predicate_on_each =
 const_invocable_on_each<T, Tuple>
-&& []<std::size_t... Is>(constlist<Is...>) {
-  return (std::convertible_to< decltype(std::invoke_result_t<T &, std::tuple_element_t<Is, Tuple>>::value), bool> && ...);
-}(sequence_for<Tuple>);
+&& predicate_on_each<T, Tuple>;
 
 template<typename T, typename Init, typename Tuple>
 concept left_foldable_on =
@@ -447,9 +452,31 @@ public:
     return UPD_FWD(self).at(i);
   }
 
+  /* Compiler bug with gcc14
   template<typename Self, metavalue I>
   [[nodiscard]] constexpr auto at(this Self &&self, I i) noexcept(release) -> auto && {
     return UPD_FWD(self).derived().template get<i>();
+  }
+  */
+
+  template<metavalue I>
+  [[nodiscard]] constexpr auto at(I i) & noexcept(release) -> auto & {
+    return derived().template get<i>();
+  }
+
+  template<metavalue I>
+  [[nodiscard]] constexpr auto at(I i) const & noexcept(release) -> const auto & {
+    return derived().template get<i>();
+  }
+
+  template<metavalue I>
+  [[nodiscard]] constexpr auto at(I i) && noexcept(release) -> auto && {
+    return std::move(derived()).template get<i>();
+  }
+
+  template<metavalue I>
+  [[nodiscard]] constexpr auto at(I i) const && noexcept(release) -> const auto && {
+    return std::move(derived()).template get<i>();
   }
 
   template<typename T, typename Self>
@@ -501,7 +528,46 @@ public:
 
   template<auto Value> requires constlist_like<Derived>
   [[nodiscard]] constexpr auto find(auto_constant<Value>) const {
-    return find_if([](const auto &x) { return expr<x.value == Value>; });
+    return find_if([](const auto &x) {
+      constexpr auto are_comparable = (requires { x.value == Value; });
+      if constexpr (are_comparable) {
+        return expr<x.value == Value>;
+      } else {
+        return expr<false>;
+      }
+    });
+  }
+
+  template<typename T>
+  [[nodiscard]] constexpr auto find(const T &value) const {
+    return find_if([&](const auto &x) {
+      constexpr auto are_comparable = (requires { x == value; });
+      if constexpr (are_comparable) {
+        return x == value;
+      } else {
+        return false;
+      }
+    });
+  }
+
+  template<predicate_on_each<Derived> UnaryPred> 
+  [[nodiscard]] constexpr auto find_if(UnaryPred &&p) const -> std::size_t {
+    auto retval = 0uz;
+    auto found_yet = false;
+
+    for_each([&](const auto &x) {
+      if (found_yet) {
+        return;
+      }
+
+      if (UPD_INVOKE(p, x)) {
+        found_yet = true;
+      } else {
+        ++retval;
+      }
+    });
+
+    return retval;
   }
 
   template<const_predicate_on_each<Derived> UnaryPred> 
@@ -623,11 +689,11 @@ public:
     auto seq = sequence<Derived::size()>;
     
     auto make_ipair_list = [=](auto i) {
-      return seq.transform([&](auto j) { return constlist<i, j>{}; });
+      return seq.transform([&](auto j) { return constlist<std::size_t{i}, std::size_t{j}>{}; });
     };
 
     auto make_pair = [&](auto ipair) {
-      auto [i, j] = ipair;
+      const auto &[i, j] = ipair;
       return tuple{
         ref{UPD_FWD(self).at(i)},
         ref{UPD_FWD(self).at(j)}
@@ -642,7 +708,7 @@ public:
 
   template<typename Self, typename F>
   [[nodiscard]] constexpr auto transform(this Self &&self, F &&f) {
-    UPD_THIS_DEDUCTION_REQUIRES_WORKAROUND(transformer_on_each<F, Derived>);
+    // UPD_THIS_DEDUCTION_REQUIRES_WORKAROUND(transformer_on_each<F, Derived>);
 
     auto invoke_f_at = [&](auto i) -> decltype(auto) {
       return f(UPD_FWD(self).at(i));
@@ -699,6 +765,30 @@ public:
   [[nodiscard]] constexpr static auto size() noexcept(release) -> std::size_t {
     return std::tuple_size_v<Derived>;
   }
+
+  template<typename Self, typename F>
+  [[nodiscard]] constexpr auto visit(this Self&& self, std::size_t i, F &&f) {
+    using retval_type = typename decltype(
+    self.type_only()
+      .apply([]<typename ...Ts>(typebox<Ts>...) {
+        using retval_type = std::common_type_t<std::invoke_result_t<F, Ts>...>;
+        return typebox<retval_type>{};
+      })
+    )::type;
+
+    UPD_ASSERT(i <= size());
+
+    auto make_invoker_for_ith = [&](auto i) {
+      return +[](Self &&self, F &&f) -> retval_type {
+        return UPD_INVOKE(UPD_FWD(f), UPD_FWD(self)[decltype(i){}]);
+      };
+    };
+    auto lut = sequence<size()>
+      .transform(make_invoker_for_ith)
+      .to_array();
+
+    return UPD_INVOKE(lut[i], UPD_FWD(self), UPD_FWD(f));
+  }
 };
 
 template<typename... Ts>
@@ -708,7 +798,7 @@ class tuple : public tuple_implementation<tuple<Ts...>> {
 public:
   template<typename... Us, typename... Args>
   [[nodiscard]] constexpr static auto make_tuple(typelist<Us...>, Args &&... xs) {
-    return tuple<Us...>{UPD_FWD(xs)...};
+    return tuple<Us...>{std::in_place, UPD_FWD(xs)...};
   }
 
   template<typename... Us>
@@ -721,11 +811,27 @@ public:
     return constlist<Values...>{};
   }
 
-  template<typename ...Us>
-  constexpr explicit tuple(Us &&... xs): m_leaves{UPD_FWD(xs)...} {}
+  constexpr tuple() = default;
+
+  constexpr tuple(const tuple &) = default;
+
+  template<typename... Us> requires (sizeof...(Ts) == sizeof...(Us))
+  constexpr tuple(const tuple<Us...> &other): m_leaves{other} {}
+ 
+  constexpr tuple(tuple &&) = default;
+
+  template<typename... Us> requires (sizeof...(Ts) == sizeof...(Us))
+  constexpr tuple(tuple && other): m_leaves{std::move(other)} {}
+
+  constexpr tuple & operator=(const tuple &) = default;
+  
+  constexpr tuple & operator=(tuple &&) = default;
+
+  template<typename ...Us> requires (sizeof...(Us) > 1 || !(tuple_like<Us> && ...))
+  constexpr tuple(Us &&... xs): m_leaves{std::in_place, UPD_FWD(xs)...} {}
 
   template<typename ...Us>
-  constexpr explicit tuple(std::in_place_t, Us &&... xs): m_leaves{UPD_FWD(xs)...} {}
+  constexpr explicit tuple(std::in_place_t, Us &&... xs): m_leaves{std::in_place, UPD_FWD(xs)...} {}
 
   template<std::size_t I, typename Self>
   [[nodiscard]] constexpr auto get(this Self &&self) noexcept(release) -> auto && {
@@ -741,8 +847,8 @@ private:
   leaves m_leaves;
 };
 
-template<typename ...Ts>
-explicit tuple(Ts...) -> tuple<
+template<typename ...Ts> requires (sizeof...(Ts) > 1 || !(tuple_like<Ts> && ...))
+tuple(Ts...) -> tuple<
   typename std::conditional_t<instance_of<Ts, ref>, Ts, std::type_identity<Ts>>::type...
 >;
 
@@ -758,7 +864,7 @@ class typelist : public tuple_implementation<typelist<Ts...>> {
 public:
   template<typename... Us, typename... Args>
   [[nodiscard]] constexpr static auto make_tuple(typelist<Us...>, Args &&... xs) {
-    return tuple<Us...>{UPD_FWD(xs)...};
+    return tuple<Us...>{std::in_place, UPD_FWD(xs)...};
   }
 
   template<typename... Us>
@@ -786,6 +892,14 @@ public:
     return UPD_FWD(retval);
   }
 
+  template<typename F> 
+  [[nodiscard]] constexpr static auto metatransform(F &&) noexcept(release) -> typelist<invoke_result_t<F &, Ts>...> {
+    return {};
+  }
+
+  template<template<typename...> typename TT>
+  [[nodiscard]] constexpr static auto metaapply() noexcept(release) -> TT<Ts...>;
+
 private:
   leaves m_leaves;
 };
@@ -800,12 +914,12 @@ class constlist : public tuple_implementation<constlist<Vs...>> {
   template<std::size_t, typename Tuple>
   friend constexpr auto get(Tuple &&) noexcept(release) -> auto &&;
 
-  using leaves = detail::leaves<std::make_index_sequence<sizeof...(Vs)>, auto_constant<Vs>...>;
+  constexpr static auto leaves = detail::leaves<std::make_index_sequence<sizeof...(Vs)>, auto_constant<Vs>...>{};
 
 public:
   template<typename... Ts, typename... Args>
   [[nodiscard]] constexpr static auto make_tuple(typelist<Ts...>, Args &&... xs) {
-    return tuple<Ts...>{UPD_FWD(xs)...};
+    return tuple<Ts...>{std::in_place, UPD_FWD(xs)...};
   }
 
   template<typename... Us>
@@ -823,18 +937,15 @@ public:
   template<metavalue... Metas>
   constexpr explicit constlist(Metas...) noexcept(release) {}
 
-  template<std::size_t I, typename Self>
-  [[nodiscard]] constexpr auto get(this Self &&self) noexcept(release) -> auto && {
-    decltype(auto) retval = UPD_FWD(self).m_leaves.at(expr<I>);
+  template<std::size_t I, typename = void>
+  [[nodiscard]] constexpr static auto get() noexcept(release) -> const auto & {
+    const auto &retval = leaves.at(expr<I>);
 
     using retval_type = decltype(retval);
     static_assert(!std::is_same_v<retval_type, detail::variadic::not_found_t>, "`I` is not a valid index for `tuple`");
 
-    return UPD_FWD(retval);
+    return retval;
   }
-
-private:
-  leaves m_leaves;
 };
 
 template<metavalue... Metas>
@@ -856,7 +967,7 @@ template<tuple_like ...Tuples> requires (!UPD_VARIADIC_CONSTRAINT_WORKAROUND(typ
   auto element_types = concat(type_only(ts)...);
   using retval_type = instantiate_variadic<tuple, decltype(element_types)>;
 
-  return tuple{UPD_FWD(ts)...}
+  return tuple{std::in_place, UPD_FWD(ts)...}
     .flatten()
     .apply([](auto &&... xs) { return retval_type { UPD_FWD(xs)... }; });
 }
@@ -912,6 +1023,14 @@ struct unpacker {
 template<typename F>
 [[nodiscard]] constexpr auto operator|(unpack_t, F &&f) {
   return unpacker{UPD_FWD(f)};
+}
+
+template<tuple_like... Tuples>
+[[nodiscard]] constexpr auto join(Tuples &&... ts) noexcept(release) {
+  auto retval = tuple{std::in_place, ref{UPD_FWD(ts)}...}
+    .flatten();
+
+  return retval;
 }
 
 } // namespace upd

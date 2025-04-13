@@ -20,6 +20,7 @@
 #include "detail/variadic/to_array.hpp"
 #include "integer.hpp"
 #include "named_value.hpp"
+#include "static_vector.hpp"
 #include "token.hpp"
 #include "tuple.hpp"
 #include "upd.hpp"
@@ -52,14 +53,14 @@ public:
   }
 
   constexpr auto operator++() -> iterator_reference & {
-    m_cache = *m_iter;
+    m_cache = *m_iter.get();
     ++m_iter.get();
     return *this;
   }
 
   constexpr auto operator++(int) -> iterator_reference {
     auto retval = *this;
-    m_cache = *m_iter;
+    m_cache = *m_iter.get();
     ++m_iter.get();
     
     return retval;
@@ -74,15 +75,246 @@ private:
 
 namespace upd {
 
+template<typename Tuple>
+struct equivalent_typelist {
+  using type = decltype(
+    sequence<std::tuple_size_v<Tuple>>
+      .transform([](auto i) { return typebox<std::tuple_element_t<i, Tuple>>{}; })
+      .to_typelist()
+  );
+};
+
+template<typename Tuple>
+using equivalent_typelist_t = typename equivalent_typelist<Tuple>::type;
+
+template<typename T>
+concept inversible = requires(T x) {
+  inverse(UPD_FWD(x));
+  { inverse(inverse(UPD_FWD(x))) } -> std::convertible_to<T>;
+};
+
+template<typename T>
+struct add_some {
+  T offset;
+
+  template<typename U>
+  [[nodiscard]] constexpr auto operator()(U && x) const noexcept(release) -> T {
+    return UPD_FWD(x) + offset;
+  }
+};
+
+template<typename T>
+struct substract_some {
+  T offset;
+
+  template<typename U>
+  [[nodiscard]] constexpr auto operator()(U && x) const noexcept(release) -> T {
+    return UPD_FWD(x) - offset;
+  }
+};
+
+template<typename T>
+struct multiply_some {
+  T factor;
+
+  template<typename U>
+  [[nodiscard]] constexpr auto operator()(U && x) const noexcept(release) -> T {
+    return UPD_FWD(x) * factor;
+  }
+};
+
+template<typename T>
+struct divide_some {
+  T factor;
+
+  template<typename U>
+  [[nodiscard]] constexpr auto operator()(U && x) const noexcept(release) -> T {
+    return UPD_FWD(x) / factor;
+  }
+};
+
+template<inversible... Inversibles>
+struct bijective_chain {
+  tuple<Inversibles...> operations;
+
+  template<typename Self, typename U>
+  [[nodiscard]] constexpr auto operator()(this Self &&self, U x) {
+    return UPD_FWD(self).operations
+      .fold_left(x, [](auto acc, auto &&op) { return UPD_INVOKE(op, acc); });
+  };
+
+  template<typename Self, inversible Inversible>
+  [[nodiscard]] constexpr auto and_then(this Self &&self, Inversible &&op) {
+    return UPD_FWD(self).operations.apply([&](auto && ...ops) {
+      return bijective_chain<Inversibles..., Inversible> {{UPD_FWD(ops)..., UPD_FWD(op)}};
+    });
+  }
+};
+
+template<typename T>
+[[nodiscard]] constexpr auto inverse(add_some<T> op) noexcept(release) -> substract_some<T> {
+  return substract_some{op.offset};
+}
+
+template<typename T>
+[[nodiscard]] constexpr auto inverse(substract_some<T> op) noexcept(release) -> add_some<T> {
+  return add_some{op.offset};
+}
+
+template<typename T>
+[[nodiscard]] constexpr auto inverse(multiply_some<T> op) noexcept(release) -> divide_some<T> {
+  return divide_some{op.factor};
+}
+
+template<typename T>
+[[nodiscard]] constexpr auto inverse(divide_some<T> op) noexcept(release) -> multiply_some<T> {
+  return multiply_some{op.factor};
+}
+
+template<inversible ...Inversibles>
+[[nodiscard]] constexpr auto inverse(const bijective_chain<Inversibles...> &chain) {
+  auto inv_ops = chain.operations
+    .transform([](const auto &op){ return inverse(op); })
+    .reverse();
+
+  return bijective_chain{std::move(inv_ops)};
+}
+
+template<inversible ...Inversibles>
+[[nodiscard]] constexpr auto inverse(bijective_chain<Inversibles...> &&chain) {
+  auto inv_ops = std::move(chain).operations
+    .transform([](auto &&op){ return inverse(std::move(op)); })
+    .reverse();
+
+  return bijective_chain{std::move(inv_ops)};
+}
+
+template<typename F, inversible ...Inversibles>
+struct field_expression_t {
+  F get_value;
+  bijective_chain<Inversibles...> chain;
+
+  template<typename Self, typename T>
+  [[nodiscard]] constexpr auto operator+(this Self &&self, T &&x) {
+    return UPD_FWD(self).and_then(add_some{UPD_FWD(x)});
+  }
+
+  template<typename Self, typename T>
+  [[nodiscard]] constexpr auto operator-(this Self &&self, T &&x) {
+    return UPD_FWD(self).and_then(substract_some{UPD_FWD(x)});
+  }
+
+  template<typename Self, typename T>
+  [[nodiscard]] constexpr auto operator*(this Self &&self, T &&x) {
+    return UPD_FWD(self).and_then(multiply_some{UPD_FWD(x)});
+  }
+
+  template<typename Self, typename T>
+  [[nodiscard]] constexpr auto operator/(this Self &&self, T &&x) {
+    return UPD_FWD(self).and_then(divide_some{UPD_FWD(x)});
+  }
+
+  template<typename Self, typename T>
+  [[nodiscard]] constexpr auto deduce(this Self &&self, T &&from) {
+    decltype(auto) value = UPD_INVOKE(UPD_FWD(self).get_value, UPD_FWD(from));
+    return UPD_INVOKE(UPD_FWD(self).chain, UPD_FWD(value));
+  }
+
+  template<typename Self, inversible Inversible>
+  [[nodiscard]] constexpr auto and_then(this Self &&self, Inversible &&op) {
+    return field_expression_t<F, Inversibles..., Inversible> {
+      UPD_FWD(self).get_value,
+      UPD_FWD(self).chain.and_then(UPD_FWD(op))
+    };
+  }
+};
+
+template<typename ...Ts> 
+[[nodiscard]] constexpr auto bitsize(const std::variant<Ts...> &sum_of_field_values) noexcept(release) -> std::size_t {
+  return std::visit([](const auto & field_value) { return bitsize(field_value); }, sum_of_field_values);
+}
+
+template<names Identifiers, typename ...Ts> 
+[[nodiscard]] constexpr auto bitsize(const named_tuple<Identifiers, Ts...> &named_field_values) noexcept(release) -> std::size_t {
+  return named_field_values.fold_left(0uz, [](std::size_t acc, const auto &field_value) {
+    return acc + bitsize(field_value.value());
+  });
+}
+
+template<std::size_t Bitsize, typename Underlying>
+[[nodiscard]] constexpr static auto bitsize(xinteger<Bitsize, Underlying> xi) -> std::size_t {
+  return xi.bitsize;
+}
+
+template<name Identifier>
+constexpr auto value_of = field_expression_t { [](auto &packet) -> auto & { return packet[expr<Identifier>]; } };
+
+template<name Identifier>
+constexpr auto length_of = field_expression_t { [](const auto &packet){ return bitsize(packet[expr<Identifier>]); } };
+
+template<name Identifier>
+constexpr auto code_of = field_expression_t { [](const auto &packet){ return packet[expr<Identifier>].index(); } };;
+
+
+template<auto Match, typename Result>
+struct when_then_t {
+  constexpr static auto match = Match;
+
+  using result_type = Result;
+
+  result_type result;
+};
+
+template<auto Match>
+struct when_t {
+  constexpr static auto match = Match;
+
+  template<typename Result>
+  [[nodiscard]] constexpr auto operator=(Result &&result) const {
+    using result_type = std::decay_t<Result>;
+    return when_then_t<match, result_type> { UPD_FWD(result) };
+  }
+};
+
+template<auto Match>
+constexpr auto when = when_t<Match> {};
+
+template<typename ...WhenThens>
+[[nodiscard]] constexpr auto aggregate_when_thens(WhenThens &&... when_thens) {
+  return tagged_tuple {
+    named_value<when_thens.match, typename WhenThens::result_type>{
+      std::in_place, UPD_FWD(when_thens).result
+    } ... };
+}
+
 struct no_error {};
 
 struct not_matching_deduction {
   const char *identifier;
 };
 
+struct invalid_code_in_one_of {
+  const char *identifier;
+  std::intmax_t code;
+};
+
+struct negative_repetition_count {
+  const char *identifier;
+  std::intmax_t count;
+};
+
+struct repeated_beyond_max {
+  const char *identifier;
+  std::uintmax_t count;
+  std::size_t max;
+};
+
 using error_data_types = typelist<
   no_error,
-  not_matching_deduction
+  not_matching_deduction,
+  invalid_code_in_one_of,
+  negative_repetition_count,
+  repeated_beyond_max
 >;
 
 template<typename T>
@@ -187,8 +419,9 @@ class invoker_iterator {
 
 public:
   using invocable_type = F;
+  using difference_type = std::ptrdiff_t;
 
-  constexpr explicit invoker_iterator(F f) noexcept : m_f{std::move(f)} {}
+  constexpr explicit invoker_iterator(F *f) noexcept : m_f{f} {}
 
   constexpr auto operator*() noexcept -> invoker_iterator_proxy<invoker_iterator> {
     return invoker_iterator_proxy{this};
@@ -206,8 +439,16 @@ public:
     return *this;
   }
 
+  constexpr auto operator++(int) noexcept -> invoker_iterator & {
+    return *this;
+  }
+
+  constexpr auto operator++(int) const noexcept -> const invoker_iterator & {
+    return *this;
+  }
+
 private:
-  F m_f;
+  F *m_f;
 };
 
 template<typename Parent>
@@ -221,7 +462,7 @@ public:
 
   template<typename T> requires invocable<invocable_type, T>
   constexpr auto operator=(T &&x) const -> const invoker_iterator_proxy & {
-    std::invoke(m_parent->m_f, UPD_FWD(x));
+    UPD_INVOKE(*m_parent->m_f, UPD_FWD(x));
     return *this;
   }
 
@@ -305,27 +546,29 @@ concept field_like = requires(T) {
 };
 
 template<typename T, typename Serializer>
-concept deducable_field = field_like<T>
+concept deducible_field = field_like<T>
 && serializer<Serializer>
 && requires(
     T x,
-    Serializer ser) {
-  { x.deduce(named_tuple{}, ser) } -> std::same_as<typename T::value_type>;
+    Serializer ser,
+    named_tuple<{}> packet) {
+  { x.deduce(packet, ser) } -> std::same_as<void>;
 };
 
 template<typename T, typename Serializer>
 concept decodable_field = serializer<Serializer>
-&& deducable_field<T, Serializer>
+&& deducible_field<T, Serializer>
 && requires(
     T x,
     Serializer ser,
+    const named_tuple<{}> packet,
     const byte_type<Serializer> *src) {
-  { x.decode(src, ser) } -> std::same_as<typename T::value_type>;
+  { x.decode(src, packet, ser) } -> std::same_as<typename T::value_type>;
 };
 
 template<typename T, typename Serializer>
 concept encodable_field = serializer<Serializer>
-&& deducable_field<T, Serializer>
+&& deducible_field<T, Serializer>
 && requires(
     T x,
     Serializer ser,
@@ -341,12 +584,15 @@ class description {
 
 public:
   constexpr static auto identifiers = typelist<Ts...>{}
-    .transform([]<typename T>(typebox<T>) { return expr<T::identifier>; });
+    .transform([]<typename T>(typebox<T>) { return expr<T::identifier>; })
+    .apply([](auto... ids) { return names{ids...}; });
+
+  using result_type = named_tuple<identifiers, typename Ts::value_type...>;
 
   explicit constexpr description(Ts ...fields) : m_fields{std::move(fields)...} {}
 
   template<named_tuple_instance NamedTuple, serializer Serializer, std::output_iterator<byte_type<Serializer>> OutputIt>
-  requires (encodable_field<Ts, Serializer> && ...)
+  // requires (encodable_field<Ts, Serializer> && ...)
   constexpr void encode(const NamedTuple &nargs, Serializer &ser, OutputIt dest) const {
     auto packet = m_fields
       .transform([&]<typename Field>(const Field &field) {
@@ -361,8 +607,8 @@ public:
       .apply([](auto &&... field_values) { return named_tuple{UPD_FWD(field_values)...}; });
 
     zip(packet, m_fields)
-      .for_each(unpack | [&](auto &field_value, const auto &field) {
-        UPD_WELL_FORMED(field_value.value() = field.deduce(std::as_const(packet), ser));
+      .for_each(unpack | [&](auto &, const auto &field) {
+        field.deduce(packet, ser, m_fields);
       });
 
     zip(packet, m_fields)
@@ -372,8 +618,14 @@ public:
   }
 
   template<serializer Serializer, std::input_iterator InputIt>
-  requires (decodable_field<Ts, Serializer> && ...)
+  // requires (decodable_field<Ts, Serializer> && ...)
   [[nodiscard]] constexpr auto decode(InputIt src, Serializer &ser) const {
+    return decode(src, named_tuple{}, ser);
+  }
+
+  template<serializer Serializer, typename Packet, std::input_iterator InputIt>
+  // requires (decodable_field<Ts, Serializer> && ...)
+  [[nodiscard]] constexpr auto decode(InputIt src, const Packet &ctx, Serializer &ser) const {
     auto err = error{};
     auto retval = m_fields
       .apply([](const auto & ...fields) {
@@ -382,15 +634,23 @@ public:
 
     m_fields
       .for_each([&](const auto &field) {
-        retval[expr<field.identifier>] = field.decode(detail::iterator_reference{src}, ser);
+        auto maybe_field_value = field.decode(detail::iterator_reference{src}, named_tuple{join(std::as_const(retval), ctx)}, ser);
+        if (maybe_field_value) {
+          retval[expr<field.identifier>] = *maybe_field_value;
+        } else {
+          err = maybe_field_value.error();
+        }
       });
 
+    /*
     zip(retval, m_fields)
       .for_each(unpack | [&](const auto &field_value, const auto &field) {
+        constexpr auto id = expr<field.identifier>;
         if (!err && field_value.value() != field.deduce(retval, ser)) {
           err = not_matching_deduction{field_value.identifier.string};
         }
       });
+    */
 
     return result_if_no_error(std::move(retval), std::move(err));
   }
@@ -424,6 +684,8 @@ template<typename... Ts, typename... Us>
 
 namespace upd::descriptor {
 
+constexpr inline auto empty_description = description<>{};
+
 template<name Identifier, bool Signedness, std::size_t Width>
 struct field_t {
   constexpr static auto identifier = Identifier;
@@ -436,13 +698,11 @@ struct field_t {
     return value_type{};
   }
 
-  template<named_tuple_like Packet, serializer Serializer>
-  [[nodiscard]] constexpr static auto deduce(const Packet &packet, Serializer &) -> value_type {
-    return packet.at(expr<identifier>);
-  }
+  template<named_tuple_like Packet, serializer Serializer, tuple_like Fields>
+  constexpr static void deduce(Packet &, Serializer &, const Fields&) {}
 
-  template<serializer Serializer, std::input_iterator InputIt>
-  [[nodiscard]] constexpr static auto decode(InputIt src, Serializer &ser) -> value_type {
+  template<serializer Serializer, named_tuple_like Packet, std::input_iterator InputIt>
+  [[nodiscard]] constexpr static auto decode(InputIt src, const Packet &, Serializer &ser) -> result<value_type> {
     if constexpr (is_signed) {
       return ser.deserialize_signed(src, upd::width<width>);
     } else {
@@ -467,6 +727,207 @@ template<name Identifier, bool Signedness, std::size_t Width>
   return description{retval};
 }
 
+template<name Identifier, bool Signedness, std::size_t Width, typename Rule>
+struct bound_t {
+  constexpr static auto identifier = Identifier;
+  constexpr static auto is_signed = Signedness;
+  constexpr static auto width = Width;
+
+  using value_type = std::conditional_t<is_signed, xint<width>, xuint<width>>;
+  using rule_type = Rule;
+
+  rule_type rule;
+
+  [[nodiscard]] constexpr static auto default_value() noexcept(release) -> value_type {
+    return value_type{};
+  }
+
+  template<named_tuple_like Packet, serializer Serializer, tuple_like Fields>
+  constexpr void deduce(Packet &packet, Serializer &, const Fields&) const {
+    packet.at(expr<identifier>) = rule.deduce(std::as_const(packet));
+  }
+
+  template<serializer Serializer, named_tuple_like Packet, std::input_iterator InputIt>
+  [[nodiscard]] constexpr static auto decode(InputIt src, const Packet &, Serializer &ser) -> result<value_type> {
+    if constexpr (is_signed) {
+      return ser.deserialize_signed(src, upd::width<width>);
+    } else {
+      return ser.deserialize_unsigned(src, upd::width<width>);
+    }
+  }
+
+  template<serializer Serializer, std::output_iterator<byte_type<Serializer>> OutputIt>
+  constexpr static void encode(value_type value, Serializer &ser, OutputIt dest) {
+    if constexpr (is_signed) {
+      return ser.serialize_signed(value, dest);
+    } else {
+      return ser.serialize_unsigned(value, dest);
+    }
+  }
+};
+
+template<name Identifier, typename Enum, std::size_t Width, typename Rule>
+struct enum_bound_t {
+  constexpr static auto identifier = Identifier;
+  constexpr static auto is_signed = std::is_signed_v<std::underlying_type_t<Enum>>;
+  constexpr static auto width = Width;
+
+  using value_type = Enum;
+  using rule_type = Rule;
+
+  rule_type rule;
+
+  [[nodiscard]] constexpr static auto default_value() noexcept(release) -> value_type {
+    return value_type{};
+  }
+
+  template<named_tuple_like Packet, serializer Serializer, tuple_like Fields>
+  constexpr void deduce(Packet &packet, Serializer &, const Fields&) const {
+    packet.at(expr<identifier>) = rule.deduce(std::as_const(packet));
+  }
+
+  template<serializer Serializer, named_tuple_like Packet, std::input_iterator InputIt>
+  [[nodiscard]] constexpr static auto decode(InputIt src, const Packet &, Serializer &ser) -> result<value_type> {
+    auto retval = [&] {
+      if constexpr (is_signed) {
+        return ser.deserialize_signed(src, upd::width<width - 1>);
+      } else {
+        return ser.deserialize_unsigned(src, upd::width<width>);
+      }
+    }();
+
+    return static_cast<value_type>(retval);
+  }
+
+  template<serializer Serializer, std::output_iterator<byte_type<Serializer>> OutputIt>
+  constexpr static void encode(value_type value, Serializer &ser, OutputIt dest) {
+    auto integral_value = std::to_underlying(value);
+    auto xint_value = [&] {
+      if constexpr (is_signed) {
+        return xint{integral_value};
+      } else {
+        return xuint{integral_value};
+      }
+    }();
+
+    if constexpr (is_signed) {
+      ser.serialize_signed(xint_value, dest);
+    } else {
+      ser.serialize_unsigned(xint_value, dest);
+    }
+  }
+};
+
+template<name Identifier, bool Signedness, std::size_t Width, typename Rule>
+[[nodiscard]] constexpr auto bound(signedness_t<Signedness>, width_t<Width>, Rule rule) noexcept(release) {
+  auto retval = bound_t<Identifier, Signedness, Width, Rule>{std::move(rule)};
+
+  return description{std::move(retval)};
+}
+
+template<name Identifier, typename Enum, std::size_t Width, typename Rule>
+[[nodiscard]] constexpr auto bound(enumeration_t<Enum>, width_t<Width>, Rule rule) noexcept(release) {
+  auto retval = enum_bound_t<Identifier, Enum, Width, Rule>{std::move(rule)};
+
+  return description{std::move(retval)};
+}
+
+template<name Identifier, bool Signedness, std::size_t Width>
+struct bound_elsewhere_t {
+  constexpr static auto identifier = Identifier;
+  constexpr static auto is_signed = Signedness;
+  constexpr static auto width = Width;
+
+  using value_type = std::conditional_t<is_signed, xint<width>, xuint<width>>;
+
+  [[nodiscard]] constexpr static
+  auto default_value() noexcept(release) -> value_type {
+    return value_type{};
+  }
+
+  template<named_tuple_like Packet, serializer Serializer, tuple_like Fields>
+  constexpr static void deduce(Packet &, Serializer &, const Fields&) {}
+
+  template<serializer Serializer, named_tuple_like Packet, std::input_iterator InputIt>
+  [[nodiscard]] constexpr static auto decode(InputIt src, const Packet &, Serializer &ser) -> result<value_type> {
+    if constexpr (is_signed) {
+      return ser.deserialize_signed(src, upd::width<width>);
+    } else {
+      return ser.deserialize_unsigned(src, upd::width<width>);
+    }
+  }
+
+  template<serializer Serializer, std::output_iterator<byte_type<Serializer>> OutputIt>
+  constexpr static void encode(value_type value, Serializer &ser, OutputIt dest) {
+    if constexpr (is_signed) {
+      return ser.serialize_signed(value, dest);
+    } else {
+      return ser.serialize_unsigned(value, dest);
+    }
+  }
+};
+
+template<name Identifier, typename Enum, std::size_t Width>
+struct enum_bound_elsewhere_t {
+  constexpr static auto identifier = Identifier;
+  constexpr static auto is_signed = std::is_signed_v<std::underlying_type_t<Enum>>;
+  constexpr static auto width = Width;
+
+  using value_type = Enum;
+
+  [[nodiscard]] constexpr static auto default_value() noexcept(release) -> value_type {
+    return value_type{};
+  }
+
+  template<named_tuple_like Packet, serializer Serializer, tuple_like Fields>
+  constexpr static void deduce(Packet &, Serializer &, const Fields&) {}
+
+  template<serializer Serializer, named_tuple_like Packet, std::input_iterator InputIt>
+  [[nodiscard]] constexpr static auto decode(InputIt src, const Packet &, Serializer &ser) -> result<value_type> {
+    auto retval = [&] {
+      if constexpr (is_signed) {
+        return ser.deserialize_signed(src, upd::width<width>);
+      } else {
+        return ser.deserialize_unsigned(src, upd::width<width>);
+      }
+    }();
+
+    return static_cast<value_type>(retval);
+  }
+
+  template<serializer Serializer, std::output_iterator<byte_type<Serializer>> OutputIt>
+  constexpr static void encode(value_type value, Serializer &ser, OutputIt dest) {
+    auto integral_value = std::to_underlying(value);
+    auto xint_value = [&] {
+      if constexpr (is_signed) {
+        return xint<width>{integral_value};
+      } else {
+        return xuint<width>{integral_value};
+      }
+    }();
+
+    if constexpr (is_signed) {
+      ser.serialize_signed(xint_value, dest);
+    } else {
+      ser.serialize_unsigned(xint_value, dest);
+    }
+  }
+};
+
+template<name Identifier, bool Signedness, std::size_t Width, typename Rule>
+[[nodiscard]] constexpr auto bound(signedness_t<Signedness>, width_t<Width>) noexcept(release) {
+  auto retval = bound_elsewhere_t<Identifier, Signedness, Width>{};
+
+  return description{retval};
+}
+
+template<name Identifier, typename Enum, std::size_t Width>
+[[nodiscard]] constexpr auto bound(enumeration_t<Enum>, width_t<Width>) noexcept(release) {
+  auto retval = enum_bound_elsewhere_t<Identifier, Enum, Width>{};
+
+  return description{retval};
+}
+
 template<name Identifier, std::size_t Width>
 struct constant_t {
   constexpr static auto identifier = Identifier;
@@ -480,13 +941,11 @@ struct constant_t {
     return field_value;
   }
 
-  template<named_tuple_like Packet, serializer Serializer>
-  [[nodiscard]] constexpr static auto deduce(const Packet &packet, Serializer &) -> value_type {
-    return packet.at(expr<identifier>);
-  }
+  template<named_tuple_like Packet, serializer Serializer, tuple_like Fields>
+  constexpr static void deduce(Packet &, Serializer &, const Fields&) {}
 
-  template<serializer Serializer, std::input_iterator InputIt>
-  [[nodiscard]] constexpr static auto decode(InputIt src, Serializer &ser) -> value_type {
+  template<serializer Serializer, named_tuple_like Packet, std::input_iterator InputIt>
+  [[nodiscard]] constexpr static auto decode(InputIt src, const Packet &, Serializer &ser) -> result<value_type> {
     return ser.deserialize_unsigned(src, upd::width<width>);
   }
 
@@ -513,29 +972,38 @@ struct checksum_t {
   value_type init;
   FieldFilter identifier_filter;
 
-  [[nodiscard]] constexpr static auto default_value() noexcept(release) -> value_type {
-    return 0u;
+  [[nodiscard]] constexpr auto default_value() const noexcept(release) -> value_type {
+    return init;
   }
 
-  template<named_tuple_like Packet, serializer Serializer>
-  [[nodiscard]] constexpr auto deduce(const Packet &packet, Serializer &ser) const -> value_type {
-    auto field_filter = [&](const auto &nv) {
+  template<named_tuple_like Packet, serializer Serializer, tuple_like Fields>
+  constexpr void deduce(Packet &packet, Serializer &ser, const Fields& fields) const {
+    auto field_filter = [&](const auto &nv_and_field) {
+      const auto &[nv, field] = nv_and_field;
+      std::ignore = field;
       return UPD_INVOKE(identifier_filter, expr<nv.identifier>);
     };
 
-    auto retval = init;
-    auto it = invoker_iterator {[&](auto byte) { retval = UPD_INVOKE(op, retval, byte); }};
+    auto &acc = packet.at(expr<identifier>);
+    auto f = [&](auto byte) {
+      acc = UPD_INVOKE(op, acc, byte);
+    };
+    auto it = invoker_iterator {&f};
 
-    packet
+    zip(packet, fields)
       .filter(field_filter)
-      .transform([](const auto &named_field) -> const auto & { return named_field.value(); })
-      .for_each([&](const auto &field_value) { field_value.serialize(ser, it); });
-  
-    return retval;
+      .transform([](const auto &nv_and_field) {
+        const auto &[nv, field] = nv_and_field;
+        return tuple{ref{nv.value()}, ref{field}};
+      })
+      .for_each([&](const auto &value_and_field) {
+        const auto &[value, field] = value_and_field;
+        field.encode(value, ser, it);
+      });
   }
 
-  template<serializer Serializer, std::input_iterator InputIt>
-  [[nodiscard]] constexpr static auto decode(InputIt src, Serializer &ser) -> value_type {
+  template<serializer Serializer, named_tuple_like Packet, std::input_iterator InputIt>
+  [[nodiscard]] constexpr static auto decode(InputIt src, const Packet &, Serializer &ser) -> result<value_type> {
     return ser.deserialize_unsigned(src, upd::width<width>);
   }
 
@@ -562,6 +1030,145 @@ template<name Identifier, typename BinaryOp, std::size_t Width>
     decltype(is_not_this_field)>
   {std::move(op), init, is_not_this_field};
   
+  return description{std::move(retval)};
+}
+
+template<auto Identifier, typename Rule, typename TaggedDescriptions>
+struct one_of_t {
+  constexpr static auto identifier = Identifier;
+  constexpr static auto size = std::tuple_size_v<TaggedDescriptions>;
+  constexpr static auto alternative_types = equivalent_typelist_t<TaggedDescriptions>{}
+    .metatransform([]<typename T>(T &&x) { return UPD_FWD(x).value(); })
+    .metatransform([]<typename T>(T &&) -> typename T::result_type {});
+
+  using value_type = decltype(alternative_types.template metaapply<std::variant>());
+  using rule_type = Rule;
+
+  rule_type rule;
+  TaggedDescriptions tagged_descriptions;
+
+  [[nodiscard]] constexpr static auto default_value() -> value_type {
+    return value_type{};
+  }
+
+  template<named_tuple_like Packet, serializer Serializer, tuple_like Fields>
+  constexpr void deduce(Packet &, Serializer &, const Fields&) const noexcept(release) {
+  }
+
+  template<serializer Serializer, named_tuple_like Packet, std::input_iterator InputIt>
+  [[nodiscard]] constexpr auto decode(InputIt src, const Packet &packet, Serializer &ser) const -> result<value_type> {
+    namespace stdr = std::ranges;
+
+    auto id = rule.deduce(packet);
+    auto id_pos = tagged_descriptions
+      .identifiers
+      .find(id);
+
+    if (id_pos == tagged_descriptions.size()) {
+      return std::unexpected{invalid_code_in_one_of{identifier.string, std::to_underlying(id)}};
+    }
+
+    auto make_retval = [](auto &&alt) {
+      return value_type{UPD_FWD(alt)};
+    };
+    auto make_alt = [&](const auto &id_and_descr) {
+      const auto &[id, descr] = id_and_descr;
+      return descr.decode(src, packet, ser).transform(make_retval);
+    };
+
+    return tagged_descriptions.visit(id_pos, make_alt);
+  }
+
+  template<serializer Serializer, std::output_iterator<byte_type<Serializer>> OutputIt>
+  constexpr void encode(const value_type &value, Serializer &ser, OutputIt dest) const noexcept(release) {
+    auto alt_index = value.index();
+    auto encode_alt = [&](const auto &i_and_named_descr) {
+      const auto &[i, named_descr] = i_and_named_descr;
+      const auto *alt = std::get_if<i>(&value);
+      
+      UPD_ASSERT(alt);
+      named_descr.value().encode(*alt, ser, dest);
+    };
+
+    return zip(sequence<size>, tagged_descriptions).visit(alt_index, encode_alt);
+  }
+};
+
+template<name Identifier, typename Rule, typename ...WhenThens>
+[[nodiscard]] constexpr auto one_of(Rule &&rule, WhenThens &&... when_thens) {
+  using rule_type = std::remove_cvref_t<Rule>;
+
+  auto tagged_descriptions = aggregate_when_thens(UPD_FWD(when_thens)...);
+  auto retval = one_of_t<Identifier, rule_type, decltype(tagged_descriptions)> {
+    .rule = UPD_FWD(rule),
+    .tagged_descriptions = std::move(tagged_descriptions),
+  };
+
+  return description {std::move(retval)};
+}
+
+template<name Identifier, typename Description, typename Rule, std::size_t Max>
+struct repeat_t {
+  constexpr static auto identifier = Identifier;
+  constexpr static auto max = Max;
+
+  using value_type = static_vector<typename Description::result_type, Max>;
+  using description_type = Description;
+  using rule_type = Rule;
+
+  Description description;
+  Rule rule;
+
+  [[nodiscard]] constexpr static auto default_value() -> value_type {
+    return value_type{};
+  }
+
+  template<named_tuple_like Packet, serializer Serializer, tuple_like Fields>
+  constexpr static void deduce(Packet &, Serializer &, const Fields&) noexcept(release) {}
+
+  template<serializer Serializer, named_tuple_like Packet, std::input_iterator InputIt>
+  [[nodiscard]] constexpr auto decode(InputIt src, const Packet &packet, Serializer &ser) const -> result<value_type> {
+    namespace stdv = std::views;
+
+    auto count = rule.deduce(packet);
+    if (count < 0) {
+      return std::unexpected{negative_repetition_count{identifier.string, count}};
+    }
+    if (std::cmp_greater(count, Max)) {
+      return std::unexpected{repeated_beyond_max{identifier.string, std::uintmax_t(count), Max}};
+    }
+
+    auto retval = static_vector<typename Description::result_type, Max>{};
+
+    for (auto _ : stdv::iota(0uz, std::size_t(count))) {
+      auto maybe_value = description.decode(src, packet, ser);
+      if (!maybe_value) {
+        return std::unexpected{std::move(maybe_value).error()};
+      }
+      retval.push_back(std::move(maybe_value).value());
+    }
+
+    return retval;
+  }
+
+  template<serializer Serializer, std::output_iterator<byte_type<Serializer>> OutputIt>
+  constexpr void encode(const value_type &value, Serializer &ser, OutputIt dest) const {
+    for (const auto &element : value) {
+      description.encode(element, ser, dest);
+    }
+  }
+};
+
+template<name Identifier, typename Description, typename Rule, std::size_t Max>
+[[nodiscard]] constexpr auto repeat(Description &&descr, Rule &&rule, at_most_t<Max>) {
+  using description_type = std::remove_cvref_t<Description>;
+  using rule_type = std::remove_cvref_t<Rule>;
+
+  auto retval = repeat_t<Identifier, description_type, rule_type, Max> {
+    .description = UPD_FWD(descr),
+    .rule = UPD_FWD(rule),
+  };
+
   return description{std::move(retval)};
 }
 
