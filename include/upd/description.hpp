@@ -75,6 +75,25 @@ private:
 
 namespace upd {
 
+template<typename T, template<auto, typename...> typename TT>
+[[nodiscard]] constexpr auto is_instance_of() noexcept(release) -> bool {
+  auto checker = []<auto V, typename... Ts>(const TT<V, Ts...> &) {};
+  return requires(const T &x) { checker(x); };
+}
+
+template<auto Code, typename... Args>
+struct choice_t {
+  constexpr static auto code = Code;
+  constexpr static auto argument_types = typelist<Args...>{};
+
+  tuple<Args...> arguments;
+};
+
+template<auto Code, typename... Args>
+[[nodiscard]] constexpr auto choice(Args &&... args) -> choice_t<Code, Args...> {
+  return choice_t<Code, Args...>{UPD_FWD(args)...};
+}
+
 template<typename Tuple>
 struct equivalent_typelist {
   using type = decltype(
@@ -596,10 +615,9 @@ public:
   constexpr void encode(const NamedTuple &nargs, Serializer &ser, OutputIt dest) const {
     auto packet = m_fields
       .transform([&]<typename Field>(const Field &field) {
-        using value_type = typename Field::value_type;
         auto id = expr<field.identifier>;
         if constexpr (nargs.contains(id)) {
-          return keyword<field.identifier>{} = value_type{nargs[id]};
+          return keyword<field.identifier>{} = field.make_value(nargs[id]);
         } else {
           return keyword<field.identifier>{} = field.default_value();
         }
@@ -694,6 +712,11 @@ struct field_t {
 
   using value_type = std::conditional_t<is_signed, xint<width>, xuint<width>>;
 
+  template<typename... Args>
+  [[nodiscard]] constexpr auto make_value(Args && ... args) const -> value_type {
+    return value_type{UPD_FWD(args)...};
+  }
+
   [[nodiscard]] constexpr static auto default_value() noexcept(release) -> value_type {
     return value_type{};
   }
@@ -734,6 +757,11 @@ struct bound_t {
   constexpr static auto width = Width;
 
   using value_type = std::conditional_t<is_signed, xint<width>, xuint<width>>;
+  
+  template<typename... Args>
+  [[nodiscard]] constexpr auto make_value(Args && ... args) const -> value_type {
+    return value_type{UPD_FWD(args)...};
+  }
   using rule_type = Rule;
 
   rule_type rule;
@@ -773,6 +801,11 @@ struct enum_bound_t {
   constexpr static auto width = Width;
 
   using value_type = Enum;
+  
+  template<typename... Args>
+  [[nodiscard]] constexpr auto make_value(Args && ... args) const -> value_type {
+    return value_type{UPD_FWD(args)...};
+  }
   using rule_type = Rule;
 
   rule_type rule;
@@ -840,6 +873,11 @@ struct bound_elsewhere_t {
 
   using value_type = std::conditional_t<is_signed, xint<width>, xuint<width>>;
 
+  template<typename... Args>
+  [[nodiscard]] constexpr auto make_value(Args && ... args) const -> value_type {
+    return value_type{UPD_FWD(args)...};
+  }
+
   [[nodiscard]] constexpr static
   auto default_value() noexcept(release) -> value_type {
     return value_type{};
@@ -874,6 +912,11 @@ struct enum_bound_elsewhere_t {
   constexpr static auto width = Width;
 
   using value_type = Enum;
+
+  template<typename... Args>
+  [[nodiscard]] constexpr auto make_value(Args && ... args) const -> value_type {
+    return value_type{UPD_FWD(args)...};
+  }
 
   [[nodiscard]] constexpr static auto default_value() noexcept(release) -> value_type {
     return value_type{};
@@ -935,6 +978,11 @@ struct constant_t {
 
   using value_type = xuint<width>;
 
+  template<typename... Args>
+  [[nodiscard]] constexpr auto make_value(Args && ... args) const -> value_type {
+    return value_type{UPD_FWD(args)...};
+  }
+
   value_type field_value;
 
   [[nodiscard]] constexpr auto default_value() const noexcept(release) -> value_type {
@@ -967,6 +1015,11 @@ struct checksum_t {
   constexpr static auto width = Width;
 
   using value_type = xuint<width>;
+
+  template<typename... Args>
+  [[nodiscard]] constexpr auto make_value(Args && ... args) const -> value_type {
+    return value_type{UPD_FWD(args)...};
+  }
 
   BinaryOp op;
   value_type init;
@@ -1042,6 +1095,23 @@ struct one_of_t {
     .metatransform([]<typename T>(T &&) -> typename T::result_type {});
 
   using value_type = decltype(alternative_types.template metaapply<std::variant>());
+  
+  template<typename... Args> requires std::constructible_from<value_type, Args...>
+  [[nodiscard]] constexpr auto make_value(Args && ... args) const -> value_type {
+    return value_type{UPD_FWD(args)...};
+  }
+
+  template<typename Choice> requires (is_instance_of<Choice, choice_t>())
+  [[nodiscard]] constexpr auto make_value(Choice &&ch) const -> value_type {
+    auto id_pos = tagged_descriptions
+      .identifiers
+      .find(expr<ch.code>);
+
+    return UPD_FWD(ch).arguments.apply([&](auto &&... args) {
+      return value_type{std::in_place_index<id_pos>, UPD_FWD(args)...};
+    });
+  }
+
   using rule_type = Rule;
 
   rule_type rule;
@@ -1113,6 +1183,11 @@ struct repeat_t {
   constexpr static auto max = Max;
 
   using value_type = static_vector<typename Description::result_type, Max>;
+  
+  template<typename... Args>
+  [[nodiscard]] constexpr auto make_value(Args && ... args) const -> value_type {
+    return value_type{UPD_FWD(args)...};
+  }
   using description_type = Description;
   using rule_type = Rule;
 

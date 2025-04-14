@@ -387,7 +387,7 @@ auto ping_example() -> upd::error {
   std::cout << std::hex;
 
   std::println("Ping: example 1");
-  description.encode(("id"_kw = 1, "length"_kw = 3, "instruction"_kw = 1), ser, oit);
+  description.encode(("id"_kw = 1, "parameters"_kw = upd::choice<instruction_code::ping>()), ser, oit);
   std::println("");
   std::println("");
 
