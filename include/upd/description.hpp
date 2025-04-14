@@ -248,6 +248,10 @@ struct field_expression_t {
   }
 };
 
+[[nodiscard]] constexpr auto bitsize(std::monostate) noexcept(release) -> std::size_t {
+  return 0;
+}
+
 template<typename ...Ts> 
 [[nodiscard]] constexpr auto bitsize(const std::variant<Ts...> &sum_of_field_values) noexcept(release) -> std::size_t {
   return std::visit([](const auto & field_value) { return bitsize(field_value); }, sum_of_field_values);
@@ -1092,7 +1096,9 @@ struct one_of_t {
   constexpr static auto size = std::tuple_size_v<TaggedDescriptions>;
   constexpr static auto alternative_types = equivalent_typelist_t<TaggedDescriptions>{}
     .metatransform([]<typename T>(T &&x) { return UPD_FWD(x).value(); })
-    .metatransform([]<typename T>(T &&) -> typename T::result_type {});
+    .metatransform([]<typename T>(T &&) -> typename T::result_type {})
+    .chain_before(typebox<std::monostate>{})
+    .to_typelist();
 
   using value_type = decltype(alternative_types.template metaapply<std::variant>());
   
@@ -1108,7 +1114,7 @@ struct one_of_t {
       .find(expr<ch.code>);
 
     return UPD_FWD(ch).arguments.apply([&](auto &&... args) {
-      return value_type{std::in_place_index<id_pos>, UPD_FWD(args)...};
+      return value_type{std::in_place_index<id_pos + 1>, UPD_FWD(args)...};
     });
   }
 
@@ -1155,9 +1161,14 @@ struct one_of_t {
     auto encode_alt = [&](const auto &i_and_named_descr) {
       const auto &[i, named_descr] = i_and_named_descr;
       const auto *alt = std::get_if<i>(&value);
-      
+
       UPD_ASSERT(alt);
-      named_descr.value().encode(*alt, ser, dest);
+      
+      if constexpr (i.value == 0) {
+        UPD_ASSERT(false);
+      } else {
+        named_descr.value().encode(*alt, ser, dest);
+      }
     };
 
     return zip(sequence<size>, tagged_descriptions).visit(alt_index, encode_alt);

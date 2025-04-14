@@ -479,6 +479,13 @@ public:
     return std::move(derived()).template get<i>();
   }
 
+  template<typename Self, typename... NewValues>
+  [[nodiscard]] constexpr auto chain_before(this Self &&self, NewValues && ... new_values) noexcept(release) {
+    return UPD_FWD(self).apply([&](auto && ...xs) {
+      return tuple{UPD_FWD(new_values)..., UPD_FWD(xs)...};
+    });
+  }
+
   template<typename T, typename Self>
   [[nodiscard]] constexpr auto clean(this Self &&self, typebox<T>) noexcept(release) {
     using namespace std::ranges::views;

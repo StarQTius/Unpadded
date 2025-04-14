@@ -182,6 +182,17 @@ struct std::formatter<upd::static_vector<T, Max>> {
   }
 };
 
+template<>
+struct std::formatter<std::monostate> {
+  constexpr auto parse(std::format_parse_context &ctx) {
+    return ctx.begin();
+  }
+
+  auto format(std::monostate, std::format_context &ctx) const {
+    return std::format_to(ctx.out(), "<monostate>");
+  }
+};
+
 constexpr auto accumulate_crc(crc acc, upd::xuint<8> byte) noexcept -> crc {
   constexpr auto crc_table = std::array {
       0x0000, 0x8005, 0x800f, 0x000a, 0x801b, 0x001e, 0x0014, 0x8011,
@@ -278,15 +289,14 @@ constexpr auto answer_description = [] {
     | constant<"instruction">(0x55, width<8>)
     | field<"error">(unsigned_int, width<8>)
     | one_of<"parameters">(value_of<"status_of">,
-      when<ping> = empty_description,
+      when<ping> = field<"model_number">(unsigned_int, width<16>)
+                 | field<"firmware_version">(unsigned_int, width<8>),
       when<read> = repeat<"data">(
         field<"value">(unsigned_int, width<8>),
         value_of<"length"> - 3,
         at_most<1024>
       )
     )
-    | field<"model_number">(unsigned_int, width<16>)
-    | field<"firmware_version">(unsigned_int, width<8>)
     | checksum<"crc">(accumulate_crc, xuint<16>{0}, all_fields);
 }();
 
@@ -403,8 +413,6 @@ auto ping_example() -> upd::error {
   std::println("- instruction: {:x}", (*answer1)["instruction"_kw]);
   std::println("- error: {:x}", (*answer1)["error"_kw]);
   std::println("- parameters: {}", (*answer1)["parameters"_kw]);
-  std::println("- model number: {:x}", (*answer1)["model_number"_kw]);
-  std::println("- firmware version: {:x}", (*answer1)["firmware_version"_kw]);
   std::println("");
 
   auto answer2_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x02, 0x07, 0x00, 0x55, 0x00, 0x06, 0x04, 0x26, 0x6f, 0x6d};
@@ -419,8 +427,6 @@ auto ping_example() -> upd::error {
   std::println("- instruction: {:x}", (*answer2)["instruction"_kw]);
   std::println("- error: {:x}", (*answer2)["error"_kw]);
   std::println("- parameters: {}", (*answer2)["parameters"_kw]);
-  std::println("- model number: {:x}", (*answer2)["model_number"_kw]);
-  std::println("- firmware version: {:x}", (*answer2)["firmware_version"_kw]);
   std::println("");
 
   return upd::no_error{};

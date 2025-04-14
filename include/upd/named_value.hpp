@@ -105,12 +105,16 @@ concept unique_names = sizeof...(NameLists) > 0 && [] {
   namespace stdr = std::ranges;
 
   auto to_sv_array = [](auto &name_list) {
-    auto sv_array = std::array<std::string_view, name_list.size>{};
-    auto last = stdr::copy(name_list.strings, sv_array.begin());
+    if constexpr (name_list.size == 0) {
+      return std::array<std::string_view, 0>{};
+    } else {
+      auto sv_array = std::array<std::string_view, name_list.size>{};
+      auto last = stdr::copy(name_list.strings, sv_array.begin());
 
-    UPD_CONSTEXPR_ASSERT(last.out == sv_array.end());
+      UPD_CONSTEXPR_ASSERT(last.out == sv_array.end());
 
-    return sv_array;
+      return sv_array;
+    }
   };
 
   auto joined_names = tuple{ref{NameLists}...}
