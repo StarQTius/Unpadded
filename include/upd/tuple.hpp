@@ -783,7 +783,7 @@ public:
       })
     )::type;
 
-    UPD_ASSERT(i <= size());
+    UPD_ASSERT(i < size());
 
     auto make_invoker_for_ith = [&](auto i) {
       return +[](Self &&self, F &&f) -> retval_type {
@@ -854,16 +854,6 @@ private:
   leaves m_leaves;
 };
 
-template<typename ...Ts> requires (sizeof...(Ts) > 1 || !(tuple_like<Ts> && ...))
-tuple(Ts...) -> tuple<
-  typename std::conditional_t<instance_of<Ts, ref>, Ts, std::type_identity<Ts>>::type...
->;
-
-template<typename ...Ts>
-explicit tuple(std::in_place_t, Ts...) -> tuple<
-  typename std::conditional_t<instance_of<Ts, ref>, Ts, std::type_identity<Ts>>::type...
->;
-
 template<typename... Ts>
 class typelist : public tuple_implementation<typelist<Ts...>> {
   using leaves = detail::leaves<std::index_sequence_for<Ts...>, typebox<Ts>...>;
@@ -910,6 +900,19 @@ public:
 private:
   leaves m_leaves;
 };
+
+template<typename ...Ts> requires (
+    (sizeof...(Ts) > 1 || sizeof...(Ts) == 1 && !(tuple_like<Ts> && ...))
+    && !typelist<Ts...>{}[expr<0>].template satisfies<std::is_same, std::in_place_t>()
+)
+tuple(Ts...) -> tuple<
+  typename std::conditional_t<instance_of<Ts, ref>, Ts, std::type_identity<Ts>>::type...
+>;
+
+template<typename ...Ts>
+explicit tuple(std::in_place_t, Ts...) -> tuple<
+  typename std::conditional_t<instance_of<Ts, ref>, Ts, std::type_identity<Ts>>::type...
+>;
 
 template<metatype... Metas>
 explicit typelist(Metas...) -> typelist<

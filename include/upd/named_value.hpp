@@ -34,6 +34,12 @@
 
 namespace upd {
 
+template<typename T, template<auto, typename...> typename TT>
+[[nodiscard]] constexpr auto is_instance_of() noexcept(release) -> bool {
+  auto checker = []<auto V, typename... Ts>(const TT<V, Ts...> &) {};
+  return requires(const T &x) { checker(x); };
+}
+
 constexpr auto name_max_size = std::size_t{256};
 
 template<typename T>
@@ -135,6 +141,9 @@ public:
 
   constexpr named_value() noexcept(release) = default;
 
+  template<typename Other> requires (is_instance_of<Other, named_value>() && requires(Other &&other) { value_type{UPD_FWD(other).value()}; })
+  constexpr named_value(Other &&other) : m_value{UPD_FWD(other).value()} {}
+
   template<typename... Args>
   constexpr explicit named_value(std::in_place_t, Args &&... args): m_value{UPD_FWD(args)...} {}
 
@@ -165,11 +174,11 @@ public:
   }
 
   [[nodiscard]] constexpr auto value() && noexcept(release) -> T && {
-    return std::move(m_value);
+    return UPD_FWD(m_value);
   }
 
   [[nodiscard]] constexpr auto value() const && noexcept(release) -> T && {
-    return std::move(m_value);
+    return UPD_FWD(m_value);
   }
 
   auto_constant<Identifier> id;
@@ -223,8 +232,14 @@ public:
 
   constexpr named_tuple() requires (sizeof...(Ts) == 0) = default;
 
-  template<named_value_instance... NamedValues> requires (sizeof...(NamedValues) == sizeof...(Ts))
+  template<typename... NamedValues> requires (
+    sizeof...(NamedValues) == sizeof...(Ts)
+    && (is_instance_of<NamedValues, named_value>() && ...)
+  )
   constexpr explicit named_tuple(NamedValues && ...nvs): m_nvs{UPD_FWD(nvs)...} {}
+
+  template<typename... Us> requires (sizeof...(Us) == sizeof...(Ts) && (std::constructible_from<Ts, Us> && ...))
+  constexpr explicit named_tuple(Us && ... xs): m_nvs{UPD_FWD(xs)...} {}
 
   template<typename... NamedValues>
   constexpr explicit named_tuple(const tuple<NamedValues...> &nvs): m_nvs{

@@ -59,6 +59,7 @@ public:
     }
 
     m_content[m_size].value = value;
+    ++m_size;
 
     return true;
   }
@@ -69,6 +70,7 @@ public:
     }
 
     m_content[m_size].value = std::move(value);
+    ++m_size;
 
     return true;
   }

@@ -285,7 +285,7 @@ constexpr auto answer_description = [] {
 
   return constant<"header">(0xfdffff, width<32>)
     | field<"id">(unsigned_int, width<8>)
-    | bound<"length">(unsigned_int, width<16>, length_of<"parameters"> / 8 + 3)
+    | bound<"length">(unsigned_int, width<16>, length_of<"parameters"> / 8 + 4)
     | constant<"instruction">(0x55, width<8>)
     | field<"error">(unsigned_int, width<8>)
     | one_of<"parameters">(value_of<"status_of">,
@@ -293,7 +293,7 @@ constexpr auto answer_description = [] {
                  | field<"firmware_version">(unsigned_int, width<8>),
       when<read> = repeat<"data">(
         field<"value">(unsigned_int, width<8>),
-        value_of<"length"> - 3,
+        value_of<"length"> - 4,
         at_most<1024>
       )
     )
@@ -377,9 +377,10 @@ template<typename... Bytes>
 explicit bytearray(Bytes...) noexcept->bytearray<sizeof...(Bytes)>;
 
 auto ping_example() -> upd::error;
+auto read_example() -> upd::error;
 
 auto main() -> int {
-  auto examples = std::array {ping_example};
+  auto examples = std::array {ping_example, read_example};
 
   for (auto ex : examples) {
     auto err = ex();
@@ -427,6 +428,35 @@ auto ping_example() -> upd::error {
   std::println("- instruction: {:x}", (*answer2)["instruction"_kw]);
   std::println("- error: {:x}", (*answer2)["error"_kw]);
   std::println("- parameters: {}", (*answer2)["parameters"_kw]);
+  std::println("");
+
+  return upd::no_error{};
+}
+
+auto read_example() -> upd::error {
+  using namespace upd::literals;
+
+  auto ser = serializer{};
+  auto oit = std::ostream_iterator<std::byte>{std::cout, " "};
+  std::cout << std::hex;
+
+  std::println("Read: example");
+  description.encode(("id"_kw = 1, "parameters"_kw = upd::choice<instruction_code::read>("address"_kw = 0x84, "length"_kw = 4)), ser, oit);
+  std::println("");
+  std::println("");
+
+  auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x08, 0x00, 0x55, 0x00, 0xa6, 0x00, 0x00, 0x00, 0x8c, 0xc0};
+  auto answer1 = answer_description.decode(answer1_seq.begin(), upd::named_tuple{"status_of"_kw = instruction_code::read}, ser);
+  if (!answer1) {
+    return answer1.error();
+  }
+
+  std::println("Answer:");
+  std::println("- id: {:x}", (*answer1)["id"_kw]);
+  std::println("- length: {:x}", (*answer1)["length"_kw]);
+  std::println("- instruction: {:x}", (*answer1)["instruction"_kw]);
+  std::println("- error: {:x}", (*answer1)["error"_kw]);
+  std::println("- parameters: {}", (*answer1)["parameters"_kw]);
   std::println("");
 
   return upd::no_error{};

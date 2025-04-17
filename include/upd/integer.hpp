@@ -96,7 +96,7 @@ public:
 
   constexpr extended_integer() noexcept = default;
 
-  template<typename T>
+  template<typename T> requires (std::integral<T> || std::is_enum_v<T> || is_extended_integer_v<T>)
   constexpr extended_integer(T n) noexcept(release) {
     if constexpr (std::is_integral_v<T> || std::is_enum_v<T>) {
       m_value = (underlying) reduce_scalar(n, bitsize);

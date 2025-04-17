@@ -75,12 +75,6 @@ private:
 
 namespace upd {
 
-template<typename T, template<auto, typename...> typename TT>
-[[nodiscard]] constexpr auto is_instance_of() noexcept(release) -> bool {
-  auto checker = []<auto V, typename... Ts>(const TT<V, Ts...> &) {};
-  return requires(const T &x) { checker(x); };
-}
-
 template<auto Code, typename... Args>
 struct choice_t {
   constexpr static auto code = Code;
@@ -91,7 +85,7 @@ struct choice_t {
 
 template<auto Code, typename... Args>
 [[nodiscard]] constexpr auto choice(Args &&... args) -> choice_t<Code, Args...> {
-  return choice_t<Code, Args...>{UPD_FWD(args)...};
+  return choice_t<Code, Args...>{ .arguments = {UPD_FWD(args)...}};
 }
 
 template<typename Tuple>
@@ -1160,18 +1154,14 @@ struct one_of_t {
     auto alt_index = value.index();
     auto encode_alt = [&](const auto &i_and_named_descr) {
       const auto &[i, named_descr] = i_and_named_descr;
-      const auto *alt = std::get_if<i>(&value);
+      const auto *alt = std::get_if<i.value + 1>(&value);
 
       UPD_ASSERT(alt);
       
-      if constexpr (i.value == 0) {
-        UPD_ASSERT(false);
-      } else {
-        named_descr.value().encode(*alt, ser, dest);
-      }
+      named_descr.value().encode(*alt, ser, dest);
     };
 
-    return zip(sequence<size>, tagged_descriptions).visit(alt_index, encode_alt);
+    return zip(sequence<size>, tagged_descriptions).visit(alt_index - 1, encode_alt);
   }
 };
 
@@ -1232,6 +1222,7 @@ struct repeat_t {
         return std::unexpected{std::move(maybe_value).error()};
       }
       retval.push_back(std::move(maybe_value).value());
+      ++src;
     }
 
     return retval;
