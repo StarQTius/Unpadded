@@ -230,7 +230,7 @@ constexpr auto accumulate_crc(crc acc, upd::xuint<8> byte) noexcept -> crc {
   };
 
   auto i = ((acc >> 8) ^ byte) & 0xff;
-  return (acc << 8) ^ crc_table[i];
+  return *((acc << 8) ^ upd::extended_integer{crc_table[i.value()]}).resize(upd::width<16>);
 }
 
 enum class instruction_code {
@@ -264,16 +264,16 @@ constexpr auto description = [] {
 
   using enum instruction_code;
 
-  return constant<"header">(0xfdffff, width<32>)
+  return constant<"header">(0x00fdffff_x, width<32>)
   | field<"id">(unsigned_int, width<8>)
-  | bound<"length">(unsigned_int, width<16>, length_of<"parameters"> / 8 + 3)
+  | bound<"length">(unsigned_int, width<16>, length_of<"parameters"> / 8_x + 3_x)
   | bound<"instruction">(enumeration<instruction_code>, width<8>)
   | one_of<"parameters">(value_of<"instruction">,
     when<ping> = empty_description,
     when<read> = field<"address">(unsigned_int, width<16>)
                | field<"length">(unsigned_int, width<16>)
   )
-  | checksum<"crc">(accumulate_crc, xuint<16>{0}, all_fields);
+  | checksum<"crc">(accumulate_crc, *(0_x).resize(width<16>), all_fields);
 }();
 
 constexpr auto answer_description = [] {
@@ -283,39 +283,47 @@ constexpr auto answer_description = [] {
 
   using enum instruction_code;
 
-  return constant<"header">(0xfdffff, width<32>)
+  return constant<"header">(0x00fdffff_x, width<32>)
     | field<"id">(unsigned_int, width<8>)
-    | bound<"length">(unsigned_int, width<16>, length_of<"parameters"> / 8 + 4)
-    | constant<"instruction">(0x55, width<8>)
+    | bound<"length">(unsigned_int, width<16>, length_of<"parameters"> / 8_x + 4_x)
+    | constant<"instruction">(0x55_x, width<8>)
     | field<"error">(unsigned_int, width<8>)
     | one_of<"parameters">(value_of<"status_of">,
       when<ping> = field<"model_number">(unsigned_int, width<16>)
                  | field<"firmware_version">(unsigned_int, width<8>),
       when<read> = repeat<"data">(
         field<"value">(unsigned_int, width<8>),
-        value_of<"length"> - 4,
+        value_of<"length"> - 4_x,
         at_most<1024>
       )
     )
-    | checksum<"crc">(accumulate_crc, xuint<16>{0}, all_fields);
+    | checksum<"crc">(accumulate_crc, *(0_x).resize(width<16>), all_fields);
 }();
 
 struct serializer {
-  constexpr static auto bytewidth = 8;
+  using byte_type = std::byte;
+
+  constexpr static auto bytewidth = std::numeric_limits<unsigned char>::digits;
 
   template<typename XInteger, typename OutputIt>
   void serialize_unsigned(XInteger value, OutputIt output) {
+    namespace stdr = std::ranges;
+
     static_assert(upd::is_extended_integer_v<XInteger>, "`value` must be an instance of `extended_integer`");
     static_assert(!upd::is_signed_v<XInteger>, "`value` must be unsigned");
 
     constexpr auto byte_count = value.bitsize / bytewidth;
 
     auto decomposition = value.decompose(upd::width<byte_count>);
-    std::copy(decomposition.begin(), decomposition.end(), output);
+    stdr::transform(decomposition, output, [](auto xint) { return static_cast<std::byte>(xint); });
   }
 
   template<typename XInteger, typename OutputIt>
   void serialize_signed(XInteger value, OutputIt output) {
+    using namespace upd::literals;
+
+    namespace stdr = std::ranges;
+
     static_assert(upd::is_extended_integer_v<XInteger>, "`value` must be an instance of `extended_integer`");
     static_assert(upd::is_signed_v<XInteger>, "`value` must be signed");
 
@@ -323,13 +331,13 @@ struct serializer {
     auto abs = value.abs().enlarge(upd::width<1>);
 
     if (sign) {
-      abs = ~abs + 1;
+      abs = ~abs + 1_x;
     }
 
     constexpr auto byte_count = abs.bitsize / bytewidth;
 
     auto decomposition = abs.decompose(upd::width<byte_count>);
-    std::copy(decomposition.begin(), decomposition.end(), output);
+    stdr::transform(decomposition, output, [](auto xint) { return static_cast<std::byte>(xint); });
   }
 
   template<typename InputIt, std::size_t Bitsize>
@@ -361,10 +369,12 @@ struct serializer {
 
     auto raw = upd::recompose_into_xuint(byteseq);
     auto sign = ((raw & upd::nth_bit<Bitsize>) != 0);
-    auto abs = (raw & upd::nth_bit<Bitsize>) ? ~raw + 1_xui : raw;
+    auto abs = (sign) ? ~raw + 1_x : raw;
 
     return sign ? -abs : abs.as_signed();
   }
+
+  void checkpoint(std::string_view) {}
 };
 
 template<std::size_t N>
@@ -398,7 +408,7 @@ auto ping_example() -> upd::error {
   std::cout << std::hex;
 
   std::println("Ping: example 1");
-  description.encode(("id"_kw = 1, "parameters"_kw = upd::choice<instruction_code::ping>()), ser, oit);
+  description.encode(("id"_kw = 1_x, "parameters"_kw = upd::choice<instruction_code::ping>()), ser, oit);
   std::println("");
   std::println("");
 
@@ -441,7 +451,7 @@ auto read_example() -> upd::error {
   std::cout << std::hex;
 
   std::println("Read: example");
-  description.encode(("id"_kw = 1, "parameters"_kw = upd::choice<instruction_code::read>("address"_kw = 0x84, "length"_kw = 4)), ser, oit);
+  description.encode(("id"_kw = 1_x, "parameters"_kw = upd::choice<instruction_code::read>("address"_kw = 0x84_x, "length"_kw = 4_x)), ser, oit);
   std::println("");
   std::println("");
 

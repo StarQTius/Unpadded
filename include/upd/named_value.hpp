@@ -13,7 +13,6 @@
 #include <type_traits>
 #include <utility>
 
-#include "description.hpp"
 #include "detail/always_false.hpp"
 #include "detail/integral_constant.hpp"
 #include "detail/tuple_operations.hpp"
@@ -21,7 +20,6 @@
 #include "integer.hpp"
 #include "upd.hpp"
 #include "tuple.hpp"
-#include "description.hpp"
 #include "detail/always_false.hpp"
 #include "detail/integral_constant.hpp"
 #include "detail/tuple_operations.hpp"
@@ -31,14 +29,9 @@
 #include "integer.hpp"
 #include "upd.hpp"
 #include "template_traits.hpp"
+#include "is_instance_of.hpp"
 
 namespace upd {
-
-template<typename T, template<auto, typename...> typename TT>
-[[nodiscard]] constexpr auto is_instance_of() noexcept(release) -> bool {
-  auto checker = []<auto V, typename... Ts>(const TT<V, Ts...> &) {};
-  return requires(const T &x) { checker(x); };
-}
 
 constexpr auto name_max_size = std::size_t{256};
 
@@ -48,19 +41,10 @@ concept xinteger_instance = requires(T x) {
 };
 
 template<typename T>
-concept serializer = requires(
-  T x,
-  xuint<T::bytewidth> xui,
-  xint<T::bytewidth - 1> xi,
-  xuint<T::bytewidth> *it) {
-  { x.serialize_unsigned(xui, it) } -> std::same_as<void>;
-  { x.serialize_signed(xi, it) } -> std::same_as<void>;
-  { x.deserialize_unsigned(std::as_const(it), width<decltype(xui)::bitsize>) } -> xinteger_instance;
-  { x.deserialize_signed(std::as_const(it), width<decltype(xi)::bitsize>) } -> xinteger_instance;
-};
+concept serializer = true;
 
 template<serializer Serializer>
-using byte_type = xuint<Serializer::bytewidth>;
+using byte_type = typename Serializer::byte_type;
 
 struct name {
   template<std::size_t Size>
@@ -101,6 +85,12 @@ struct names {
   }
 
   char strings[N][name_max_size];
+};
+
+template<>
+struct names<0> {
+  constexpr static auto size = 0;
+  constexpr static char* strings[0] = {};
 };
 
 template<std::convertible_to<std::string_view>... Strings>
@@ -146,6 +136,8 @@ public:
 
   template<typename... Args>
   constexpr explicit named_value(std::in_place_t, Args &&... args): m_value{UPD_FWD(args)...} {}
+
+  constexpr explicit named_value(auto_constant<Identifier>, const T &value): m_value{value} {}
 
   template<typename F>
   [[nodiscard]] constexpr auto map(F &&f) & {
@@ -315,13 +307,6 @@ concept named_tuple_instance = requires(T x) {
   { named_tuple{x} } -> std::same_as<T>;
 };
 
-template<named_tuple_like... NamedTuples>
-[[nodiscard]] constexpr auto concat(NamedTuples &&...nts) {
-  return tuple<NamedTuples &&...>{UPD_FWD(nts)...}
-    .flatten()
-    .apply([](auto &&... nvs) { return named_tuple{UPD_FWD(nvs)...}; });
-}
-
 template<named_value_instance Lhs, named_value_instance Rhs>
 [[nodiscard]] constexpr auto operator,(Lhs &&lhs, Rhs &&rhs) noexcept(release) {
   return named_tuple{UPD_FWD(lhs), UPD_FWD(rhs)};
@@ -358,7 +343,7 @@ class tagged_tuple : public tuple_implementation<tagged_tuple<Identifiers, Ts...
 public:
   constexpr static auto identifiers = sequence<sizeof...(Ts)>
     .transform([](auto i) {
-        return expr<get<i>(Identifiers)>;
+        return get<i>(Identifiers);
     })
     .to_constlist();
 

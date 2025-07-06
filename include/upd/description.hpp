@@ -43,33 +43,44 @@ public:
   using pointer = typename std::iterator_traits<Iter>::pointer;
   using reference = typename std::iterator_traits<Iter>::reference;
   using iterator_category = std::input_iterator_tag;
-  
-  constexpr explicit iterator_reference(iterator_type &iter) : m_iter{iter}, m_cache{*iter} {
-    ++iter;
-  }
+ 
+  constexpr iterator_reference(iterator_type &iter, bool read): m_iter{iter}, m_read{read} {}
+  constexpr iterator_reference(const iterator_reference &other): m_iter{other.m_iter}, m_read{false} {}
 
-  [[nodiscard]] constexpr auto operator*() const -> value_type { 
-    return m_cache;
+  [[nodiscard]] constexpr auto operator*() const -> value_type {
+    m_read = true;
+    return *m_iter.get();
   }
 
   constexpr auto operator++() -> iterator_reference & {
-    m_cache = *m_iter.get();
     ++m_iter.get();
     return *this;
   }
 
   constexpr auto operator++(int) -> iterator_reference {
     auto retval = *this;
-    m_cache = *m_iter.get();
     ++m_iter.get();
-    
     return retval;
   }
 
-private:
+  ~iterator_reference() {
+    if (m_read) {
+      ++m_iter.get();
+    }
+  }
+
   std::reference_wrapper<iterator_type> m_iter;
-  value_type m_cache;
+  mutable bool m_read;
 };
+
+template<typename Iter>
+[[nodiscard]] constexpr auto make_itererator_reference(Iter &iter) -> decltype(auto) {
+  if constexpr (is_instance_of<Iter, iterator_reference>()) {
+    return iter;
+  } else {
+    return iterator_reference<Iter>{iter, false};
+  }
+}
 
 } // namespace upd::detail
 
@@ -111,7 +122,7 @@ struct add_some {
   T offset;
 
   template<typename U>
-  [[nodiscard]] constexpr auto operator()(U && x) const noexcept(release) -> T {
+  [[nodiscard]] constexpr auto operator()(U && x) const noexcept(release) {
     return UPD_FWD(x) + offset;
   }
 };
@@ -121,7 +132,7 @@ struct substract_some {
   T offset;
 
   template<typename U>
-  [[nodiscard]] constexpr auto operator()(U && x) const noexcept(release) -> T {
+  [[nodiscard]] constexpr auto operator()(U && x) const noexcept(release) {
     return UPD_FWD(x) - offset;
   }
 };
@@ -131,7 +142,7 @@ struct multiply_some {
   T factor;
 
   template<typename U>
-  [[nodiscard]] constexpr auto operator()(U && x) const noexcept(release) -> T {
+  [[nodiscard]] constexpr auto operator()(U && x) const noexcept(release) {
     return UPD_FWD(x) * factor;
   }
 };
@@ -141,7 +152,7 @@ struct divide_some {
   T factor;
 
   template<typename U>
-  [[nodiscard]] constexpr auto operator()(U && x) const noexcept(release) -> T {
+  [[nodiscard]] constexpr auto operator()(U && x) const noexcept(release) {
     return UPD_FWD(x) / factor;
   }
 };
@@ -166,7 +177,7 @@ struct bijective_chain {
 
 template<typename T>
 [[nodiscard]] constexpr auto inverse(add_some<T> op) noexcept(release) -> substract_some<T> {
-  return substract_some{op.offset};
+  return substract_some{op.offse};
 }
 
 template<typename T>
@@ -202,8 +213,11 @@ template<inversible ...Inversibles>
   return bijective_chain{std::move(inv_ops)};
 }
 
-template<typename F, inversible ...Inversibles>
+template<auto Identifier, typename F, inversible ...Inversibles>
 struct field_expression_t {
+  constexpr static auto from_identifier = Identifier;
+
+  auto_constant<Identifier> id_const;
   F get_value;
   bijective_chain<Inversibles...> chain;
 
@@ -235,7 +249,8 @@ struct field_expression_t {
 
   template<typename Self, inversible Inversible>
   [[nodiscard]] constexpr auto and_then(this Self &&self, Inversible &&op) {
-    return field_expression_t<F, Inversibles..., Inversible> {
+    return field_expression_t<Identifier, F, Inversibles..., Inversible> {
+      self.id_const,
       UPD_FWD(self).get_value,
       UPD_FWD(self).chain.and_then(UPD_FWD(op))
     };
@@ -263,14 +278,22 @@ template<std::size_t Bitsize, typename Underlying>
   return xi.bitsize;
 }
 
-template<name Identifier>
-constexpr auto value_of = field_expression_t { [](auto &packet) -> auto & { return packet[expr<Identifier>]; } };
+template<typename T, std::size_t Max>
+[[nodiscard]] constexpr static auto bitsize(const static_vector<T, Max>& svec) -> std::size_t {
+  namespace stdr = std::ranges;
+  return stdr::fold_left(svec, 0uz, [](auto acc, const auto &elem) { return acc + bitsize(elem); });
+}
 
 template<name Identifier>
-constexpr auto length_of = field_expression_t { [](const auto &packet){ return bitsize(packet[expr<Identifier>]); } };
+constexpr auto value_of = field_expression_t { expr<Identifier>, [](auto &packet) -> auto & { return packet[expr<Identifier>]; } };
 
 template<name Identifier>
-constexpr auto code_of = field_expression_t { [](const auto &packet){ return packet[expr<Identifier>].index(); } };;
+constexpr auto length_of = field_expression_t { expr<Identifier>, [](const auto &packet){
+  return extended_integer<16, std::size_t>{static_cast<std::uint16_t>(bitsize(packet[expr<Identifier>]))};
+} };
+
+template<name Identifier>
+constexpr auto code_of = field_expression_t { expr<Identifier>, [](const auto &packet){ return packet[expr<Identifier>].index(); } };
 
 
 template<auto Match, typename Result>
@@ -622,14 +645,17 @@ public:
       })
       .apply([](auto &&... field_values) { return named_tuple{UPD_FWD(field_values)...}; });
 
-    zip(packet, m_fields)
-      .for_each(unpack | [&](auto &, const auto &field) {
-        field.deduce(packet, ser, m_fields);
+    m_fields
+      .for_each([&](const auto &field) {
+        field.deduce(packet, ser, m_fields).for_each([&](const auto &named_value) {
+          packet[expr<named_value.identifier>] = UPD_FWD(named_value).value();
+        });
       });
 
-    zip(packet, m_fields)
-      .for_each(unpack | [&](const auto &field_value, const auto &field) {
-        field.encode(field_value.value(), ser, dest);
+    m_fields
+      .for_each([&](const auto &field) {
+        ser.checkpoint(field.identifier.string);
+        field.encode(packet[expr<field.identifier>], ser, dest);
       });
   }
 
@@ -648,25 +674,33 @@ public:
           return named_tuple { (keyword<fields.identifier>{} = fields.default_value())... };
       });
 
-    m_fields
-      .for_each([&](const auto &field) {
-        auto maybe_field_value = field.decode(detail::iterator_reference{src}, named_tuple{join(std::as_const(retval), ctx)}, ser);
-        if (maybe_field_value) {
-          retval[expr<field.identifier>] = *maybe_field_value;
-        } else {
-          err = maybe_field_value.error();
-        }
-      });
+    if (!err) {
+      m_fields
+        .for_each([&](const auto &field) {
+          ser.checkpoint(field.identifier.string);
+          auto maybe_field_value = field.decode(detail::make_itererator_reference(src), named_tuple{join(std::as_const(retval), ctx)}, ser);
+          if (maybe_field_value) {
+            retval[expr<field.identifier>] = *maybe_field_value;
+          } else {
+            err = maybe_field_value.error();
+          }
+        });
+    }
 
-    /*
-    zip(retval, m_fields)
-      .for_each(unpack | [&](const auto &field_value, const auto &field) {
-        constexpr auto id = expr<field.identifier>;
-        if (!err && field_value.value() != field.deduce(retval, ser)) {
-          err = not_matching_deduction{field_value.identifier.string};
-        }
-      });
-    */
+    if (!err) {
+      auto merged = named_tuple{join(std::as_const(retval), ctx)};
+      m_fields
+        .transform([&](const auto &field) {
+          return field.deduce(retval, ser, m_fields);
+        })
+       .flatten()
+       .for_each([&](const auto &named_value) {
+          constexpr auto &id = named_value.identifier;
+          if (!err && named_value.value() != merged[expr<id>]) {
+            err = not_matching_deduction{id.string};
+          }
+        });
+    }
 
     return result_if_no_error(std::move(retval), std::move(err));
   }
@@ -720,7 +754,9 @@ struct field_t {
   }
 
   template<named_tuple_like Packet, serializer Serializer, tuple_like Fields>
-  constexpr static void deduce(Packet &, Serializer &, const Fields&) {}
+  [[nodiscard]] constexpr static auto deduce(Packet &, Serializer &, const Fields&) noexcept(release) {
+    return named_tuple{};
+  }
 
   template<serializer Serializer, named_tuple_like Packet, std::input_iterator InputIt>
   [[nodiscard]] constexpr static auto decode(InputIt src, const Packet &, Serializer &ser) -> result<value_type> {
@@ -769,8 +805,8 @@ struct bound_t {
   }
 
   template<named_tuple_like Packet, serializer Serializer, tuple_like Fields>
-  constexpr void deduce(Packet &packet, Serializer &, const Fields&) const {
-    packet.at(expr<identifier>) = rule.deduce(std::as_const(packet));
+  [[nodiscard]] constexpr auto deduce(Packet &packet, Serializer &, const Fields&) const {
+    return tagged_tuple{named_value{ expr<identifier>, rule.deduce(std::as_const(packet))}};
   }
 
   template<serializer Serializer, named_tuple_like Packet, std::input_iterator InputIt>
@@ -813,8 +849,8 @@ struct enum_bound_t {
   }
 
   template<named_tuple_like Packet, serializer Serializer, tuple_like Fields>
-  constexpr void deduce(Packet &packet, Serializer &, const Fields&) const {
-    packet.at(expr<identifier>) = rule.deduce(std::as_const(packet));
+  [[nodiscard]] constexpr auto deduce(Packet &packet, Serializer &, const Fields&) const {
+    return tagged_tuple { named_value{ expr<identifier>, rule.deduce(std::as_const(packet))} };
   }
 
   template<serializer Serializer, named_tuple_like Packet, std::input_iterator InputIt>
@@ -882,7 +918,9 @@ struct bound_elsewhere_t {
   }
 
   template<named_tuple_like Packet, serializer Serializer, tuple_like Fields>
-  constexpr static void deduce(Packet &, Serializer &, const Fields&) {}
+  [[nodiscard]] constexpr static auto deduce(Packet &, Serializer &, const Fields&) noexcept(release) {
+    return named_tuple{};
+  }
 
   template<serializer Serializer, named_tuple_like Packet, std::input_iterator InputIt>
   [[nodiscard]] constexpr static auto decode(InputIt src, const Packet &, Serializer &ser) -> result<value_type> {
@@ -921,7 +959,9 @@ struct enum_bound_elsewhere_t {
   }
 
   template<named_tuple_like Packet, serializer Serializer, tuple_like Fields>
-  constexpr static void deduce(Packet &, Serializer &, const Fields&) {}
+  [[nodiscard]] constexpr static auto deduce(Packet &, Serializer &, const Fields&) noexcept(release) {
+    return named_tuple{};
+  }
 
   template<serializer Serializer, named_tuple_like Packet, std::input_iterator InputIt>
   [[nodiscard]] constexpr static auto decode(InputIt src, const Packet &, Serializer &ser) -> result<value_type> {
@@ -941,9 +981,9 @@ struct enum_bound_elsewhere_t {
     auto integral_value = std::to_underlying(value);
     auto xint_value = [&] {
       if constexpr (is_signed) {
-        return xint<width>{integral_value};
+        return xint<width>{std::in_place, integral_value};
       } else {
-        return xuint<width>{integral_value};
+        return xuint<width>{std::in_place, integral_value};
       }
     }();
 
@@ -977,7 +1017,7 @@ struct constant_t {
   using value_type = xuint<width>;
 
   template<typename... Args>
-  [[nodiscard]] constexpr auto make_value(Args && ... args) const -> value_type {
+  [[nodiscard]] constexpr auto make_value(Args &&... args) const -> value_type {
     return value_type{UPD_FWD(args)...};
   }
 
@@ -988,7 +1028,9 @@ struct constant_t {
   }
 
   template<named_tuple_like Packet, serializer Serializer, tuple_like Fields>
-  constexpr static void deduce(Packet &, Serializer &, const Fields&) {}
+  [[nodiscard]] constexpr static auto deduce(Packet &, Serializer &, const Fields&) noexcept(release) {
+    return named_tuple{};
+  }
 
   template<serializer Serializer, named_tuple_like Packet, std::input_iterator InputIt>
   [[nodiscard]] constexpr static auto decode(InputIt src, const Packet &, Serializer &ser) -> result<value_type> {
@@ -1028,16 +1070,18 @@ struct checksum_t {
   }
 
   template<named_tuple_like Packet, serializer Serializer, tuple_like Fields>
-  constexpr void deduce(Packet &packet, Serializer &ser, const Fields& fields) const {
+  [[nodiscard]] constexpr auto deduce(Packet &packet, Serializer &ser, const Fields& fields) const {
+    using namespace upd::literals;
+
     auto field_filter = [&](const auto &nv_and_field) {
       const auto &[nv, field] = nv_and_field;
       std::ignore = field;
       return UPD_INVOKE(identifier_filter, expr<nv.identifier>);
     };
 
-    auto &acc = packet.at(expr<identifier>);
+    auto acc = make_value(0_x);
     auto f = [&](auto byte) {
-      acc = UPD_INVOKE(op, acc, byte);
+      acc = UPD_INVOKE(op, acc, recompose_into_xuint(std::array{byte}));
     };
     auto it = invoker_iterator {&f};
 
@@ -1051,6 +1095,8 @@ struct checksum_t {
         const auto &[value, field] = value_and_field;
         field.encode(value, ser, it);
       });
+
+    return tagged_tuple {named_value{ expr<identifier>, acc}};
   }
 
   template<serializer Serializer, named_tuple_like Packet, std::input_iterator InputIt>
@@ -1095,7 +1141,12 @@ struct one_of_t {
     .to_typelist();
 
   using value_type = decltype(alternative_types.template metaapply<std::variant>());
-  
+  using tag_type = typename decltype(TaggedDescriptions::identifiers
+    .apply([]<typename... Identifiers>(Identifiers...) {
+      return typebox<std::common_type_t<typename Identifiers::value_type...>>{};
+    })
+  )::type;
+
   template<typename... Args> requires std::constructible_from<value_type, Args...>
   [[nodiscard]] constexpr auto make_value(Args && ... args) const -> value_type {
     return value_type{UPD_FWD(args)...};
@@ -1122,7 +1173,12 @@ struct one_of_t {
   }
 
   template<named_tuple_like Packet, serializer Serializer, tuple_like Fields>
-  constexpr void deduce(Packet &, Serializer &, const Fields&) const noexcept(release) {
+  [[nodiscard]] constexpr auto deduce(const Packet &packet, Serializer &, const Fields&) const noexcept(release) {
+    auto id_pos = packet[expr<identifier>].index() - 1;
+    auto id = tagged_descriptions.identifiers.visit(id_pos, [&](auto id) -> tag_type {
+      return id;
+    });
+    return tagged_tuple{ keyword<rule.from_identifier>{} = UPD_INVOKE(inverse(rule.chain), id) };
   }
 
   template<serializer Serializer, named_tuple_like Packet, std::input_iterator InputIt>
@@ -1143,7 +1199,8 @@ struct one_of_t {
     };
     auto make_alt = [&](const auto &id_and_descr) {
       const auto &[id, descr] = id_and_descr;
-      return descr.decode(src, packet, ser).transform(make_retval);
+      auto retval = descr.decode(src, packet, ser).transform(make_retval);
+      return retval;
     };
 
     return tagged_descriptions.visit(id_pos, make_alt);
@@ -1200,7 +1257,9 @@ struct repeat_t {
   }
 
   template<named_tuple_like Packet, serializer Serializer, tuple_like Fields>
-  constexpr static void deduce(Packet &, Serializer &, const Fields&) noexcept(release) {}
+  [[nodiscard]] constexpr static auto deduce(Packet &, Serializer &, const Fields&) noexcept(release) {
+    return named_tuple{};
+  }
 
   template<serializer Serializer, named_tuple_like Packet, std::input_iterator InputIt>
   [[nodiscard]] constexpr auto decode(InputIt src, const Packet &packet, Serializer &ser) const -> result<value_type> {
@@ -1208,10 +1267,10 @@ struct repeat_t {
 
     auto count = rule.deduce(packet);
     if (count < 0) {
-      return std::unexpected{negative_repetition_count{identifier.string, count}};
+      return std::unexpected{negative_repetition_count{identifier.string, try_cast<std::intmax_t>(count).value_or(0)}};
     }
-    if (std::cmp_greater(count, Max)) {
-      return std::unexpected{repeated_beyond_max{identifier.string, std::uintmax_t(count), Max}};
+    if (Max < count) {
+      return std::unexpected{repeated_beyond_max{identifier.string, static_cast<std::uintmax_t>(count), Max}};
     }
 
     auto retval = static_vector<typename Description::result_type, Max>{};
@@ -1222,7 +1281,6 @@ struct repeat_t {
         return std::unexpected{std::move(maybe_value).error()};
       }
       retval.push_back(std::move(maybe_value).value());
-      ++src;
     }
 
     return retval;

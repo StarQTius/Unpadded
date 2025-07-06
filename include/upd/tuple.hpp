@@ -972,30 +972,11 @@ template<tuple_like Tuple>
     .apply([](auto ...types) { return typelist {types...}; });
 }
 
-template<tuple_like ...Tuples> requires (!UPD_VARIADIC_CONSTRAINT_WORKAROUND(typelist_like<Tuples> || named_tuple_like<Tuples>))
+template<tuple_like ...Tuples>
 [[nodiscard]] constexpr auto concat(Tuples &&... ts) noexcept(release) {
-  auto element_types = concat(type_only(ts)...);
-  using retval_type = instantiate_variadic<tuple, decltype(element_types)>;
-
   return tuple{std::in_place, UPD_FWD(ts)...}
     .flatten()
-    .apply([](auto &&... xs) { return retval_type { UPD_FWD(xs)... }; });
-}
-
-template<typelist_like ...Typelists>
-[[nodiscard]] constexpr auto concat(Typelists... tls) noexcept(release) {
-  return tuple{tls...}
-  .flatten()
-  .clone()
-  .to_typelist();
-}
-
-template<constlist_like ...Constlists>
-[[nodiscard]] constexpr auto concat(Constlists... cls) noexcept(release) {
-  return tuple{cls...}
-  .flatten()
-  .clone()
-  .to_constlist();
+    .apply([](auto &&... xs) { return tuple { UPD_FWD(xs)... }; });
 }
 
 template<tuple_like Lhs, tuple_like Rhs>
@@ -1005,7 +986,7 @@ template<tuple_like Lhs, tuple_like Rhs>
 
 template<tuple_like... Tuples>
 [[nodiscard]] constexpr auto zip(Tuples &&... ts) {
-  constexpr auto min_size = std::min(ts.size()...);
+  constexpr auto min_size = std::min({ts.size()...});
 
   return sequence<min_size>
     .transform([&](auto i) {

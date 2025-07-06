@@ -8,7 +8,7 @@ template<typename T>
 concept metatype = requires { typename T::type; };
 
 template<typename T>
-concept metavalue = requires { T::value; };
+concept metavalue = std::is_empty_v<T> && requires { T::value; };
 
 template<typename T, template<typename> typename Base>
 concept implementer = std::derived_from<T, Base<T>>;
