@@ -777,11 +777,42 @@ struct field_t {
   }
 };
 
+template<bool Signedness, std::size_t Width>
+struct unamed_field_t {
+  constexpr static auto is_signed = Signedness;
+  constexpr static auto width = Width;
+
+  using result_type = std::conditional_t<is_signed, xint<width>, xuint<width>>;
+
+  template<serializer Serializer, std::output_iterator<byte_type<Serializer>> OutputIt>
+  constexpr void encode(result_type value, Serializer &ser, OutputIt dest) const {
+    if constexpr (is_signed) {
+      ser.serialize_signed(value, dest);
+    } else {
+      ser.serialize_unsigned(value, dest);
+    }
+  }
+
+  template<serializer Serializer, typename Packet, std::input_iterator InputIt>
+  [[nodiscard]] constexpr auto decode(InputIt src, const Packet &, Serializer &ser) const -> result<result_type> {
+    if constexpr (is_signed) {
+      return ser.deserialize_signed(src, upd::width<width>);
+    } else {
+      return ser.deserialize_unsigned(src, upd::width<width>);
+    }
+  }
+};
+
 template<name Identifier, bool Signedness, std::size_t Width>
 [[nodiscard]] constexpr auto field(signedness_t<Signedness>, width_t<Width>) noexcept(release) {
   field_like auto retval = field_t<Identifier, Signedness, Width>{};
 
   return description{retval};
+}
+
+template<bool Signedness, std::size_t Width>
+[[nodiscard]] constexpr auto field(signedness_t<Signedness>, width_t<Width>) noexcept(release) {
+  return unamed_field_t<Signedness, Width>{};
 }
 
 template<name Identifier, bool Signedness, std::size_t Width, typename Rule>

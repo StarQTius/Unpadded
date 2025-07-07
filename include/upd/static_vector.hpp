@@ -18,6 +18,13 @@ public:
 
   constexpr static_vector() noexcept(release) : m_content{}, m_size{0} {}
 
+  template<typename U, std::size_t N>
+  constexpr static_vector(const std::array<U, N> &other): static_vector{} {
+    for (const auto &val : other) {
+      push_back(val);
+    }
+  }
+
   [[nodiscard]] constexpr auto begin() noexcept(release) -> value_type* {
     return reinterpret_cast<value_type *>(m_content.begin());
   }
