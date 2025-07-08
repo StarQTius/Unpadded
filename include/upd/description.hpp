@@ -1225,11 +1225,12 @@ struct one_of_t {
       return std::unexpected{invalid_code_in_one_of{identifier.string, std::to_underlying(id)}};
     }
 
-    auto make_retval = [](auto &&alt) {
-      return value_type{UPD_FWD(alt)};
-    };
     auto make_alt = [&](const auto &id_and_descr) {
       const auto &[id, descr] = id_and_descr;
+      const auto id_pos = tagged_descriptions.identifiers.find(id);
+      auto make_retval = [&](auto &&alt) {
+        return value_type{std::in_place_index<id_pos + 1>, UPD_FWD(alt)};
+      };
       auto retval = descr.decode(src, packet, ser).transform(make_retval);
       return retval;
     };

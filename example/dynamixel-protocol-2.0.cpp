@@ -237,6 +237,7 @@ enum class instruction_code {
   ping = 0x1,
   read = 0x2,
   write = 0x3,
+  reg_write = 0x4,
   status = 0x55,
 };
 
@@ -278,8 +279,13 @@ constexpr auto description = [] {
                     field(unsigned_int, width<8>),
                     value_of<"length"> - 3_x,
                     at_most<1024>
+                ),
+    when<reg_write> = field<"address">(unsigned_int, width<16>)
+                | repeat<"data">(
+                    field(unsigned_int, width<8>),
+                    value_of<"length"> - 3_x,
+                    at_most<1024>
                 )
-
   )
   | checksum<"crc">(accumulate_crc, *(0_x).resize(width<16>), all_fields);
 }();
@@ -304,7 +310,8 @@ constexpr auto answer_description = [] {
         value_of<"length"> - 4_x,
         at_most<1024>
       ),
-      when<write> = empty_description
+      when<write> = empty_description,
+      when<reg_write> = empty_description
     )
     | checksum<"crc">(accumulate_crc, *(0_x).resize(width<16>), all_fields);
 }();
@@ -398,9 +405,10 @@ explicit bytearray(Bytes...) noexcept->bytearray<sizeof...(Bytes)>;
 auto ping_example() -> upd::error;
 auto read_example() -> upd::error;
 auto write_example() -> upd::error;
+auto reg_write_example() -> upd::error;
 
-auto main() -> int {
-  auto examples = std::array {ping_example, read_example, write_example};
+  auto main() -> int {
+  auto examples = std::array {ping_example, read_example, write_example, reg_write_example};
 
   for (auto ex : examples) {
     auto err = ex();
@@ -502,6 +510,41 @@ auto write_example() -> upd::error {
 
   auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04, 0x00, 0x55, 0x00, 0xa1, 0x0c};
   auto answer1 = answer_description.decode(answer1_seq.begin(), upd::named_tuple{"status_of"_kw = instruction_code::write}, ser);
+  if (!answer1) {
+    return answer1.error();
+  }
+
+  std::println("Answer:");
+  std::println("- id: {:x}", (*answer1)["id"_kw]);
+  std::println("- length: {:x}", (*answer1)["length"_kw]);
+  std::println("- instruction: {:x}", (*answer1)["instruction"_kw]);
+  std::println("- error: {:x}", (*answer1)["error"_kw]);
+  std::println("- parameters: {}", (*answer1)["parameters"_kw]);
+  std::println("");
+
+  return upd::no_error{};
+}
+
+auto reg_write_example() -> upd::error {
+  using namespace upd::literals;
+
+  auto ser = serializer{};
+  auto oit = std::ostream_iterator<std::byte>{std::cout, " "};
+  std::cout << std::hex;
+
+  std::println("Reg Write: example");
+  description.encode((
+    "id"_kw = 1_x,
+    "parameters"_kw = upd::choice<instruction_code::reg_write>(
+      "address"_kw = 0x68_x,
+      "data"_kw = (0xc8_x).resize(upd::width<32>)->decompose(upd::width<4>)
+    )
+  ), ser, oit);
+  std::println("");
+  std::println("");
+
+  auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04, 0x00, 0x55, 0x00, 0xa1, 0x0c};
+  auto answer1 = answer_description.decode(answer1_seq.begin(), upd::named_tuple{"status_of"_kw = instruction_code::reg_write}, ser);
   if (!answer1) {
     return answer1.error();
   }
