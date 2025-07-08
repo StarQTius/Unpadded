@@ -86,6 +86,33 @@ template<typename Iter>
 
 namespace upd {
 
+template<typename Enum, std::size_t Width>
+struct xenum {
+  using enum_type = Enum;
+  constexpr static auto width = Width;
+
+  using underlying_type = std::underlying_type_t<enum_type>;
+  constexpr static auto is_signed = std::is_signed_v<underlying_type>;
+
+  constexpr xenum(enum_type val) noexcept(release): value{val} {}
+  
+  constexpr explicit xenum(extended_integer<width, underlying_type> xn) noexcept(release): value{static_cast<enum_type>(xn.value())} {}
+
+  constexpr explicit operator extended_integer<width, underlying_type>() const noexcept(release) {
+    return to_xint();
+  }
+
+  constexpr operator enum_type() const noexcept(release) {
+    return value;
+  }
+
+  [[nodiscard]] constexpr auto to_xint() const noexcept(release) {
+    return extended_integer<width, underlying_type>{std::in_place, static_cast<underlying_type>(value)};
+  }
+
+  enum_type value;
+};
+
 template<auto Code, typename... Args>
 struct choice_t {
   constexpr static auto code = Code;
@@ -276,6 +303,11 @@ template<names Identifiers, typename ...Ts>
 template<std::size_t Bitsize, typename Underlying>
 [[nodiscard]] constexpr static auto bitsize(xinteger<Bitsize, Underlying> xi) -> std::size_t {
   return xi.bitsize;
+}
+
+template<typename Enum, std::size_t Bitsize>
+[[nodiscard]] constexpr static auto bitsize(xenum<Enum, Bitsize> xe) -> std::size_t {
+  return xe.width;
 }
 
 template<typename T, std::size_t Max>
@@ -803,6 +835,37 @@ struct unamed_field_t {
   }
 };
 
+template<typename Enum, std::size_t Width>
+struct unamed_enum_field_t {
+  using enum_type = Enum;
+  constexpr static auto width = Width;
+
+  using result_type = xenum<enum_type, width>;
+  constexpr static auto is_signed = std::is_signed_v<std::underlying_type_t<enum_type>>;
+  
+  template<serializer Serializer, named_tuple_like Packet, std::input_iterator InputIt>
+  [[nodiscard]] constexpr static auto decode(InputIt src, const Packet &, Serializer &ser) -> result<result_type> {
+    auto retval = [&] {
+      if constexpr (is_signed) {
+        return ser.deserialize_signed(src, upd::width<width - 1>);
+      } else {
+        return ser.deserialize_unsigned(src, upd::width<width>);
+      }
+    }();
+
+    return result_type{retval};
+  }
+
+  template<serializer Serializer, std::output_iterator<byte_type<Serializer>> OutputIt>
+  constexpr static void encode(result_type value, Serializer &ser, OutputIt dest) {
+    if constexpr (is_signed) {
+      ser.serialize_signed(value.to_xint(), dest);
+    } else {
+      ser.serialize_unsigned(value.to_xint(), dest);
+    }
+  }
+};
+
 template<name Identifier, bool Signedness, std::size_t Width>
 [[nodiscard]] constexpr auto field(signedness_t<Signedness>, width_t<Width>) noexcept(release) {
   field_like auto retval = field_t<Identifier, Signedness, Width>{};
@@ -813,6 +876,11 @@ template<name Identifier, bool Signedness, std::size_t Width>
 template<bool Signedness, std::size_t Width>
 [[nodiscard]] constexpr auto field(signedness_t<Signedness>, width_t<Width>) noexcept(release) {
   return unamed_field_t<Signedness, Width>{};
+}
+
+template<typename Enum, std::size_t Width>
+[[nodiscard]] constexpr auto field(enumeration_t<Enum>, width_t<Width>) noexcept(release) {
+  return unamed_enum_field_t<Enum, Width>{};
 }
 
 template<name Identifier, bool Signedness, std::size_t Width, typename Rule>

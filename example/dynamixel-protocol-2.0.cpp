@@ -238,7 +238,15 @@ enum class instruction_code {
   read = 0x2,
   write = 0x3,
   reg_write = 0x4,
+  action = 0x5,
+  factory_reset = 0x6,
   status = 0x55,
+};
+
+enum class factory_reset_target {
+  all = 0xff,
+  all_but_id = 0x1,
+  all_but_id_and_baudrate = 0x2,
 };
 
 template<>
@@ -285,7 +293,9 @@ constexpr auto description = [] {
                     field(unsigned_int, width<8>),
                     value_of<"length"> - 3_x,
                     at_most<1024>
-                )
+                ),
+    when<action> = empty_description,
+    when<factory_reset> = field(enumeration<factory_reset_target>, width<8>)
   )
   | checksum<"crc">(accumulate_crc, *(0_x).resize(width<16>), all_fields);
 }();
@@ -311,7 +321,9 @@ constexpr auto answer_description = [] {
         at_most<1024>
       ),
       when<write> = empty_description,
-      when<reg_write> = empty_description
+      when<reg_write> = empty_description,
+      when<action> = empty_description,
+      when<factory_reset> = empty_description
     )
     | checksum<"crc">(accumulate_crc, *(0_x).resize(width<16>), all_fields);
 }();
@@ -406,9 +418,18 @@ auto ping_example() -> upd::error;
 auto read_example() -> upd::error;
 auto write_example() -> upd::error;
 auto reg_write_example() -> upd::error;
+auto action_example() -> upd::error;
+auto factory_reset_example() -> upd::error;
 
-  auto main() -> int {
-  auto examples = std::array {ping_example, read_example, write_example, reg_write_example};
+auto main() -> int {
+  auto examples = std::array {
+    ping_example,
+    read_example,
+    write_example,
+    reg_write_example,
+    action_example,
+    factory_reset_example
+  };
 
   for (auto ex : examples) {
     auto err = ex();
@@ -539,6 +560,70 @@ auto reg_write_example() -> upd::error {
       "address"_kw = 0x68_x,
       "data"_kw = (0xc8_x).resize(upd::width<32>)->decompose(upd::width<4>)
     )
+  ), ser, oit);
+  std::println("");
+  std::println("");
+
+  auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04, 0x00, 0x55, 0x00, 0xa1, 0x0c};
+  auto answer1 = answer_description.decode(answer1_seq.begin(), upd::named_tuple{"status_of"_kw = instruction_code::reg_write}, ser);
+  if (!answer1) {
+    return answer1.error();
+  }
+
+  std::println("Answer:");
+  std::println("- id: {:x}", (*answer1)["id"_kw]);
+  std::println("- length: {:x}", (*answer1)["length"_kw]);
+  std::println("- instruction: {:x}", (*answer1)["instruction"_kw]);
+  std::println("- error: {:x}", (*answer1)["error"_kw]);
+  std::println("- parameters: {}", (*answer1)["parameters"_kw]);
+  std::println("");
+
+  return upd::no_error{};
+}
+
+auto action_example() -> upd::error {
+  using namespace upd::literals;
+
+  auto ser = serializer{};
+  auto oit = std::ostream_iterator<std::byte>{std::cout, " "};
+  std::cout << std::hex;
+
+  std::println("Action: example");
+  description.encode((
+    "id"_kw = 1_x,
+    "parameters"_kw = upd::choice<instruction_code::action>()
+  ), ser, oit);
+  std::println("");
+  std::println("");
+
+  auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04, 0x00, 0x55, 0x00, 0xa1, 0x0c};
+  auto answer1 = answer_description.decode(answer1_seq.begin(), upd::named_tuple{"status_of"_kw = instruction_code::reg_write}, ser);
+  if (!answer1) {
+    return answer1.error();
+  }
+
+  std::println("Answer:");
+  std::println("- id: {:x}", (*answer1)["id"_kw]);
+  std::println("- length: {:x}", (*answer1)["length"_kw]);
+  std::println("- instruction: {:x}", (*answer1)["instruction"_kw]);
+  std::println("- error: {:x}", (*answer1)["error"_kw]);
+  std::println("- parameters: {}", (*answer1)["parameters"_kw]);
+  std::println("");
+
+  return upd::no_error{};
+}
+
+auto factory_reset_example() -> upd::error {
+  using namespace upd::literals;
+
+  auto ser = serializer{};
+  auto oit = std::ostream_iterator<std::byte>{std::cout, " "};
+  std::cout << std::hex;
+
+  std::println("Action: example");
+  description.encode((
+    "id"_kw = 1_x,
+    "parameters"_kw = upd::choice<instruction_code::factory_reset>(factory_reset_target::all_but_id)
   ), ser, oit);
   std::println("");
   std::println("");
