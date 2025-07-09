@@ -241,6 +241,7 @@ enum class instruction_code {
   action = 0x5,
   factory_reset = 0x6,
   reboot = 0x8,
+  clear = 0x10,
   status = 0x55,
 };
 
@@ -248,6 +249,11 @@ enum class factory_reset_target {
   all = 0xff,
   all_but_id = 0x1,
   all_but_id_and_baudrate = 0x2,
+};
+
+enum class clear_target : std::uint64_t {
+  present_position = 0x224c584401,
+  registered_errors = 0x4c43524502,
 };
 
 template<>
@@ -297,7 +303,8 @@ constexpr auto description = [] {
                 ),
     when<action> = empty_description,
     when<factory_reset> = field(enumeration<factory_reset_target>, width<8>),
-    when<reboot> = empty_description
+    when<reboot> = empty_description,
+    when<clear> = field(enumeration<clear_target>, width<40>)
   )
   | checksum<"crc">(accumulate_crc, *(0_x).resize(width<16>), all_fields);
 }();
@@ -424,6 +431,7 @@ auto reg_write_example() -> upd::error;
 auto action_example() -> upd::error;
 auto factory_reset_example() -> upd::error;
 auto reboot_example() -> upd::error;
+auto clear_example() -> upd::error;
 
 auto main() -> int {
   auto examples = std::array {
@@ -433,7 +441,8 @@ auto main() -> int {
     reg_write_example,
     action_example,
     factory_reset_example,
-    reboot_example
+    reboot_example,
+    clear_example,
   };
 
   for (auto ex : examples) {
@@ -661,6 +670,38 @@ auto reboot_example() -> upd::error {
   description.encode((
     "id"_kw = 1_x,
     "parameters"_kw = upd::choice<instruction_code::reboot>()
+  ), ser, oit);
+  std::println("");
+  std::println("");
+
+  auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04, 0x00, 0x55, 0x00, 0xa1, 0x0c};
+  auto answer1 = answer_description.decode(answer1_seq.begin(), upd::named_tuple{"status_of"_kw = instruction_code::reg_write}, ser);
+  if (!answer1) {
+    return answer1.error();
+  }
+
+  std::println("Answer:");
+  std::println("- id: {:x}", (*answer1)["id"_kw]);
+  std::println("- length: {:x}", (*answer1)["length"_kw]);
+  std::println("- instruction: {:x}", (*answer1)["instruction"_kw]);
+  std::println("- error: {:x}", (*answer1)["error"_kw]);
+  std::println("- parameters: {}", (*answer1)["parameters"_kw]);
+  std::println("");
+
+  return upd::no_error{};
+}
+
+auto clear_example() -> upd::error {
+  using namespace upd::literals;
+
+  auto ser = serializer{};
+  auto oit = std::ostream_iterator<std::byte>{std::cout, " "};
+  std::cout << std::hex;
+
+  std::println("Clear: example");
+  description.encode((
+    "id"_kw = 1_x,
+    "parameters"_kw = upd::choice<instruction_code::clear>(clear_target::present_position)
   ), ser, oit);
   std::println("");
   std::println("");
