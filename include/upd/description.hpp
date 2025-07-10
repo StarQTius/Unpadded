@@ -729,6 +729,7 @@ public:
        .for_each([&](const auto &named_value) {
           constexpr auto &id = named_value.identifier;
           if (!err && named_value.value() != merged[expr<id>]) {
+            std::println("{} and {}", named_value, merged[expr<id>]);
             err = not_matching_deduction{id.string};
           }
         });

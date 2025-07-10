@@ -189,7 +189,7 @@ public:
       auto value = static_cast<abs_underlying>(m_value);
       auto abs_value = (m_value > 0) ? value : -value;
 
-      return xinteger<bitsize - 1, abs_underlying>{std::in_place, abs_value};
+      return xinteger<bitsize, abs_underlying>{std::in_place, abs_value};
     }
   }
 

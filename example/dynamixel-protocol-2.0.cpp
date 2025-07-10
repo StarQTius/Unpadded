@@ -243,6 +243,7 @@ enum class instruction_code {
   reboot = 0x8,
   clear = 0x10,
   control_table_backup = 0x20,
+  sync_read = 0x82,
   status = 0x55,
 };
 
@@ -311,7 +312,14 @@ constexpr auto description = [] {
     when<factory_reset> = field(enumeration<factory_reset_target>, width<8>),
     when<reboot> = empty_description,
     when<clear> = field(enumeration<clear_target>, width<40>),
-    when<control_table_backup> = field(enumeration<control_table_backup_target>, width<40>)
+    when<control_table_backup> = field(enumeration<control_table_backup_target>, width<40>),
+    when<sync_read> = field<"address">(unsigned_int, width<16>)
+                    | field<"length">(unsigned_int, width<16>)
+                    | repeat<"ids">(
+                      field(unsigned_int, width<8>),
+                      value_of<"length"> - 3_x,
+                      at_most<1024>
+                    )
   )
   | checksum<"crc">(accumulate_crc, *(0_x).resize(width<16>), all_fields);
 }();
@@ -341,7 +349,12 @@ constexpr auto answer_description = [] {
       when<action> = empty_description,
       when<factory_reset> = empty_description,
       when<reboot> = empty_description,
-      when<control_table_backup> = empty_description
+      when<control_table_backup> = empty_description,
+      when<sync_read> = repeat<"data">(
+        field(unsigned_int, width<8>),
+        value_of<"length"> - 4_x,
+        at_most<1024>
+      )
     )
     | checksum<"crc">(accumulate_crc, *(0_x).resize(width<16>), all_fields);
 }();
@@ -374,7 +387,7 @@ struct serializer {
     static_assert(upd::is_signed_v<XInteger>, "`value` must be signed");
 
     auto sign = value.signbit();
-    auto abs = value.abs().enlarge(upd::width<1>);
+    auto abs = value.abs();
 
     if (sign) {
       abs = ~abs + 1_x;
@@ -441,6 +454,7 @@ auto factory_reset_example() -> upd::error;
 auto reboot_example() -> upd::error;
 auto clear_example() -> upd::error;
 auto control_table_backup_example() -> upd::error;
+auto sync_read_example() -> upd::error;
 
 auto main() -> int {
   auto examples = std::array {
@@ -453,6 +467,7 @@ auto main() -> int {
     reboot_example,
     clear_example,
     control_table_backup_example,
+    sync_read_example,
   };
 
   for (auto ex : examples) {
@@ -760,6 +775,56 @@ auto control_table_backup_example() -> upd::error {
   std::println("- instruction: {:x}", (*answer1)["instruction"_kw]);
   std::println("- error: {:x}", (*answer1)["error"_kw]);
   std::println("- parameters: {}", (*answer1)["parameters"_kw]);
+  std::println("");
+
+  return upd::no_error{};
+}
+
+auto sync_read_example() -> upd::error {
+  using namespace upd::literals;
+
+  auto ser = serializer{};
+  auto oit = std::ostream_iterator<std::byte>{std::cout, " "};
+  std::cout << std::hex;
+
+  std::println("Sync Read: example");
+  description.encode((
+    "id"_kw = 0xfe_x,
+    "parameters"_kw = upd::choice<instruction_code::sync_read>(
+      "address"_kw = 0x84_x,
+      "length"_kw = 0x4_x,
+      "ids"_kw = std::array<upd::xuint<8>, 2> { 1_x, 2_x }
+    )
+  ), ser, oit);
+  std::println("");
+  std::println("");
+
+  auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x08, 0x00, 0x55, 0x00, 0xa6, 0x00, 0x00, 0x00, 0x8c, 0xc0};
+  auto answer1 = answer_description.decode(answer1_seq.begin(), upd::named_tuple{"status_of"_kw = instruction_code::sync_read}, ser);
+  if (!answer1) {
+    return answer1.error();
+  }
+
+  std::println("Answer:");
+  std::println("- id: {:x}", (*answer1)["id"_kw]);
+  std::println("- length: {:x}", (*answer1)["length"_kw]);
+  std::println("- instruction: {:x}", (*answer1)["instruction"_kw]);
+  std::println("- error: {:x}", (*answer1)["error"_kw]);
+  std::println("- parameters: {}", (*answer1)["parameters"_kw]);
+  std::println("");
+
+  auto answer2_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x02, 0x08, 0x00, 0x55, 0x00, 0x1f, 0x08, 0x00, 0x00, 0xba, 0xbe};
+  auto answer2 = answer_description.decode(answer2_seq.begin(), upd::named_tuple{"status_of"_kw = instruction_code::sync_read}, ser);
+  if (!answer2) {
+    return answer2.error();
+  }
+
+  std::println("Answer:");
+  std::println("- id: {:x}", (*answer2)["id"_kw]);
+  std::println("- length: {:x}", (*answer2)["length"_kw]);
+  std::println("- instruction: {:x}", (*answer2)["instruction"_kw]);
+  std::println("- error: {:x}", (*answer2)["error"_kw]);
+  std::println("- parameters: {}", (*answer2)["parameters"_kw]);
   std::println("");
 
   return upd::no_error{};
