@@ -2,34 +2,18 @@
 
 #include <array>
 #include <limits>
-#include <tuple>
-#include <type_traits>
-#include <utility>
-#include <array>
 #include <ranges>
 #include <string>
-#include <limits>
 #include <tuple>
 #include <type_traits>
 #include <utility>
 
 #include "detail/always_false.hpp"
-#include "detail/integral_constant.hpp"
-#include "detail/tuple_operations.hpp"
-#include "detail/variadic/concat.hpp"
 #include "integer.hpp"
-#include "upd.hpp"
-#include "tuple.hpp"
-#include "detail/always_false.hpp"
-#include "detail/integral_constant.hpp"
-#include "detail/tuple_operations.hpp"
-#include "detail/variadic/concat.hpp"
-#include "detail/variadic/count.hpp"
-#include "detail/variadic/find.hpp"
-#include "integer.hpp"
-#include "upd.hpp"
-#include "template_traits.hpp"
 #include "is_instance_of.hpp"
+#include "template_traits.hpp"
+#include "tuple.hpp"
+#include "upd.hpp"
 
 namespace upd {
 
@@ -48,15 +32,13 @@ using byte_type = typename Serializer::byte_type;
 
 struct name {
   template<std::size_t Size>
-  consteval name(const char (&str)[Size]) noexcept(release): string{} {
+  consteval name(const char (&str)[Size]) noexcept(release) : string{} {
     using namespace std::ranges;
-    
+
     copy(str, string);
   }
 
-  constexpr operator std::string_view() const noexcept {
-    return std::string_view{string};
-  }
+  constexpr operator std::string_view() const noexcept { return std::string_view{string}; }
 
   char string[name_max_size];
 };
@@ -77,8 +59,9 @@ template<std::size_t N>
 struct names {
   constexpr static auto size = N;
 
-  template<std::convertible_to<std::string_view>... Strings> requires (sizeof...(Strings) == N)
-  consteval names(Strings... strs) noexcept(release): strings{} {
+  template<std::convertible_to<std::string_view>... Strings>
+    requires(sizeof...(Strings) == N)
+  consteval names(Strings... strs) noexcept(release) : strings{} {
     using namespace std::ranges;
     auto i = std::size_t{0};
     (copy(std::string_view{strs}, strings[i++]), ...);
@@ -90,7 +73,7 @@ struct names {
 template<>
 struct names<0> {
   constexpr static auto size = 0;
-  constexpr static char* strings[0] = {};
+  constexpr static char *strings[0] = {};
 };
 
 template<std::convertible_to<std::string_view>... Strings>
@@ -113,10 +96,9 @@ concept unique_names = sizeof...(NameLists) > 0 && [] {
     }
   };
 
-  auto joined_names = tuple{ref{NameLists}...}
-    .transform(to_sv_array)
-    .flatten()
-    .apply([](auto... name_views) { return std::array{name_views...}; });
+  auto joined_names = tuple{ref{NameLists}...}.transform(to_sv_array).flatten().apply([](auto... name_views) {
+    return std::array{name_views...};
+  });
 
   stdr::sort(joined_names);
   return stdr::adjacent_find(joined_names) == joined_names.end();
@@ -131,13 +113,14 @@ public:
 
   constexpr named_value() noexcept(release) = default;
 
-  template<typename Other> requires (is_instance_of<Other, named_value>() && requires(Other &&other) { value_type{UPD_FWD(other).value()}; })
+  template<typename Other>
+    requires(is_instance_of<Other, named_value>() && requires(Other &&other) { value_type{UPD_FWD(other).value()}; })
   constexpr named_value(Other &&other) : m_value{UPD_FWD(other).value()} {}
 
   template<typename... Args>
-  constexpr explicit named_value(std::in_place_t, Args &&... args): m_value{UPD_FWD(args)...} {}
+  constexpr explicit named_value(std::in_place_t, Args &&...args) : m_value{UPD_FWD(args)...} {}
 
-  constexpr explicit named_value(auto_constant<Identifier>, const T &value): m_value{value} {}
+  constexpr explicit named_value(auto_constant<Identifier>, const T &value) : m_value{value} {}
 
   template<typename F>
   [[nodiscard]] constexpr auto map(F &&f) & {
@@ -157,21 +140,13 @@ public:
     return keyword<identifier>{} = UPD_FWD(mapped_value);
   }
 
-  [[nodiscard]] constexpr auto value() & noexcept(release) -> T& {
-    return m_value;
-  }
+  [[nodiscard]] constexpr auto value() & noexcept(release) -> T & { return m_value; }
 
-  [[nodiscard]] constexpr auto value() const & noexcept(release) -> const T& {
-    return m_value;
-  }
+  [[nodiscard]] constexpr auto value() const & noexcept(release) -> const T & { return m_value; }
 
-  [[nodiscard]] constexpr auto value() && noexcept(release) -> T && {
-    return UPD_FWD(m_value);
-  }
+  [[nodiscard]] constexpr auto value() && noexcept(release) -> T && { return UPD_FWD(m_value); }
 
-  [[nodiscard]] constexpr auto value() const && noexcept(release) -> T && {
-    return UPD_FWD(m_value);
-  }
+  [[nodiscard]] constexpr auto value() const && noexcept(release) -> T && { return UPD_FWD(m_value); }
 
   auto_constant<Identifier> id;
   T m_value;
@@ -189,26 +164,25 @@ template<typename... Named_Tuple_Ts>
 [[nodiscard]] constexpr auto concat_named_tuple(Named_Tuple_Ts &&...);
 
 template<names Identifiers, typename... Ts>
-requires (Identifiers.size == sizeof...(Ts))
+  requires(Identifiers.size == sizeof...(Ts))
 class named_tuple : public tuple_implementation<named_tuple<Identifiers, Ts...>> {
   constexpr static auto element_types = zip(sequence<sizeof...(Ts)>, typelist<Ts...>{})
-    .transform(unpack | []<typename T>(auto i, typebox<T>) {
-        using type = named_value<name{Identifiers.strings[i.value]}, T>;
-        return typebox<type>{};
-    })
-    .to_typelist();
+                                            .transform(unpack |
+                                                       []<typename T>(auto i, typebox<T>) {
+                                                         using type =
+                                                             named_value<name{Identifiers.strings[i.value]}, T>;
+                                                         return typebox<type>{};
+                                                       })
+                                            .to_typelist();
 
   using content_type = instantiate_variadic<tuple, std::remove_cvref_t<decltype(element_types)>>;
 
 public:
-  constexpr static auto identifiers = sequence<Identifiers.size>
-    .transform([](auto i) {
-        return expr<name{Identifiers.strings[i.value]}>;
-    })
-    .to_constlist();
+  constexpr static auto identifiers =
+      sequence<Identifiers.size>.transform([](auto i) { return expr<name{Identifiers.strings[i.value]}>; }).to_constlist();
 
   template<typename... Us, typename... Args>
-  [[nodiscard]] constexpr static auto make_tuple(typelist<Us...>, Args &&... xs) {
+  [[nodiscard]] constexpr static auto make_tuple(typelist<Us...>, Args &&...xs) {
     return tuple<Us...>{UPD_FWD(xs)...};
   }
 
@@ -222,32 +196,28 @@ public:
     return constlist<Values...>{};
   }
 
-  constexpr named_tuple() requires (sizeof...(Ts) == 0) = default;
-
-  template<typename... NamedValues> requires (
-    sizeof...(NamedValues) == sizeof...(Ts)
-    && (is_instance_of<NamedValues, named_value>() && ...)
-  )
-  constexpr explicit named_tuple(NamedValues && ...nvs): m_nvs{UPD_FWD(nvs)...} {}
-
-  template<typename... Us> requires (sizeof...(Us) == sizeof...(Ts) && (std::constructible_from<Ts, Us> && ...))
-  constexpr explicit named_tuple(Us && ... xs): m_nvs{UPD_FWD(xs)...} {}
+  constexpr named_tuple()
+    requires(sizeof...(Ts) == 0)
+  = default;
 
   template<typename... NamedValues>
-  constexpr explicit named_tuple(const tuple<NamedValues...> &nvs): m_nvs{
-    nvs
-  } {}
+    requires(sizeof...(NamedValues) == sizeof...(Ts) && (is_instance_of<NamedValues, named_value>() && ...))
+  constexpr explicit named_tuple(NamedValues &&...nvs) : m_nvs{UPD_FWD(nvs)...} {}
+
+  template<typename... Us>
+    requires(sizeof...(Us) == sizeof...(Ts) && (std::constructible_from<Ts, Us> && ...))
+  constexpr explicit named_tuple(Us &&...xs) : m_nvs{UPD_FWD(xs)...} {}
 
   template<typename... NamedValues>
-  constexpr explicit named_tuple(tuple<NamedValues...> &&nvs): m_nvs{
-    std::move(nvs)
-  } {}
+  constexpr explicit named_tuple(const tuple<NamedValues...> &nvs) : m_nvs{nvs} {}
 
-  template<name Identifier, typename Self> requires (identifiers.find(expr<Identifier>) < identifiers.size())
+  template<typename... NamedValues>
+  constexpr explicit named_tuple(tuple<NamedValues...> &&nvs) : m_nvs{std::move(nvs)} {}
+
+  template<name Identifier, typename Self>
+    requires(identifiers.find(expr<Identifier>) < identifiers.size())
   [[nodiscard]] constexpr auto get(this Self &&self) noexcept(release) -> auto && {
-    auto position = self.m_nvs.find_if([](const auto &nv) {
-      return expr<nv.identifier == Identifier>;
-    });
+    auto position = self.m_nvs.find_if([](const auto &nv) { return expr<nv.identifier == Identifier>; });
 
     if constexpr (position < self.m_nvs.size()) {
       return UPD_FWD(self).m_nvs.at(position).value();
@@ -297,10 +267,8 @@ template<named_value_instance... NamedValues>
 explicit named_tuple(NamedValues...) -> named_tuple<{NamedValues::identifier...}, typename NamedValues::value_type...>;
 
 template<typename... NamedValues>
-explicit named_tuple(tuple<NamedValues...>) -> named_tuple<
-  {std::remove_cvref_t<NamedValues>::identifier...},
-  typename std::remove_cvref_t<NamedValues>::value_type...
->;
+explicit named_tuple(tuple<NamedValues...>) -> named_tuple<{std::remove_cvref_t<NamedValues>::identifier...},
+                                                           typename std::remove_cvref_t<NamedValues>::value_type...>;
 
 template<typename T>
 concept named_tuple_instance = requires(T x) {
@@ -329,26 +297,24 @@ struct keyword {
 };
 
 template<auto Identifiers, typename... Ts>
-requires (std::tuple_size_v<decltype(Identifiers)> == sizeof...(Ts))
+  requires(std::tuple_size_v<decltype(Identifiers)> == sizeof...(Ts))
 class tagged_tuple : public tuple_implementation<tagged_tuple<Identifiers, Ts...>> {
   constexpr static auto element_types = zip(sequence<sizeof...(Ts)>, typelist<Ts...>{})
-    .transform(unpack | []<typename T>(auto i, typebox<T>) {
-        using type = named_value<Identifiers[i].value, T>;
-        return typebox<type>{};
-    })
-    .to_typelist();
+                                            .transform(unpack |
+                                                       []<typename T>(auto i, typebox<T>) {
+                                                         using type = named_value<Identifiers[i].value, T>;
+                                                         return typebox<type>{};
+                                                       })
+                                            .to_typelist();
 
   using content_type = instantiate_variadic<tuple, std::remove_cvref_t<decltype(element_types)>>;
 
 public:
-  constexpr static auto identifiers = sequence<sizeof...(Ts)>
-    .transform([](auto i) {
-        return get<i>(Identifiers);
-    })
-    .to_constlist();
+  constexpr static auto identifiers =
+      sequence<sizeof...(Ts)>.transform([](auto i) { return get<i>(Identifiers); }).to_constlist();
 
   template<typename... Us, typename... Args>
-  [[nodiscard]] constexpr static auto make_tuple(typelist<Us...>, Args &&... xs) {
+  [[nodiscard]] constexpr static auto make_tuple(typelist<Us...>, Args &&...xs) {
     return tuple<Us...>{UPD_FWD(xs)...};
   }
 
@@ -362,16 +328,18 @@ public:
     return constlist<Values...>{};
   }
 
-  constexpr tagged_tuple() requires (sizeof...(Ts) == 0) = default;
+  constexpr tagged_tuple()
+    requires(sizeof...(Ts) == 0)
+  = default;
 
-  template<named_value_instance... NamedValues> requires (sizeof...(NamedValues) == sizeof...(Ts))
-  constexpr explicit tagged_tuple(NamedValues && ...nvs): m_nvs{UPD_FWD(nvs)...} {}
+  template<named_value_instance... NamedValues>
+    requires(sizeof...(NamedValues) == sizeof...(Ts))
+  constexpr explicit tagged_tuple(NamedValues &&...nvs) : m_nvs{UPD_FWD(nvs)...} {}
 
-  template<auto Identifier, typename Self> requires (identifiers.find(expr<Identifier>) < identifiers.size())
+  template<auto Identifier, typename Self>
+    requires(identifiers.find(expr<Identifier>) < identifiers.size())
   [[nodiscard]] constexpr auto get(this Self &&self) noexcept(release) -> auto && {
-    auto position = self.m_nvs.find_if([](const auto &nv) {
-      return expr<nv.identifier == Identifier>;
-    });
+    auto position = self.m_nvs.find_if([](const auto &nv) { return expr<nv.identifier == Identifier>; });
 
     if constexpr (position < self.m_nvs.size()) {
       return UPD_FWD(self).m_nvs.at(position).value();
@@ -413,21 +381,20 @@ private:
 tagged_tuple() -> tagged_tuple<constlist{}>;
 
 template<named_value_instance... NamedValues>
-explicit tagged_tuple(NamedValues...) -> tagged_tuple<constlist<NamedValues::identifier...>{}, typename NamedValues::value_type...>;
+explicit tagged_tuple(NamedValues...)
+    -> tagged_tuple<constlist<NamedValues::identifier...>{}, typename NamedValues::value_type...>;
 
 } // namespace upd
 
-template<auto Names, typename ...Ts>
+template<auto Names, typename... Ts>
 struct std::tuple_size<upd::named_tuple<Names, Ts...>> {
   constexpr static auto value = sizeof...(Ts);
 };
 
 template<std::size_t I, auto Names, typename... Ts>
 struct std::tuple_element<I, upd::named_tuple<Names, Ts...>> {
-  using type = upd::named_value<
-    upd::named_tuple_identifier_v<I, upd::named_tuple<Names, Ts...>>,
-    upd::named_tuple_element_t<I, upd::named_tuple<Names, Ts...>>
-  >;
+  using type = upd::named_value<upd::named_tuple_identifier_v<I, upd::named_tuple<Names, Ts...>>,
+                                upd::named_tuple_element_t<I, upd::named_tuple<Names, Ts...>>>;
 };
 
 template<std::size_t I, auto Names, typename... Ts>
@@ -440,17 +407,15 @@ struct upd::named_tuple_identifier<I, upd::named_tuple<Names, Ts...>> {
   constexpr static auto value = name{Names.strings[expr<I>.value]};
 };
 
-template<auto Names, typename ...Ts>
+template<auto Names, typename... Ts>
 struct std::tuple_size<upd::tagged_tuple<Names, Ts...>> {
   constexpr static auto value = sizeof...(Ts);
 };
 
 template<std::size_t I, auto Names, typename... Ts>
 struct std::tuple_element<I, upd::tagged_tuple<Names, Ts...>> {
-  using type = upd::named_value<
-    upd::named_tuple_identifier_v<I, upd::tagged_tuple<Names, Ts...>>,
-    upd::named_tuple_element_t<I, upd::tagged_tuple<Names, Ts...>>
-  >;
+  using type = upd::named_value<upd::named_tuple_identifier_v<I, upd::tagged_tuple<Names, Ts...>>,
+                                upd::named_tuple_element_t<I, upd::tagged_tuple<Names, Ts...>>>;
 };
 
 template<std::size_t I, auto Names, typename... Ts>

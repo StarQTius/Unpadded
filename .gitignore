@@ -1,17 +1,12 @@
 /*
 !.git/
 !.github/
-!doc/
 !example/
 !include/
-!py/
 !test/
 !cmake/
 !.clang-format
 !.clang-tidy
 !.gitignore
 !CMakeLists.txt
-!MANIFEST.in
 !README.md
-!pyproject.toml
-!setup.py

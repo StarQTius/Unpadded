@@ -11,9 +11,6 @@ enum class action_features { ANY, WEAK_REFERENCE };
 
 //! \brief Value holder to help deduce action features
 //! \tparam Action_Features Features to hold
-template<action_features Action_Features>
-using action_features_h = unevaluated<action_features, Action_Features>;
-
 namespace policy {
 
 //! \brief Ensures that stored actions refers to free functions or objects with static storage duration

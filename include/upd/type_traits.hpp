@@ -18,7 +18,8 @@ struct typebox {
   using type = T;
   using unqualified_type = std::remove_cvref_t<T>;
 
-  template<template<typename, typename...> typename Predicate, typename ...Args> requires metavalue<Predicate<T, Args...>>
+  template<template<typename, typename...> typename Predicate, typename... Args>
+    requires metavalue<Predicate<T, Args...>>
   [[nodiscard]] constexpr static auto satisfies() noexcept(release) -> bool {
     return Predicate<T, Args...>::value;
   }

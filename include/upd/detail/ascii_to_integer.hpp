@@ -5,7 +5,6 @@
 #include <utility>
 
 #include "fail_unless_discarded.hpp"
-#include "range.hpp"
 
 namespace upd::detail {
 
@@ -29,6 +28,8 @@ namespace upd::detail {
 
 template<typename It>
 [[nodiscard]] constexpr auto ascii_to_integer(It begin, It end) -> std::intmax_t {
+  namespace stdr = std::ranges;
+
   auto range_size = std::distance(begin, end);
   auto first_char = range_size >= 1 ? *begin : 0;
   auto second_char = range_size >= 2 ? *std::next(begin) : 0;
@@ -58,7 +59,7 @@ template<typename It>
   auto rbegin = std::reverse_iterator{end};
   auto rend = std::reverse_iterator{digit_begin};
 
-  for (auto c : range{rbegin, rend}) {
+  for (auto c : stdr::subrange{rbegin, rend}) {
     if (c == '\'') {
       continue;
     }

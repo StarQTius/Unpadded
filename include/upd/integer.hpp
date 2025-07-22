@@ -8,11 +8,8 @@
 #include <optional>
 #include <type_traits>
 
-#include "is_instance_of.hpp"
 #include "detail/always_false.hpp"
-#include "detail/has_value_member.hpp"
-#include "detail/integral_constant.hpp"
-#include "detail/is_instance_of.hpp"
+#include "is_instance_of.hpp"
 #include "literals.hpp"
 #include "token.hpp"
 #include "upd.hpp"
@@ -26,19 +23,24 @@ constexpr auto nth_bit = 1 << Bitpos;
 
 namespace upd {
 
-template<std::size_t, typename Underlying_T> requires std::integral<Underlying_T>
+template<std::size_t, typename Underlying_T>
+  requires std::integral<Underlying_T>
 class extended_integer;
 
-template<typename T> requires std::integral<T>
+template<typename T>
+  requires std::integral<T>
 [[nodiscard]] constexpr auto count_digits(T n) noexcept(release) {
   auto un = static_cast<std::make_unsigned_t<T>>(n);
   auto retval = 0uz;
-  for (; un > 0; ++retval, un >>= 1);
+  for (; un > 0; ++retval, un >>= 1)
+    ;
   return retval;
 }
 
-template<auto Integer, std::size_t Bitsize = count_digits(Integer), typename Underlying = std::remove_const_t<decltype(Integer)>>
-requires (count_digits(Integer) <= Bitsize && (Integer > 0 || std::is_signed_v<Underlying>))
+template<auto Integer,
+         std::size_t Bitsize = count_digits(Integer),
+         typename Underlying = std::remove_const_t<decltype(Integer)>>
+  requires(count_digits(Integer) <= Bitsize && (Integer > 0 || std::is_signed_v<Underlying>))
 constexpr auto xconst = extended_integer<Bitsize, Underlying>{std::in_place, Integer};
 
 namespace detail {
@@ -82,17 +84,22 @@ template<typename T>
 constexpr auto is_signed_v = decltype(to_extended_integer(std::declval<T>()))::is_signed;
 
 template<typename T>
-constexpr auto is_extended_integer_v = requires(T x) { {extended_integer{x}} -> std::same_as<T>; };
+constexpr auto is_extended_integer_v = requires(T x) {
+  { extended_integer{x} } -> std::same_as<T>;
+};
 
-template<typename Byte, typename XInteger> requires (!is_signed_v<Byte> && !is_signed_v<XInteger>)
+template<typename Byte, typename XInteger>
+  requires(!is_signed_v<Byte> && !is_signed_v<XInteger>)
 constexpr auto decompose_into_xuint(XInteger) noexcept(release);
 
 template<typename T>
 concept convertible_to_xint = requires(T n) { extended_integer{n}; };
 
-template<std::size_t Bitsize, typename Underlying_T> requires std::integral<Underlying_T>
+template<std::size_t Bitsize, typename Underlying_T>
+  requires std::integral<Underlying_T>
 class extended_integer {
-  template<std::size_t, typename U> requires std::integral<U>
+  template<std::size_t, typename U>
+    requires std::integral<U>
   friend class extended_integer;
 
   template<typename T>
@@ -111,18 +118,16 @@ public:
 
   constexpr extended_integer() noexcept = default;
 
-  template<std::size_t M, typename U> requires (
-      M <= bitsize
-      && (std::is_unsigned_v<U> && !is_signed || is_signed))
-  constexpr extended_integer(extended_integer<M, U> other) noexcept(release) : extended_integer{std::in_place, static_cast<underlying>(other.m_value)} {
-  }
+  template<std::size_t M, typename U>
+    requires(M <= bitsize && (std::is_unsigned_v<U> && !is_signed || is_signed))
+  constexpr extended_integer(extended_integer<M, U> other) noexcept(release)
+      : extended_integer{std::in_place, static_cast<underlying>(other.m_value)} {}
 
-  template<typename T> requires (
-      std::integral<T>
-      && std::numeric_limits<T>::digits <= bitsize
-      && (std::is_unsigned_v<T> && !is_signed || is_signed))
+  template<typename T>
+    requires(std::integral<T> && std::numeric_limits<T>::digits <= bitsize &&
+             (std::is_unsigned_v<T> && !is_signed || is_signed))
   constexpr extended_integer(T n) noexcept(release) : extended_integer{std::in_place, static_cast<underlying>(n)} {}
-  
+
   constexpr explicit extended_integer(std::in_place_t, Underlying_T n) noexcept(release) : m_value{n} {
     if constexpr (bitsize < std::numeric_limits<Underlying_T>::digits) {
       m_value &= (Underlying_T{1} << bitsize) - 1;
@@ -177,7 +182,8 @@ public:
   }
 
   [[nodiscard]] constexpr auto as_signed() const noexcept(release) {
-    return xinteger<bitsize, std::make_signed_t<underlying>>{std::in_place, static_cast<std::make_signed_t<underlying>>(m_value)};
+    return xinteger<bitsize, std::make_signed_t<underlying>>{std::in_place,
+                                                             static_cast<std::make_signed_t<underlying>>(m_value)};
   }
 
   [[nodiscard]] constexpr auto abs() const noexcept {
@@ -235,7 +241,8 @@ public:
     return xint<bitsize>{std::in_place, -static_cast<std::make_signed_t<underlying>>(m_value)};
   }
 
-  template<typename T> requires convertible_to_xint<T>
+  template<typename T>
+    requires convertible_to_xint<T>
   [[nodiscard]] constexpr auto operator+(T rhs) const noexcept {
     auto xrhs = to_extended_integer(rhs);
     constexpr auto retval_bitsize = std::max(bitsize, xrhs.bitsize);
@@ -246,7 +253,8 @@ public:
     return xinteger<retval_bitsize, retval_type>{std::in_place, retval};
   }
 
-  template<typename T> requires convertible_to_xint<T>
+  template<typename T>
+    requires convertible_to_xint<T>
   [[nodiscard]] constexpr auto operator-(T rhs) const noexcept {
     auto xrhs = to_extended_integer(rhs);
     constexpr auto retval_bitsize = std::max(bitsize, xrhs.bitsize);
@@ -257,7 +265,8 @@ public:
     return xinteger<retval_bitsize, retval_type>{std::in_place, retval};
   }
 
-  template<typename T> requires convertible_to_xint<T>
+  template<typename T>
+    requires convertible_to_xint<T>
   [[nodiscard]] constexpr auto operator/(T rhs) const noexcept {
     auto xrhs = to_extended_integer(rhs);
     constexpr auto retval_bitsize = std::max(bitsize, xrhs.bitsize);
@@ -268,7 +277,8 @@ public:
     return xinteger<retval_bitsize, retval_type>{std::in_place, retval};
   }
 
-  template<typename T> requires convertible_to_xint<T>
+  template<typename T>
+    requires convertible_to_xint<T>
   [[nodiscard]] constexpr auto operator&(T rhs) const noexcept {
     auto xrhs = to_extended_integer(rhs);
     constexpr auto retval_bitsize = std::min(bitsize, xrhs.bitsize);
@@ -277,7 +287,8 @@ public:
     return xinteger<retval_bitsize, std::uintmax_t>{std::in_place, retval};
   }
 
-  template<typename T> requires convertible_to_xint<T>
+  template<typename T>
+    requires convertible_to_xint<T>
   [[nodiscard]] constexpr auto operator^(T rhs) const noexcept {
     auto xrhs = to_extended_integer(rhs);
     constexpr auto retval_bitsize = std::max(bitsize, xrhs.bitsize);
@@ -288,7 +299,8 @@ public:
     return xinteger<retval_bitsize, retval_type>{std::in_place, retval};
   }
 
-  template<typename T> requires convertible_to_xint<T>
+  template<typename T>
+    requires convertible_to_xint<T>
   [[nodiscard]] constexpr auto operator<<(T rhs) const noexcept {
     auto xrhs = to_extended_integer(rhs);
     constexpr auto retval_bitsize = bitsize;
@@ -299,7 +311,8 @@ public:
     return xinteger<retval_bitsize, retval_type>{std::in_place, retval};
   }
 
-  template<typename T> requires convertible_to_xint<T>
+  template<typename T>
+    requires convertible_to_xint<T>
   [[nodiscard]] constexpr auto operator>>(T rhs) const noexcept {
     auto xrhs = to_extended_integer(rhs);
     constexpr auto retval_bitsize = bitsize;
@@ -310,7 +323,8 @@ public:
     return xinteger<retval_bitsize, retval_type>{std::in_place, retval};
   }
 
-  template<typename T> requires convertible_to_xint<T>
+  template<typename T>
+    requires convertible_to_xint<T>
   [[nodiscard]] constexpr auto operator|(T rhs) const noexcept {
     auto xrhs = to_extended_integer(rhs);
     constexpr auto retval_bitsize = std::max(bitsize, xrhs.bitsize);
@@ -327,28 +341,30 @@ public:
     return xinteger<bitsize, underlying>{std::in_place, ~m_value};
   }
 
-  template<typename T> requires convertible_to_xint<T>
+  template<typename T>
+    requires convertible_to_xint<T>
   constexpr auto operator<<=(T rhs) noexcept -> extended_integer & {
     return (*this = *this << rhs);
   }
 
-  template<typename T> requires convertible_to_xint<T>
+  template<typename T>
+    requires convertible_to_xint<T>
   constexpr auto operator>>=(T rhs) noexcept -> extended_integer & {
     return (*this = *this >> rhs);
   }
 
-  constexpr auto operator|=(extended_integer rhs) noexcept -> extended_integer & {
-    return (*this = *this | rhs);
-  }
+  constexpr auto operator|=(extended_integer rhs) noexcept -> extended_integer & { return (*this = *this | rhs); }
 
-  template<typename T> requires convertible_to_xint<T>
+  template<typename T>
+    requires convertible_to_xint<T>
   [[nodiscard]] constexpr auto operator==(T rhs) const noexcept -> bool {
     auto xrhs = to_extended_integer(rhs);
 
     return (signbit() == xrhs.signbit() && abs().m_value == xrhs.abs().m_value);
   }
 
-  template<typename T> requires convertible_to_xint<T>
+  template<typename T>
+    requires convertible_to_xint<T>
   [[nodiscard]] constexpr auto operator<=>(T rhs) const noexcept -> std::strong_ordering {
     auto xrhs = to_extended_integer(rhs);
 
@@ -363,7 +379,8 @@ public:
     }
   }
 
-  template<typename T> requires convertible_to_xint<T>
+  template<typename T>
+    requires convertible_to_xint<T>
   [[nodiscard]] constexpr auto operator<(T rhs) const noexcept -> bool {
     return (*this <=> rhs) < 0;
   }
@@ -380,17 +397,18 @@ extended_integer(T) -> extended_integer<std::numeric_limits<T>::digits, T>;
 namespace upd::literals {
 
 template<char... Cs>
-[[nodiscard]] constexpr auto operator ""_x() noexcept(release) {
-  constexpr auto characters = std::array {Cs...};
-  constexpr auto integer = (std::uintmax_t) detail::ascii_to_integer(characters.begin(), characters.end());
+[[nodiscard]] constexpr auto operator""_x() noexcept(release) {
+  constexpr auto characters = std::array{Cs...};
+  constexpr auto integer = (std::uintmax_t)detail::ascii_to_integer(characters.begin(), characters.end());
   constexpr auto bitsize = [] {
     auto shift_count = std::size_t{0};
-    for (auto acc = integer; acc > 0; ++shift_count, acc >>= 1);
+    for (auto acc = integer; acc > 0; ++shift_count, acc >>= 1)
+      ;
     return shift_count;
   }();
 
   return xuint<bitsize>{std::in_place, integer};
-} 
+}
 
 } // namespace upd::literals
 
@@ -421,7 +439,8 @@ template<typename XInteger, typename InputIt, typename Serializer>
   }
 }
 
-template<typename Byte, typename XInteger> requires (!is_signed_v<Byte> && !is_signed_v<XInteger>)
+template<typename Byte, typename XInteger>
+  requires(!is_signed_v<Byte> && !is_signed_v<XInteger>)
 [[nodiscard]] constexpr auto decompose_into_xuint(XInteger xn) noexcept(release) {
   using namespace literals;
   using underlying = representation_t<Byte>;
@@ -445,10 +464,12 @@ template<typename T, std::size_t N>
 [[nodiscard]] constexpr auto recompose_into_xuint(const std::array<T, N> &byteseq) noexcept {
   using namespace upd::literals;
 
+  namespace stdr = std::ranges;
+
   auto retval = (0_x).enlarge(width<bitsize_v<T> * N>);
   auto first = byteseq.rbegin();
   auto last = byteseq.rend();
-  auto range = detail::range{first, last};
+  auto range = stdr::subrange{first, last};
 
   for (auto b : range) {
     retval <<= xconst<bitsize_v<T>>;
@@ -497,7 +518,8 @@ template<typename Enum>
   return reduce_integer(value, bitsize);
 }
 
-template<std::integral T, typename XInt> requires (is_instance_of<XInt, extended_integer>())
+template<std::integral T, typename XInt>
+  requires(is_instance_of<XInt, extended_integer>())
 [[nodiscard]] constexpr auto try_cast(XInt xint) noexcept(release) -> std::optional<T> {
   if (std::in_range<T>(xint.value())) {
     return xint.value();
@@ -506,7 +528,8 @@ template<std::integral T, typename XInt> requires (is_instance_of<XInt, extended
   }
 }
 
-template<typename T, typename XInt> requires std::same_as<T, std::byte>
+template<typename T, typename XInt>
+  requires std::same_as<T, std::byte>
 [[nodiscard]] constexpr auto try_cast(XInt xint) noexcept(release) -> std::optional<std::byte> {
   return try_cast<unsigned char>(xint).transform([](auto n) { return std::byte{n}; });
 }

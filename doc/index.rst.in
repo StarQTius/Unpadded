@@ -1,8 +1,0 @@
-.. mdinclude:: @PROJECT_SOURCE_DIR@/README.md
-
-.. toctree::
-  shared
-  caller
-  callee
-  serialization
-  python
