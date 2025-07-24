@@ -6,13 +6,10 @@ add_library(upd_UnpaddedDebug INTERFACE)
 target_link_libraries(upd_UnpaddedDebug INTERFACE upd_Unpadded)
 target_compile_definitions(upd_UnpaddedDebug INTERFACE UPD_DEBUG)
 
-add_library(Unpadded::Unpadded ALIAS upd_Unpadded)
-add_library(Unpadded::UnpaddedDebug ALIAS upd_UnpaddedDebug)
-
 if(PROJECT_IS_TOP_LEVEL)
   include(Unpadded)
 
-  add_iwyu_target(iwyu Unpadded::Unpadded)
+  add_iwyu_target(iwyu upd_Unpadded)
 
   file(
     GLOB_RECURSE HEADERS

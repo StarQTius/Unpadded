@@ -5,7 +5,9 @@ include(FetchContent)
 project(Unpadded LANGUAGES CXX)
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/module)
 
-add_subdirectory(include)
+add_subdirectory(include EXCLUDE_FROM_ALL)
+add_library(Unpadded::Unpadded ALIAS upd_Unpadded)
+add_library(Unpadded::UnpaddedDebug ALIAS upd_UnpaddedDebug)
 
 if(PROJECT_IS_TOP_LEVEL)
   FetchContent_Declare(
@@ -19,6 +21,20 @@ if(PROJECT_IS_TOP_LEVEL)
     GIT_REPOSITORY https://github.com/eranpeer/FakeIt
     GIT_TAG 2.4.1)
 
-  add_subdirectory(test EXCLUDE_FROM_ALL)
   add_subdirectory(example EXCLUDE_FROM_ALL)
+  add_executable(Unpadded::Dynamixel2 ALIAS upd_Dynamixel2)
+
+  add_subdirectory(test EXCLUDE_FROM_ALL)
+  upd_add_test_suite(check
+    "Check quickly for basic regressions"
+    unitary)
+  upd_add_test_suite(check_full
+    "Check fully the whole project"
+    unitary examples)
+  upd_add_test_suite(check_unitary
+    "Run unit tests"
+    unitary)
+  upd_add_test_suite(check_examples
+    "Check whether example program outputs are stable"
+    examples) 
 endif()
