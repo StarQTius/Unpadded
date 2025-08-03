@@ -11,13 +11,6 @@
 #include <variant>
 
 #include "detail/always_false.hpp"
-#include "detail/has_value_member.hpp"
-#include "detail/integral_constant.hpp"
-#include "detail/variadic/equals.hpp"
-#include "detail/variadic/filter.hpp"
-#include "detail/variadic/map.hpp"
-#include "detail/variadic/product.hpp"
-#include "detail/variadic/to_array.hpp"
 #include "integer.hpp"
 #include "named_value.hpp"
 #include "static_vector.hpp"

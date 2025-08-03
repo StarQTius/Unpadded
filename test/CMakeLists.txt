@@ -14,16 +14,19 @@ target_link_libraries(unitary PRIVATE
 )
 catch_discover_tests(unitary PROPERTIES LABELS unitary)
 
-find_program(DIFF_COMMAND diff
-             DOC "'diff' Unix command" REQUIRED)
+script_as_command(RUN_AND_COMPARE_COMMAND ${PROJECT_SOURCE_DIR}/cmake/script/run-and-compare.cmake)
+get_property(EXAMPLE_EXECUTABLES TARGET examples PROPERTY MANUALLY_ADDED_DEPENDENCIES)
 foreach(EXECUTABLE IN LISTS EXAMPLE_EXECUTABLES)
-  get_target_property(REFERENCE_OUTPUT ${EXECUTABLE} REFERENCE_OUTPUT)
-  add_test(${EXECUTABLE}
-    COMMAND ${EXECUTABLE}
-    COMMAND ${DIFF_COMMAND} ${EXPECTED_OUTPUT_FILE} -
-  )
-  set_property(TEST ${EXECUTABLE} PROPERTY LABELS examples)
+  set(TEST_NAME "Run and compare ${EXECUTABLE}")
+  add_test(
+    NAME ${TEST_NAME}
+    COMMAND ${RUN_AND_COMPARE_COMMAND}
+      $<TARGET_FILE:${EXECUTABLE}>
+      ${CMAKE_CURRENT_SOURCE_DIR}/$<TARGET_FILE_NAME:${EXECUTABLE}>.txt)
+  set_property(TEST ${TEST_NAME} PROPERTY LABELS examples)
 endforeach()
+
+set(EXECUTABLE upd_Dynamixel2)
 
 # `upd_add_test_suite(<NAME> <COMMENT> <LABELS...>)`
 #
