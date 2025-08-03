@@ -1,6 +1,6 @@
-include(RequireDefined)
+include(UpdRequireDefined)
 
-# `parse_cli_function(POSITIONALS <POSITIONAL_ARGUMENT_NAMES...> KEYWORDS
+# `upd_parse_cli_function(POSITIONALS <POSITIONAL_ARGUMENT_NAMES...> KEYWORDS
 # <KEYWORD_ARGUMENT_NAMES...> OPTIONS <OPTIONAL_ARGUMENT_NAMES...>)`
 #
 # Parse the arguments passed from command line and set variables whose names
@@ -12,7 +12,7 @@ include(RequireDefined)
 # (<keyword from KEYWORD_ARGUMENT_NAMES> <value>)... <option from
 # OPTIONAL_ARGUMENT_NAMES>...`. Positional arguments are mandatory, keyword and
 # optional arguments are not.
-function(parse_cli_arguments)
+function(upd_parse_cli_arguments)
   foreach(I RANGE ${CMAKE_ARGC})
     list(APPEND CLI_ARGV ${CMAKE_ARGV${I}})
   endforeach()
@@ -24,8 +24,8 @@ function(parse_cli_arguments)
 
   set(POSITIONALS ${ARGV_--})
   foreach(KEYWORD VALUE IN ZIP_LISTS PARSED_POSITIONALS POSITIONALS)
-    require_defined_with_message(KEYWORD "Too many positional arguments")
-    require_defined_with_message(
+    upd_require_defined_with_message(KEYWORD "Too many positional arguments")
+    upd_require_defined_with_message(
       VALUE "`${KEYWORD}` positional argument must be provided")
     set(${KEYWORD}
         ${VALUE}

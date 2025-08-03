@@ -1,10 +1,8 @@
-include(NormalizePath)
-
-# `properties_genexpr(<OUTPUT> <TARGET> <PROPERTIES...>)`
+# `upd_properties_genex(<OUTPUT> <TARGET> <PROPERTIES...>)`
 #
 # Build a generator expression that expresses `(<property name from PROPERTIES>
 # <corresponding property value of TARGET>)...` and store it in `OUTPUT`
-function(properties_genex OUTPUT TARGET)
+function(upd_properties_genex OUTPUT TARGET)
   foreach(PROP IN LISTS ARGN)
     list(APPEND RETVAL ${PROP} $<TARGET_PROPERTY:${TARGET},${PROP}>)
   endforeach()
@@ -14,13 +12,11 @@ function(properties_genex OUTPUT TARGET)
       PARENT_SCOPE)
 endfunction()
 
-# `is_source_of_target_genex(<OUTPUT> <TARGET> <FILE>)`
+# `upd_is_source_of_target_genex(<OUTPUT> <TARGET> <FILE>)`
 #
 # Build a generator expression that checks whether `FILE` is a source of
 # `TARGET` and store it in `OUTPUT`
-function(is_source_of_target_genex OUTPUT TARGET FILE)
-  normalize_path(FILE)
-
+function(upd_is_source_of_target_genex OUTPUT TARGET FILE)
   set(SOURCES_GENEX $<TARGET_PROPERTY:${TARGET},SOURCES>)
   set(SOURCE_DIR_GENEX $<TARGET_PROPERTY:${TARGET},SOURCE_DIR>)
   set(ABSOLUTE_SOURCES_GENEX

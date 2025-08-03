@@ -1,8 +1,8 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
 
-include(ParseCliArguments)
+include(UpdParseCliArguments)
 
-parse_cli_arguments(
+upd_parse_cli_arguments(
   POSITIONALS
   "SOURCE_FILE"
   KEYWORDS
@@ -16,6 +16,8 @@ parse_cli_arguments(
   "INTERFACE_COMPILE_OPTIONS"
   OPTIONS
   "IS_SOURCE")
+
+message(${SOURCE_FILE})
 
 find_program(IWYU_COMMAND include-what-you-use
              DOC "Check inclusion in C and C++ programs" REQUIRED)

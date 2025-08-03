@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 3.10)
 
-include(ParseCliArguments)
+include(UpdParseCliArguments)
 
 find_program(DIFF_COMMAND diff
              DOC "'diff' Unix command" REQUIRED)
 
-parse_cli_arguments(
+upd_parse_cli_arguments(
   POSITIONALS
   "EXECUTABLE"
   "REFERENCE_OUTPUT"

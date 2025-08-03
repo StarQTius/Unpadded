@@ -9,11 +9,11 @@ target_compile_definitions(upd_UnpaddedDebug INTERFACE UPD_DEBUG)
 if(PROJECT_IS_TOP_LEVEL)
   include(Unpadded)
 
-  add_iwyu_target(iwyu upd_Unpadded)
+  upd_add_iwyu_target(iwyu upd_Unpadded)
 
   file(
     GLOB_RECURSE HEADERS
     RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     CONFIGURE_DEPENDS *.hpp)
-  target_lintables(iwyu ${HEADERS})
+  upd_target_lintables(iwyu ${HEADERS})
 endif()
