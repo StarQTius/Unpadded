@@ -7,8 +7,6 @@ target_link_libraries(upd_UnpaddedDebug INTERFACE upd_Unpadded)
 target_compile_definitions(upd_UnpaddedDebug INTERFACE UPD_DEBUG)
 
 if(PROJECT_IS_TOP_LEVEL)
-  include(Unpadded)
-
   upd_add_iwyu_target(iwyu upd_Unpadded)
 
   file(

@@ -1,9 +1,14 @@
-cmake_minimum_required(VERSION 3.27)
-
-include(FetchContent)
+cmake_minimum_required(VERSION 3.21)
 
 project(Unpadded LANGUAGES CXX)
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/module)
+
+if(PROJECT_IS_TOP_LEVEL)
+  cmake_minimum_required(VERSION 3.27)
+
+  include(FetchContent)
+  include(Unpadded)
+endif()
 
 add_subdirectory(include EXCLUDE_FROM_ALL)
 add_library(Unpadded::Unpadded ALIAS upd_Unpadded)
