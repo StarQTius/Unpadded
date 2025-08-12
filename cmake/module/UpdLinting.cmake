@@ -15,9 +15,7 @@ define_property(
   TARGET
   PROPERTY UPD_LINT_COMPLETION_MARKERS
   BRIEF_DOCS "List of files which indicates linting operation completion"
-  FULL_DOCS "A target created by `upd_add_lint_target()` will depend on these \
-    files. See `upd_add_lint_target()` and `upd_target_lintables()` respective \
-    documentations to learn how this property is populated.")
+  FULL_DOCS "This property is only populated for lint subtargets.")
 
 define_property(
   TARGET
