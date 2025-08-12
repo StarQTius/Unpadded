@@ -21,7 +21,8 @@ find_program(IWYU_COMMAND include-what-you-use
              DOC "Check inclusion in C and C++ programs" REQUIRED)
 
 if(NOT IS_SOURCE)
-  set(INCLUDE_DIRECTORIES ${INTERFACE_INCLUDE_DIRECTORIES})
+  # Commented out because internal #includes must be relative in this project
+  # set(INCLUDE_DIRECTORIES ${INTERFACE_INCLUDE_DIRECTORIES})
   set(COMPILE_DEFINITIONS ${INTERFACE_COMPILE_DEFINITIONS})
   set(COMPILE_FEATURES ${INTERFACE_COMPILE_FEATURES})
   set(COMPILE_OPTIONS ${INTERFACE_COMPILE_OPTIONS})
