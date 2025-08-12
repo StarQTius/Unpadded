@@ -36,7 +36,7 @@ function(upd_target_lintables TARGET LINTABLE_TARGET)
 
   set(SUBTARGET ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET})
   string(REPLACE / _ SUBTARGET ${SUBTARGET})
-  if(TARGET ${SUBTARGET})
+  if(NOT TARGET ${SUBTARGET})
     # Subtarget is created in each directory since `add_custom_command()` output
     # cannot be depended from if target belongs to another directory
     add_custom_target(
