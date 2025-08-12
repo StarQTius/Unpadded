@@ -58,6 +58,17 @@ function(upd_target_lintable TARGET SUBTARGET LINTABLE INHERIT_FROM)
     COMMENT "$<TARGET_PROPERTY:${TARGET},UPD_LINTER_COMMENT> -- ${LINTABLE_RELATIVE_PATH}"
     VERBATIM COMMAND_EXPAND_LISTS)
 
+  # Subtarget is created in each directory since `add_custom_command()` output
+  # cannot be depended from if target belongs to another directory
+  set(SUBTARGET ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET})
+  string(REPLACE / _ SUBTARGET ${SUBTARGET})
+  if(NOT TARGET ${SUBTARGET})
+    add_custom_target(
+      ${SUBTARGET}
+      DEPENDS $<TARGET_PROPERTY:${SUBTARGET},UPD_LINT_COMPLETION_MARKERS>)
+    add_dependencies(${TARGET} ${SUBTARGET})
+  endif()
+
   set_property(
     TARGET ${SUBTARGET}
     APPEND

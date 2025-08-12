@@ -34,20 +34,9 @@ function(upd_target_lintables TARGET LINTABLE_TARGET)
     TARGET ${LINTABLE_TARGET}
     PROPERTY SOURCES)
 
-  set(SUBTARGET ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET})
-  string(REPLACE / _ SUBTARGET ${SUBTARGET})
-  if(NOT TARGET ${SUBTARGET})
-    # Subtarget is created in each directory since `add_custom_command()` output
-    # cannot be depended from if target belongs to another directory
-    add_custom_target(
-      ${SUBTARGET}
-      DEPENDS $<TARGET_PROPERTY:${SUBTARGET},UPD_LINT_COMPLETION_MARKERS>)
-  endif()
-
   foreach(SOURCE IN LISTS SOURCES ARGN)
-    upd_target_lintable(${TARGET} ${SUBTARGET} ${SOURCE} ${LINTABLE_TARGET})
+    upd_target_lintable(${TARGET} ${SOURCE} ${LINTABLE_TARGET})
   endforeach()
-  add_dependencies(${TARGET} ${SUBTARGET})
 endfunction()
 
 # `upd_add_test_suite(<NAME> <COMMENT> <LABELS...>)`
