@@ -31,9 +31,12 @@ define_property(
   PROPERTY UPD_LINTER_COMMENT
   BRIEF_DOCS "Prepended comment when a file is linted")
 
-# `upd_target_lintable(<TARGET> <LINTABLE> [<INHERIT_FROM>])`
+# `upd_target_lintable(<TARGET> <LINTABLE> <INHERIT_FROM>)`
 #
-# Add source file `LINTABLE` to lint to target `TARGET`. If `INHERIT_FROM` is set, lint properties of target `INHERIT_FROM` will be provided to lint command instead of whose of `TARGET`.
+# Add source file `LINTABLE` to lint to target `TARGET`
+#
+# Lint properties of target `INHERIT_FROM` will be provided to the lint
+# command.
 function(upd_target_lintable TARGET SUBTARGET LINTABLE INHERIT_FROM)
   cmake_path(ABSOLUTE_PATH LINTABLE)
 
