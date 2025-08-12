@@ -7,11 +7,9 @@ target_link_libraries(upd_UnpaddedDebug INTERFACE upd_Unpadded)
 target_compile_definitions(upd_UnpaddedDebug INTERFACE UPD_DEBUG)
 
 if(PROJECT_IS_TOP_LEVEL)
-  upd_add_iwyu_target(iwyu upd_Unpadded)
-
   file(
     GLOB_RECURSE HEADERS
     RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     CONFIGURE_DEPENDS *.hpp)
-  upd_target_lintables(iwyu ${HEADERS})
+  upd_target_lintables(iwyu upd_Unpadded ${HEADERS})
 endif()

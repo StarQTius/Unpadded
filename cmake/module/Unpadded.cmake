@@ -1,14 +1,53 @@
 include(UpdLinting)
 
-# `upd_add_iwyu_target(<NAME> <LINTABLE_TARGET>)`
+# `upd_add_lint_target(<NAME> <COMMENT> <COMMAND...>)`
 #
-# Create the lint target `NAME` that lints `LINTABLE_TARGET` with Include What
-# You Use
-function(upd_add_iwyu_target NAME LINTABLE_TARGET)
-  set(IWYU_LINTER_SCRIPT ${PROJECT_SOURCE_DIR}/cmake/script/run-include-what-you-use.cmake)
-  upd_script_as_command(IWYU_LINTER_COMMAND ${IWYU_LINTER_SCRIPT})
-  upd_add_lint_target(${NAME} ${LINTABLE_TARGET} "Check #includes consistency" ${IWYU_LINTER_COMMAND})
-  upd_target_inherited_lintables(${NAME} ${ARGN})
+# Create a target `NAME` which lint each file attached to it by
+# `upd_target_lintables()`
+#
+# The `UPD_LINTER_COMMENT` property of this target will be populated with
+# `COMMENT`.
+# The `UPD_LINTER_COMMAND` property of this target will be populated with
+# `COMMAND...`.
+function(upd_add_lint_target NAME COMMENT)
+  add_custom_target(${NAME})
+  set_property(
+    TARGET ${NAME}
+    PROPERTY UPD_LINTER_COMMAND
+    ${ARGN})
+  set_property(
+    TARGET ${NAME}
+    PROPERTY UPD_LINTER_COMMENT
+    ${COMMENT})
+endfunction()
+
+# `upd_target_lintables(<TARGET> <LINTABLE_TARGET> <EXTRA_SOURCES...>)`
+#
+# Attach source files to be linted from `LINTABLE_TARGET` to `TARGET`
+#
+# Compilation-related properties (listed in `UPD_LINTING_PROPERTIES`) from
+# `LINTABLE_TARGET` will be used to lint each source file from
+# `LINTABLE_TARGET` and `EXTRA_SOURCES...`.
+function(upd_target_lintables TARGET LINTABLE_TARGET)
+  get_property(
+    SOURCES
+    TARGET ${LINTABLE_TARGET}
+    PROPERTY SOURCES)
+
+  set(SUBTARGET ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET})
+  string(REPLACE / _ SUBTARGET ${SUBTARGET})
+  if(TARGET ${SUBTARGET})
+    # Subtarget is created in each directory since `add_custom_command()` output
+    # cannot be depended from if target belongs to another directory
+    add_custom_target(
+      ${SUBTARGET}
+      DEPENDS $<TARGET_PROPERTY:${SUBTARGET},UPD_LINT_COMPLETION_MARKERS>)
+  endif()
+
+  foreach(SOURCE IN LISTS SOURCES ARGN)
+    upd_target_lintable(${TARGET} ${SUBTARGET} ${SOURCE} ${LINTABLE_TARGET})
+  endforeach()
+  add_dependencies(${TARGET} ${SUBTARGET})
 endfunction()
 
 # `upd_add_test_suite(<NAME> <COMMENT> <LABELS...>)`

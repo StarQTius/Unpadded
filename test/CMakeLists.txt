@@ -13,6 +13,7 @@ target_link_libraries(upd_unitary PRIVATE
   FakeIt::FakeIt-catch
 )
 catch_discover_tests(upd_unitary PROPERTIES LABELS unitary)
+upd_target_lintables(iwyu upd_unitary)
 
 add_custom_target(upd_examples)
 add_dependencies(upd_examples Unpadded::Dynamixel2)

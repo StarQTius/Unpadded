@@ -8,6 +8,9 @@ if(PROJECT_IS_TOP_LEVEL)
 
   include(FetchContent)
   include(Unpadded)
+
+  upd_script_as_command(UPD_IWYU_LINTER_COMMAND ${IWYU_LINTER_SCRIPT} ${PROJECT_SOURCE_DIR}/cmake/script/run-include-what-you-use.cmake)
+  upd_add_lint_target(iwyu "Check #includes consistency" ${UPD_IWYU_LINTER_COMMAND})
 endif()
 
 add_subdirectory(include EXCLUDE_FROM_ALL)
