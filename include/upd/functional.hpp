@@ -1,5 +1,7 @@
 #pragma once
 
+#include <utility>
+
 #define UPD_INVOKE(INVOCABLE, ...) ((INVOCABLE)(__VA_ARGS__))
 
 namespace upd {

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstddef>
+
 namespace upd {
 
 template<bool Is_Signed>

@@ -1,9 +1,8 @@
 #pragma once
 
-#include <compare>
 #include <concepts>
-#include <functional>
-
+#include <type_traits>
+#include <utility>
 #include "functional.hpp"
 #include "upd.hpp"
 

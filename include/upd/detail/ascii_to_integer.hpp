@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <iterator>
 #include <utility>
+#include <ranges>
 
 #include "fail_unless_discarded.hpp"
 

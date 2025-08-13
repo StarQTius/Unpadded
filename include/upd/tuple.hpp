@@ -1,10 +1,12 @@
 #pragma once
 
-#include <functional>
-#include <numeric>
-#include <optional>
+#include <algorithm>
+#include <array>
+#include <concepts>
+#include <cstddef>
 #include <ranges>
-
+#include <type_traits>
+#include <utility>
 #include "constexpr.hpp"
 #include "functional.hpp"
 #include "ref.hpp"
@@ -91,7 +93,7 @@ struct leaves<std::index_sequence<Is...>, Ts...> : leaf<Is, Ts>... {
   using leaf<Is, Ts>::typebox_at...;
   using leaf<Is, Ts>::has_type...;
 
-  [[nodiscard]] constexpr auto typebox_at(...) const noexcept -> int { return 0; }
+  [[nodiscard]] constexpr static auto typebox_at(...) noexcept -> int { return 0; }
 
   [[nodiscard]] constexpr static auto has_type(...) noexcept(release) -> bool { return false; }
 
@@ -187,9 +189,6 @@ class typelist;
 
 template<auto...>
 class constlist;
-
-template<typename>
-class tuple_implementation;
 
 template<std::size_t I, typename Tuple>
 [[nodiscard]] constexpr auto get(Tuple &&t) noexcept(release) -> auto && {
