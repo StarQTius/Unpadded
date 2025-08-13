@@ -35,7 +35,7 @@ define_property(
 #
 # Lint properties of target `INHERIT_FROM` will be provided to the lint
 # command.
-function(upd_target_lintable TARGET SUBTARGET LINTABLE INHERIT_FROM)
+function(upd_target_lintable TARGET LINTABLE INHERIT_FROM)
   cmake_path(ABSOLUTE_PATH LINTABLE)
 
   upd_properties_genex(LINTING_PROPERTIES_GENEX ${INHERIT_FROM} ${UPD_LINTING_PROPERTIES})
