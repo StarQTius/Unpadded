@@ -14,7 +14,12 @@
 #include "type_traits.hpp"
 #include "upd.hpp"
 
-#define UPD_CONSTEXPR_ASSERT(...) (std::is_constant_evaluated() && (__VA_ARGS__) ? (void)0 : throw)
+#define UPD_CONSTEXPR_ASSERT(...) \
+  do { \
+    if (std::is_constant_evaluated() && !(__VA_ARGS__)) { \
+      throw; \
+    } \
+  } while (false)
 
 #define UPD_THIS_DEDUCTION_REQUIRES_WORKAROUND(...) static_assert(__VA_ARGS__)
 
@@ -569,8 +574,9 @@ public:
 
       auto it = shape.begin();
       for (auto [i, size] : size_array | vw::enumerate) {
-        auto make_i2 = [&](auto j) { return index2{i, j}; };
-        it = copy(vw::iota(0uz, size) | vw::transform(make_i2), it).out;
+        for (auto j = 0zu; j < size; ++j) {
+          *it++ = index2{i, j};
+        }
       }
 
       UPD_CONSTEXPR_ASSERT(it == shape.end());

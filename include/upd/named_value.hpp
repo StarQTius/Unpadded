@@ -364,11 +364,6 @@ public:
     return UPD_FWD(self).template get<Identifier, Self>();
   }
 
-  template<typename Self, auto Identifier>
-  [[nodiscard]] constexpr auto operator[](this Self &&self, auto_constant<Identifier>) noexcept(release) -> auto && {
-    return UPD_FWD(self).template get<Identifier, Self>();
-  }
-
   template<typename Self, std::size_t I>
   [[nodiscard]] constexpr auto operator[](this Self &&self, auto_constant<I>) noexcept(release) -> auto && {
     return UPD_FWD(self).template get<I, Self>();

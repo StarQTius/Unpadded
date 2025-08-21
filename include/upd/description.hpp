@@ -305,17 +305,17 @@ template<typename T, std::size_t Max>
 
 template<name Identifier>
 constexpr auto value_of =
-    field_expression_t{expr<Identifier>, [](auto &packet) -> auto & { return packet[expr<Identifier>]; }};
+    field_expression_t{expr<Identifier>, [](auto &packet) -> auto & { return packet[expr<Identifier>]; }, {}};
 
 template<name Identifier>
 constexpr auto length_of = field_expression_t{expr<Identifier>, [](const auto &packet) {
                                                 return extended_integer<16, std::size_t>{
                                                     static_cast<std::uint16_t>(bitsize(packet[expr<Identifier>]))};
-                                              }};
+                                              }, {}};
 
 template<name Identifier>
 constexpr auto code_of =
-    field_expression_t{expr<Identifier>, [](const auto &packet) { return packet[expr<Identifier>].index(); }};
+    field_expression_t{expr<Identifier>, [](const auto &packet) { return packet[expr<Identifier>].index(); }, {}};
 
 template<auto Match, typename Result>
 struct when_then_t {
@@ -1186,7 +1186,7 @@ struct one_of_t {
   [[nodiscard]] constexpr auto deduce(const Packet &packet, Serializer &, const Fields &) const noexcept(release) {
     auto id_pos = packet[expr<identifier>].index() - 1;
     auto id = tagged_descriptions.identifiers.visit(id_pos, [&](auto id) -> tag_type { return id; });
-    return tagged_tuple{keyword<rule.from_identifier>{} = UPD_INVOKE(inverse(rule.chain), id)};
+    return tagged_tuple{keyword<rule_type::from_identifier>{} = UPD_INVOKE(inverse(rule.chain), id)};
   }
 
   template<serializer Serializer, named_tuple_like Packet, std::input_iterator InputIt>
