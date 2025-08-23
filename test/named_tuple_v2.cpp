@@ -1,6 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
-#include <upd/named_value.hpp>
 #include <upd/constexpr.hpp>
+#include <upd/named_value.hpp>
 
 TEST_CASE("Testing element access features", "[named_tuple]") {
   using namespace upd::literals;

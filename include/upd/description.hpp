@@ -11,19 +11,20 @@
 #include <limits>
 #include <ranges>
 #include <type_traits>
-#include "constexpr.hpp"
-#include "functional.hpp"
-#include "is_instance_of.hpp"
-#include "ref.hpp"
-#include "template_traits.hpp"
-#include "type_traits.hpp"
 #include <utility>
 #include <variant>
+
+#include "constexpr.hpp"
+#include "functional.hpp"
 #include "integer.hpp"
+#include "is_instance_of.hpp"
 #include "named_value.hpp"
+#include "ref.hpp"
 #include "static_vector.hpp"
+#include "template_traits.hpp"
 #include "token.hpp"
 #include "tuple.hpp"
+#include "type_traits.hpp"
 #include "upd.hpp"
 
 #define UPD_WELL_FORMED(...)                                                                                           \
@@ -308,10 +309,12 @@ constexpr auto value_of =
     field_expression_t{expr<Identifier>, [](auto &packet) -> auto & { return packet[expr<Identifier>]; }, {}};
 
 template<name Identifier>
-constexpr auto length_of = field_expression_t{expr<Identifier>, [](const auto &packet) {
+constexpr auto length_of = field_expression_t{expr<Identifier>,
+                                              [](const auto &packet) {
                                                 return extended_integer<16, std::size_t>{
                                                     static_cast<std::uint16_t>(bitsize(packet[expr<Identifier>]))};
-                                              }, {}};
+                                              },
+                                              {}};
 
 template<name Identifier>
 constexpr auto code_of =
@@ -1137,7 +1140,7 @@ struct checksum_t {
 
 template<name Identifier, typename BinaryOp, std::size_t Width>
 [[nodiscard]] constexpr auto checksum(BinaryOp op, xuint<Width> init, all_fields_t) noexcept(release) {
-  auto is_not_this_field = [](auto id) { return expr<id != Identifier>; };
+  auto is_not_this_field = [](auto id) { return expr < id != Identifier > ; };
 
   auto retval =
       checksum_t<Identifier, BinaryOp, Width, decltype(is_not_this_field)>{std::move(op), init, is_not_this_field};

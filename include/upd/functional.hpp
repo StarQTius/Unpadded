@@ -1,6 +1,7 @@
 #pragma once
 
 #include <utility>
+
 #include "upd.hpp"
 
 #define UPD_INVOKE(INVOCABLE, ...) ((INVOCABLE)(__VA_ARGS__))

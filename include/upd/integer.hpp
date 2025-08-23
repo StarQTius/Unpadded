@@ -11,9 +11,10 @@
 #include <optional>
 #include <ranges>
 #include <type_traits>
-#include "detail/ascii_to_integer.hpp"
 #include <utility>
+
 #include "detail/always_false.hpp"
+#include "detail/ascii_to_integer.hpp"
 #include "is_instance_of.hpp"
 #include "token.hpp"
 #include "upd.hpp"

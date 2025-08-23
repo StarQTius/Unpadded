@@ -7,6 +7,7 @@
 #include <ranges>
 #include <type_traits>
 #include <utility>
+
 #include "constexpr.hpp"
 #include "functional.hpp"
 #include "ref.hpp"
@@ -14,11 +15,11 @@
 #include "type_traits.hpp"
 #include "upd.hpp"
 
-#define UPD_CONSTEXPR_ASSERT(...) \
-  do { \
-    if (std::is_constant_evaluated() && !(__VA_ARGS__)) { \
-      throw; \
-    } \
+#define UPD_CONSTEXPR_ASSERT(...)                                                                                      \
+  do {                                                                                                                 \
+    if (std::is_constant_evaluated() && !(__VA_ARGS__)) {                                                              \
+      throw;                                                                                                           \
+    }                                                                                                                  \
   } while (false)
 
 #define UPD_THIS_DEDUCTION_REQUIRES_WORKAROUND(...) static_assert(__VA_ARGS__)
@@ -507,7 +508,7 @@ public:
     return find_if([](const auto &x) {
       constexpr auto are_comparable = (requires { x.value == Value; });
       if constexpr (are_comparable) {
-        return expr<x.value == Value>;
+        return expr < x.value == Value > ;
       } else {
         return expr<false>;
       }
