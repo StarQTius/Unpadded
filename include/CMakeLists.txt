@@ -12,4 +12,5 @@ if(PROJECT_IS_TOP_LEVEL)
     RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     CONFIGURE_DEPENDS *.hpp)
   upd_target_lintables(iwyu upd_Unpadded ${HEADERS})
+  upd_target_lintables(clang_format upd_Unpadded ${HEADERS})
 endif()

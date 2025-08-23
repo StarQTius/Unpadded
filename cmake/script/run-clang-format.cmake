@@ -1,0 +1,41 @@
+cmake_minimum_required(VERSION 3.10)
+
+include(UpdParseCliArguments)
+
+upd_parse_cli_arguments(
+  KEYWORDS
+  "SOURCE_FILE"
+  "DRY_RUN"
+  "INCLUDE_DIRECTORIES"
+  "INTERFACE_INCLUDE_DIRECTORIES"
+  "COMPILE_DEFINITIONS"
+  "INTERFACE_COMPILE_DEFINITIONS"
+  "COMPILE_FEATURES"
+  "INTERFACE_COMPILE_FEATURES"
+  "COMPILE_OPTIONS"
+  "INTERFACE_COMPILE_OPTIONS"
+  OPTIONS
+  "IS_SOURCE")
+
+find_program(CLANG_FORMAT_COMMAND clang-format
+  DOC "Check and/or fix C/C++ source format" REQUIRED)
+
+set(FLAGS)
+
+if(DRY_RUN)
+  list(APPEND FLAGS --dry-run)
+endif()
+
+execute_process(
+  COMMAND ${CLANG_FORMAT_COMMAND} ${SOURCE_FILE} ${FLAGS} -Werror
+  RESULT_VARIABLE COMMAND_RESULT
+  OUTPUT_VARIABLE COMMAND_OUTPUT
+  ERROR_VARIABLE COMMAND_OUTPUT)
+
+if(NOT COMMAND_RESULT EQUAL 0)
+  message(${COMMAND_OUTPUT})
+  message(
+    FATAL_ERROR
+    "clang-format failed on ${SOURCE_FILE} with error code ${COMMAND_RESULT}"
+  )
+endif()

@@ -9,6 +9,9 @@ if(PROJECT_IS_TOP_LEVEL)
   include(FetchContent)
   include(Unpadded)
 
+  upd_script_as_command(UPD_CLANG_FORMAT_LINTER_COMMAND ${PROJECT_SOURCE_DIR}/cmake/script/run-clang-format.cmake)
+  upd_add_lint_target(clang_format "Check source file format" ${UPD_CLANG_FORMAT_LINTER_COMMAND} DRY_RUN YES)
+
   upd_script_as_command(UPD_IWYU_LINTER_COMMAND ${PROJECT_SOURCE_DIR}/cmake/script/run-include-what-you-use.cmake)
   upd_add_lint_target(iwyu "Check #includes consistency" ${UPD_IWYU_LINTER_COMMAND})
 endif()
