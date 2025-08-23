@@ -68,6 +68,15 @@ function(upd_target_lintable TARGET LINTABLE INHERIT_FROM)
     add_dependencies(${TARGET} ${SUBTARGET})
   endif()
 
+  # Scan of files listed in `IMPLICIT_DEPENDS` uses `INCLUDE_DIRECTORIES`
+  # property of dependent target to find header included with `#include<...>` .
+  # Therefore, we have to copy this property from `INHERIT_FROM` so that the
+  # CMake dependecy scanner find those headers.
+  set_property(
+    TARGET ${SUBTARGET}
+    PROPERTY INCLUDE_DIRECTORIES
+    $<TARGET_PROPERTY:${INHERIT_FROM},INCLUDE_DIRECTORIES>)
+
   set_property(
     TARGET ${SUBTARGET}
     APPEND
