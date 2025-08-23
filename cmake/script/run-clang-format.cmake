@@ -23,19 +23,9 @@ find_program(CLANG_FORMAT_COMMAND clang-format
 set(FLAGS)
 
 if(DRY_RUN)
-  list(APPEND FLAGS --dry-run)
+  list(APPEND FLAGS --dry-run -Werror)
+else()
+  list(APPEND FLAGS -i)
 endif()
 
-execute_process(
-  COMMAND ${CLANG_FORMAT_COMMAND} ${SOURCE_FILE} ${FLAGS} -Werror
-  RESULT_VARIABLE COMMAND_RESULT
-  OUTPUT_VARIABLE COMMAND_OUTPUT
-  ERROR_VARIABLE COMMAND_OUTPUT)
-
-if(NOT COMMAND_RESULT EQUAL 0)
-  message(${COMMAND_OUTPUT})
-  message(
-    FATAL_ERROR
-    "clang-format failed on ${SOURCE_FILE} with error code ${COMMAND_RESULT}"
-  )
-endif()
+execute_process(COMMAND ${CLANG_FORMAT_COMMAND} ${SOURCE_FILE} ${FLAGS})
