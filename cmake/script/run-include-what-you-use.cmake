@@ -3,9 +3,8 @@ cmake_minimum_required(VERSION 3.10)
 include(UpdParseCliArguments)
 
 upd_parse_cli_arguments(
-  POSITIONALS
-  "SOURCE_FILE"
   KEYWORDS
+  "SOURCE_FILE"
   "INCLUDE_DIRECTORIES"
   "INTERFACE_INCLUDE_DIRECTORIES"
   "COMPILE_DEFINITIONS"
