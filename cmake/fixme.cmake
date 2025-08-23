@@ -10,20 +10,24 @@ execute_process(
 string(STRIP ${ROOT_DIR} ROOT_DIR)
 
 execute_process(
-  COMMAND ${GIT_EXECUTABLE} diff --name-only
-  OUTPUT_FILE unstaged_files.txt)
-file(STRINGS unstaged_files.txt UNSTAGED_FILES)
+  COMMAND ${GIT_EXECUTABLE} ls-files
+  OUTPUT_FILE indexed_files.txt)
+file(STRINGS indexed_files.txt INDEXED_FILES)
+file(REMOVE indexed_files.txt)
 
 execute_process(
-  COMMAND ${GIT_EXECUTABLE} diff --name-only --cached
-  OUTPUT_FILE staged_files.txt)
-file(STRINGS staged_files.txt STAGED_FILES)
+  COMMAND ${GIT_EXECUTABLE} ls-files --others --exclude-standard
+  OUTPUT_FILE untracked_files.txt)
+file(STRINGS untracked_files.txt UNTRACKED_FILES)
+file(REMOVE untracked_files.txt)
 
-set(FILES ${STAGED_FILES} ${UNSTAGED_FILES})
+set(FILES ${INDEXED_FILES} ${UNTRACKED_FILES})
 set(CPP_FILES ${FILES})
 list(FILTER CPP_FILES INCLUDE REGEX "^.*\\.(cpp|hpp)$")
 
+message("Formating C++ files")
 foreach(FILE IN LISTS CPP_FILES)
+  message(STATUS "Formatting ${FILE}")
   execute_process(
     COMMAND ${CMAKE_COMMAND} -DCMAKE_MODULE_PATH=${THIS_DIR}/module -P ${THIS_DIR}/script/run-clang-format.cmake -- SOURCE_FILE ${ROOT_DIR}/${FILE})
 endforeach()
