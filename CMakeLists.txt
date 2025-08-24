@@ -16,7 +16,7 @@ if(PROJECT_IS_TOP_LEVEL)
   upd_add_lint_target(iwyu "Check #includes consistency" ${UPD_IWYU_LINTER_COMMAND})
 
   upd_script_as_command(UPD_CLANG_TIDY_LINTER_COMMAND ${PROJECT_SOURCE_DIR}/cmake/script/run-clang-tidy.cmake)
-  upd_add_lint_target(clang_tidy "Analyze source code" ${UPD_CLANG_TIDY_LINTER_COMMAND})
+  upd_add_lint_target(clang_tidy "Analyze source code" ${UPD_CLANG_TIDY_LINTER_COMMAND} CONFIG_FILE ${PROJECT_SOURCE_DIR}/.clang-tidy)
 
 endif()
 

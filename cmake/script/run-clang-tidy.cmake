@@ -13,6 +13,7 @@ upd_parse_cli_arguments(
   "INTERFACE_COMPILE_FEATURES"
   "INTERFACE_COMPILE_OPTIONS"
   "CMAKE_BINARY_DIR"
+  "CONFIG_FILE"
   OPTIONS
   "IS_SOURCE")
 
@@ -20,5 +21,5 @@ find_program(CLANG_TIDY_COMMAND clang-tidy
   DOC "Static analyzer for C and C++ code" REQUIRED)
 
 execute_process(
-  COMMAND ${CLANG_TIDY_COMMAND} ${SOURCE_FILE} -p ${CMAKE_BINARY_DIR}/compile_commands.json --use-color
+  COMMAND ${CLANG_TIDY_COMMAND} ${SOURCE_FILE} -p ${CMAKE_BINARY_DIR}/compile_commands.json --config-file=${CONFIG_FILE}  --use-color
   COMMAND_ERROR_IS_FATAL ANY)
