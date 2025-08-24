@@ -21,5 +21,5 @@ find_program(CLANG_TIDY_COMMAND clang-tidy
   DOC "Static analyzer for C and C++ code" REQUIRED)
 
 execute_process(
-  COMMAND ${CLANG_TIDY_COMMAND} ${SOURCE_FILE} -p ${CMAKE_BINARY_DIR}/compile_commands.json --config-file=${CONFIG_FILE}  --use-color
+  COMMAND ${CLANG_TIDY_COMMAND} ${SOURCE_FILE} -p ${CMAKE_BINARY_DIR}/compile_commands.json --config-file=${CONFIG_FILE} --enable-check-profile --use-color
   COMMAND_ERROR_IS_FATAL ANY)
