@@ -5,28 +5,20 @@ include(UpdParseCliArguments)
 upd_parse_cli_arguments(
   KEYWORDS
   "SOURCE_FILE"
-  "DRY_RUN"
   "INCLUDE_DIRECTORIES"
   "INTERFACE_INCLUDE_DIRECTORIES"
   "COMPILE_DEFINITIONS"
   "INTERFACE_COMPILE_DEFINITIONS"
   "COMPILE_FEATURES"
   "INTERFACE_COMPILE_FEATURES"
-  "COMPILE_OPTIONS"
   "INTERFACE_COMPILE_OPTIONS"
   "CMAKE_BINARY_DIR"
   OPTIONS
   "IS_SOURCE")
 
-find_program(CLANG_FORMAT_COMMAND clang-format
-  DOC "Check and/or fix C/C++ source format" REQUIRED)
+find_program(CLANG_TIDY_COMMAND clang-tidy
+  DOC "Static analyzer for C and C++ code" REQUIRED)
 
-set(FLAGS)
-
-if(DRY_RUN)
-  list(APPEND FLAGS --dry-run -Werror)
-else()
-  list(APPEND FLAGS -i)
-endif()
-
-execute_process(COMMAND ${CLANG_FORMAT_COMMAND} ${SOURCE_FILE} ${FLAGS})
+execute_process(
+  COMMAND ${CLANG_TIDY_COMMAND} ${SOURCE_FILE} -p ${CMAKE_BINARY_DIR}/compile_commands.json --use-color
+  COMMAND_ERROR_IS_FATAL ANY)
