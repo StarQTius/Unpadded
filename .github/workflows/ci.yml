@@ -1,0 +1,13 @@
+name: CI/CD pipeline
+on:
+  push:
+    branches:
+      - unstable-v2
+jobs:
+  all:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/install
+        with:
+          entrypoint: /entrypoint.sh

@@ -1,0 +1,25 @@
+{
+  "version": 10,
+  "configurePresets": [
+    {
+      "name": "gcc",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_FLAGS": "-Werror -Wall -Wextra -O0"
+      }
+    },
+    {
+      "name": "clang",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build_clang",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_FLAGS": "-Werror -Wall -Wextra -O0"
+      }
+    }
+  ]
+}

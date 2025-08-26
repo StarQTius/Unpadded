@@ -9,4 +9,5 @@
 !.clang-tidy
 !.gitignore
 !CMakeLists.txt
+!CMakePresets.json
 !README.md
