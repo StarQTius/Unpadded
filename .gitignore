@@ -10,4 +10,5 @@
 !.gitignore
 !CMakeLists.txt
 !CMakePresets.json
+!LICENSE
 !README.md
