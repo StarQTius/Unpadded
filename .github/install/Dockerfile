@@ -1,6 +1,6 @@
 FROM ubuntu:plucky
 
-RUN cp entrypoint.sh /entrypoint.sh; exit 0
+COPY entrypoint.sh* /entrypoint.sh
 
 WORKDIR /
 RUN apt update
@@ -13,7 +13,6 @@ RUN add-apt-repository ppa:ubuntu-toolchain-r/test
 RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key 2>/dev/null | tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
 RUN echo 'deb http://apt.llvm.org/plucky/ llvm-toolchain-plucky-21 main' > /etc/apt/sources.list.d/llvm.list
 RUN git clone https://github.com/include-what-you-use/include-what-you-use
-RUN git clone https://github.com/nektos/act
 
 WORKDIR /
 RUN apt update
