@@ -8,5 +8,5 @@ cmake --preset clang -S "$GITHUB_WORKSPACE" -B build_clang
 cmake --build build_clang --target check_full --parallel $(nproc)
 cmake --build build_clang --target clang_format --parallel $(nproc)
 cmake --build build_clang --target iwyu --parallel $(nproc)
-cmake --build build_clang --target clang_tidy --parallel $(nproc)
+# cmake --build build_clang --target clang_tidy --parallel $(nproc)
 

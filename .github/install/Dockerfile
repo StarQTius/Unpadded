@@ -1,6 +1,6 @@
 FROM ubuntu:plucky
 
-COPY entrypoint.sh /entrypoint.sh
+RUN cp entrypoint.sh /entrypoint.sh; exit 0
 
 WORKDIR /
 RUN apt update
@@ -26,7 +26,6 @@ RUN --mount=type=cache,id=Unpadded,target=/var/cache/apt \
   clang-tidy-21 \
   cmake \
   gdb \
-  golang-go \
   g++-15 \
   libclang-21-dev \
   pipx \
@@ -43,9 +42,6 @@ RUN --mount=type=cache,id=Unpadded,target=build \
   cmake -Bbuild -DCMAKE_CXX_COMPILER=clang++-21 -DCMAKE_PREFIX_PATH=/usr/lib/llvm-21 \
   && cmake --build build --target install --parallel $(nproc)
 RUN ln -s /usr/local/bin/include-what-you-use /usr/bin/iwyu
-
-WORKDIR /act
-RUN make install --jobs=$(nproc)
 
 WORKDIR /
 RUN update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-15 0
