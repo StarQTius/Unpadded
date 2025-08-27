@@ -9,7 +9,6 @@
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_CXX_FLAGS": "-Werror -Wall -Wextra -O0",
-        "CMAKE_COLOR_DIAGNOSTICS": "ON"
       }
     },
     {
@@ -20,7 +19,6 @@
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_CXX_FLAGS": "-Werror -Wall -Wextra -O0",
-        "CMAKE_COLOR_DIAGNOSTICS": "ON"
       }
     }
   ]

@@ -2,6 +2,8 @@
 
 cd /home/ubuntu
 
+export CLICOLOR_FORCE=1
+
 cmake --preset gcc -S "$GITHUB_WORKSPACE" -B build
 cmake --build build --target check_full --parallel $(nproc)
 cmake --preset clang -S "$GITHUB_WORKSPACE" -B build_clang
