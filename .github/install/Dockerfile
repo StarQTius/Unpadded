@@ -47,6 +47,7 @@ RUN update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-15 0
 RUN update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-21 0
 RUN update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-21 0
 RUN update-alternatives --install /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-21 0
+RUN echo "ubuntu ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 USER ubuntu
 WORKDIR /home/ubuntu
