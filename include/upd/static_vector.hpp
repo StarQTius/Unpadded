@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <format>
 #include <memory>
 #include <ranges>
 #include <utility>
@@ -101,3 +102,32 @@ private:
 };
 
 } // namespace upd
+
+template<typename T, std::size_t Max>
+struct std::formatter<upd::static_vector<T, Max>> {
+  std::formatter<T> element_formatter;
+
+  consteval formatter() noexcept = default;
+
+  constexpr auto parse(std::format_parse_context &ctx) { return element_formatter.parse(ctx); }
+
+  auto format(const upd::static_vector<T, Max> &statvec, std::format_context &ctx) const {
+    auto it = ctx.out();
+    it = std::format_to(it, "{{");
+
+    for (auto first = true; const auto &elem : statvec) {
+      if (first) {
+        first = false;
+      } else {
+        it = std::format_to(it, ", ");
+      }
+
+      ctx.advance_to(it);
+      it = element_formatter.format(elem, ctx);
+    }
+
+    it = std::format_to(it, "}}");
+
+    return it;
+  }
+};

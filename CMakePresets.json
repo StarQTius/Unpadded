@@ -6,6 +6,7 @@
       "generator": "Unix Makefiles",
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "g++",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_CXX_FLAGS": "-Werror -Wall -Wextra -O0"
@@ -16,6 +17,7 @@
       "generator": "Unix Makefiles",
       "binaryDir": "${sourceDir}/build_clang",
       "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "clang++",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_CXX_FLAGS": "-Werror -Wall -Wextra -O0"

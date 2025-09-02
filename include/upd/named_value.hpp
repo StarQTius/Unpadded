@@ -4,6 +4,7 @@
 #include <array>
 #include <concepts>
 #include <cstddef>
+#include <format>
 #include <iterator>
 #include <ranges>
 #include <string_view>
@@ -12,14 +13,18 @@
 #include <variant>
 
 #include "constexpr.hpp"
+#include "constlist.hpp"
 #include "detail/always_false.hpp"
 #include "functional.hpp"
 #include "integer.hpp"
 #include "is_instance_of.hpp"
+#include "lite_tuple.hpp"
 #include "ref.hpp"
 #include "template_traits.hpp"
 #include "tuple.hpp"
+#include "tuple_impl.hpp"
 #include "type_traits.hpp"
+#include "typelist.hpp"
 #include "upd.hpp"
 
 namespace upd {
@@ -438,3 +443,40 @@ template<name Identifier>
 }
 
 } // namespace upd::literals
+
+template<upd::name Identifier, typename T>
+struct std::formatter<upd::named_value<Identifier, T>> {
+  std::formatter<T> value_formatter;
+
+  consteval formatter() noexcept = default;
+
+  constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
+
+  static auto format(const upd::named_value<Identifier, T> &named_obj, std::format_context &ctx) {
+    return std::format_to(ctx.out(), "{} -> {}", named_obj.identifier.string, named_obj.value());
+  }
+};
+
+template<auto Identifiers, typename... Ts>
+struct std::formatter<upd::named_tuple<Identifiers, Ts...>> {
+  consteval formatter() noexcept = default;
+
+  constexpr static auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
+
+  static auto format(const upd::named_tuple<Identifiers, Ts...> &named_elems, std::format_context &ctx) {
+    auto it = ctx.out();
+    it = std::format_to(it, "(");
+    named_elems.for_each([&, first = true](const auto &named_elem) mutable {
+      if (first) {
+        it = std::format_to(it, "{}", named_elem);
+        first = false;
+      } else {
+        it = std::format_to(it, ", {}", named_elem);
+      }
+    });
+    it = std::format_to(it, ")");
+
+    ctx.advance_to(it);
+    return it;
+  }
+};

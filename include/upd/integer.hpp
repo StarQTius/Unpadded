@@ -7,6 +7,7 @@
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
+#include <format>
 #include <limits>
 #include <optional>
 #include <ranges>
@@ -540,3 +541,16 @@ template<typename T, typename XInt>
 }
 
 } // namespace upd
+
+template<std::size_t Width, typename Underlying>
+struct std::formatter<upd::extended_integer<Width, Underlying>> {
+  std::formatter<Underlying> underlying_formatter;
+
+  consteval formatter() noexcept = default;
+
+  constexpr auto parse(std::format_parse_context &ctx) { return underlying_formatter.parse(ctx); }
+
+  auto format(upd::extended_integer<Width, Underlying> xi, std::format_context &ctx) const {
+    return underlying_formatter.format(xi.value(), ctx);
+  }
+};

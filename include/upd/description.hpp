@@ -15,6 +15,7 @@
 #include <variant>
 
 #include "constexpr.hpp"
+#include "error.hpp"
 #include "functional.hpp"
 #include "integer.hpp"
 #include "is_instance_of.hpp"
@@ -24,7 +25,9 @@
 #include "template_traits.hpp"
 #include "token.hpp"
 #include "tuple.hpp"
+#include "tuple_impl.hpp"
 #include "type_traits.hpp"
+#include "typelist.hpp"
 #include "upd.hpp"
 
 #define UPD_WELL_FORMED(...)                                                                                           \
@@ -347,114 +350,6 @@ template<typename... WhenThens>
 [[nodiscard]] constexpr auto aggregate_when_thens(WhenThens &&...when_thens) {
   return tagged_tuple{
       named_value<when_thens.match, typename WhenThens::result_type>{std::in_place, UPD_FWD(when_thens).result}...};
-}
-
-struct no_error {};
-
-struct not_matching_deduction {
-  const char *identifier;
-};
-
-struct invalid_code_in_one_of {
-  const char *identifier;
-  std::intmax_t code;
-};
-
-struct negative_repetition_count {
-  const char *identifier;
-  std::intmax_t count;
-};
-
-struct repeated_beyond_max {
-  const char *identifier;
-  std::uintmax_t count;
-  std::size_t max;
-};
-
-using error_data_types =
-    typelist<no_error, not_matching_deduction, invalid_code_in_one_of, negative_repetition_count, repeated_beyond_max>;
-
-template<typename T>
-concept variadic_instance =
-    requires(T x) { []<template<typename...> typename TT, typename... Ts>(const TT<Ts...> &) {}(x); };
-
-template<typename T>
-using is_variadic_instance = auto_constant<variadic_instance<T>>;
-
-template<typename T>
-concept value_variadic_instance =
-    requires(T x) { []<template<auto...> typename TT, auto... Values>(const TT<Values...> &) {}(x); };
-
-template<typename T>
-using is_value_variadic_instance = auto_constant<value_variadic_instance<T>>;
-
-template<typename T, typename Variadic>
-concept element_of =
-    variadic_instance<Variadic> && instantiate_variadic<detail::lite_tuple, Variadic>::has_type(typebox<T>{});
-
-template<typename T, variadic_instance Variadic>
-using is_element_of = auto_constant<element_of<T, Variadic>>;
-
-template<auto Value, typename Variadic>
-concept value_element_of =
-    value_variadic_instance<Variadic> && instantiate_variadic<detail::lite_tuple, Variadic>::has_type(expr<Value>);
-
-template<auto Value, value_variadic_instance Variadic>
-using is_value_element_of = auto_constant<value_element_of<Value, Variadic>>;
-
-template<typename T>
-concept error_data = element_of<std::remove_cvref_t<T>, error_data_types>;
-
-class error {
-  using data_type = instantiate_variadic<std::variant, error_data_types>;
-
-public:
-  constexpr error() noexcept(release) = default;
-  constexpr error(const error &) noexcept(release) = default;
-  constexpr error(error &&) noexcept(release) = default;
-
-  template<error_data ErrorData>
-  constexpr error(ErrorData &&err_data) noexcept(release) : m_data{UPD_FWD(err_data)} {}
-
-  constexpr auto operator=(const error &) noexcept(release) -> error & = default;
-  constexpr auto operator=(error &&) noexcept(release) -> error & = default;
-
-  template<error_data ErrorData>
-  constexpr auto operator=(ErrorData &&err_data) noexcept(release) -> error & {
-    m_data = UPD_FWD(err_data);
-    return *this;
-  }
-
-  [[nodiscard]] constexpr operator bool() const noexcept(release) { return !std::holds_alternative<no_error>(m_data); }
-
-  template<typename F>
-  constexpr auto visit(F &&f) const -> decltype(auto) {
-    return std::visit(UPD_FWD(f), m_data);
-  }
-
-private:
-  data_type m_data;
-};
-
-template<typename T>
-using result = std::expected<T, error>;
-
-template<typename T>
-[[nodiscard]] constexpr auto result_if_no_error(T &&x, const error &err) -> result<std::remove_cvref_t<T>> {
-  if (err) {
-    return std::unexpected{err};
-  } else {
-    return UPD_FWD(x);
-  }
-}
-
-template<typename T>
-[[nodiscard]] constexpr auto result_if_no_error(T &&x, error &&err) -> result<std::remove_cvref_t<T>> {
-  if (err) {
-    return std::unexpected{std::move(err)};
-  } else {
-    return UPD_FWD(x);
-  }
 }
 
 template<typename>

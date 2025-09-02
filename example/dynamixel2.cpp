@@ -14,89 +14,19 @@
 #include <variant>
 
 #include <upd/description.hpp>
+#include <upd/error.hpp>
 #include <upd/integer.hpp>
 #include <upd/named_value.hpp>
-#include <upd/static_vector.hpp>
 #include <upd/token.hpp>
 #include <upd/upd.hpp>
 
 namespace std {
 
-ostream &operator<<(ostream &os, byte b) { return os << static_cast<int>(b); }
+auto operator<<(ostream &os, byte b) -> ostream & { return os << static_cast<int>(b); }
 
 } // namespace std
 
 using crc = upd::xuint<16>;
-
-template<std::size_t Width, typename Underlying>
-struct std::formatter<upd::extended_integer<Width, Underlying>> {
-  std::formatter<Underlying> underlying_formatter;
-
-  consteval formatter() noexcept = default;
-
-  constexpr auto parse(std::format_parse_context &ctx) { return underlying_formatter.parse(ctx); }
-
-  auto format(upd::extended_integer<Width, Underlying> xi, std::format_context &ctx) const {
-    return underlying_formatter.format(xi.value(), ctx);
-  }
-};
-
-template<>
-struct std::formatter<upd::no_error> {
-  constexpr static auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
-
-  static auto format(upd::no_error, std::format_context &ctx) { return std::format_to(ctx.out(), "No error"); }
-};
-
-template<>
-struct std::formatter<upd::not_matching_deduction> {
-  constexpr static auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
-
-  static auto format(const upd::not_matching_deduction &err, std::format_context &ctx) {
-    return std::format_to(ctx.out(), "'{}' field actual and deduced value do not match", err.identifier);
-  }
-};
-
-template<>
-struct std::formatter<upd::invalid_code_in_one_of> {
-  constexpr static auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
-
-  static auto format(const upd::invalid_code_in_one_of &err, std::format_context &ctx) {
-    return std::format_to(
-        ctx.out(), "{} is not a code of any alternative in one-of field '{}'", err.code, err.identifier);
-  }
-};
-
-template<>
-struct std::formatter<upd::negative_repetition_count> {
-  constexpr static auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
-
-  static auto format(const upd::negative_repetition_count &err, std::format_context &ctx) {
-    return std::format_to(
-        ctx.out(), "Negative repetition count {} found for repetition field '{}'", err.count, err.identifier);
-  }
-};
-
-template<>
-struct std::formatter<upd::repeated_beyond_max> {
-  constexpr static auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
-
-  static auto format(const upd::repeated_beyond_max &err, std::format_context &ctx) {
-    return std::format_to(
-        ctx.out(), "Field repeated {} time in '{}', beyond the maximum limit ({})", err.count, err.identifier, err.max);
-  }
-};
-
-template<>
-struct std::formatter<upd::error> {
-  constexpr static auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
-
-  static auto format(const upd::error &err, std::format_context &ctx) {
-    auto format_error_data = [&](const auto &err_data) { return std::format_to(ctx.out(), "{}", err_data); };
-
-    return err.visit(format_error_data);
-  }
-};
 
 template<typename... Ts>
 struct std::formatter<std::variant<Ts...>> {
@@ -105,72 +35,6 @@ struct std::formatter<std::variant<Ts...>> {
   static auto format(const std::variant<Ts...> &one_of_values, std::format_context &ctx) {
     auto format_alt = [&](const auto &alt) { return std::format_to(ctx.out(), "{}", alt); };
     return std::visit(format_alt, one_of_values);
-  }
-};
-
-template<auto Identifiers, typename... Ts>
-struct std::formatter<upd::named_tuple<Identifiers, Ts...>> {
-  consteval formatter() noexcept = default;
-
-  constexpr static auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
-
-  static auto format(const upd::named_tuple<Identifiers, Ts...> &named_elems, std::format_context &ctx) {
-    auto it = ctx.out();
-    it = std::format_to(it, "(");
-    named_elems.for_each([&, first = true](const auto &named_elem) mutable {
-      if (first) {
-        it = std::format_to(it, "{}", named_elem);
-        first = false;
-      } else {
-        it = std::format_to(it, ", {}", named_elem);
-      }
-    });
-    it = std::format_to(it, ")");
-
-    ctx.advance_to(it);
-    return it;
-  }
-};
-
-template<upd::name Identifier, typename T>
-struct std::formatter<upd::named_value<Identifier, T>> {
-  std::formatter<T> value_formatter;
-
-  consteval formatter() noexcept = default;
-
-  constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
-
-  static auto format(const upd::named_value<Identifier, T> &named_obj, std::format_context &ctx) {
-    return std::format_to(ctx.out(), "{} -> {}", named_obj.identifier.string, named_obj.value());
-  }
-};
-
-template<typename T, std::size_t Max>
-struct std::formatter<upd::static_vector<T, Max>> {
-  std::formatter<T> element_formatter;
-
-  consteval formatter() noexcept = default;
-
-  constexpr auto parse(std::format_parse_context &ctx) { return element_formatter.parse(ctx); }
-
-  auto format(const upd::static_vector<T, Max> &statvec, std::format_context &ctx) const {
-    auto it = ctx.out();
-    it = std::format_to(it, "{{");
-
-    for (auto first = true; const auto &elem : statvec) {
-      if (first) {
-        first = false;
-      } else {
-        it = std::format_to(it, ", ");
-      }
-
-      ctx.advance_to(it);
-      it = element_formatter.format(elem, ctx);
-    }
-
-    it = std::format_to(it, "}}");
-
-    return it;
   }
 };
 
