@@ -508,7 +508,7 @@ public:
     return find_if([](const auto &x) {
       constexpr auto are_comparable = (requires { x.value == Value; });
       if constexpr (are_comparable) {
-        return expr < x.value == Value > ;
+        return expr<x.value == Value>;
       } else {
         return expr<false>;
       }

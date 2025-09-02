@@ -61,7 +61,7 @@ struct auto_constant {
 template<auto LhsValue, auto RhsValue>
   requires requires { LhsValue == RhsValue; }
 [[nodiscard]] constexpr auto operator==(auto_constant<LhsValue>, auto_constant<RhsValue>) noexcept(release) {
-  return expr < LhsValue == RhsValue > ;
+  return expr<LhsValue == RhsValue>;
 }
 
 template<auto LhsValue, typename Rhs>
@@ -73,7 +73,7 @@ template<auto LhsValue, typename Rhs>
 template<auto LhsValue, auto RhsValue>
   requires requires { LhsValue != RhsValue; }
 [[nodiscard]] constexpr auto operator!=(auto_constant<LhsValue>, auto_constant<RhsValue>) noexcept(release) {
-  return expr < LhsValue != RhsValue > ;
+  return expr<LhsValue != RhsValue>;
 }
 
 template<auto LhsValue, typename Rhs>

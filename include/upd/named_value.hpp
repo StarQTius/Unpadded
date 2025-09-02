@@ -224,7 +224,7 @@ public:
   template<name Identifier, typename Self>
     requires(identifiers.find(expr<Identifier>) < identifiers.size())
   [[nodiscard]] constexpr auto get(this Self &&self) noexcept(release) -> auto && {
-    auto position = self.m_nvs.find_if([](const auto &nv) { return expr < nv.identifier == Identifier > ; });
+    auto position = self.m_nvs.find_if([](const auto &nv) { return expr<nv.identifier == Identifier>; });
 
     if constexpr (position < self.m_nvs.size()) {
       return UPD_FWD(self).m_nvs.at(position).value();
@@ -346,7 +346,7 @@ public:
   template<auto Identifier, typename Self>
     requires(identifiers.find(expr<Identifier>) < identifiers.size())
   [[nodiscard]] constexpr auto get(this Self &&self) noexcept(release) -> auto && {
-    auto position = self.m_nvs.find_if([](const auto &nv) { return expr < nv.identifier == Identifier > ; });
+    auto position = self.m_nvs.find_if([](const auto &nv) { return expr<nv.identifier == Identifier>; });
 
     if constexpr (position < self.m_nvs.size()) {
       return UPD_FWD(self).m_nvs.at(position).value();

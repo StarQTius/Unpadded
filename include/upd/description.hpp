@@ -1140,7 +1140,7 @@ struct checksum_t {
 
 template<name Identifier, typename BinaryOp, std::size_t Width>
 [[nodiscard]] constexpr auto checksum(BinaryOp op, xuint<Width> init, all_fields_t) noexcept(release) {
-  auto is_not_this_field = [](auto id) { return expr < id != Identifier > ; };
+  auto is_not_this_field = [](auto id) { return expr<id != Identifier>; };
 
   auto retval =
       checksum_t<Identifier, BinaryOp, Width, decltype(is_not_this_field)>{std::move(op), init, is_not_this_field};
