@@ -30,13 +30,6 @@
 #include "typelist.hpp"
 #include "upd.hpp"
 
-#define UPD_WELL_FORMED(...)                                                                                           \
-  do {                                                                                                                 \
-    if (requires { __VA_ARGS__; }) {                                                                                   \
-      __VA_ARGS__;                                                                                                     \
-    }                                                                                                                  \
-  } while (false)
-
 namespace upd::detail {
 
 template<std::input_or_output_iterator Iter>
