@@ -6,7 +6,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <expected>
-#include <functional>
 #include <iterator>
 #include <limits>
 #include <ranges>
@@ -22,6 +21,7 @@
 #include "named_value.hpp"
 #include "ref.hpp"
 #include "static_vector.hpp"
+#include "stream_interface.hpp"
 #include "template_traits.hpp"
 #include "token.hpp"
 #include "tuple.hpp"
@@ -29,58 +29,6 @@
 #include "type_traits.hpp"
 #include "typelist.hpp"
 #include "upd.hpp"
-
-namespace upd::detail {
-
-template<std::input_or_output_iterator Iter>
-class iterator_reference {
-public:
-  using iterator_type = Iter;
-  using difference_type = typename std::iterator_traits<Iter>::difference_type;
-  using value_type = typename std::iterator_traits<Iter>::value_type;
-  using pointer = typename std::iterator_traits<Iter>::pointer;
-  using reference = typename std::iterator_traits<Iter>::reference;
-  using iterator_category = std::input_iterator_tag;
-
-  constexpr iterator_reference(iterator_type &iter, bool read) : m_iter{iter}, m_read{read} {}
-  constexpr iterator_reference(const iterator_reference &other) : m_iter{other.m_iter}, m_read{false} {}
-
-  [[nodiscard]] constexpr auto operator*() const -> value_type {
-    m_read = true;
-    return *m_iter.get();
-  }
-
-  constexpr auto operator++() -> iterator_reference & {
-    ++m_iter.get();
-    return *this;
-  }
-
-  constexpr auto operator++(int) -> iterator_reference {
-    auto retval = *this;
-    ++m_iter.get();
-    return retval;
-  }
-
-  ~iterator_reference() {
-    if (m_read) {
-      ++m_iter.get();
-    }
-  }
-
-  std::reference_wrapper<iterator_type> m_iter;
-  mutable bool m_read;
-};
-
-template<typename Iter>
-[[nodiscard]] constexpr auto make_itererator_reference(Iter &iter) -> decltype(auto) {
-  if constexpr (is_instance_of<Iter, iterator_reference>()) {
-    return iter;
-  } else {
-    return iterator_reference<Iter>{iter, false};
-  }
-}
-
-} // namespace upd::detail
 
 namespace upd {
 
@@ -482,7 +430,7 @@ template<typename T, typename Serializer>
 concept decodable_field =
     serializer<Serializer> && deducible_field<T, Serializer> &&
     requires(T x, Serializer ser, const named_tuple<{}> packet, const byte_type<Serializer> *src) {
-      { x.decode(src, packet, ser) } -> std::same_as<typename T::value_type>;
+      { x.decode(src, ser, packet) } -> std::same_as<typename T::value_type>;
     };
 
 template<typename T, typename Serializer>
@@ -532,15 +480,27 @@ public:
     });
   }
 
-  template<serializer Serializer, std::input_iterator InputIt>
-  // requires (decodable_field<Ts, Serializer> && ...)
-  [[nodiscard]] constexpr auto decode(InputIt src, Serializer &ser) const {
-    return decode(src, named_tuple{}, ser);
+  template<std::input_iterator InputIt, serializer Serializer, typename Packet>
+    requires std::convertible_to<std::iter_value_t<InputIt>, word_t>
+  [[nodiscard]] constexpr auto decode(InputIt src, Serializer &ser, const Packet &ctx = named_tuple{}) const {
+    auto null_it = static_cast<word_t *>(nullptr);
+    return decode(iterator_stream{src, null_it}, ser, ctx);
   }
 
-  template<serializer Serializer, typename Packet, std::input_iterator InputIt>
-  // requires (decodable_field<Ts, Serializer> && ...)
-  [[nodiscard]] constexpr auto decode(InputIt src, const Packet &ctx, Serializer &ser) const {
+  template<std::input_iterator InputIt, serializer Serializer, typename Packet>
+    requires std::same_as<std::iter_value_t<InputIt>, std::byte>
+  [[nodiscard]] constexpr auto decode(InputIt src, Serializer &ser, const Packet &ctx = named_tuple{}) const {
+    namespace stdr = std::ranges;
+    namespace stdv = std::views;
+
+    auto words = stdr::subrange(src, std::unreachable_sentinel) | stdv::transform(std::to_integer<word_t>);
+
+    auto null_it = static_cast<word_t *>(nullptr);
+    return decode(iterator_stream{std::begin(words), null_it}, ser, ctx);
+  }
+
+  template<serializer Serializer, typename Packet>
+  [[nodiscard]] constexpr auto decode(stream_interface &src, Serializer &ser, const Packet &ctx = named_tuple{}) const {
     auto err = error{};
     auto retval = m_fields.apply(
         [](const auto &...fields) { return named_tuple{(keyword<fields.identifier>{} = fields.default_value())...}; });
@@ -548,8 +508,7 @@ public:
     if (!err) {
       m_fields.for_each([&](const auto &field) {
         ser.checkpoint(field.identifier.string);
-        auto maybe_field_value =
-            field.decode(detail::make_itererator_reference(src), named_tuple{join(std::as_const(retval), ctx)}, ser);
+        auto maybe_field_value = field.decode(src, ser, named_tuple{join(std::as_const(retval), ctx)});
         if (maybe_field_value) {
           retval[expr<field.identifier>] = *maybe_field_value;
         } else {
@@ -571,6 +530,12 @@ public:
     }
 
     return result_if_no_error(std::move(retval), std::move(err));
+  }
+
+  template<serializer Serializer, typename Packet>
+  [[nodiscard]] constexpr auto
+  decode(stream_interface &&src, Serializer &ser, const Packet &ctx = named_tuple{}) const {
+    return decode(src, ser, ctx);
   }
 
 private:
@@ -622,8 +587,9 @@ struct field_t {
     return named_tuple{};
   }
 
-  template<serializer Serializer, named_tuple_like Packet, std::input_iterator InputIt>
-  [[nodiscard]] constexpr static auto decode(InputIt src, const Packet &, Serializer &ser) -> result<value_type> {
+  template<serializer Serializer, named_tuple_like Packet>
+  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &)
+      -> result<value_type> {
     if constexpr (is_signed) {
       return ser.deserialize_signed(src, upd::width<width>);
     } else {
@@ -657,8 +623,9 @@ struct unamed_field_t {
     }
   }
 
-  template<serializer Serializer, typename Packet, std::input_iterator InputIt>
-  [[nodiscard]] constexpr auto decode(InputIt src, const Packet &, Serializer &ser) const -> result<result_type> {
+  template<serializer Serializer, typename Packet>
+  [[nodiscard]] constexpr auto decode(stream_interface &src, Serializer &ser, const Packet &) const
+      -> result<result_type> {
     if constexpr (is_signed) {
       return ser.deserialize_signed(src, upd::width<width>);
     } else {
@@ -675,8 +642,9 @@ struct unamed_enum_field_t {
   using result_type = xenum<enum_type, width>;
   constexpr static auto is_signed = std::is_signed_v<std::underlying_type_t<enum_type>>;
 
-  template<serializer Serializer, named_tuple_like Packet, std::input_iterator InputIt>
-  [[nodiscard]] constexpr static auto decode(InputIt src, const Packet &, Serializer &ser) -> result<result_type> {
+  template<serializer Serializer, named_tuple_like Packet>
+  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &)
+      -> result<result_type> {
     auto retval = [&] {
       if constexpr (is_signed) {
         return ser.deserialize_signed(src, upd::width<width - 1>);
@@ -738,8 +706,9 @@ struct bound_t {
     return tagged_tuple{named_value{expr<identifier>, rule.deduce(std::as_const(packet))}};
   }
 
-  template<serializer Serializer, named_tuple_like Packet, std::input_iterator InputIt>
-  [[nodiscard]] constexpr static auto decode(InputIt src, const Packet &, Serializer &ser) -> result<value_type> {
+  template<serializer Serializer, named_tuple_like Packet>
+  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &)
+      -> result<value_type> {
     if constexpr (is_signed) {
       return ser.deserialize_signed(src, upd::width<width>);
     } else {
@@ -780,8 +749,9 @@ struct enum_bound_t {
     return tagged_tuple{named_value{expr<identifier>, rule.deduce(std::as_const(packet))}};
   }
 
-  template<serializer Serializer, named_tuple_like Packet, std::input_iterator InputIt>
-  [[nodiscard]] constexpr static auto decode(InputIt src, const Packet &, Serializer &ser) -> result<value_type> {
+  template<serializer Serializer, named_tuple_like Packet>
+  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &)
+      -> result<value_type> {
     auto retval = [&] {
       if constexpr (is_signed) {
         return ser.deserialize_signed(src, upd::width<width - 1>);
@@ -846,8 +816,9 @@ struct bound_elsewhere_t {
     return named_tuple{};
   }
 
-  template<serializer Serializer, named_tuple_like Packet, std::input_iterator InputIt>
-  [[nodiscard]] constexpr static auto decode(InputIt src, const Packet &, Serializer &ser) -> result<value_type> {
+  template<serializer Serializer, named_tuple_like Packet>
+  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &)
+      -> result<value_type> {
     if constexpr (is_signed) {
       return ser.deserialize_signed(src, upd::width<width>);
     } else {
@@ -885,8 +856,9 @@ struct enum_bound_elsewhere_t {
     return named_tuple{};
   }
 
-  template<serializer Serializer, named_tuple_like Packet, std::input_iterator InputIt>
-  [[nodiscard]] constexpr static auto decode(InputIt src, const Packet &, Serializer &ser) -> result<value_type> {
+  template<serializer Serializer, named_tuple_like Packet>
+  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &)
+      -> result<value_type> {
     auto retval = [&] {
       if constexpr (is_signed) {
         return ser.deserialize_signed(src, upd::width<width>);
@@ -952,8 +924,9 @@ struct constant_t {
     return named_tuple{};
   }
 
-  template<serializer Serializer, named_tuple_like Packet, std::input_iterator InputIt>
-  [[nodiscard]] constexpr static auto decode(InputIt src, const Packet &, Serializer &ser) -> result<value_type> {
+  template<serializer Serializer, named_tuple_like Packet>
+  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &)
+      -> result<value_type> {
     return ser.deserialize_unsigned(src, upd::width<width>);
   }
 
@@ -1015,8 +988,9 @@ struct checksum_t {
     return tagged_tuple{named_value{expr<identifier>, acc}};
   }
 
-  template<serializer Serializer, named_tuple_like Packet, std::input_iterator InputIt>
-  [[nodiscard]] constexpr static auto decode(InputIt src, const Packet &, Serializer &ser) -> result<value_type> {
+  template<serializer Serializer, named_tuple_like Packet>
+  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &)
+      -> result<value_type> {
     return ser.deserialize_unsigned(src, upd::width<width>);
   }
 
@@ -1080,8 +1054,9 @@ struct one_of_t {
     return tagged_tuple{keyword<rule_type::from_identifier>{} = UPD_INVOKE(inverse(rule.chain), id)};
   }
 
-  template<serializer Serializer, named_tuple_like Packet, std::input_iterator InputIt>
-  [[nodiscard]] constexpr auto decode(InputIt src, const Packet &packet, Serializer &ser) const -> result<value_type> {
+  template<serializer Serializer, named_tuple_like Packet>
+  [[nodiscard]] constexpr auto decode(stream_interface &src, Serializer &ser, const Packet &packet) const
+      -> result<value_type> {
     namespace stdr = std::ranges;
 
     auto id = rule.deduce(packet);
@@ -1095,7 +1070,7 @@ struct one_of_t {
       const auto &[id, descr] = id_and_descr;
       const auto id_pos = tagged_descriptions.identifiers.find(id);
       auto make_retval = [&](auto &&alt) { return value_type{std::in_place_index<id_pos + 1>, UPD_FWD(alt)}; };
-      auto retval = descr.decode(src, packet, ser).transform(make_retval);
+      auto retval = descr.decode(src, ser, packet).transform(make_retval);
       return retval;
     };
 
@@ -1155,8 +1130,9 @@ struct repeat_t {
     return named_tuple{};
   }
 
-  template<serializer Serializer, named_tuple_like Packet, std::input_iterator InputIt>
-  [[nodiscard]] constexpr auto decode(InputIt src, const Packet &packet, Serializer &ser) const -> result<value_type> {
+  template<serializer Serializer, named_tuple_like Packet>
+  [[nodiscard]] constexpr auto decode(stream_interface &src, Serializer &ser, const Packet &packet) const
+      -> result<value_type> {
     namespace stdv = std::views;
 
     auto count = rule.deduce(packet);
@@ -1170,7 +1146,7 @@ struct repeat_t {
     auto retval = static_vector<typename Description::result_type, Max>{};
 
     for (auto _ : stdv::iota(0uz, std::size_t(count))) {
-      auto maybe_value = description.decode(src, packet, ser);
+      auto maybe_value = description.decode(src, ser, packet);
       if (!maybe_value) {
         return std::unexpected{std::move(maybe_value).error()};
       }

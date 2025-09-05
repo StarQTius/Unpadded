@@ -17,8 +17,8 @@
 #include <upd/error.hpp>
 #include <upd/integer.hpp>
 #include <upd/named_value.hpp>
+#include <upd/stream_interface.hpp>
 #include <upd/token.hpp>
-#include <upd/upd.hpp>
 
 namespace std {
 
@@ -210,32 +210,37 @@ struct serializer {
     stdr::transform(decomposition, output, [](auto xint) { return static_cast<std::byte>(xint); });
   }
 
-  template<typename InputIt, std::size_t Bitsize>
-  auto deserialize_unsigned(InputIt input, upd::width_t<Bitsize>) {
+  template<std::size_t Bitsize>
+  auto deserialize_unsigned(upd::stream_interface &input, upd::width_t<Bitsize>) {
+    namespace stdr = std::ranges;
+
     static_assert(Bitsize % bytewidth == 0, "`Bitsize` must be a multiple of `bytewidth`");
 
     constexpr auto size = Bitsize / bytewidth;
 
-    auto byteseq = std::array<std::byte, size>{};
-    auto last_written = std::copy_n(input, size, byteseq.begin());
+    auto buf = std::array<upd::word_t, size>{};
+    (void)input.read(size, buf.begin());
 
-    UPD_ASSERT(last_written == byteseq.end());
+    auto byteseq = std::array<std::byte, size>{};
+    stdr::transform(buf, std::begin(byteseq), [](upd::word_t word) { return static_cast<std::byte>(word); });
 
     return upd::recompose_into_xuint(byteseq);
   }
 
-  template<typename InputIt, std::size_t Bitsize>
-  auto deserialize_signed(InputIt input, upd::width_t<Bitsize>) {
+  template<std::size_t Bitsize>
+  auto deserialize_signed(upd::stream_interface &input, upd::width_t<Bitsize>) {
     using namespace upd::literals;
+    namespace stdr = std::ranges;
 
     static_assert((Bitsize + 1) % bytewidth == 0, "`Bitsize` must be a multiple of `bytewidth`");
 
     constexpr auto size = (Bitsize + 1) / bytewidth;
 
-    auto byteseq = std::array<std::byte, size>{};
-    auto last_written = std::copy_n(input, size, byteseq.begin());
+    auto buf = std::array<upd::word_t, size>{};
+    (void)input.read(size, buf.begin());
 
-    UPD_ASSERT(last_written == byteseq.end());
+    auto byteseq = std::array<std::byte, size>{};
+    stdr::transform(buf, std::begin(byteseq), [](upd::word_t word) { return static_cast<std::byte>(word); });
 
     auto raw = upd::recompose_into_xuint(byteseq);
     auto sign = ((raw & upd::nth_bit<Bitsize>) != 0);
@@ -303,7 +308,7 @@ auto ping_example() -> upd::error {
 
   auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x07, 0x00, 0x55, 0x00, 0x06, 0x04, 0x26, 0x65, 0x5d};
   auto answer1 =
-      answer_description.decode(answer1_seq.begin(), upd::named_tuple{"status_of"_kw = instruction_code::ping}, ser);
+      answer_description.decode(answer1_seq.begin(), ser, upd::named_tuple{"status_of"_kw = instruction_code::ping});
   if (!answer1) {
     return answer1.error();
   }
@@ -318,7 +323,7 @@ auto ping_example() -> upd::error {
 
   auto answer2_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x02, 0x07, 0x00, 0x55, 0x00, 0x06, 0x04, 0x26, 0x6f, 0x6d};
   auto answer2 =
-      answer_description.decode(answer2_seq.begin(), upd::named_tuple{"status_of"_kw = instruction_code::ping}, ser);
+      answer_description.decode(answer2_seq.begin(), ser, upd::named_tuple{"status_of"_kw = instruction_code::ping});
   if (!answer2) {
     return answer2.error();
   }
@@ -352,7 +357,7 @@ auto read_example() -> upd::error {
   auto answer1_seq =
       bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x08, 0x00, 0x55, 0x00, 0xa6, 0x00, 0x00, 0x00, 0x8c, 0xc0};
   auto answer1 =
-      answer_description.decode(answer1_seq.begin(), upd::named_tuple{"status_of"_kw = instruction_code::read}, ser);
+      answer_description.decode(answer1_seq.begin(), ser, upd::named_tuple{"status_of"_kw = instruction_code::read});
   if (!answer1) {
     return answer1.error();
   }
@@ -387,7 +392,7 @@ auto write_example() -> upd::error {
 
   auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04, 0x00, 0x55, 0x00, 0xa1, 0x0c};
   auto answer1 =
-      answer_description.decode(answer1_seq.begin(), upd::named_tuple{"status_of"_kw = instruction_code::write}, ser);
+      answer_description.decode(answer1_seq.begin(), ser, upd::named_tuple{"status_of"_kw = instruction_code::write});
   if (!answer1) {
     return answer1.error();
   }
@@ -422,7 +427,7 @@ auto reg_write_example() -> upd::error {
 
   auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04, 0x00, 0x55, 0x00, 0xa1, 0x0c};
   auto answer1 = answer_description.decode(
-      answer1_seq.begin(), upd::named_tuple{"status_of"_kw = instruction_code::reg_write}, ser);
+      answer1_seq.begin(), ser, upd::named_tuple{"status_of"_kw = instruction_code::reg_write});
   if (!answer1) {
     return answer1.error();
   }
@@ -452,7 +457,7 @@ auto action_example() -> upd::error {
 
   auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04, 0x00, 0x55, 0x00, 0xa1, 0x0c};
   auto answer1 = answer_description.decode(
-      answer1_seq.begin(), upd::named_tuple{"status_of"_kw = instruction_code::reg_write}, ser);
+      answer1_seq.begin(), ser, upd::named_tuple{"status_of"_kw = instruction_code::reg_write});
   if (!answer1) {
     return answer1.error();
   }
@@ -485,7 +490,7 @@ auto factory_reset_example() -> upd::error {
 
   auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04, 0x00, 0x55, 0x00, 0xa1, 0x0c};
   auto answer1 = answer_description.decode(
-      answer1_seq.begin(), upd::named_tuple{"status_of"_kw = instruction_code::reg_write}, ser);
+      answer1_seq.begin(), ser, upd::named_tuple{"status_of"_kw = instruction_code::reg_write});
   if (!answer1) {
     return answer1.error();
   }
@@ -515,7 +520,7 @@ auto reboot_example() -> upd::error {
 
   auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04, 0x00, 0x55, 0x00, 0xa1, 0x0c};
   auto answer1 = answer_description.decode(
-      answer1_seq.begin(), upd::named_tuple{"status_of"_kw = instruction_code::reg_write}, ser);
+      answer1_seq.begin(), ser, upd::named_tuple{"status_of"_kw = instruction_code::reg_write});
   if (!answer1) {
     return answer1.error();
   }
@@ -548,7 +553,7 @@ auto clear_example() -> upd::error {
 
   auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04, 0x00, 0x55, 0x00, 0xa1, 0x0c};
   auto answer1 = answer_description.decode(
-      answer1_seq.begin(), upd::named_tuple{"status_of"_kw = instruction_code::reg_write}, ser);
+      answer1_seq.begin(), ser, upd::named_tuple{"status_of"_kw = instruction_code::reg_write});
   if (!answer1) {
     return answer1.error();
   }
@@ -582,7 +587,7 @@ auto control_table_backup_example() -> upd::error {
 
   auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04, 0x00, 0x55, 0x00, 0xa1, 0x0c};
   auto answer1 = answer_description.decode(
-      answer1_seq.begin(), upd::named_tuple{"status_of"_kw = instruction_code::reg_write}, ser);
+      answer1_seq.begin(), ser, upd::named_tuple{"status_of"_kw = instruction_code::reg_write});
   if (!answer1) {
     return answer1.error();
   }
@@ -618,7 +623,7 @@ auto sync_read_example() -> upd::error {
   auto answer1_seq =
       bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x08, 0x00, 0x55, 0x00, 0xa6, 0x00, 0x00, 0x00, 0x8c, 0xc0};
   auto answer1 = answer_description.decode(
-      answer1_seq.begin(), upd::named_tuple{"status_of"_kw = instruction_code::sync_read}, ser);
+      answer1_seq.begin(), ser, upd::named_tuple{"status_of"_kw = instruction_code::sync_read});
   if (!answer1) {
     return answer1.error();
   }
@@ -634,7 +639,7 @@ auto sync_read_example() -> upd::error {
   auto answer2_seq =
       bytearray{0xff, 0xff, 0xfd, 0x00, 0x02, 0x08, 0x00, 0x55, 0x00, 0x1f, 0x08, 0x00, 0x00, 0xba, 0xbe};
   auto answer2 = answer_description.decode(
-      answer2_seq.begin(), upd::named_tuple{"status_of"_kw = instruction_code::sync_read}, ser);
+      answer2_seq.begin(), ser, upd::named_tuple{"status_of"_kw = instruction_code::sync_read});
   if (!answer2) {
     return answer2.error();
   }
