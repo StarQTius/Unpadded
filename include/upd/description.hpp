@@ -523,8 +523,11 @@ public:
           .flatten()
           .for_each([&](const auto &named_value) {
             constexpr auto &id = named_value.identifier;
-            if (!err && named_value.value() != merged[expr<id>]) {
-              err = not_matching_deduction{id.string};
+            const auto &actual = merged[expr<id>];
+            const auto &deduced = named_value.value();
+            if (!err && actual != deduced) {
+              err = not_matching_deduction{
+                  id.string, *try_cast<std::intmax_t>(actual), *try_cast<std::intmax_t>(deduced)};
             }
           });
     }

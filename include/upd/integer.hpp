@@ -540,6 +540,11 @@ template<typename T, typename XInt>
   return try_cast<unsigned char>(xint).transform([](auto n) { return std::byte{n}; });
 }
 
+template<typename T, typename U>
+[[nodiscard]] constexpr auto try_cast(U x) noexcept(release) -> std::optional<T> {
+  return static_cast<T>(x);
+}
+
 } // namespace upd
 
 template<std::size_t Width, typename Underlying>

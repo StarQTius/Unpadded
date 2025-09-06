@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
+#include <vector>
 
 namespace upd {
 
@@ -23,7 +24,8 @@ public:
   constexpr explicit iterator_stream(InputIt in, OutputIt out) : m_in{in}, m_out{out} {}
 
   auto read(std::size_t count, word_t *dest) -> stream_error_t override {
-    std::copy_n<InputIt &>(m_in, count, dest);
+    std::copy_n(m_in, count, dest);
+    std::advance(m_in, count);
     return 0;
   }
 

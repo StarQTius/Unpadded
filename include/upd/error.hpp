@@ -19,6 +19,8 @@ struct no_error {};
 
 struct not_matching_deduction {
   const char *identifier;
+  std::intmax_t actual;
+  std::intmax_t deduced;
 };
 
 struct invalid_code_in_one_of {
@@ -109,7 +111,13 @@ struct std::formatter<upd::not_matching_deduction> {
   constexpr static auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
 
   static auto format(const upd::not_matching_deduction &err, std::format_context &ctx) {
-    return std::format_to(ctx.out(), "'{}' field actual and deduced value do not match", err.identifier);
+    return std::format_to(ctx.out(),
+                          "'{}' field actual and deduced value do not match ('{} (0x{:x})' vs '{} (0x{:x})')",
+                          err.identifier,
+                          err.actual,
+                          err.actual,
+                          err.deduced,
+                          err.deduced);
   }
 };
 
