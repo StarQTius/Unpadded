@@ -9,6 +9,8 @@
 #include <iterator>
 #include <ostream>
 
+#include "upd.hpp"
+
 namespace upd {
 
 using word_t = std::uintmax_t;
