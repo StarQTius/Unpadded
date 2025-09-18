@@ -38,4 +38,39 @@ private:
   OutputIt m_out;
 };
 
+class standard_stream : public stream_interface {
+public:
+  constexpr explicit standard_stream(std::istream *in, std::ostream *out, const char *sep)
+      : m_in{in}, m_out{out}, m_sep{sep} {}
+
+  auto read(std::size_t count, word_t *dest) -> stream_error_t override {
+    UPD_ASSERT(m_in);
+
+    std::generate_n(dest, count, [this] {
+      auto w = word_t{};
+      *m_in >> w;
+      return w;
+    });
+
+    return 0;
+  }
+
+  auto write(const word_t *src, std::size_t size) -> stream_error_t override {
+    namespace stdr = std::ranges;
+
+    UPD_ASSERT(m_out);
+
+    for (auto w : stdr::subrange{src, src + size}) {
+      *m_out << w << m_sep;
+    }
+
+    return 0;
+  }
+
+private:
+  std::istream *m_in;
+  std::ostream *m_out;
+  const char *m_sep;
+};
+
 } // namespace upd

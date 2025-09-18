@@ -16,7 +16,6 @@
 #include "constlist.hpp"
 #include "detail/always_false.hpp"
 #include "functional.hpp"
-#include "integer.hpp"
 #include "is_instance_of.hpp"
 #include "lite_tuple.hpp"
 #include "ref.hpp"
@@ -30,11 +29,6 @@
 namespace upd {
 
 constexpr auto name_max_size = std::size_t{256};
-
-template<typename T>
-concept xinteger_instance = requires(T x) {
-  { extended_integer{x} } -> std::same_as<T>;
-};
 
 template<typename T>
 concept serializer = true;
@@ -133,6 +127,9 @@ public:
   constexpr explicit named_value(std::in_place_t, Args &&...args) : m_value{UPD_FWD(args)...} {}
 
   constexpr explicit named_value(auto_constant<Identifier>, const T &value) : m_value{value} {}
+
+  template<typename U>
+  constexpr named_value(const named_value<Identifier, U> &other) : m_value{static_cast<T>(other.value())} {}
 
   template<typename F>
   [[nodiscard]] constexpr auto map(F &&f) & {

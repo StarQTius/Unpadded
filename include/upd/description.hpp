@@ -16,10 +16,10 @@
 #include "constexpr.hpp"
 #include "error.hpp"
 #include "functional.hpp"
-#include "integer.hpp"
 #include "is_instance_of.hpp"
 #include "named_value.hpp"
 #include "ref.hpp"
+#include "safe_operation.hpp"
 #include "static_vector.hpp"
 #include "stream_interface.hpp"
 #include "template_traits.hpp"
@@ -31,30 +31,6 @@
 #include "upd.hpp"
 
 namespace upd {
-
-template<typename Enum, std::size_t Width>
-struct xenum {
-  using enum_type = Enum;
-  constexpr static auto width = Width;
-
-  using underlying_type = std::underlying_type_t<enum_type>;
-  constexpr static auto is_signed = std::is_signed_v<underlying_type>;
-
-  constexpr xenum(enum_type val) noexcept(release) : value{val} {}
-
-  constexpr explicit xenum(extended_integer<width, underlying_type> xn) noexcept(release)
-      : value{static_cast<enum_type>(xn.value())} {}
-
-  constexpr explicit operator extended_integer<width, underlying_type>() const noexcept(release) { return to_xint(); }
-
-  constexpr operator enum_type() const noexcept(release) { return value; }
-
-  [[nodiscard]] constexpr auto to_xint() const noexcept(release) {
-    return extended_integer<width, underlying_type>{std::in_place, static_cast<underlying_type>(value)};
-  }
-
-  enum_type value;
-};
 
 template<auto Code, typename... Args>
 struct choice_t {
@@ -205,9 +181,9 @@ struct field_expression_t {
     return UPD_FWD(self).and_then(divide_some{UPD_FWD(x)});
   }
 
-  template<typename Self, typename T>
-  [[nodiscard]] constexpr auto deduce(this Self &&self, T &&from) {
-    decltype(auto) value = UPD_INVOKE(UPD_FWD(self).get_value, UPD_FWD(from));
+  template<typename Self, typename T, typename Fields>
+  [[nodiscard]] constexpr auto deduce(this Self &&self, T &&from, const Fields &fields) {
+    decltype(auto) value = UPD_INVOKE(UPD_FWD(self).get_value, UPD_FWD(from), fields);
     return UPD_INVOKE(UPD_FWD(self).chain, UPD_FWD(value));
   }
 
@@ -218,51 +194,65 @@ struct field_expression_t {
   }
 };
 
-[[nodiscard]] constexpr auto bitsize(std::monostate) noexcept(release) -> std::size_t { return 0; }
-
-template<typename... Ts>
-[[nodiscard]] constexpr auto bitsize(const std::variant<Ts...> &sum_of_field_values) noexcept(release) -> std::size_t {
-  return std::visit([](const auto &field_value) { return bitsize(field_value); }, sum_of_field_values);
+template<typename Field>
+[[nodiscard]] constexpr auto bitsize(std::uintmax_t, const Field &field) noexcept(release) -> std::size_t {
+  return field.width;
 }
 
-template<names Identifiers, typename... Ts>
-[[nodiscard]] constexpr auto bitsize(const named_tuple<Identifiers, Ts...> &named_field_values) noexcept(release)
-    -> std::size_t {
-  return named_field_values.fold_left(
-      0uz, [](std::size_t acc, const auto &field_value) { return acc + bitsize(field_value.value()); });
+template<typename Field>
+[[nodiscard]] constexpr auto bitsize(std::intmax_t, const Field &field) noexcept(release) -> std::size_t {
+  return field.width;
 }
 
-template<std::size_t Bitsize, typename Underlying>
-[[nodiscard]] constexpr static auto bitsize(xinteger<Bitsize, Underlying> xi) -> std::size_t {
-  return xi.bitsize;
+template<typename Enum, typename Field>
+  requires std::is_enum_v<Enum>
+[[nodiscard]] constexpr auto bitsize(Enum, const Field &field) noexcept(release) -> std::size_t {
+  return field.width;
 }
 
-template<typename Enum, std::size_t Bitsize>
-[[nodiscard]] constexpr static auto bitsize(xenum<Enum, Bitsize> xe) -> std::size_t {
-  return xe.width;
+template<typename... Ts, typename Field>
+[[nodiscard]] constexpr auto bitsize(const std::variant<Ts...> &sum_of_field_values,
+                                     const Field &field) noexcept(release) -> std::size_t {
+  auto alt_index = sum_of_field_values.index();
+  return sequence<sizeof...(Ts) - 1>.visit(alt_index - 1, [&](auto i) {
+    const auto &field_value = *std::get_if<i + 1>(&sum_of_field_values);
+    const auto &alt_descr = field.tagged_descriptions[i];
+    return bitsize(field_value, alt_descr.value());
+  });
 }
 
-template<typename T, std::size_t Max>
-[[nodiscard]] constexpr static auto bitsize(const static_vector<T, Max> &svec) -> std::size_t {
+template<names Identifiers, typename... Ts, typename Description>
+[[nodiscard]] constexpr auto bitsize(const named_tuple<Identifiers, Ts...> &named_field_values,
+                                     const Description &descr) noexcept(release) -> std::size_t {
+  return named_field_values.fold_left(0uz, [&](std::size_t acc, const auto &field_value) {
+    auto field_pos = descr.m_fields.find_if([&](auto nv) { return expr<nv.identifier == field_value.identifier>; });
+    return acc + bitsize(field_value.value(), descr.m_fields[field_pos]);
+  });
+}
+
+template<typename T, std::size_t Max, typename Field>
+[[nodiscard]] constexpr static auto bitsize(const static_vector<T, Max> &svec, const Field &field) -> std::size_t {
   namespace stdr = std::ranges;
-  return stdr::fold_left(svec, 0uz, [](auto acc, const auto &elem) { return acc + bitsize(elem); });
+  return stdr::fold_left(svec, 0uz, [&](auto acc, const auto &elem) { return acc + bitsize(elem, field.description); });
 }
 
 template<name Identifier>
-constexpr auto value_of =
-    field_expression_t{expr<Identifier>, [](auto &packet) -> auto & { return packet[expr<Identifier>]; }, {}};
+constexpr auto value_of = field_expression_t{
+    expr<Identifier>, [](auto &packet, const auto &) -> auto & { return packet[expr<Identifier>]; }, {}};
 
 template<name Identifier>
-constexpr auto length_of = field_expression_t{expr<Identifier>,
-                                              [](const auto &packet) {
-                                                return extended_integer<16, std::size_t>{
-                                                    static_cast<std::uint16_t>(bitsize(packet[expr<Identifier>]))};
-                                              },
-                                              {}};
+constexpr auto length_of =
+    field_expression_t{expr<Identifier>,
+                       [](const auto &packet, const auto &fields) {
+                         auto field_pos =
+                             fields.find_if([](const auto &nv) { return expr<nv.identifier == Identifier>; });
+                         return static_cast<std::uint16_t>(bitsize(packet[expr<Identifier>], fields[field_pos]));
+                       },
+                       {}};
 
 template<name Identifier>
-constexpr auto code_of =
-    field_expression_t{expr<Identifier>, [](const auto &packet) { return packet[expr<Identifier>].index(); }, {}};
+constexpr auto code_of = field_expression_t{
+    expr<Identifier>, [](const auto &packet, const auto &) { return packet[expr<Identifier>].index(); }, {}};
 
 template<auto Match, typename Result>
 struct when_then_t {
@@ -454,9 +444,13 @@ public:
 
   explicit constexpr description(Ts... fields) : m_fields{std::move(fields)...} {}
 
-  template<named_tuple_instance NamedTuple, serializer Serializer, std::output_iterator<byte_type<Serializer>> OutputIt>
-  // requires (encodable_field<Ts, Serializer> && ...)
-  constexpr void encode(const NamedTuple &nargs, Serializer &ser, OutputIt dest) const {
+  template<named_tuple_instance NamedTuple, serializer Serializer>
+  constexpr void encode(const NamedTuple &nargs, Serializer &ser, std::ostream &dest, const char *sep) const {
+    encode(nargs, ser, standard_stream{nullptr, &dest, sep});
+  }
+
+  template<named_tuple_instance NamedTuple, serializer Serializer>
+  constexpr void encode(const NamedTuple &nargs, Serializer &ser, stream_interface &dest) const {
     auto packet = m_fields
                       .transform([&]<typename Field>(const Field &field) {
                         auto id = expr<field.identifier>;
@@ -478,6 +472,11 @@ public:
       ser.checkpoint(field.identifier.string);
       field.encode(packet[expr<field.identifier>], ser, dest);
     });
+  }
+
+  template<named_tuple_instance NamedTuple, serializer Serializer>
+  constexpr void encode(const NamedTuple &nargs, Serializer &ser, stream_interface &&dest) const {
+    encode(nargs, ser, dest);
   }
 
   template<std::input_iterator InputIt, serializer Serializer, typename Packet>
@@ -508,7 +507,7 @@ public:
     if (!err) {
       m_fields.for_each([&](const auto &field) {
         ser.checkpoint(field.identifier.string);
-        auto maybe_field_value = field.decode(src, ser, named_tuple{join(std::as_const(retval), ctx)});
+        auto maybe_field_value = field.decode(src, ser, named_tuple{join(std::as_const(retval), ctx)}, m_fields);
         if (maybe_field_value) {
           retval[expr<field.identifier>] = *maybe_field_value;
         } else {
@@ -525,9 +524,10 @@ public:
             constexpr auto &id = named_value.identifier;
             const auto &actual = merged[expr<id>];
             const auto &deduced = named_value.value();
-            if (!err && actual != deduced) {
+
+            if (!err && safe_not_equal(actual, deduced)) {
               err = not_matching_deduction{
-                  id.string, *try_cast<std::intmax_t>(actual), *try_cast<std::intmax_t>(deduced)};
+                  id.string, static_cast<std::intmax_t>(actual), static_cast<std::intmax_t>(deduced)};
             }
           });
     }
@@ -541,7 +541,6 @@ public:
     return decode(src, ser, ctx);
   }
 
-private:
   tuple<Ts...> m_fields;
 };
 
@@ -576,11 +575,11 @@ struct field_t {
   constexpr static auto is_signed = Signedness;
   constexpr static auto width = Width;
 
-  using value_type = std::conditional_t<is_signed, xint<width>, xuint<width>>;
+  using value_type = std::conditional_t<is_signed, std::intmax_t, std::uintmax_t>;
 
   template<typename... Args>
   [[nodiscard]] constexpr auto make_value(Args &&...args) const -> value_type {
-    return value_type{UPD_FWD(args)...};
+    return value_type(UPD_FWD(args)...);
   }
 
   [[nodiscard]] constexpr static auto default_value() noexcept(release) -> value_type { return value_type{}; }
@@ -590,8 +589,8 @@ struct field_t {
     return named_tuple{};
   }
 
-  template<serializer Serializer, named_tuple_like Packet>
-  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &)
+  template<serializer Serializer, named_tuple_like Packet, tuple_like Fields>
+  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &, const Fields &)
       -> result<value_type> {
     if constexpr (is_signed) {
       return ser.deserialize_signed(src, upd::width<width>);
@@ -600,12 +599,12 @@ struct field_t {
     }
   }
 
-  template<serializer Serializer, std::output_iterator<byte_type<Serializer>> OutputIt>
-  constexpr static void encode(value_type value, Serializer &ser, OutputIt dest) {
+  template<serializer Serializer>
+  constexpr static void encode(value_type value, Serializer &ser, stream_interface &dest) {
     if constexpr (is_signed) {
-      return ser.serialize_signed(value, dest);
+      return ser.serialize_signed(value, upd::width<width>, dest);
     } else {
-      return ser.serialize_unsigned(value, dest);
+      return ser.serialize_unsigned(value, upd::width<width>, dest);
     }
   }
 };
@@ -615,14 +614,14 @@ struct unamed_field_t {
   constexpr static auto is_signed = Signedness;
   constexpr static auto width = Width;
 
-  using result_type = std::conditional_t<is_signed, xint<width>, xuint<width>>;
+  using result_type = std::conditional_t<is_signed, std::intmax_t, std::uintmax_t>;
 
-  template<serializer Serializer, std::output_iterator<byte_type<Serializer>> OutputIt>
-  constexpr void encode(result_type value, Serializer &ser, OutputIt dest) const {
+  template<serializer Serializer>
+  constexpr void encode(result_type value, Serializer &ser, stream_interface &dest) const {
     if constexpr (is_signed) {
-      ser.serialize_signed(value, dest);
+      ser.serialize_signed(value, upd::width<width>, dest);
     } else {
-      ser.serialize_unsigned(value, dest);
+      ser.serialize_unsigned(value, upd::width<width>, dest);
     }
   }
 
@@ -642,7 +641,7 @@ struct unamed_enum_field_t {
   using enum_type = Enum;
   constexpr static auto width = Width;
 
-  using result_type = xenum<enum_type, width>;
+  using result_type = enum_type;
   constexpr static auto is_signed = std::is_signed_v<std::underlying_type_t<enum_type>>;
 
   template<serializer Serializer, named_tuple_like Packet>
@@ -659,12 +658,14 @@ struct unamed_enum_field_t {
     return result_type{retval};
   }
 
-  template<serializer Serializer, std::output_iterator<byte_type<Serializer>> OutputIt>
-  constexpr static void encode(result_type value, Serializer &ser, OutputIt dest) {
+  template<serializer Serializer>
+  constexpr static void encode(result_type value, Serializer &ser, stream_interface &dest) {
+    auto underlying_value = std::to_underlying(value);
+
     if constexpr (is_signed) {
-      ser.serialize_signed(value.to_xint(), dest);
+      ser.serialize_signed(underlying_value, upd::width<width - 1>, dest);
     } else {
-      ser.serialize_unsigned(value.to_xint(), dest);
+      ser.serialize_unsigned(underlying_value, upd::width<width>, dest);
     }
   }
 };
@@ -692,7 +693,7 @@ struct bound_t {
   constexpr static auto is_signed = Signedness;
   constexpr static auto width = Width;
 
-  using value_type = std::conditional_t<is_signed, xint<width>, xuint<width>>;
+  using value_type = std::conditional_t<is_signed, std::intmax_t, std::uintmax_t>;
 
   template<typename... Args>
   [[nodiscard]] constexpr auto make_value(Args &&...args) const -> value_type {
@@ -705,12 +706,12 @@ struct bound_t {
   [[nodiscard]] constexpr static auto default_value() noexcept(release) -> value_type { return value_type{}; }
 
   template<named_tuple_like Packet, serializer Serializer, tuple_like Fields>
-  [[nodiscard]] constexpr auto deduce(Packet &packet, Serializer &, const Fields &) const {
-    return tagged_tuple{named_value{expr<identifier>, rule.deduce(std::as_const(packet))}};
+  [[nodiscard]] constexpr auto deduce(Packet &packet, Serializer &, const Fields &fields) const {
+    return tagged_tuple{named_value{expr<identifier>, rule.deduce(std::as_const(packet), fields)}};
   }
 
-  template<serializer Serializer, named_tuple_like Packet>
-  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &)
+  template<serializer Serializer, named_tuple_like Packet, tuple_like Fields>
+  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &, const Fields &)
       -> result<value_type> {
     if constexpr (is_signed) {
       return ser.deserialize_signed(src, upd::width<width>);
@@ -719,12 +720,12 @@ struct bound_t {
     }
   }
 
-  template<serializer Serializer, std::output_iterator<byte_type<Serializer>> OutputIt>
-  constexpr static void encode(value_type value, Serializer &ser, OutputIt dest) {
+  template<serializer Serializer>
+  constexpr static void encode(value_type value, Serializer &ser, stream_interface &dest) {
     if constexpr (is_signed) {
-      return ser.serialize_signed(value, dest);
+      return ser.serialize_signed(value, upd::width<width>, dest);
     } else {
-      return ser.serialize_unsigned(value, dest);
+      return ser.serialize_unsigned(value, upd::width<width>, dest);
     }
   }
 };
@@ -748,12 +749,12 @@ struct enum_bound_t {
   [[nodiscard]] constexpr static auto default_value() noexcept(release) -> value_type { return value_type{}; }
 
   template<named_tuple_like Packet, serializer Serializer, tuple_like Fields>
-  [[nodiscard]] constexpr auto deduce(Packet &packet, Serializer &, const Fields &) const {
-    return tagged_tuple{named_value{expr<identifier>, rule.deduce(std::as_const(packet))}};
+  [[nodiscard]] constexpr auto deduce(Packet &packet, Serializer &, const Fields &fields) const {
+    return tagged_tuple{named_value{expr<identifier>, rule.deduce(std::as_const(packet), fields)}};
   }
 
-  template<serializer Serializer, named_tuple_like Packet>
-  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &)
+  template<serializer Serializer, named_tuple_like Packet, tuple_like Fields>
+  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &, const Fields &)
       -> result<value_type> {
     auto retval = [&] {
       if constexpr (is_signed) {
@@ -766,21 +767,13 @@ struct enum_bound_t {
     return static_cast<value_type>(retval);
   }
 
-  template<serializer Serializer, std::output_iterator<byte_type<Serializer>> OutputIt>
-  constexpr static void encode(value_type value, Serializer &ser, OutputIt dest) {
+  template<serializer Serializer>
+  constexpr static void encode(value_type value, Serializer &ser, stream_interface &dest) {
     auto integral_value = std::to_underlying(value);
-    auto xint_value = [&] {
-      if constexpr (is_signed) {
-        return xint{integral_value};
-      } else {
-        return xuint{integral_value};
-      }
-    }();
-
     if constexpr (is_signed) {
-      ser.serialize_signed(xint_value, dest);
+      ser.serialize_signed(integral_value, upd::width<width>, dest);
     } else {
-      ser.serialize_unsigned(xint_value, dest);
+      ser.serialize_unsigned(integral_value, upd::width<width>, dest);
     }
   }
 };
@@ -805,7 +798,7 @@ struct bound_elsewhere_t {
   constexpr static auto is_signed = Signedness;
   constexpr static auto width = Width;
 
-  using value_type = std::conditional_t<is_signed, xint<width>, xuint<width>>;
+  using value_type = std::conditional_t<is_signed, std::intmax_t, std::uintmax_t>;
 
   template<typename... Args>
   [[nodiscard]] constexpr auto make_value(Args &&...args) const -> value_type {
@@ -819,8 +812,8 @@ struct bound_elsewhere_t {
     return named_tuple{};
   }
 
-  template<serializer Serializer, named_tuple_like Packet>
-  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &)
+  template<serializer Serializer, named_tuple_like Packet, tuple_like Fields>
+  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &, const Fields &)
       -> result<value_type> {
     if constexpr (is_signed) {
       return ser.deserialize_signed(src, upd::width<width>);
@@ -829,8 +822,8 @@ struct bound_elsewhere_t {
     }
   }
 
-  template<serializer Serializer, std::output_iterator<byte_type<Serializer>> OutputIt>
-  constexpr static void encode(value_type value, Serializer &ser, OutputIt dest) {
+  template<serializer Serializer>
+  constexpr static void encode(value_type value, Serializer &ser, stream_interface &dest) {
     if constexpr (is_signed) {
       return ser.serialize_signed(value, dest);
     } else {
@@ -859,8 +852,8 @@ struct enum_bound_elsewhere_t {
     return named_tuple{};
   }
 
-  template<serializer Serializer, named_tuple_like Packet>
-  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &)
+  template<serializer Serializer, named_tuple_like Packet, tuple_like Fields>
+  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &, const Fields &)
       -> result<value_type> {
     auto retval = [&] {
       if constexpr (is_signed) {
@@ -873,21 +866,13 @@ struct enum_bound_elsewhere_t {
     return static_cast<value_type>(retval);
   }
 
-  template<serializer Serializer, std::output_iterator<byte_type<Serializer>> OutputIt>
-  constexpr static void encode(value_type value, Serializer &ser, OutputIt dest) {
+  template<serializer Serializer>
+  constexpr static void encode(value_type value, Serializer &ser, stream_interface &dest) {
     auto integral_value = std::to_underlying(value);
-    auto xint_value = [&] {
-      if constexpr (is_signed) {
-        return xint<width>{std::in_place, integral_value};
-      } else {
-        return xuint<width>{std::in_place, integral_value};
-      }
-    }();
-
     if constexpr (is_signed) {
-      ser.serialize_signed(xint_value, dest);
+      ser.serialize_signed(integral_value, upd::width<width>, dest);
     } else {
-      ser.serialize_unsigned(xint_value, dest);
+      ser.serialize_unsigned(integral_value, upd::width<width>, dest);
     }
   }
 };
@@ -911,7 +896,7 @@ struct constant_t {
   constexpr static auto identifier = Identifier;
   constexpr static auto width = Width;
 
-  using value_type = xuint<width>;
+  using value_type = std::intmax_t;
 
   template<typename... Args>
   [[nodiscard]] constexpr auto make_value(Args &&...args) const -> value_type {
@@ -927,15 +912,15 @@ struct constant_t {
     return named_tuple{};
   }
 
-  template<serializer Serializer, named_tuple_like Packet>
-  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &)
+  template<serializer Serializer, named_tuple_like Packet, tuple_like Fields>
+  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &, const Fields &)
       -> result<value_type> {
     return ser.deserialize_unsigned(src, upd::width<width>);
   }
 
-  template<serializer Serializer, std::output_iterator<byte_type<Serializer>> OutputIt>
-  constexpr static void encode(value_type value, Serializer &ser, OutputIt dest) {
-    return ser.serialize_unsigned(value, dest);
+  template<serializer Serializer>
+  constexpr static void encode(value_type value, Serializer &ser, stream_interface &dest) {
+    return ser.serialize_unsigned(value, upd::width<width>, dest);
   }
 };
 
@@ -950,11 +935,11 @@ struct checksum_t {
   constexpr static auto identifier = Identifier;
   constexpr static auto width = Width;
 
-  using value_type = xuint<width>;
+  using value_type = std::uintmax_t;
 
   template<typename... Args>
   [[nodiscard]] constexpr auto make_value(Args &&...args) const -> value_type {
-    return value_type{UPD_FWD(args)...};
+    return value_type(UPD_FWD(args)...);
   }
 
   BinaryOp op;
@@ -973,9 +958,24 @@ struct checksum_t {
       return UPD_INVOKE(identifier_filter, expr<nv.identifier>);
     };
 
-    auto acc = make_value(0_x);
-    auto f = [&](auto byte) { acc = UPD_INVOKE(op, acc, recompose_into_xuint(std::array{byte})); };
-    auto it = invoker_iterator{&f};
+    struct stream_t : stream_interface {
+      stream_t(const BinaryOp *op, value_type acc) : op{op}, acc{acc} {}
+
+      auto read(std::size_t, word_t *) -> stream_error_t override { return 1; }
+
+      auto write(const word_t *src, std::size_t size) -> stream_error_t override {
+        namespace stdr = std::ranges;
+
+        for (auto w : stdr::subrange{src, src + size}) {
+          acc = UPD_INVOKE(*op, acc, static_cast<value_type>(w));
+        }
+
+        return 0;
+      }
+
+      const BinaryOp *op;
+      value_type acc;
+    } dest{&op, init};
 
     zip(packet, fields)
         .filter(field_filter)
@@ -985,26 +985,27 @@ struct checksum_t {
         })
         .for_each([&](const auto &value_and_field) {
           const auto &[value, field] = value_and_field;
-          field.encode(value, ser, it);
+          field.encode(value, ser, dest);
         });
 
-    return tagged_tuple{named_value{expr<identifier>, acc}};
+    return tagged_tuple{named_value{expr<identifier>, dest.acc}};
   }
 
-  template<serializer Serializer, named_tuple_like Packet>
-  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &)
+  template<serializer Serializer, named_tuple_like Packet, tuple_like Fields>
+  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &, const Fields &)
       -> result<value_type> {
     return ser.deserialize_unsigned(src, upd::width<width>);
   }
 
-  template<serializer Serializer, std::output_iterator<byte_type<Serializer>> OutputIt>
-  constexpr static void encode(value_type value, Serializer &ser, OutputIt dest) {
-    return ser.serialize_unsigned(value, dest);
+  template<serializer Serializer>
+  constexpr static void encode(value_type value, Serializer &ser, stream_interface &dest) {
+    return ser.serialize_unsigned(value, upd::width<width>, dest);
   }
 };
 
 template<name Identifier, typename BinaryOp, std::size_t Width>
-[[nodiscard]] constexpr auto checksum(BinaryOp op, xuint<Width> init, all_fields_t) noexcept(release) {
+[[nodiscard]] constexpr auto
+checksum(BinaryOp op, std::uintmax_t init, width_t<Width>, all_fields_t) noexcept(release) {
   auto is_not_this_field = [](auto id) { return expr<id != Identifier>; };
 
   auto retval =
@@ -1057,12 +1058,13 @@ struct one_of_t {
     return tagged_tuple{keyword<rule_type::from_identifier>{} = UPD_INVOKE(inverse(rule.chain), id)};
   }
 
-  template<serializer Serializer, named_tuple_like Packet>
-  [[nodiscard]] constexpr auto decode(stream_interface &src, Serializer &ser, const Packet &packet) const
+  template<serializer Serializer, named_tuple_like Packet, tuple_like Fields>
+  [[nodiscard]] constexpr auto
+  decode(stream_interface &src, Serializer &ser, const Packet &packet, const Fields &fields) const
       -> result<value_type> {
     namespace stdr = std::ranges;
 
-    auto id = rule.deduce(packet);
+    auto id = rule.deduce(packet, fields);
     auto id_pos = tagged_descriptions.identifiers.find(id);
 
     if (id_pos == tagged_descriptions.size()) {
@@ -1080,8 +1082,8 @@ struct one_of_t {
     return tagged_descriptions.visit(id_pos, make_alt);
   }
 
-  template<serializer Serializer, std::output_iterator<byte_type<Serializer>> OutputIt>
-  constexpr void encode(const value_type &value, Serializer &ser, OutputIt dest) const noexcept(release) {
+  template<serializer Serializer>
+  constexpr void encode(const value_type &value, Serializer &ser, stream_interface &dest) const noexcept(release) {
     auto alt_index = value.index();
     auto encode_alt = [&](const auto &i_and_named_descr) {
       const auto &[i, named_descr] = i_and_named_descr;
@@ -1133,14 +1135,15 @@ struct repeat_t {
     return named_tuple{};
   }
 
-  template<serializer Serializer, named_tuple_like Packet>
-  [[nodiscard]] constexpr auto decode(stream_interface &src, Serializer &ser, const Packet &packet) const
+  template<serializer Serializer, named_tuple_like Packet, tuple_like Fields>
+  [[nodiscard]] constexpr auto
+  decode(stream_interface &src, Serializer &ser, const Packet &packet, const Fields &fields) const
       -> result<value_type> {
     namespace stdv = std::views;
 
-    auto count = rule.deduce(packet);
+    auto count = rule.deduce(packet, fields);
     if (count < 0) {
-      return std::unexpected{negative_repetition_count{identifier.string, try_cast<std::intmax_t>(count).value_or(0)}};
+      return std::unexpected{negative_repetition_count{identifier.string, static_cast<std::intmax_t>(count)}};
     }
     if (Max < count) {
       return std::unexpected{repeated_beyond_max{identifier.string, static_cast<std::uintmax_t>(count), Max}};
@@ -1159,8 +1162,8 @@ struct repeat_t {
     return retval;
   }
 
-  template<serializer Serializer, std::output_iterator<byte_type<Serializer>> OutputIt>
-  constexpr void encode(const value_type &value, Serializer &ser, OutputIt dest) const {
+  template<serializer Serializer>
+  constexpr void encode(const value_type &value, Serializer &ser, stream_interface &dest) const {
     for (const auto &element : value) {
       description.encode(element, ser, dest);
     }

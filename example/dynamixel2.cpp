@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <format>
@@ -15,10 +16,12 @@
 
 #include <upd/description.hpp>
 #include <upd/error.hpp>
-#include <upd/integer.hpp>
 #include <upd/named_value.hpp>
 #include <upd/stream_interface.hpp>
 #include <upd/token.hpp>
+
+#define BITMASK(N) ((1u << N) - 1u)
+#define NTH_BIT(N) (1u << N)
 
 namespace std {
 
@@ -26,7 +29,7 @@ auto operator<<(ostream &os, byte b) -> ostream & { return os << static_cast<int
 
 } // namespace std
 
-using crc = upd::xuint<16>;
+using crc = std::uint16_t;
 
 template<typename... Ts>
 struct std::formatter<std::variant<Ts...>> {
@@ -45,7 +48,7 @@ struct std::formatter<std::monostate> {
   auto format(std::monostate, std::format_context &ctx) const { return std::format_to(ctx.out(), "<monostate>"); }
 };
 
-constexpr auto accumulate_crc(crc acc, upd::xuint<8> byte) noexcept -> crc {
+constexpr auto accumulate_crc(crc acc, std::uint8_t byte) noexcept -> crc {
   constexpr auto crc_table = std::array{
       0x0000, 0x8005, 0x800f, 0x000a, 0x801b, 0x001e, 0x0014, 0x8011, 0x8033, 0x0036, 0x003c, 0x8039, 0x0028, 0x802d,
       0x8027, 0x0022, 0x8063, 0x0066, 0x006c, 0x8069, 0x0078, 0x807d, 0x8077, 0x0072, 0x0050, 0x8055, 0x805f, 0x005a,
@@ -68,7 +71,7 @@ constexpr auto accumulate_crc(crc acc, upd::xuint<8> byte) noexcept -> crc {
       0x0208, 0x820d, 0x8207, 0x0202};
 
   auto i = ((acc >> 8) ^ byte) & 0xff;
-  return *((acc << 8) ^ upd::extended_integer{crc_table[i.value()]}).resize(upd::width<16>);
+  return (acc << 8) ^ crc_table[i];
 }
 
 enum class instruction_code {
@@ -124,25 +127,25 @@ constexpr auto description = [] {
 
   using enum instruction_code;
 
-  return constant<"header">(0x00fdffff_x, width<32>) | field<"id">(unsigned_int, width<8>) |
-         bound<"length">(unsigned_int, width<16>, length_of<"parameters"> / 8_x + 3_x) |
-         bound<"instruction">(enumeration<instruction_code>, width<8>) |
+  return constant<"header">(0x00fdffff, width<32>) | field<"id">(unsigned_int, width<8>) |
+         bound<"length">(unsigned_int, width<16>, length_of<"parameters"> / 8 + 3) |
+         bound<"instruction">(enumeration<instruction_code>, width<7>) |
          one_of<"parameters">(
              value_of<"instruction">,
              when<ping> = empty_description,
              when<read> = field<"address">(unsigned_int, width<16>) | field<"length">(unsigned_int, width<16>),
              when<write> = field<"address">(unsigned_int, width<16>) |
-                           repeat<"data">(field(unsigned_int, width<8>), value_of<"length"> - 3_x, at_most<1024>),
+                           repeat<"data">(field(unsigned_int, width<8>), value_of<"length"> - 3, at_most<1024>),
              when<reg_write> = field<"address">(unsigned_int, width<16>) |
-                               repeat<"data">(field(unsigned_int, width<8>), value_of<"length"> - 3_x, at_most<1024>),
+                               repeat<"data">(field(unsigned_int, width<8>), value_of<"length"> - 3, at_most<1024>),
              when<action> = empty_description,
              when<factory_reset> = field(enumeration<factory_reset_target>, width<8>),
              when<reboot> = empty_description,
              when<clear> = field(enumeration<clear_target>, width<40>),
              when<control_table_backup> = field(enumeration<control_table_backup_target>, width<40>),
              when<sync_read> = field<"address">(unsigned_int, width<16>) | field<"length">(unsigned_int, width<16>) |
-                               repeat<"ids">(field(unsigned_int, width<8>), value_of<"length"> - 3_x, at_most<1024>)) |
-         checksum<"crc">(accumulate_crc, *(0_x).resize(width<16>), all_fields);
+                               repeat<"ids">(field(unsigned_int, width<8>), value_of<"length"> - 3, at_most<1024>)) |
+         checksum<"crc">(accumulate_crc, 0, width<16>, all_fields);
 }();
 
 constexpr auto answer_description = [] {
@@ -152,22 +155,23 @@ constexpr auto answer_description = [] {
 
   using enum instruction_code;
 
-  return constant<"header">(0x00fdffff_x, width<32>) | field<"id">(unsigned_int, width<8>) |
-         bound<"length">(unsigned_int, width<16>, length_of<"parameters"> / 8_x + 4_x) |
-         constant<"instruction">(0x55_x, width<8>) | field<"error">(unsigned_int, width<8>) |
+  return constant<"header">(0x00fdffff, width<32>) | field<"id">(unsigned_int, width<8>) |
+         bound<"length">(unsigned_int, width<16>, length_of<"parameters"> / 8 + 4) |
+         constant<"instruction">(std::to_underlying(instruction_code::ping), width<8>) |
+         field<"error">(unsigned_int, width<8>) |
          one_of<"parameters">(
              value_of<"status_of">,
              when<ping> =
                  field<"model_number">(unsigned_int, width<16>) | field<"firmware_version">(unsigned_int, width<8>),
-             when<read> = repeat<"data">(field(unsigned_int, width<8>), value_of<"length"> - 4_x, at_most<1024>),
+             when<read> = repeat<"data">(field(unsigned_int, width<8>), value_of<"length"> - 4, at_most<1024>),
              when<write> = empty_description,
              when<reg_write> = empty_description,
              when<action> = empty_description,
              when<factory_reset> = empty_description,
              when<reboot> = empty_description,
              when<control_table_backup> = empty_description,
-             when<sync_read> = repeat<"data">(field(unsigned_int, width<8>), value_of<"length"> - 4_x, at_most<1024>)) |
-         checksum<"crc">(accumulate_crc, *(0_x).resize(width<16>), all_fields);
+             when<sync_read> = repeat<"data">(field(unsigned_int, width<8>), value_of<"length"> - 4, at_most<1024>)) |
+         checksum<"crc">(accumulate_crc, 0, width<16>, all_fields);
 }();
 
 struct serializer {
@@ -175,78 +179,61 @@ struct serializer {
 
   constexpr static auto bytewidth = std::numeric_limits<unsigned char>::digits;
 
-  template<typename XInteger, typename OutputIt>
-  void serialize_unsigned(XInteger value, OutputIt output) {
+  template<std::size_t Bitsize>
+  void serialize_unsigned(std::uintmax_t value, upd::width_t<Bitsize>, upd::stream_interface &dest) {
     namespace stdr = std::ranges;
 
-    static_assert(upd::is_extended_integer_v<XInteger>, "`value` must be an instance of `extended_integer`");
-    static_assert(!upd::is_signed_v<XInteger>, "`value` must be unsigned");
+    static_assert(Bitsize % bytewidth == 0);
 
-    constexpr auto byte_count = value.bitsize / bytewidth;
+    auto buf = std::array<upd::word_t, Bitsize / bytewidth>{};
+    stdr::generate(buf, [&] {
+      auto byte = value & BITMASK(bytewidth);
+      value >>= bytewidth;
+      return static_cast<upd::word_t>(byte);
+    });
 
-    auto decomposition = value.decompose(upd::width<byte_count>);
-    stdr::transform(decomposition, output, [](auto xint) { return static_cast<std::byte>(xint); });
+    (void)dest.write(buf.data(), buf.size());
   }
 
-  template<typename XInteger, typename OutputIt>
-  void serialize_signed(XInteger value, OutputIt output) {
-    using namespace upd::literals;
+  template<std::size_t Bitsize>
+  void serialize_signed(std::intmax_t value, upd::width_t<Bitsize>, upd::stream_interface &dest) {
+    static_assert((Bitsize + 1) % bytewidth == 0);
 
-    namespace stdr = std::ranges;
+    auto signbit = std::signbit(value);
+    auto abs = static_cast<std::uintmax_t>(std::abs(value));
 
-    static_assert(upd::is_extended_integer_v<XInteger>, "`value` must be an instance of `extended_integer`");
-    static_assert(upd::is_signed_v<XInteger>, "`value` must be signed");
-
-    auto sign = value.signbit();
-    auto abs = value.abs();
-
-    if (sign) {
-      abs = ~abs + 1_x;
+    if (signbit) {
+      abs = ~abs + 1;
     }
 
-    constexpr auto byte_count = abs.bitsize / bytewidth;
-
-    auto decomposition = abs.decompose(upd::width<byte_count>);
-    stdr::transform(decomposition, output, [](auto xint) { return static_cast<std::byte>(xint); });
+    serialize_unsigned(value, upd::width<Bitsize + 1>, dest);
   }
 
   template<std::size_t Bitsize>
-  auto deserialize_unsigned(upd::stream_interface &input, upd::width_t<Bitsize>) {
+  auto deserialize_unsigned(upd::stream_interface &src, upd::width_t<Bitsize>) -> std::uintmax_t {
     namespace stdr = std::ranges;
+    namespace stdv = std::views;
 
-    static_assert(Bitsize % bytewidth == 0, "`Bitsize` must be a multiple of `bytewidth`");
+    static_assert(Bitsize % bytewidth == 0);
 
-    constexpr auto size = Bitsize / bytewidth;
+    auto retval = std::uintmax_t{0};
+    auto buf = std::array<upd::word_t, Bitsize / bytewidth>{};
+    (void)src.read(buf.size(), buf.data());
+    for (auto w : stdv::reverse(buf)) {
+      retval <<= bytewidth;
+      retval |= w;
+    }
 
-    auto buf = std::array<upd::word_t, size>{};
-    (void)input.read(size, buf.begin());
-
-    auto byteseq = std::array<std::byte, size>{};
-    stdr::transform(buf, std::begin(byteseq), [](upd::word_t word) { return static_cast<std::byte>(word); });
-
-    return upd::recompose_into_xuint(byteseq);
+    return retval;
   }
 
   template<std::size_t Bitsize>
-  auto deserialize_signed(upd::stream_interface &input, upd::width_t<Bitsize>) {
-    using namespace upd::literals;
-    namespace stdr = std::ranges;
+  auto deserialize_signed(upd::stream_interface &src, upd::width_t<Bitsize>) -> std::intmax_t {
+    auto raw = deserialize_unsigned(src, upd::width<Bitsize + 1>);
+    auto sign = ((raw & NTH_BIT(Bitsize)) != 0);
+    auto abs = static_cast<std::intmax_t>((sign) ? ~raw + 1 : raw);
 
-    static_assert((Bitsize + 1) % bytewidth == 0, "`Bitsize` must be a multiple of `bytewidth`");
-
-    constexpr auto size = (Bitsize + 1) / bytewidth;
-
-    auto buf = std::array<upd::word_t, size>{};
-    (void)input.read(size, buf.begin());
-
-    auto byteseq = std::array<std::byte, size>{};
-    stdr::transform(buf, std::begin(byteseq), [](upd::word_t word) { return static_cast<std::byte>(word); });
-
-    auto raw = upd::recompose_into_xuint(byteseq);
-    auto sign = ((raw & upd::nth_bit<Bitsize>) != 0);
-    auto abs = (sign) ? ~raw + 1_x : raw;
-
-    return sign ? -abs : abs.as_signed();
+    return (sign) ? -abs : abs;
   }
 
   void checkpoint(std::string_view) {}
@@ -298,11 +285,10 @@ auto ping_example() -> upd::error {
   using namespace upd::literals;
 
   auto ser = serializer{};
-  auto oit = std::ostream_iterator<std::byte>{std::cout, " "};
   std::cout << std::hex;
 
   std::println("Ping: example 1");
-  description.encode(("id"_kw = 1_x, "parameters"_kw = upd::choice<instruction_code::ping>()), ser, oit);
+  description.encode(("id"_kw = 1, "parameters"_kw = upd::choice<instruction_code::ping>()), ser, std::cout, " ");
   std::println("");
   std::println("");
 
@@ -343,14 +329,14 @@ auto read_example() -> upd::error {
   using namespace upd::literals;
 
   auto ser = serializer{};
-  auto oit = std::ostream_iterator<std::byte>{std::cout, " "};
   std::cout << std::hex;
 
   std::println("Read: example");
   description.encode(
-      ("id"_kw = 1_x, "parameters"_kw = upd::choice<instruction_code::read>("address"_kw = 0x84_x, "length"_kw = 4_x)),
+      ("id"_kw = 1, "parameters"_kw = upd::choice<instruction_code::read>("address"_kw = 0x84, "length"_kw = 4)),
       ser,
-      oit);
+      std::cout,
+      " ");
   std::println("");
   std::println("");
 
@@ -377,16 +363,15 @@ auto write_example() -> upd::error {
   using namespace upd::literals;
 
   auto ser = serializer{};
-  auto oit = std::ostream_iterator<std::byte>{std::cout, " "};
   std::cout << std::hex;
 
   std::println("Write: example");
-  description.encode(
-      ("id"_kw = 1_x,
-       "parameters"_kw = upd::choice<instruction_code::write>(
-           "address"_kw = 0x74_x, "data"_kw = (0x200_x).resize(upd::width<32>)->decompose(upd::width<4>))),
-      ser,
-      oit);
+  description.encode(("id"_kw = 1,
+                      "parameters"_kw = upd::choice<instruction_code::write>(
+                          "address"_kw = 0x74, "data"_kw = std::array<std::uint8_t, 4>{0x0, 0x2, 0x0, 0x0})),
+                     ser,
+                     std::cout,
+                     " ");
   std::println("");
   std::println("");
 
@@ -412,16 +397,15 @@ auto reg_write_example() -> upd::error {
   using namespace upd::literals;
 
   auto ser = serializer{};
-  auto oit = std::ostream_iterator<std::byte>{std::cout, " "};
   std::cout << std::hex;
 
   std::println("Reg Write: example");
-  description.encode(
-      ("id"_kw = 1_x,
-       "parameters"_kw = upd::choice<instruction_code::reg_write>(
-           "address"_kw = 0x68_x, "data"_kw = (0xc8_x).resize(upd::width<32>)->decompose(upd::width<4>))),
-      ser,
-      oit);
+  description.encode(("id"_kw = 1,
+                      "parameters"_kw = upd::choice<instruction_code::reg_write>(
+                          "address"_kw = 0x68, "data"_kw = std::array<std::uint8_t, 4>{0xc8, 0x0, 0x0, 0x0})),
+                     ser,
+                     std::cout,
+                     " ");
   std::println("");
   std::println("");
 
@@ -447,11 +431,10 @@ auto action_example() -> upd::error {
   using namespace upd::literals;
 
   auto ser = serializer{};
-  auto oit = std::ostream_iterator<std::byte>{std::cout, " "};
   std::cout << std::hex;
 
   std::println("Action: example");
-  description.encode(("id"_kw = 1_x, "parameters"_kw = upd::choice<instruction_code::action>()), ser, oit);
+  description.encode(("id"_kw = 1, "parameters"_kw = upd::choice<instruction_code::action>()), ser, std::cout, " ");
   std::println("");
   std::println("");
 
@@ -477,14 +460,14 @@ auto factory_reset_example() -> upd::error {
   using namespace upd::literals;
 
   auto ser = serializer{};
-  auto oit = std::ostream_iterator<std::byte>{std::cout, " "};
   std::cout << std::hex;
 
   std::println("Action: example");
   description.encode(
-      ("id"_kw = 1_x, "parameters"_kw = upd::choice<instruction_code::factory_reset>(factory_reset_target::all_but_id)),
+      ("id"_kw = 1, "parameters"_kw = upd::choice<instruction_code::factory_reset>(factory_reset_target::all_but_id)),
       ser,
-      oit);
+      std::cout,
+      " ");
   std::println("");
   std::println("");
 
@@ -510,11 +493,10 @@ auto reboot_example() -> upd::error {
   using namespace upd::literals;
 
   auto ser = serializer{};
-  auto oit = std::ostream_iterator<std::byte>{std::cout, " "};
   std::cout << std::hex;
 
   std::println("Reboot: example");
-  description.encode(("id"_kw = 1_x, "parameters"_kw = upd::choice<instruction_code::reboot>()), ser, oit);
+  description.encode(("id"_kw = 1, "parameters"_kw = upd::choice<instruction_code::reboot>()), ser, std::cout, " ");
   std::println("");
   std::println("");
 
@@ -540,14 +522,14 @@ auto clear_example() -> upd::error {
   using namespace upd::literals;
 
   auto ser = serializer{};
-  auto oit = std::ostream_iterator<std::byte>{std::cout, " "};
   std::cout << std::hex;
 
   std::println("Clear: example");
   description.encode(
-      ("id"_kw = 1_x, "parameters"_kw = upd::choice<instruction_code::clear>(clear_target::present_position)),
+      ("id"_kw = 1, "parameters"_kw = upd::choice<instruction_code::clear>(clear_target::present_position)),
       ser,
-      oit);
+      std::cout,
+      " ");
   std::println("");
   std::println("");
 
@@ -573,15 +555,15 @@ auto control_table_backup_example() -> upd::error {
   using namespace upd::literals;
 
   auto ser = serializer{};
-  auto oit = std::ostream_iterator<std::byte>{std::cout, " "};
   std::cout << std::hex;
 
   std::println("Control Table Backup: example");
-  description.encode(("id"_kw = 1_x,
+  description.encode(("id"_kw = 1,
                       "parameters"_kw = upd::choice<instruction_code::control_table_backup>(
                           control_table_backup_target::store_current)),
                      ser,
-                     oit);
+                     std::cout,
+                     " ");
   std::println("");
   std::println("");
 
@@ -607,16 +589,15 @@ auto sync_read_example() -> upd::error {
   using namespace upd::literals;
 
   auto ser = serializer{};
-  auto oit = std::ostream_iterator<std::byte>{std::cout, " "};
   std::cout << std::hex;
 
   std::println("Sync Read: example");
-  description.encode(
-      ("id"_kw = 0xfe_x,
-       "parameters"_kw = upd::choice<instruction_code::sync_read>(
-           "address"_kw = 0x84_x, "length"_kw = 0x4_x, "ids"_kw = std::array<upd::xuint<8>, 2>{1_x, 2_x})),
-      ser,
-      oit);
+  description.encode(("id"_kw = 0xfe,
+                      "parameters"_kw = upd::choice<instruction_code::sync_read>(
+                          "address"_kw = 0x84, "length"_kw = 0x4, "ids"_kw = std::array<std::uint8_t, 2>{1, 2})),
+                     ser,
+                     std::cout,
+                     " ");
   std::println("");
   std::println("");
 

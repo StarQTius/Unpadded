@@ -27,6 +27,20 @@ public:
     }
   }
 
+  template<typename U, std::size_t N>
+    requires std::convertible_to<U, T>
+  constexpr static_vector(const upd::static_vector<U, N> &other) : static_vector{} {
+    for (const auto &val : other) {
+      push_back(val);
+    }
+  }
+
+  constexpr static_vector(std::initializer_list<T> init) : static_vector{} {
+    for (auto &val : init) {
+      push_back(std::move(val));
+    }
+  }
+
   [[nodiscard]] constexpr auto begin() noexcept(release) -> value_type * {
     return reinterpret_cast<value_type *>(m_content.begin());
   }
