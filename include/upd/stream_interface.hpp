@@ -4,9 +4,8 @@
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
-#include <istream>
+#include <iosfwd>
 #include <iterator>
-#include <ostream>
 
 namespace upd {
 

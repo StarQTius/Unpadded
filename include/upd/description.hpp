@@ -1,11 +1,11 @@
 #pragma once
 
 #include <algorithm>
-#include <array>
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <iosfwd>
 #include <iterator>
 #include <limits>
 #include <ranges>
