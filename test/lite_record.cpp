@@ -1,6 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
+#include <upd/constexpr.hpp>
 #include <upd/lite_record.hpp>
 #include <upd/named_value.hpp>
+#include <upd/type_traits.hpp>
 
 TEST_CASE("Lite record", "[lite_record]") {
   upd::lite_record rec{upd::lite_record_node{upd::expr<upd::name{"a"}>, int{4}},
