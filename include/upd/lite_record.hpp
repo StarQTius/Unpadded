@@ -5,6 +5,7 @@
 #include "constexpr.hpp"
 #include "is_instance_of.hpp"
 #include "type_traits.hpp"
+#include "upd.hpp"
 
 #define UPD_STATIC_ASSERT(CONDITION, FORMAT, ...) static_assert((CONDITION), FORMAT)
 
