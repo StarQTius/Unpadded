@@ -57,7 +57,7 @@ template<name Identifier, typename Tuple>
 template<name>
 struct keyword;
 
-[[nodiscard]] consteval inline auto operator==(const name &lhs, const name &rhs) noexcept(release) -> bool {
+[[nodiscard]] constexpr inline auto operator==(const name &lhs, const name &rhs) noexcept(release) -> bool {
   return std::string_view{lhs.string} == std::string_view{rhs.string};
 };
 

@@ -6,6 +6,7 @@ include(CTest)
 include(Unpadded)
 
 add_executable(upd_unitary
+  lite_record.cpp
   named_tuple_v2.cpp)
 target_link_libraries(upd_unitary PRIVATE
   Unpadded::UnpaddedDebug
