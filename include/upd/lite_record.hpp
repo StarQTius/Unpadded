@@ -2,17 +2,14 @@
 
 #include <utility>
 
+#include "always_false.hpp"
 #include "constexpr.hpp"
 #include "is_instance_of.hpp"
+#include "static_assert.hpp"
 #include "type_traits.hpp"
 #include "upd.hpp"
 
-#define UPD_STATIC_ASSERT(CONDITION, FORMAT, ...) static_assert((CONDITION), FORMAT)
-
 namespace upd {
-
-template<auto = [] {}>
-constexpr auto always_false = false;
 
 template<auto Tag>
 struct lite_record_tag_node {
