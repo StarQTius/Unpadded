@@ -4,10 +4,10 @@
 #include <upd/named_value.hpp>
 #include <upd/type_traits.hpp>
 
-TEST_CASE("Lite record", "[lite_record]") {
-  upd::lite_record rec{upd::lite_record_node{upd::expr<upd::name{"a"}>, int{4}},
-                       upd::lite_record_node{upd::expr<upd::name{"b"}>, char{8}},
-                       upd::lite_record_node{upd::expr<upd::name{"c"}>, false}};
+TEST_CASE("Lite record basic functionalities", "[lite_record]") {
+  auto rec = upd::lite_record{upd::lite_record_node{upd::expr<upd::name{"a"}>, int{4}},
+                              upd::lite_record_node{upd::expr<upd::name{"b"}>, char{8}},
+                              upd::lite_record_node{upd::expr<upd::name{"c"}>, false}};
 
   SECTION("Get elements from their tag") {
     REQUIRE(rec.get_by_tag(upd::expr<upd::name{"a"}>) == 4);
@@ -35,5 +35,17 @@ TEST_CASE("Lite record", "[lite_record]") {
     REQUIRE(rec.has_type(upd::typebox<bool>{}));
     REQUIRE(!rec.has_type(upd::typebox<short>{}));
     REQUIRE(!rec.has_type(upd::typebox<long>{}));
+  }
+
+  SECTION("Access elements when record is qualified") {
+    auto &&lv = rec.get_by_tag(upd::expr<upd::name{"a"}>);
+    auto &&cst_lv = std::as_const(rec).get_by_tag(upd::expr<upd::name{"a"}>);
+    auto &&rv = std::move(rec).get_by_tag(upd::expr<upd::name{"a"}>);
+    auto &&cst_rv = std::move(std::as_const(rec)).get_by_tag(upd::expr<upd::name{"a"}>);
+
+    REQUIRE(std::same_as<decltype(lv), int &>);
+    REQUIRE(std::same_as<decltype(cst_lv), const int &>);
+    REQUIRE(std::same_as<decltype(rv), int &&>);
+    REQUIRE(std::same_as<decltype(cst_rv), const int &&>);
   }
 }

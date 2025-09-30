@@ -40,8 +40,7 @@ struct lite_record_node : lite_record_tag_node<Tag>, lite_record_type_node<T> {
 
   template<typename Self>
   [[nodiscard]] constexpr auto get_by_tag(this Self &&self, auto_constant<Tag>) noexcept(release) -> auto && {
-    auto &true_self = static_cast<lite_record_node<Tag, T> &>(self);
-    return std::forward_like<Self>(true_self).value;
+    return UPD_FWD(self).*(&lite_record_node<Tag, T>::value);
   }
 
   [[nodiscard]] constexpr auto find_by_type(typebox<T>) const noexcept(release) -> tag_type { return tag; }
