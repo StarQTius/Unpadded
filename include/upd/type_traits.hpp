@@ -27,6 +27,11 @@ struct typebox {
     return Predicate<T, Args...>::value;
   }
 
+  template<typename U>
+  [[nodiscard]] constexpr auto operator==(typebox<U>) noexcept(release) -> bool {
+    return std::same_as<T, U>;
+  }
+
   constexpr auto operator->() const noexcept -> const unqualified_type * { return nullptr; }
 };
 

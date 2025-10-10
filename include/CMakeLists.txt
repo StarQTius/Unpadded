@@ -4,7 +4,7 @@ target_compile_features(upd_Unpadded INTERFACE cxx_std_23)
 
 add_library(upd_UnpaddedDebug INTERFACE)
 target_link_libraries(upd_UnpaddedDebug INTERFACE upd_Unpadded)
-target_compile_definitions(upd_UnpaddedDebug INTERFACE UPD_DEBUG)
+target_compile_definitions(upd_UnpaddedDebug INTERFACE UPD_DEBUG UPD_READABLE_CONCEPT_DIAGNOSTIC)
 
 if(PROJECT_IS_TOP_LEVEL)
   file(

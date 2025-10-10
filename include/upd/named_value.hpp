@@ -49,11 +49,6 @@ struct name {
   char string[name_max_size];
 };
 
-template<name Identifier, typename Tuple>
-[[nodiscard]] constexpr auto get(Tuple &&t) noexcept(release) -> auto && {
-  return UPD_FWD(t).template get<Identifier, Tuple>();
-}
-
 template<name>
 struct keyword;
 
@@ -387,6 +382,13 @@ tagged_tuple() -> tagged_tuple<constlist{}>;
 template<named_value_instance... NamedValues>
 explicit tagged_tuple(NamedValues...)
     -> tagged_tuple<constlist<NamedValues::identifier...>{}, typename NamedValues::value_type...>;
+
+template<name Identifier, typename Tuple>
+  requires(is_instance_of<Tuple, tuple>() || is_instance_of<Tuple, named_tuple>() ||
+           is_instance_of<Tuple, tagged_tuple>())
+[[nodiscard]] constexpr auto get(Tuple &&t) noexcept(release) -> auto && {
+  return UPD_FWD(t).template get<Identifier, Tuple>();
+}
 
 } // namespace upd
 

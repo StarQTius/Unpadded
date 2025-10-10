@@ -3,34 +3,58 @@
 #include <type_traits>
 
 #include "../constexpr.hpp"
-#include "../lite_record.hpp"
+#include "../named_value.hpp"
+#include "../record/concepts.hpp"
+#include "../record/lite_record.hpp"
 #include "../upd.hpp"
+#include "concepts.hpp"
 
 namespace upd::algebra {
 
-template<typename T, typename Lets>
-  requires std::is_arithmetic_v<T>
-[[nodiscard]] constexpr auto calculate(T value, const Lets &) noexcept(release) {
-  return value;
-}
-
-template<typename Var, typename Val>
+template<auto Varname, typename Val>
   requires std::is_arithmetic_v<Val>
-struct let {
-  Var var;
-  Val val;
-};
+struct let;
 
-template<typename Expr>
+template<expression Expr>
 struct side {
   Expr expr;
 
-  template<typename... Vars, typename... Vals>
-    requires(sizeof...(Vars) == sizeof...(Vals))
-  [[nodiscard]] constexpr auto calculate(const let<Vars, Vals> &...lets) const noexcept(release) {
+  template<auto... Varnames, typename... Vals>
+    requires(sizeof...(Varnames) == sizeof...(Vals))
+  [[nodiscard]] constexpr auto calculate(const let<Varnames, Vals> &...lets) const noexcept(release) {
     using ::upd::algebra::calculate;
-    return calculate(expr, lite_record{lite_record_node{upd::expr<lets.var.expr.name>, lets.val}...});
+    return calculate(expr, lite_record{lite_record_node{upd::expr<lets.var.name>, lets.val}...});
   }
 };
 
+template<auto Name>
+struct variable {
+  constexpr static auto name = Name;
+};
+
+template<auto Varname, record_like Lets>
+[[nodiscard]] constexpr auto calculate(variable<Varname>, const Lets &lets) noexcept(release) {
+  return get<Varname>(lets);
+}
+
+template<auto Varname, typename Val>
+  requires std::is_arithmetic_v<Val>
+struct let {
+  explicit constexpr let(variable<Varname> var, Val val) : var{var}, val{val} {}
+
+  explicit constexpr let(side<variable<Varname>> s, Val val) : var{s.expr}, val{val} {}
+
+  variable<Varname> var;
+  Val val;
+};
+
 } // namespace upd::algebra
+
+namespace upd::algebra::literals {
+
+template<name Varname>
+[[nodiscard]] constexpr auto operator""_var() noexcept(release) {
+  return side{variable<Varname>{}};
+}
+
+} // namespace upd::algebra::literals

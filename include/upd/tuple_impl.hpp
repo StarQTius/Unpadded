@@ -10,37 +10,13 @@
 
 #include "constexpr.hpp"
 #include "functional.hpp"
-#include "invoke_following.hpp"
 #include "ref.hpp"
+#include "transfert_reference.hpp"
 #include "type_traits.hpp"
 #include "upd.hpp"
-
-#define UPD_WITH_SEQUENCE(IS, N, ...)                                                                                  \
-  ::upd::invoke_following{std::make_index_sequence<N>{}} | [__VA_ARGS__]<std::size_t... IS>(std::index_sequence<IS...>)
-
-#define UPD_WITH_SEQUENCE_FOR(IS, TUPLE, ...)                                                                          \
-  ::upd::invoke_following{std::make_index_sequence<std::tuple_size_v<std::remove_cvref_t<TUPLE>>>{}} |                 \
-      [__VA_ARGS__]<std::size_t... IS>(std::index_sequence<IS...>)
+#include "with_sequence.hpp"
 
 namespace upd {
-
-template<typename Target, typename From>
-struct transfert_reference {
-  using type = Target;
-};
-
-template<typename Target, typename From>
-struct transfert_reference<Target, From &> {
-  using type = Target &;
-};
-
-template<typename Target, typename From>
-struct transfert_reference<Target, From &&> {
-  using type = Target &&;
-};
-
-template<typename Target, typename From>
-using transfert_reference_t = typename transfert_reference<Target, From>::type;
 
 template<typename Tuple>
 concept tuple_like = requires(std::remove_reference_t<Tuple> x) {

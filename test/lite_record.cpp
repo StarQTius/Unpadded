@@ -3,19 +3,25 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <upd/constexpr.hpp>
-#include <upd/lite_record.hpp>
 #include <upd/named_value.hpp>
+#include <upd/record.hpp>
 #include <upd/type_traits.hpp>
 
 TEST_CASE("Lite record basic functionalities", "[lite_record]") {
-  auto rec = upd::lite_record{upd::lite_record_node{upd::expr<upd::name{"a"}>, int{4}},
-                              upd::lite_record_node{upd::expr<upd::name{"b"}>, char{8}},
-                              upd::lite_record_node{upd::expr<upd::name{"c"}>, false}};
+  upd::record_like auto rec = upd::lite_record{upd::lite_record_node{upd::expr<upd::name{"a"}>, int{4}},
+                                               upd::lite_record_node{upd::expr<upd::name{"b"}>, char{8}},
+                                               upd::lite_record_node{upd::expr<upd::name{"c"}>, false}};
 
   SECTION("Get elements from their tag") {
     REQUIRE(rec.get_by_tag(upd::expr<upd::name{"a"}>) == 4);
     REQUIRE(rec.get_by_tag(upd::expr<upd::name{"b"}>) == 8);
     REQUIRE(!rec.get_by_tag(upd::expr<upd::name{"c"}>));
+  }
+
+  SECTION("Get element types from their tag") {
+    REQUIRE(rec.get_type_by_tag(upd::expr<upd::name{"a"}>) == upd::typebox<int>{});
+    REQUIRE(rec.get_type_by_tag(upd::expr<upd::name{"b"}>) == upd::typebox<char>{});
+    REQUIRE(rec.get_type_by_tag(upd::expr<upd::name{"c"}>) == upd::typebox<bool>{});
   }
 
   SECTION("Find tags from their element type") {
@@ -49,6 +55,38 @@ TEST_CASE("Lite record basic functionalities", "[lite_record]") {
     REQUIRE(std::same_as<decltype(lv), int &>);
     REQUIRE(std::same_as<decltype(cst_lv), const int &>);
     REQUIRE(std::same_as<decltype(rv), int &&>);
+    REQUIRE(std::same_as<decltype(cst_rv), const int &&>);
+  }
+}
+
+TEST_CASE("Babelian lite record", "[babelian_lite_record]") {
+  upd::record_like auto rec = upd::babelian_lite_record{42};
+
+  SECTION("Check if record has a tag") {
+    REQUIRE(has_tag<upd::name{"a"}>(rec));
+    REQUIRE(has_tag<upd::name{"b"}>(rec));
+    REQUIRE(has_tag<upd::name{"c"}>(rec));
+    REQUIRE(has_tag<upd::name{"d"}>(rec));
+    REQUIRE(has_tag<upd::name{"e"}>(rec));
+  }
+
+  SECTION("Check if record has an element of given type") {
+    REQUIRE(has_type<int>(rec));
+    REQUIRE(!has_type<char>(rec));
+    REQUIRE(!has_type<bool>(rec));
+    REQUIRE(!has_type<short>(rec));
+    REQUIRE(!has_type<long>(rec));
+  }
+
+  SECTION("Access elements when record is qualified") {
+    auto &&lv = get<upd::name{"a"}>(rec);
+    auto &&cst_lv = get<upd::name{"a"}>(std::as_const(rec));
+    auto &&rv = get<upd::name{"a"}>(std::move(rec));
+    auto &&cst_rv = get<upd::name{"a"}>(std::move(std::as_const(rec)));
+
+    REQUIRE(std::same_as<decltype(lv), const int &>);
+    REQUIRE(std::same_as<decltype(cst_lv), const int &>);
+    REQUIRE(std::same_as<decltype(rv), const int &&>);
     REQUIRE(std::same_as<decltype(cst_rv), const int &&>);
   }
 }

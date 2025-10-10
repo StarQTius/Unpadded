@@ -1,13 +1,16 @@
 #pragma once
 
+#include <cstddef>
+#include <tuple>
 #include <utility>
 
-#include "always_false.hpp"
-#include "constexpr.hpp"
-#include "is_instance_of.hpp"
-#include "static_assert.hpp"
-#include "type_traits.hpp"
-#include "upd.hpp"
+#include "../always_false.hpp"
+#include "../constexpr.hpp"
+#include "../is_instance_of.hpp"
+#include "../static_assert.hpp"
+#include "../type_traits.hpp"
+#include "../upd.hpp"
+#include "concepts.hpp"
 
 namespace upd {
 
@@ -43,6 +46,10 @@ struct lite_record_node : lite_record_tag_node<Tag>, lite_record_type_node<T> {
     return UPD_FWD(self).*(&lite_record_node<Tag, T>::value);
   }
 
+  [[nodiscard]] constexpr static auto get_type_by_tag(auto_constant<Tag>) noexcept(release) -> typebox<T> {
+    return typebox<T>{};
+  }
+
   [[nodiscard]] constexpr auto find_by_type(typebox<T>) const noexcept(release) -> tag_type { return tag; }
 
   T value;
@@ -55,6 +62,7 @@ template<auto... Tags, typename... Ts>
   requires(sizeof...(Tags) == sizeof...(Ts))
 struct lite_record<lite_record_node<Tags, Ts>...> : lite_record_node<Tags, Ts>... {
   using lite_record_node<Tags, Ts>::get_by_tag...;
+  using lite_record_node<Tags, Ts>::get_type_by_tag...;
   using lite_record_node<Tags, Ts>::find_by_type...;
   using lite_record_node<Tags, Ts>::has_tag...;
   using lite_record_node<Tags, Ts>::has_type...;
@@ -65,6 +73,11 @@ struct lite_record<lite_record_node<Tags, Ts>...> : lite_record_node<Tags, Ts>..
 
   template<auto Tag>
   constexpr static void get_by_tag(auto_constant<Tag>) noexcept(release) {
+    UPD_STATIC_ASSERT(always_false<>, "Lite record does not contain '{}' tag", Tag);
+  }
+
+  template<auto Tag>
+  constexpr static void get_type_by_tag(auto_constant<Tag>) noexcept(release) {
     UPD_STATIC_ASSERT(always_false<>, "Lite record does not contain '{}' tag", Tag);
   }
 
@@ -84,7 +97,29 @@ struct lite_record<lite_record_node<Tags, Ts>...> : lite_record_node<Tags, Ts>..
   }
 };
 
-template<auto... Tags, typename... Ts>
-explicit lite_record(lite_record_node<Tags, Ts>...) -> lite_record<lite_record_node<Tags, Ts>...>;
+template<typename... Nodes>
+  requires(is_instance_of<Nodes, lite_record_node>() && ...)
+explicit lite_record(Nodes...) -> lite_record<Nodes...>;
+
+template<auto Tag, typename... Nodes>
+struct record_element<Tag, lite_record<Nodes...>> {
+  using type = typename decltype(lite_record<Nodes...>::get_type_by_tag(expr<Tag>))::type;
+};
+
+template<std::size_t I, typename... Nodes>
+struct record_tag<I, lite_record<Nodes...>> {
+  constexpr static auto value = std::get<I>(std::tuple{Nodes::tag...});
+};
+
+template<typename... Nodes>
+struct record_size<lite_record<Nodes...>> {
+  constexpr static auto value = sizeof...(Nodes);
+};
+
+template<auto Tag, typename Record>
+  requires(is_instance_of<Record, lite_record>())
+[[nodiscard]] constexpr auto get(Record &&rec) noexcept(release) -> auto && {
+  return UPD_FWD(rec).get_by_tag(expr<Tag>);
+}
 
 } // namespace upd
