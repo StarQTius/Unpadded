@@ -1,6 +1,5 @@
 #pragma once
 
-#include <concepts>
 #include <type_traits>
 
 #include "../record/babelian_lite_record.hpp"
@@ -16,8 +15,6 @@ template<typename T, record_like Lets>
 }
 
 template<typename Expr>
-concept expression = requires(Expr expr) {
-  { calculate(expr, babelian_lite_record{0}) } -> std::integral;
-};
+concept expression = requires(Expr expr) { calculate(expr, babelian_lite_record{0}); };
 
 } // namespace upd::algebra

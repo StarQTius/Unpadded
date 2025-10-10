@@ -1,5 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include <upd/algebra.hpp>
+#include <upd/named_value.hpp>
 
 TEST_CASE("Independent equation side", "[algebra][side]") {
   using namespace upd::algebra::literals;
@@ -52,5 +53,15 @@ TEST_CASE("Independent equation side", "[algebra][side]") {
   SECTION("Solve integer linear expression with undivisible operands") {
     auto result = ("x"_var / 3 + 2).calculate(upd::algebra::let{"x"_var, 7});
     REQUIRE(result == 4);
+  }
+}
+
+TEST_CASE("Identity", "[algebra][equation]") {
+  using namespace upd::algebra::literals;
+
+  SECTION("Make an `upd::let` object from an identity") {
+    auto lt = upd::algebra::let{"x"_var = 6};
+    REQUIRE(lt.var == upd::algebra::variable<upd::name{"x"}>{});
+    REQUIRE(lt.val == 6);
   }
 }
