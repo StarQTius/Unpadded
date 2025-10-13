@@ -16,8 +16,8 @@ struct add {
 };
 
 template<expression Lhs, expression Rhs, record_like Lets>
-[[nodiscard]] constexpr auto calculate(const add<Lhs, Rhs> &expr, const Lets &lets) noexcept(release) {
-  return calculate(expr.lhs, lets) + calculate(expr.rhs, lets);
+[[nodiscard]] constexpr auto substitute(const add<Lhs, Rhs> &expr, const Lets &lets) noexcept(release) {
+  return substitute(expr.lhs, lets) + substitute(expr.rhs, lets);
 }
 
 template<expression Lhs, expression Rhs>

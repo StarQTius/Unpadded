@@ -65,3 +65,13 @@ TEST_CASE("Identity", "[algebra][equation]") {
     REQUIRE(lt.val == 6);
   }
 }
+
+TEST_CASE("Two-variable equation", "[algebra][equation]") {
+  using namespace upd::algebra::literals;
+
+  SECTION("Substitute an integer for a variable") {
+    auto redeq = ("y"_var = "x"_var / 2 + 3).substitute("x"_var = 8);
+    REQUIRE(redeq.lhs == upd::algebra::variable<upd::name{"y"}>{});
+    REQUIRE(redeq.rhs == 7);
+  }
+}
