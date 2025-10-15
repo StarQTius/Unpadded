@@ -21,6 +21,21 @@ function(upd_add_lint_target NAME COMMENT)
     ${COMMENT})
 endfunction()
 
+# `upd_add_quick_lint_target(<NAME> <BASE_TARGET>)`
+#
+# Create a target `NAME` which provide a quickest alternative than lint
+# target `BASE_TARGET`.
+#
+# A quick lint only processes directly touched source files. It ignores source
+# files that only had their dependencies updated.
+function(upd_add_quick_lint_target NAME BASE_TARGET)
+  add_custom_target(${NAME})
+  set_property(
+    TARGET ${BASE_TARGET}
+    PROPERTY UPD_QUICK_LINT_TARGET
+    ${NAME})
+endfunction()
+
 # `upd_target_lintables(<TARGET> <LINTABLE_TARGET> <EXTRA_SOURCES...>)`
 #
 # Attach source files to be linted from `LINTABLE_TARGET` to `TARGET`

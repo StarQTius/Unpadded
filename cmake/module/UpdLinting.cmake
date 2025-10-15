@@ -29,6 +29,13 @@ define_property(
   PROPERTY UPD_LINTER_COMMENT
   BRIEF_DOCS "Prepended comment when a file is linted")
 
+define_property(
+  TARGET
+  PROPERTY UPD_QUICK_LINT_TARGET
+  BRIEF_DOCS "Corresponding quick lint target, if any"
+  FULL_DOCS
+    "Quick lint targets only lint source files that has been directly touched regardless of whether their dependencies has been touched.")
+
 # `upd_target_lintable(<TARGET> <LINTABLE> <INHERIT_FROM>)`
 #
 # Add source file `LINTABLE` to lint to target `TARGET`
@@ -48,11 +55,12 @@ function(upd_target_lintable TARGET LINTABLE INHERIT_FROM)
   cmake_path(APPEND_STRING COMPLETION_MARKER .${TARGET})
 
   add_custom_command(
-    OUTPUT ${COMPLETION_MARKER}
+    OUTPUT ${COMPLETION_MARKER}_full
     COMMAND $<TARGET_PROPERTY:${TARGET},UPD_LINTER_COMMAND> SOURCE_FILE ${LINTABLE}
     ${LINTING_PROPERTIES_GENEX} CMAKE_BINARY_DIR ${CMAKE_BINARY_DIR} $<${IS_LINTABLE_SOURCE_GENEX}:IS_SOURCE>
-            COMMAND ${CMAKE_COMMAND} -E make_directory $<PATH:GET_PARENT_PATH,${COMPLETION_MARKER}>
-            COMMAND ${CMAKE_COMMAND} -E touch ${COMPLETION_MARKER}
+            COMMAND ${CMAKE_COMMAND} -E make_directory $<PATH:GET_PARENT_PATH,${COMPLETION_MARKER}_full>
+            COMMAND ${CMAKE_COMMAND} -E touch ${COMPLETION_MARKER}_full
+            COMMAND ${CMAKE_COMMAND} -E touch ${COMPLETION_MARKER}_quick
     IMPLICIT_DEPENDS CXX ${LINTABLE}
     COMMENT "$<TARGET_PROPERTY:${TARGET},UPD_LINTER_COMMENT> -- ${LINTABLE_RELATIVE_PATH}"
     VERBATIM COMMAND_EXPAND_LISTS)
@@ -61,11 +69,11 @@ function(upd_target_lintable TARGET LINTABLE INHERIT_FROM)
   # cannot be depended from if target belongs to another directory
   set(SUBTARGET ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET})
   string(REPLACE / _ SUBTARGET ${SUBTARGET})
-  if(NOT TARGET ${SUBTARGET})
+  if(NOT TARGET ${SUBTARGET}_full)
     add_custom_target(
-      ${SUBTARGET}
-      DEPENDS $<TARGET_PROPERTY:${SUBTARGET},UPD_LINT_COMPLETION_MARKERS>)
-    add_dependencies(${TARGET} ${SUBTARGET})
+      ${SUBTARGET}_full
+      DEPENDS $<TARGET_PROPERTY:${SUBTARGET}_full,UPD_LINT_COMPLETION_MARKERS>)
+    add_dependencies(${TARGET} ${SUBTARGET}_full)
   endif()
 
   # Scan of files listed in `IMPLICIT_DEPENDS` uses `INCLUDE_DIRECTORIES`
@@ -73,12 +81,43 @@ function(upd_target_lintable TARGET LINTABLE INHERIT_FROM)
   # Therefore, we have to copy this property from `INHERIT_FROM` so that the
   # CMake dependecy scanner find those headers.
   set_property(
-    TARGET ${SUBTARGET}
+    TARGET ${SUBTARGET}_full
     PROPERTY INCLUDE_DIRECTORIES
     $<TARGET_PROPERTY:${INHERIT_FROM},INCLUDE_DIRECTORIES>)
 
   set_property(
-    TARGET ${SUBTARGET}
+    TARGET ${SUBTARGET}_full
     APPEND
-    PROPERTY UPD_LINT_COMPLETION_MARKERS ${COMPLETION_MARKER})
+    PROPERTY UPD_LINT_COMPLETION_MARKERS ${COMPLETION_MARKER}_full)
+
+  get_property(QUICK_LINT_TARGET
+    TARGET ${TARGET}
+    PROPERTY UPD_QUICK_LINT_TARGET)
+
+  if(NOT DEFINED QUICK_LINT_TARGET)
+    return()
+  endif()
+
+  add_custom_command(
+    OUTPUT ${COMPLETION_MARKER}_quick
+    COMMAND $<TARGET_PROPERTY:${TARGET},UPD_LINTER_COMMAND> SOURCE_FILE ${LINTABLE}
+    ${LINTING_PROPERTIES_GENEX} CMAKE_BINARY_DIR ${CMAKE_BINARY_DIR} $<${IS_LINTABLE_SOURCE_GENEX}:IS_SOURCE>
+            COMMAND ${CMAKE_COMMAND} -E make_directory $<PATH:GET_PARENT_PATH,${COMPLETION_MARKER}_quick>
+            COMMAND ${CMAKE_COMMAND} -E touch ${COMPLETION_MARKER}_full
+            COMMAND ${CMAKE_COMMAND} -E touch ${COMPLETION_MARKER}_quick
+    DEPENDS ${LINTABLE}
+    COMMENT "$<TARGET_PROPERTY:${TARGET},UPD_LINTER_COMMENT> -- ${LINTABLE_RELATIVE_PATH}"
+    VERBATIM COMMAND_EXPAND_LISTS)
+
+  if(NOT TARGET ${SUBTARGET}_quick)
+    add_custom_target(
+      ${SUBTARGET}_quick
+      DEPENDS $<TARGET_PROPERTY:${SUBTARGET}_quick,UPD_LINT_COMPLETION_MARKERS>)
+    add_dependencies(${QUICK_LINT_TARGET} ${SUBTARGET}_quick)
+  endif()
+
+  set_property(
+    TARGET ${SUBTARGET}_quick
+    APPEND
+    PROPERTY UPD_LINT_COMPLETION_MARKERS ${COMPLETION_MARKER}_quick)
 endfunction()

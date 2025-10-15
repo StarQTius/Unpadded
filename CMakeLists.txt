@@ -16,6 +16,7 @@ if(PROJECT_IS_TOP_LEVEL)
   upd_add_lint_target(iwyu "Check #includes consistency" ${UPD_IWYU_LINTER_COMMAND}
     BUGFIX_EXTRA_ARGS -I${PROJECT_SOURCE_DIR}/include/upd # Fix export bug in include-what-you-use 0.25
   )
+  upd_add_quick_lint_target(quick_iwyu iwyu)
 
   upd_script_as_command(UPD_CLANG_TIDY_LINTER_COMMAND ${PROJECT_SOURCE_DIR}/cmake/script/run-clang-tidy.cmake)
   upd_add_lint_target(clang_tidy "Analyze source code" ${UPD_CLANG_TIDY_LINTER_COMMAND} CONFIG_FILE ${PROJECT_SOURCE_DIR}/.clang-tidy)
