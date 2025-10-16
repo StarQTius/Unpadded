@@ -1,7 +1,5 @@
 #pragma once
 
-#include <concepts>
-
 #include "../record/concepts.hpp"
 #include "../record/lite_record.hpp"
 #include "../upd.hpp"
@@ -30,8 +28,8 @@ template<auto Varname, record_like Lets>
 }
 
 template<auto Varname, auto OtherVarname>
-[[nodiscard]] constexpr auto depends_on(variable<OtherVarname>) noexcept(release) -> bool {
-  return std::same_as<variable<Varname>, variable<OtherVarname>>;
+[[nodiscard]] constexpr auto depends_on(variable<OtherVarname> var) noexcept(release) -> bool {
+  return variable<Varname>{} == var;
 }
 
 } // namespace upd::algebra
