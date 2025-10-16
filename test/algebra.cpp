@@ -59,6 +59,20 @@ TEST_CASE("Independent equation side", "[algebra][side]") {
     auto result = ("x"_var / 2 + "y"_var / 3 + 7).calculate("x"_var = 6, "y"_var = 9);
     REQUIRE(result == 13);
   }
+
+  SECTION("Check whether an equation side depends on specific variables") {
+    auto s = "x"_var / 4 + ("y"_var / 2 + "z"_var);
+    REQUIRE(depends_on<upd::name{"x"}>(s.expr));
+    REQUIRE(depends_on<upd::name{"y"}>(s.expr));
+    REQUIRE(depends_on<upd::name{"z"}>(s.expr));
+    REQUIRE(!depends_on<upd::name{"a"}>(s.expr));
+    REQUIRE(depends_on<upd::name{"x"}>(s.expr.lhs));
+    REQUIRE(!depends_on<upd::name{"y"}>(s.expr.lhs));
+    REQUIRE(!depends_on<upd::name{"z"}>(s.expr.lhs));
+    REQUIRE(!depends_on<upd::name{"x"}>(s.expr.rhs));
+    REQUIRE(depends_on<upd::name{"y"}>(s.expr.rhs));
+    REQUIRE(depends_on<upd::name{"z"}>(s.expr.rhs));
+  }
 }
 
 TEST_CASE("Identity", "[algebra][equation]") {

@@ -20,6 +20,11 @@ template<expression Lhs, expression Rhs, record_like Lets>
   return substitute(expr.lhs, lets) / substitute(expr.rhs, lets);
 }
 
+template<auto Varname, expression Lhs, expression Rhs>
+[[nodiscard]] constexpr auto depends_on(const divide<Lhs, Rhs> &expr) noexcept(release) -> bool {
+  return depends_on<Varname>(expr.lhs) || depends_on<Varname>(expr.rhs);
+}
+
 template<expression Lhs, expression Rhs>
 [[nodiscard]] constexpr auto operator/(const side<Lhs> &lhs, const side<Rhs> &rhs) noexcept(release) {
   return side{divide{lhs.expr, rhs.expr}};
