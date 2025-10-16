@@ -18,8 +18,6 @@ struct variable {
   [[nodiscard]] constexpr auto operator==(variable<VN>) noexcept(release) -> bool {
     return false;
   }
-
-  int x{};
 };
 
 template<auto Varname, record_like Lets>
