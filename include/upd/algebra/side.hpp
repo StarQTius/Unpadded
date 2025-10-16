@@ -3,6 +3,7 @@
 #include <type_traits>
 
 #include "../constexpr.hpp"
+#include "../is_convertible_to_instance_of.hpp"
 #include "../named_value.hpp"
 #include "../record/lite_record.hpp"
 #include "../static_assert.hpp"
@@ -25,6 +26,12 @@ struct side {
     return substitute(expr, lite_record{lite_record_node{upd::expr<lets.var.name>, lets.val}...});
   }
 
+  template<typename... Ts>
+    requires(is_convertible_to_instance_of<Ts, let>() && ...)
+  [[nodiscard]] constexpr auto substitute(const Ts &...xs) noexcept(release) {
+    return substitute(let{xs}...);
+  }
+
   template<auto... Varnames, typename... Vals>
     requires(sizeof...(Varnames) == sizeof...(Vals))
   [[nodiscard]] constexpr auto calculate(const let<Varnames, Vals> &...lets) const noexcept(release) {
@@ -37,6 +44,12 @@ struct side {
                       typeid(retval_type));
 
     return retval;
+  }
+
+  template<typename... Ts>
+    requires(is_convertible_to_instance_of<Ts, let>() && ...)
+  [[nodiscard]] constexpr auto calculate(const Ts &...xs) const noexcept(release) {
+    return calculate(let{xs}...);
   }
 
   template<typename Self, expression E>

@@ -54,6 +54,11 @@ TEST_CASE("Independent equation side", "[algebra][side]") {
     auto result = ("x"_var / 3 + 2).calculate(upd::algebra::let{"x"_var, 7});
     REQUIRE(result == 4);
   }
+
+  SECTION("Solve integer linear expression with several variables") {
+    auto result = ("x"_var / 2 + "y"_var / 3 + 7).calculate("x"_var = 6, "y"_var = 9);
+    REQUIRE(result == 13);
+  }
 }
 
 TEST_CASE("Identity", "[algebra][equation]") {
