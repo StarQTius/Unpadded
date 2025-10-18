@@ -3,8 +3,8 @@
 #include <concepts>
 #include <type_traits>
 
-#include "../record/babelian_lite_record.hpp"
 #include "../record/concepts.hpp"
+#include "../record/universal_record.hpp"
 #include "../upd.hpp"
 
 namespace upd::algebra {
@@ -26,7 +26,7 @@ struct depends_on<T, Varname> {
 
 template<typename Expr>
 concept expression = requires(Expr expr) {
-  substitute(expr, babelian_lite_record{0});
+  substitute(expr, universal_record{0});
   typename depends_on<Expr, 0>;
   { depends_on<Expr, 0>::value } -> std::convertible_to<bool>;
 };

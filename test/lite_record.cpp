@@ -59,8 +59,8 @@ TEST_CASE("Lite record basic functionalities", "[lite_record]") {
   }
 }
 
-TEST_CASE("Babelian lite record", "[babelian_lite_record]") {
-  upd::record_like auto rec = upd::babelian_lite_record{42};
+TEST_CASE("Babelian lite record", "[universal_record]") {
+  upd::record_like auto rec = upd::universal_record{42};
 
   SECTION("Check if record has a tag") {
     REQUIRE(has_tag<upd::name{"a"}>(rec));
