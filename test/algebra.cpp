@@ -62,16 +62,16 @@ TEST_CASE("Independent equation side", "[algebra][side]") {
 
   SECTION("Check whether an equation side depends on specific variables") {
     auto s = "x"_var / 4 + ("y"_var / 2 + "z"_var);
-    REQUIRE(depends_on<upd::name{"x"}>(s.expr));
-    REQUIRE(depends_on<upd::name{"y"}>(s.expr));
-    REQUIRE(depends_on<upd::name{"z"}>(s.expr));
-    REQUIRE(!depends_on<upd::name{"a"}>(s.expr));
-    REQUIRE(depends_on<upd::name{"x"}>(s.expr.lhs));
-    REQUIRE(!depends_on<upd::name{"y"}>(s.expr.lhs));
-    REQUIRE(!depends_on<upd::name{"z"}>(s.expr.lhs));
-    REQUIRE(!depends_on<upd::name{"x"}>(s.expr.rhs));
-    REQUIRE(depends_on<upd::name{"y"}>(s.expr.rhs));
-    REQUIRE(depends_on<upd::name{"z"}>(s.expr.rhs));
+    REQUIRE(upd::algebra::depends_on_v<decltype(s.expr), upd::name{"x"}>);
+    REQUIRE(upd::algebra::depends_on_v<decltype(s.expr), upd::name{"y"}>);
+    REQUIRE(upd::algebra::depends_on_v<decltype(s.expr), upd::name{"z"}>);
+    REQUIRE(!upd::algebra::depends_on_v<decltype(s.expr), upd::name{"a"}>);
+    REQUIRE(upd::algebra::depends_on_v<decltype(s.expr.lhs), upd::name{"x"}>);
+    REQUIRE(!upd::algebra::depends_on_v<decltype(s.expr.lhs), upd::name{"y"}>);
+    REQUIRE(!upd::algebra::depends_on_v<decltype(s.expr.lhs), upd::name{"z"}>);
+    REQUIRE(!upd::algebra::depends_on_v<decltype(s.expr.rhs), upd::name{"x"}>);
+    REQUIRE(upd::algebra::depends_on_v<decltype(s.expr.rhs), upd::name{"y"}>);
+    REQUIRE(upd::algebra::depends_on_v<decltype(s.expr.rhs), upd::name{"z"}>);
   }
 }
 
@@ -92,5 +92,23 @@ TEST_CASE("Two-variable equation", "[algebra][equation]") {
     auto redeq = ("y"_var = "x"_var / 2 + 3).substitute("x"_var = 8);
     REQUIRE(redeq.lhs == upd::algebra::variable<upd::name{"y"}>{});
     REQUIRE(redeq.rhs == 7);
+  }
+
+  SECTION("Isolate on variable on the a side") {
+    auto eq1 = ("y"_var = "x"_var / 3 + 4).isolate("x"_var);
+    REQUIRE(eq1.lhs == "x"_var.expr);
+    REQUIRE(eq1.rhs == (("y"_var - 4) * 3).expr);
+
+    auto eq2 = ("y"_var = "x"_var * 7 - 6).isolate("x"_var);
+    REQUIRE(eq2.lhs == "x"_var.expr);
+    REQUIRE(eq2.rhs == (("y"_var + 6) / 7).expr);
+
+    auto eq3 = ("y"_var = 4 + 3 / "x"_var).isolate("x"_var);
+    REQUIRE(eq3.lhs == "x"_var.expr);
+    REQUIRE(eq3.rhs == (3 / ("y"_var - 4)).expr);
+
+    auto eq4 = ("y"_var = 6 - 7 * "x"_var).isolate("x"_var);
+    REQUIRE(eq4.lhs == "x"_var.expr);
+    REQUIRE(eq4.rhs == ((6 - "y"_var) / 7).expr);
   }
 }

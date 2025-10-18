@@ -3,6 +3,7 @@
 #include "../record/concepts.hpp"
 #include "../record/lite_record.hpp"
 #include "../upd.hpp"
+#include "concepts.hpp"
 
 namespace upd::algebra {
 
@@ -10,10 +11,10 @@ template<auto Name>
 struct variable {
   constexpr static auto name = Name;
 
-  [[nodiscard]] constexpr auto operator==(variable<Name>) noexcept(release) -> bool { return true; }
+  [[nodiscard]] constexpr auto operator==(variable<Name>) const noexcept(release) -> bool { return true; }
 
   template<auto VN>
-  [[nodiscard]] constexpr auto operator==(variable<VN>) noexcept(release) -> bool {
+  [[nodiscard]] constexpr auto operator==(variable<VN>) const noexcept(release) -> bool {
     return false;
   }
 };
@@ -28,8 +29,18 @@ template<auto Varname, record_like Lets>
 }
 
 template<auto Varname, auto OtherVarname>
-[[nodiscard]] constexpr auto depends_on(variable<OtherVarname> var) noexcept(release) -> bool {
-  return variable<Varname>{} == var;
+struct depends_on<variable<OtherVarname>, Varname> {
+  constexpr static auto value = false;
+};
+
+template<auto Varname>
+struct depends_on<variable<Varname>, Varname> {
+  constexpr static auto value = true;
+};
+
+template<auto Varname, expression Expr>
+[[nodiscard]] constexpr auto balance_on(const Expr &base, variable<Varname>) noexcept(release) -> Expr {
+  return base;
 }
 
 } // namespace upd::algebra

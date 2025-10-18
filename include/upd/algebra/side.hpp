@@ -68,6 +68,8 @@ struct side {
         .rhs = value,
     };
   }
+
+  [[nodiscard]] constexpr auto operator==(const side &) const noexcept(release) -> bool = default;
 };
 
 } // namespace upd::algebra
