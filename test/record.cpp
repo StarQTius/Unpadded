@@ -36,6 +36,12 @@ TEST_CASE("Lite record basic functionalities", "[lite_record]") {
     REQUIRE(rec.has_tag(upd::expr<upd::name{"c"}>));
     REQUIRE(!rec.has_tag(upd::expr<upd::name{"d"}>));
     REQUIRE(!rec.has_tag(upd::expr<upd::name{"e"}>));
+
+    REQUIRE(upd::has_tag<upd::name{"a"}>(rec));
+    REQUIRE(upd::has_tag<upd::name{"b"}>(rec));
+    REQUIRE(upd::has_tag<upd::name{"c"}>(rec));
+    REQUIRE(!upd::has_tag<upd::name{"d"}>(rec));
+    REQUIRE(!upd::has_tag<upd::name{"e"}>(rec));
   }
 
   SECTION("Check if record has an element of given type") {
@@ -44,6 +50,12 @@ TEST_CASE("Lite record basic functionalities", "[lite_record]") {
     REQUIRE(rec.has_type(upd::typebox<bool>{}));
     REQUIRE(!rec.has_type(upd::typebox<short>{}));
     REQUIRE(!rec.has_type(upd::typebox<long>{}));
+
+    REQUIRE(upd::has_type<int>(rec));
+    REQUIRE(upd::has_type<char>(rec));
+    REQUIRE(upd::has_type<bool>(rec));
+    REQUIRE(!upd::has_type<short>(rec));
+    REQUIRE(!upd::has_type<long>(rec));
   }
 
   SECTION("Access elements when record is qualified") {
@@ -63,19 +75,19 @@ TEST_CASE("Babelian lite record", "[universal_record]") {
   upd::record_like auto rec = upd::universal_record{42};
 
   SECTION("Check if record has a tag") {
-    REQUIRE(has_tag<upd::name{"a"}>(rec));
-    REQUIRE(has_tag<upd::name{"b"}>(rec));
-    REQUIRE(has_tag<upd::name{"c"}>(rec));
-    REQUIRE(has_tag<upd::name{"d"}>(rec));
-    REQUIRE(has_tag<upd::name{"e"}>(rec));
+    REQUIRE(upd::has_tag<upd::name{"a"}>(rec));
+    REQUIRE(upd::has_tag<upd::name{"b"}>(rec));
+    REQUIRE(upd::has_tag<upd::name{"c"}>(rec));
+    REQUIRE(upd::has_tag<upd::name{"d"}>(rec));
+    REQUIRE(upd::has_tag<upd::name{"e"}>(rec));
   }
 
   SECTION("Check if record has an element of given type") {
-    REQUIRE(has_type<int>(rec));
-    REQUIRE(!has_type<char>(rec));
-    REQUIRE(!has_type<bool>(rec));
-    REQUIRE(!has_type<short>(rec));
-    REQUIRE(!has_type<long>(rec));
+    REQUIRE(upd::has_type<int>(rec));
+    REQUIRE(!upd::has_type<char>(rec));
+    REQUIRE(!upd::has_type<bool>(rec));
+    REQUIRE(!upd::has_type<short>(rec));
+    REQUIRE(!upd::has_type<long>(rec));
   }
 
   SECTION("Access elements when record is qualified") {
@@ -106,5 +118,13 @@ TEST_CASE("Record basic functionalities", "[record]") {
     REQUIRE(std::same_as<decltype(cst_lv), const int &>);
     REQUIRE(std::same_as<decltype(rv), int &&>);
     REQUIRE(std::same_as<decltype(cst_rv), const int &&>);
+  }
+
+  SECTION("Check if record has a tag") {
+    REQUIRE(upd::has_tag<upd::name{"a"}>(rec));
+    REQUIRE(upd::has_tag<upd::name{"b"}>(rec));
+    REQUIRE(upd::has_tag<upd::name{"c"}>(rec));
+    REQUIRE(!upd::has_tag<upd::name{"d"}>(rec));
+    REQUIRE(!upd::has_tag<upd::name{"e"}>(rec));
   }
 }

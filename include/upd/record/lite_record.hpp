@@ -122,10 +122,14 @@ template<auto Tag, typename Record>
   return UPD_FWD(rec).get_by_tag(expr<Tag>);
 }
 
-template<auto Tag, typename Record>
-  requires(is_instance_of<Record, lite_record>())
-[[nodiscard]] constexpr static auto has_tag(const Record &rec) noexcept(release) -> bool {
+template<auto Tag, typename... Nodes>
+[[nodiscard]] constexpr static auto has_tag(const lite_record<Nodes...> &rec) noexcept(release) -> bool {
   return rec.has_tag(expr<Tag>);
+}
+
+template<auto Tag, typename... Nodes>
+[[nodiscard]] constexpr static auto has_type(const lite_record<Nodes...> &rec) noexcept(release) -> bool {
+  return rec.has_type(expr<Tag>);
 }
 
 } // namespace upd
