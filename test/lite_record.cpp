@@ -90,3 +90,21 @@ TEST_CASE("Babelian lite record", "[universal_record]") {
     REQUIRE(std::same_as<decltype(cst_rv), const int &&>);
   }
 }
+
+TEST_CASE("Record basic functionalities", "[record]") {
+  using namespace upd::literals;
+
+  upd::record_like auto rec = upd::record{"a"_kw2 = int{4}, "b"_kw2 = char{8}, "c"_kw2 = false};
+
+  SECTION("Access elements when record is qualified") {
+    auto &&lv = rec["a"_kw2];
+    auto &&cst_lv = std::as_const(rec)["a"_kw2];
+    auto &&rv = std::move(rec)["a"_kw2];
+    auto &&cst_rv = std::move(std::as_const(rec))["a"_kw2];
+
+    REQUIRE(std::same_as<decltype(lv), int &>);
+    REQUIRE(std::same_as<decltype(cst_lv), const int &>);
+    REQUIRE(std::same_as<decltype(rv), int &&>);
+    REQUIRE(std::same_as<decltype(cst_rv), const int &&>);
+  }
+}
