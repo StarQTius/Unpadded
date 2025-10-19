@@ -7,7 +7,7 @@ include(Unpadded)
 
 add_executable(upd_unitary
   algebra.cpp
-  lite_record.cpp
+  record.cpp
   named_tuple_v2.cpp)
 target_link_libraries(upd_unitary PRIVATE
   Unpadded::UnpaddedDebug
