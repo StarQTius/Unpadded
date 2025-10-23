@@ -128,3 +128,17 @@ TEST_CASE("Record basic functionalities", "[record]") {
     REQUIRE(!upd::has_tag<upd::name{"e"}>(rec));
   }
 }
+
+TEST_CASE("Record views", "[record_view]") {
+  namespace updv = upd::record_views;
+  using namespace upd::literals;
+
+  upd::record_like auto rec = upd::record{"a"_kw2 = int{4}, "b"_kw2 = char{8}, "c"_kw2 = long{67}};
+
+  SECTION("Transform element of a record") {
+    upd::record_view auto view = rec | updv::transform([](auto x) { return x + 1; });
+    REQUIRE(get<upd::name{"a"}>(view) == 5);
+    REQUIRE(get<upd::name{"b"}>(view) == 9);
+    REQUIRE(get<upd::name{"c"}>(view) == 68);
+  }
+}
