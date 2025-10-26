@@ -3,7 +3,6 @@
 #include <concepts>
 #include <cstddef>
 #include <type_traits>
-#include <utility>
 
 #include "../named_value.hpp"
 #include "../transfert_reference.hpp"
@@ -13,13 +12,13 @@
 namespace upd {
 
 template<auto, typename>
-struct record_element {};
+struct record_element; // IWYU pragma: keep
 
 template<typename>
-struct record_size {};
+struct record_size; // IWYU pragma: keep
 
 template<std::size_t, typename>
-struct record_tag {};
+struct record_tag; // IWYU pragma: keep
 
 } // namespace upd
 
@@ -84,39 +83,4 @@ constexpr auto record_size_v = record_size<Record>::value;
 template<std::size_t I, record_like Record>
 constexpr auto record_tag_v = record_tag<I, Record>::value;
 
-template<typename>
-struct record_view_for; // IWYU pragma: keep
-
-template<typename T, template<typename> typename Traits>
-concept implementation_of = requires {
-  typename Traits<std::remove_cvref_t<T>>;
-  Traits<std::remove_cvref_t<T>>{};
-};
-
 } // namespace upd
-
-template<auto Id, typename View>
-  requires upd::implementation_of<View, upd::record_view_for>
-struct upd::record_element<Id, View> {
-  using type = decltype(get<Id>(std::declval<View>()));
-};
-
-template<std::size_t I, typename View>
-  requires upd::implementation_of<View, upd::record_view_for>
-struct upd::record_tag<I, View> {
-  constexpr static auto value =
-      upd::record_tag_v<I, std::remove_cvref_t<typename upd::record_view_for<std::remove_cvref_t<View>>::base_type>>;
-};
-
-template<typename View>
-  requires upd::implementation_of<View, upd::record_view_for>
-struct upd::record_size<View> {
-  constexpr static auto value =
-      upd::record_size_v<std::remove_cvref_t<typename upd::record_view_for<std::remove_cvref_t<View>>::base_type>>;
-};
-
-template<auto Id, typename View>
-  requires upd::implementation_of<View, upd::record_view_for>
-[[nodiscard]] constexpr auto get(View &&view) -> decltype(auto) {
-  return upd::record_view_for<std::remove_cvref_t<View>>::template get<Id>(UPD_FWD(view));
-}

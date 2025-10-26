@@ -1,7 +1,9 @@
 #pragma once
 
+#include <concepts>
 #include <type_traits>
 
+#include "../constexpr.hpp"
 #include "../named_value.hpp"
 #include "../upd.hpp"
 
@@ -12,8 +14,19 @@ struct entry {
   constexpr static auto identifier = Identifier;
   using value_type = T;
 
+  template<typename U>
+    requires std::constructible_from<T, U>
+  explicit constexpr entry(U &&x) : value{UPD_FWD(x)} {}
+
+  template<typename U>
+    requires std::constructible_from<T, U>
+  explicit constexpr entry(auto_constant<Identifier>, U &&x) : value{UPD_FWD(x)} {}
+
   T value;
 };
+
+template<auto Identifier, typename T>
+explicit entry(auto_constant<Identifier>, T) -> entry<Identifier, T>;
 
 template<auto Identifier>
 struct keyword2 {
