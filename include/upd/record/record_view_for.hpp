@@ -16,6 +16,19 @@ namespace upd {
 template<typename>
 struct record_view_for; // IWYU pragma: keep
 
+template<auto Tag, typename View>
+  requires upd::implementation_of<View, upd::record_view_for>
+[[nodiscard]] constexpr auto get(View &&view) -> decltype(auto) {
+  using view_type = std::remove_cvref_t<View>;
+
+  constexpr auto i = UPD_WITH_SEQUENCE(Is, upd::record_size<view_type>::value) {
+    auto lut = upd::lite_record{upd::lite_record_node{upd::expr<upd::record_tag<Is, view_type>::value>, Is}...};
+    return get<Tag>(lut);
+  };
+
+  return upd::record_view_for<std::remove_cvref_t<View>>::template get_ith<i>(UPD_FWD(view)).value;
+}
+
 } // namespace upd
 
 template<auto Tag, typename View>
@@ -36,16 +49,3 @@ template<typename View>
 struct upd::record_size<View> {
   constexpr static auto value = upd::record_view_for<std::remove_cvref_t<View>>::size;
 };
-
-template<auto Tag, typename View>
-  requires upd::implementation_of<View, upd::record_view_for>
-[[nodiscard]] constexpr auto get(View &&view) -> decltype(auto) {
-  using view_type = std::remove_cvref_t<View>;
-
-  constexpr auto i = UPD_WITH_SEQUENCE(Is, upd::record_size<view_type>::value) {
-    auto lut = upd::lite_record{upd::lite_record_node{upd::expr<upd::record_tag<Is, view_type>::value>, Is}...};
-    return get<Tag>(lut);
-  };
-
-  return upd::record_view_for<std::remove_cvref_t<View>>::template get_ith<i>(UPD_FWD(view)).value;
-}

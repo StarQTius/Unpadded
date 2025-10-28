@@ -1,5 +1,6 @@
 #pragma once
 
+#include "record/clean.hpp"               // IWYU pragma: export
 #include "record/concepts.hpp"            // IWYU pragma: export
 #include "record/entry.hpp"               // IWYU pragma: export
 #include "record/get_ith.hpp"             // IWYU pragma: export

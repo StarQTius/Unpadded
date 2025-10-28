@@ -141,4 +141,13 @@ TEST_CASE("Record views", "[record_view]") {
     REQUIRE(get<upd::name{"b"}>(view) == 9);
     REQUIRE(get<upd::name{"c"}>(view) == 68);
   }
+
+  SECTION("Clean elements from a record") {
+    upd::record_like auto view = rec | updv::clean<char>;
+    REQUIRE(has_tag<upd::name{"a"}>(view));
+    REQUIRE(!has_tag<upd::name{"b"}>(view));
+    REQUIRE(has_tag<upd::name{"c"}>(view));
+    REQUIRE(get<upd::name{"a"}>(view));
+    REQUIRE(get<upd::name{"c"}>(view));
+  }
 }

@@ -27,6 +27,12 @@ constexpr auto record_view_adaptor =
 
 template<record_like Record, template<typename...> typename View, typename... Args>
   requires requires(Record rec, Args... args) { View{UPD_FWD(rec), UPD_FWD(args)...}; }
+[[nodiscard]] constexpr auto operator|(Record &&rec, const record_view_adaptor_t<View, Args...> &adaptor) {
+  return std::apply([&](auto &&...args) { return View{UPD_FWD(rec), UPD_FWD(args)...}; }, adaptor.args);
+}
+
+template<record_like Record, template<typename...> typename View, typename... Args>
+  requires requires(Record rec, Args... args) { View{UPD_FWD(rec), UPD_FWD(args)...}; }
 [[nodiscard]] constexpr auto operator|(Record &&rec, record_view_adaptor_t<View, Args...> &&adaptor) {
   return std::apply([&](auto &&...args) { return View{UPD_FWD(rec), UPD_FWD(args)...}; }, std::move(adaptor).args);
 }
