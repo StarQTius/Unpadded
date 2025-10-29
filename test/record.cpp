@@ -147,7 +147,16 @@ TEST_CASE("Record views", "[record_view]") {
     REQUIRE(has_tag<upd::name{"a"}>(view));
     REQUIRE(!has_tag<upd::name{"b"}>(view));
     REQUIRE(has_tag<upd::name{"c"}>(view));
-    REQUIRE(get<upd::name{"a"}>(view));
-    REQUIRE(get<upd::name{"c"}>(view));
+    REQUIRE(&get<upd::name{"a"}>(view) == &get<upd::name{"a"}>(rec));
+    REQUIRE(&get<upd::name{"c"}>(view) == &get<upd::name{"c"}>(rec));
+  }
+
+  SECTION("Transform element by substituting references for them") {
+    auto x = 0;
+    upd::record_view auto view = rec | updv::transform([&](auto) -> auto && { return x; });
+
+    REQUIRE(&get<upd::name{"a"}>(view) == &x);
+    REQUIRE(&get<upd::name{"b"}>(view) == &x);
+    REQUIRE(&get<upd::name{"c"}>(view) == &x);
   }
 }

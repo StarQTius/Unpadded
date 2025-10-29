@@ -3,7 +3,6 @@
 #include <cstddef>
 #include <type_traits>
 
-#include "../constexpr.hpp"
 #include "../functional.hpp"
 #include "../upd.hpp"
 #include "concepts.hpp"
@@ -36,6 +35,7 @@ struct upd::record_view_for<upd::record_views::transform_view<Base, F>> {
   template<std::size_t I, typename View>
   [[nodiscard]] constexpr static auto get_ith(View &&view) -> decltype(auto) {
     constexpr auto tag = record_tag_v<I, std::remove_cvref_t<Base>>;
-    return entry{expr<tag>, UPD_INVOKE(view.f, upd::get_ith<I>(UPD_FWD(view).base))};
+    using type = decltype(UPD_INVOKE(view.f, upd::get_ith<I>(UPD_FWD(view).base)));
+    return entry<tag, type>{UPD_INVOKE(view.f, upd::get_ith<I>(UPD_FWD(view).base))};
   }
 };
