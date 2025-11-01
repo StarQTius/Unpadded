@@ -1,5 +1,6 @@
 #pragma once
 
+#include <concepts>
 #include <cstddef>
 #include <tuple>
 #include <utility>
@@ -37,13 +38,24 @@ struct lite_record_node : lite_record_tag_node<Tag>, lite_record_type_node<T> {
 
   constexpr static auto tag = Tag;
 
-  explicit constexpr lite_record_node(auto_constant<Tag>, const T &v) : value{v} {}
+  template<typename U>
+    requires std::convertible_to<U, T>
+  explicit constexpr lite_record_node(U &&v) : value{UPD_FWD(v)} {}
 
-  explicit constexpr lite_record_node(auto_constant<Tag>, T &&v) : value{std::move(v)} {}
+  template<typename U>
+    requires std::convertible_to<U, T>
+  explicit constexpr lite_record_node(auto_constant<Tag>, U &&v) : value{UPD_FWD(v)} {}
 
-  template<typename Self>
-  [[nodiscard]] constexpr auto get_by_tag(this Self &&self, auto_constant<Tag>) noexcept(release) -> auto && {
-    return UPD_FWD(self).*(&lite_record_node<Tag, T>::value);
+  [[nodiscard]] constexpr auto get_by_tag(auto_constant<Tag>) & noexcept(release) -> T & { return value; }
+
+  [[nodiscard]] constexpr auto get_by_tag(auto_constant<Tag>) const & noexcept(release) -> const T & { return value; }
+
+  [[nodiscard]] constexpr auto get_by_tag(auto_constant<Tag>) && noexcept(release) -> T && {
+    return std::forward<T>(value);
+  }
+
+  [[nodiscard]] constexpr auto get_by_tag(auto_constant<Tag>) const && noexcept(release) -> const T && {
+    return std::forward<const T>(value);
   }
 
   [[nodiscard]] constexpr static auto get_type_by_tag(auto_constant<Tag>) noexcept(release) -> typebox<T> {
@@ -54,6 +66,9 @@ struct lite_record_node : lite_record_tag_node<Tag>, lite_record_type_node<T> {
 
   T value;
 };
+
+template<auto Tag, typename T>
+lite_record_node(auto_constant<Tag>, T) -> lite_record_node<Tag, T>;
 
 template<typename...>
 struct lite_record;

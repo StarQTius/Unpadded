@@ -1,8 +1,11 @@
 #include <concepts>
+#include <string>
+#include <string_view>
 #include <utility>
 
 #include <catch2/catch_test_macros.hpp>
 #include <upd/constexpr.hpp>
+#include <upd/equivalent_to.hpp>
 #include <upd/named_value.hpp>
 #include <upd/record.hpp>
 #include <upd/type_traits.hpp>
@@ -136,7 +139,7 @@ TEST_CASE("Record views", "[record_view]") {
   upd::record_like auto rec = upd::record{"a"_kw2 = int{4}, "b"_kw2 = char{8}, "c"_kw2 = long{67}};
 
   SECTION("Transform element of a record") {
-    upd::record_view auto view = rec | updv::transform([](auto x) { return x + 1; });
+    upd::record_view auto view = rec | updv::transform([](auto, auto x) { return x + 1; });
     REQUIRE(get<upd::name{"a"}>(view) == 5);
     REQUIRE(get<upd::name{"b"}>(view) == 9);
     REQUIRE(get<upd::name{"c"}>(view) == 68);
@@ -153,10 +156,31 @@ TEST_CASE("Record views", "[record_view]") {
 
   SECTION("Transform element by substituting references for them") {
     auto x = 0;
-    upd::record_view auto view = rec | updv::transform([&](auto) -> auto && { return x; });
+    upd::record_view auto view = rec | updv::transform([&](auto, auto) -> auto && { return x; });
 
     REQUIRE(&get<upd::name{"a"}>(view) == &x);
     REQUIRE(&get<upd::name{"b"}>(view) == &x);
     REQUIRE(&get<upd::name{"c"}>(view) == &x);
+  }
+
+  SECTION("Transform element according to their tag") {
+    using namespace std::literals;
+
+    upd::record_view auto view = rec | updv::transform([&](auto k, auto) { return k.value.string; });
+
+    REQUIRE(get<upd::name{"a"}>(view) == "a"sv);
+    REQUIRE(get<upd::name{"b"}>(view) == "b"sv);
+    REQUIRE(get<upd::name{"c"}>(view) == "c"sv);
+  }
+
+  SECTION("Filter element from a record") {
+    upd::record_view auto view = rec | updv::filter([]<auto Id, typename T>(upd::auto_constant<Id>, upd::typebox<T>) {
+                                   return !upd::equivalent_to<Id, upd::name{"b"}> && !std::same_as<T, int &>;
+                                 });
+
+    REQUIRE(!has_tag<upd::name{"a"}>(view));
+    REQUIRE(!has_tag<upd::name{"b"}>(view));
+    REQUIRE(has_tag<upd::name{"c"}>(view));
+    REQUIRE(&get<upd::name{"c"}>(view) == &get<upd::name{"c"}>(rec));
   }
 }

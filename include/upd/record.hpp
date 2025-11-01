@@ -3,6 +3,7 @@
 #include "record/clean.hpp"               // IWYU pragma: export
 #include "record/concepts.hpp"            // IWYU pragma: export
 #include "record/entry.hpp"               // IWYU pragma: export
+#include "record/filter.hpp"              // IWYU pragma: export
 #include "record/get_ith.hpp"             // IWYU pragma: export
 #include "record/has_tag.hpp"             // IWYU pragma: export
 #include "record/has_type.hpp"            // IWYU pragma: export
@@ -13,3 +14,4 @@
 #include "record/record_view_for.hpp"     // IWYU pragma: export
 #include "record/transform.hpp"           // IWYU pragma: export
 #include "record/universal_record.hpp"    // IWYU pragma: export
+#include "record/view_chain.hpp"          // IWYU pragma: export

@@ -20,13 +20,19 @@ template<auto Tag, typename View>
   requires upd::implementation_of<View, upd::record_view_for>
 [[nodiscard]] constexpr auto get(View &&view) -> decltype(auto) {
   using view_type = std::remove_cvref_t<View>;
+  using impl_type = upd::record_view_for<view_type>;
 
   constexpr auto i = UPD_WITH_SEQUENCE(Is, upd::record_size<view_type>::value) {
     auto lut = upd::lite_record{upd::lite_record_node{upd::expr<upd::record_tag<Is, view_type>::value>, Is}...};
     return get<Tag>(lut);
   };
 
-  return upd::record_view_for<std::remove_cvref_t<View>>::template get_ith<i>(UPD_FWD(view)).value;
+  using value_type = decltype(impl_type::template get_ith<i>(UPD_FWD(view)).value);
+  if constexpr (std::is_reference_v<value_type>) {
+    return UPD_FWD(impl_type::template get_ith<i>(UPD_FWD(view)).value);
+  } else {
+    return impl_type::template get_ith<i>(UPD_FWD(view)).value;
+  }
 }
 
 } // namespace upd

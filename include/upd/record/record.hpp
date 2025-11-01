@@ -2,7 +2,6 @@
 
 #include <cstddef>
 
-#include "../constexpr.hpp"
 #include "../is_instance_of.hpp"
 #include "../upd.hpp"
 #include "concepts.hpp"
@@ -43,7 +42,7 @@ public:
   template<typename... Entries>
     requires(sizeof...(Ts) == sizeof...(Entries) && (is_instance_of<Entries, entry>() && ...))
   constexpr explicit record(Entries &&...entries)
-      : m_storage{lite_record_node{expr<Identifiers>, UPD_FWD(entries).value}...} {}
+      : m_storage{lite_record_node<Identifiers, typename Entries::value_type>{UPD_FWD(UPD_FWD(entries).value)}...} {}
 
   template<typename Self, auto Id>
   [[nodiscard]] constexpr auto operator[](this Self &&self, keyword2<Id>) noexcept(release) -> auto && {

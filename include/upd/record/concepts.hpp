@@ -35,7 +35,7 @@ concept ith_tag_gettable = requires(std::remove_reference_t<Record> rec) { recor
                                     record_element<tag.value, decltype(rec_)> elem) {
                              {
                                get<tag.value>(UPD_FWD(rec))
-                             } -> std::convertible_to<const typename decltype(elem)::type &>;
+                             } -> std::common_reference_with<typename decltype(elem)::type>;
                            };
 
 template<typename View, std::size_t I>

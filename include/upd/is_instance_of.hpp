@@ -16,4 +16,10 @@ template<typename T, template<auto, typename...> typename TT>
   return requires(const T &x) { checker(x); };
 }
 
+template<typename T, template<template<typename...> typename, typename...> typename TT>
+[[nodiscard]] constexpr auto is_instance_of() noexcept(release) -> bool {
+  auto checker = []<template<typename...> typename TU, typename... Ts>(const TT<TU, Ts...> &) {};
+  return requires(const T &x) { checker(x); };
+}
+
 } // namespace upd
