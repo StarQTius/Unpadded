@@ -13,6 +13,7 @@ RUN add-apt-repository ppa:ubuntu-toolchain-r/test
 RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key 2>/dev/null | tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
 RUN echo 'deb http://apt.llvm.org/plucky/ llvm-toolchain-plucky-21 main' > /etc/apt/sources.list.d/llvm.list
 RUN git clone https://github.com/include-what-you-use/include-what-you-use
+RUN git clone https://github.com/google/bloaty
 
 WORKDIR /
 RUN apt update
@@ -37,10 +38,19 @@ WORKDIR /include-what-you-use
 RUN git fetch --all
 RUN git show 721024b
 RUN git checkout 721024b
-RUN --mount=type=cache,id=Unpadded,target=build \
+RUN --mount=type=cache,id=Unpadded_iwyu,target=/include-what-you-use/build \
   cmake -Bbuild -DCMAKE_CXX_COMPILER=clang++-21 -DCMAKE_PREFIX_PATH=/usr/lib/llvm-21 \
   && cmake --build build --target install --parallel $(nproc)
 RUN ln -s /usr/local/bin/include-what-you-use /usr/bin/iwyu
+
+WORKDIR /bloaty
+RUN git checkout 0e5a909
+RUN git submodule update --init --recursive
+RUN --mount=type=cache,id=Unpadded_bloaty,target=/bloaty/build \
+  cmake -Bbuild -DCMAKE_CXX_COMPILER=clang++-21 -DBUILD_TESTING=NO \
+  && make install --directory build --jobs $(nproc) --ignore-errors \
+  && cmake --build build --target install
+RUN ln -s /usr/local/bin/bloaty /usr/bin/bloaty
 
 WORKDIR /
 RUN update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-15 0
