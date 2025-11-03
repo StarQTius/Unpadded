@@ -183,4 +183,50 @@ TEST_CASE("Record views", "[record_view]") {
     REQUIRE(has_tag<upd::name{"c"}>(view));
     REQUIRE(&get<upd::name{"c"}>(view) == &get<upd::name{"c"}>(rec));
   }
+
+  SECTION("Join entries of a record") {
+    upd::nested_record auto nested_rec = upd::record{"a"_kw2 =
+                                                         upd::record{
+                                                             "1"_kw2 = 1,
+                                                             "2"_kw2 = 2,
+                                                         },
+                                                     "b"_kw2 = upd::record{
+                                                         "3"_kw2 = 3,
+                                                         "4"_kw2 = 4,
+                                                     }};
+
+    auto view = nested_rec | updv::join([](auto pk, auto k) { return upd::name{{pk.string[0], k.string[0], 0}}; });
+
+    REQUIRE(get<upd::name{"a1"}>(view) == 1);
+    REQUIRE(get<upd::name{"a2"}>(view) == 2);
+    REQUIRE(get<upd::name{"b3"}>(view) == 3);
+    REQUIRE(get<upd::name{"b4"}>(view) == 4);
+  }
+}
+
+TEST_CASE("Algorithms on records", "[record_algorithm]") {
+  namespace updv = upd::record_views;
+  using namespace upd::literals;
+
+  upd::record_like auto rec = upd::record{"a"_kw2 = int{4}, "b"_kw2 = char{8}, "c"_kw2 = long{67}};
+
+  SECTION("Left-fold record content") {
+    using namespace std::literals;
+
+    auto res = updv::fold_left(rec, std::pair{""s, 0}, [](auto acc, auto k, auto v) {
+      return std::pair{acc.first + k.string, acc.second + v};
+    });
+
+    REQUIRE(res == std::pair{"abc", 79});
+  }
+
+  SECTION("Right-fold record content") {
+    using namespace std::literals;
+
+    auto res = updv::fold_right(rec, std::pair{""s, 0}, [](auto k, auto v, auto acc) {
+      return std::pair{acc.first + k.string, acc.second + v};
+    });
+
+    REQUIRE(res == std::pair{"cba", 79});
+  }
 }

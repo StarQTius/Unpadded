@@ -84,3 +84,20 @@ template<std::size_t I, record_like Record>
 constexpr auto record_tag_v = record_tag<I, Record>::value;
 
 } // namespace upd
+
+namespace upd::detail {
+
+template<typename Record, std::size_t I>
+concept ith_element_record_like =
+    record_like<record_element_t<record_tag_v<I, std::remove_cvref_t<Record>>, std::remove_cvref_t<Record>>>;
+
+} // namespace upd::detail
+
+namespace upd {
+
+template<typename Record>
+concept nested_record =
+    record_like<Record> &&
+    UPD_ALL_OF_CONCEPT(detail::ith_element_record_like, Record, record_size_v<std::remove_reference_t<Record>>);
+
+} // namespace upd

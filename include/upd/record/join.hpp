@@ -1,0 +1,76 @@
+#pragma once
+
+#include <algorithm>
+#include <array>
+#include <cstddef>
+#include <ranges>
+#include <type_traits>
+#include <utility>
+
+#include "../constexpr.hpp"
+#include "../functional.hpp"
+#include "../upd.hpp"
+#include "../with_sequence.hpp"
+#include "concepts.hpp"
+#include "entry.hpp"
+#include "ith_record_element.hpp"
+#include "record_view_adaptor.hpp"
+#include "record_view_for.hpp"
+
+namespace upd::record_views {
+
+template<nested_record Base, typename Joiner>
+struct join_view {
+  Base base;
+  Joiner joiner;
+};
+
+template<nested_record Base, typename Joiner>
+join_view(Base &&, Joiner) -> join_view<Base, Joiner>;
+
+constexpr auto join = record_view_adaptor<join_view>;
+
+} // namespace upd::record_views
+
+template<upd::nested_record Base, typename Joiner>
+struct upd::record_view_for<upd::record_views::join_view<Base, Joiner>> {
+  using base_type = Base;
+
+  constexpr static auto size = UPD_WITH_SEQUENCE(Is, record_size_v<std::remove_cvref_t<Base>>) {
+    using type = std::remove_cvref_t<Base>;
+    return (record_size_v<std::remove_cvref_t<ith_record_element_t<Is, type>>> + ... + 0zu);
+  };
+
+  constexpr static auto nested_indices = UPD_WITH_SEQUENCE(Is, record_size_v<std::remove_cvref_t<Base>>) {
+    namespace stdr = std::ranges;
+    namespace stdv = std::views;
+
+    using type = std::remove_cvref_t<Base>;
+    using nested_index_type = std::pair<std::size_t, std::size_t>;
+
+    auto retval = std::array<nested_index_type, size>{};
+    auto subsizes = std::array{record_size_v<std::remove_cvref_t<ith_record_element_t<Is, type>>>...};
+    auto i = 0zu;
+    auto it = retval.begin();
+    for (auto ss : subsizes) {
+      it = stdr::copy(stdv::repeat(i) | stdv::take(ss) | stdv::enumerate, it).out;
+      ++i;
+    }
+
+    return retval;
+  };
+
+  template<std::size_t I, typename View>
+  [[nodiscard]] constexpr static auto get_ith(View &&view) {
+    constexpr auto ni = nested_indices[I];
+    constexpr auto i = ni.first;
+    constexpr auto j = ni.second;
+
+    using subrec_type = ith_record_element_t<i, std::remove_cvref_t<Base>>;
+    constexpr auto tag = record_tag_v<i, std::remove_cvref_t<Base>>;
+    constexpr auto subtag = record_tag_v<j, std::remove_cvref_t<subrec_type>>;
+    constexpr auto joined_tag = UPD_INVOKE(view.joiner, tag, subtag);
+
+    return entry{expr<joined_tag>, get<subtag>(get<tag>(UPD_FWD(view).base))};
+  }
+};
