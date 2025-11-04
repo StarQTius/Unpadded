@@ -2,7 +2,6 @@
 
 #include <concepts>
 #include <cstddef>
-#include <type_traits>
 
 #include "../named_value.hpp"
 #include "../transfert_reference.hpp"
@@ -63,7 +62,6 @@ namespace upd {
 
 template<typename Record>
 concept nested_record =
-    record_like<Record> &&
-    UPD_ALL_OF_CONCEPT(detail::ith_element_record_like, Record, record_size_v<std::remove_reference_t<Record>>);
+    record_like<Record> && UPD_ALL_OF_CONCEPT(detail::ith_element_record_like, Record, record_size_v<Record>);
 
 } // namespace upd
