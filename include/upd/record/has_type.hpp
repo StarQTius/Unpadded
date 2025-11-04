@@ -6,6 +6,7 @@
 #include "../with_sequence.hpp"
 #include "concepts.hpp"
 #include "ith_record_element.hpp"
+#include "record_size.hpp"
 
 namespace upd {
 

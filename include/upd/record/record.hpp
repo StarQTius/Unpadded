@@ -4,9 +4,11 @@
 
 #include "../is_instance_of.hpp"
 #include "../upd.hpp"
-#include "concepts.hpp"
 #include "entry.hpp"
 #include "lite_record.hpp"
+#include "record_element.hpp"
+#include "record_size.hpp"
+#include "record_tag.hpp"
 
 namespace upd {
 

@@ -7,6 +7,8 @@
 #include "concepts.hpp"
 #include "entry.hpp"
 #include "get_ith.hpp"
+#include "record_size.hpp"
+#include "record_tag.hpp"
 
 namespace upd {
 

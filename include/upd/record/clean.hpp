@@ -10,6 +10,8 @@
 #include "entry.hpp"
 #include "ith_record_element.hpp"
 #include "lite_record.hpp"
+#include "record_size.hpp"
+#include "record_tag.hpp"
 #include "record_view_adaptor.hpp"
 #include "record_view_for.hpp"
 

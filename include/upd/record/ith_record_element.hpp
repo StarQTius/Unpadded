@@ -3,6 +3,9 @@
 #include <cstddef>
 
 #include "concepts.hpp"
+#include "record_element.hpp"
+#include "record_size.hpp"
+#include "record_tag.hpp"
 
 namespace upd {
 

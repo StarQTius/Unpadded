@@ -8,19 +8,9 @@
 #include "../transfert_reference.hpp"
 #include "../upd.hpp"
 #include "../variadic_concept.hpp"
-
-namespace upd {
-
-template<auto, typename>
-struct record_element; // IWYU pragma: keep
-
-template<typename>
-struct record_size; // IWYU pragma: keep
-
-template<std::size_t, typename>
-struct record_tag; // IWYU pragma: keep
-
-} // namespace upd
+#include "record_element.hpp"
+#include "record_size.hpp"
+#include "record_tag.hpp"
 
 namespace upd::detail {
 
@@ -60,61 +50,7 @@ template<typename Record>
 concept record_view =
     record_like<Record> && UPD_ALL_OF_CONCEPT(detail::ith_element_viewed, Record, record_size<Record>::value);
 
-template<auto Tag, record_like Record>
-using record_element_t = typename record_element<Tag, Record>::type;
-
-template<record_like Record>
-constexpr auto record_size_v = record_size<Record>::value;
-
-template<std::size_t I, record_like Record>
-constexpr auto record_tag_v = record_tag<I, Record>::value;
-
 } // namespace upd
-
-template<auto Tag, upd::record_like Record>
-struct upd::record_element<Tag, const Record> {
-  using type = typename record_element<Tag, Record>::type;
-};
-
-template<auto Tag, upd::record_like Record>
-struct upd::record_element<Tag, Record &> {
-  using type = typename record_element<Tag, Record>::type;
-};
-
-template<auto Tag, upd::record_like Record>
-struct upd::record_element<Tag, Record &&> {
-  using type = typename record_element<Tag, Record>::type;
-};
-
-template<upd::record_like Record>
-struct upd::record_size<const Record> {
-  constexpr static auto value = record_size<Record>::value;
-};
-
-template<upd::record_like Record>
-struct upd::record_size<Record &> {
-  constexpr static auto value = record_size<Record>::value;
-};
-
-template<upd::record_like Record>
-struct upd::record_size<Record &&> {
-  constexpr static auto value = record_size<Record>::value;
-};
-
-template<std::size_t I, upd::record_like Record>
-struct upd::record_tag<I, const Record> {
-  constexpr static auto value = record_tag<I, Record>::value;
-};
-
-template<std::size_t I, upd::record_like Record>
-struct upd::record_tag<I, Record &> {
-  constexpr static auto value = record_tag<I, Record>::value;
-};
-
-template<std::size_t I, upd::record_like Record>
-struct upd::record_tag<I, Record &&> {
-  constexpr static auto value = record_tag<I, Record>::value;
-};
 
 namespace upd::detail {
 
