@@ -34,7 +34,7 @@ struct keyword2 {
 
   template<typename T>
   [[nodiscard]] constexpr auto operator=(T &&x) const -> entry<identifier, T> {
-    using value_type = std::remove_cvref_t<T>;
+    using value_type = std::decay_t<T>;
     return entry<identifier, value_type>{UPD_FWD(x)};
   }
 };

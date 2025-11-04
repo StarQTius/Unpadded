@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstddef>
-#include <type_traits>
 
 #include "../constexpr.hpp"
 #include "../functional.hpp"
@@ -31,11 +30,11 @@ template<upd::record_like Base, typename F>
 struct upd::record_view_for<upd::record_views::transform_view<Base, F>> {
   using base_type = Base;
 
-  constexpr static auto size = record_size_v<std::remove_cvref_t<Base>>;
+  constexpr static auto size = record_size_v<Base>;
 
   template<std::size_t I, typename View>
   [[nodiscard]] constexpr static auto get_ith(View &&view) -> decltype(auto) {
-    constexpr auto tag = record_tag_v<I, std::remove_cvref_t<Base>>;
+    constexpr auto tag = record_tag_v<I, Base>;
     using type = decltype(UPD_INVOKE(view.f, expr<tag>, upd::get_ith<I>(UPD_FWD(view).base)));
     return entry<tag, type>{UPD_INVOKE(view.f, expr<tag>, upd::get_ith<I>(UPD_FWD(view).base))};
   }

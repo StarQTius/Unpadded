@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstddef>
-#include <type_traits>
 
 #include "../type_traits.hpp"
 #include "../upd.hpp"
@@ -35,15 +34,15 @@ template<upd::record_like Base, typename T>
 struct upd::record_view_for<upd::record_views::clean_view<Base, T>> {
   using base_type = Base;
 
-  constexpr static auto indices_to_keep = UPD_WITH_SEQUENCE(Is, record_size_v<std::remove_cvref_t<Base>>) {
-    return clean_occurences_of_v<T, ith_record_element_t<Is, std::remove_cvref_t<Base>>...>;
+  constexpr static auto indices_to_keep = UPD_WITH_SEQUENCE(Is, record_size_v<Base>) {
+    return clean_occurences_of_v<T, ith_record_element_t<Is, Base>...>;
   };
 
   constexpr static auto size = indices_to_keep.size();
 
   template<std::size_t I, typename View>
   [[nodiscard]] constexpr static auto get_ith(View &&view) -> decltype(auto) {
-    constexpr auto tag = record_tag_v<indices_to_keep[I], std::remove_cvref_t<Base>>;
+    constexpr auto tag = record_tag_v<indices_to_keep[I], Base>;
     using type = decltype(get<tag>(UPD_FWD(view).base));
     return entry<tag, type>{get<tag>(UPD_FWD(view).base)};
   }

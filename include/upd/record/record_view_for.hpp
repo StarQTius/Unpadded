@@ -22,8 +22,8 @@ template<auto Tag, typename View>
   using view_type = std::remove_cvref_t<View>;
   using impl_type = upd::record_view_for<view_type>;
 
-  constexpr auto i = UPD_WITH_SEQUENCE(Is, upd::record_size<view_type>::value) {
-    auto lut = upd::lite_record{upd::lite_record_node{upd::expr<upd::record_tag<Is, view_type>::value>, Is}...};
+  constexpr auto i = UPD_WITH_SEQUENCE(Is, upd::record_size<View>::value) {
+    auto lut = upd::lite_record{upd::lite_record_node{upd::expr<upd::record_tag<Is, View>::value>, Is}...};
     return get<Tag>(lut);
   };
 
@@ -47,11 +47,11 @@ template<std::size_t I, typename View>
   requires upd::implementation_of<View, upd::record_view_for>
 struct upd::record_tag<I, View> {
   constexpr static auto value =
-      decltype(upd::record_view_for<std::remove_cvref_t<View>>::template get_ith<I>(std::declval<View>()))::identifier;
+      decltype(upd::record_view_for<View>::template get_ith<I>(std::declval<View>()))::identifier;
 };
 
 template<typename View>
   requires upd::implementation_of<View, upd::record_view_for>
 struct upd::record_size<View> {
-  constexpr static auto value = upd::record_view_for<std::remove_cvref_t<View>>::size;
+  constexpr static auto value = upd::record_view_for<View>::size;
 };

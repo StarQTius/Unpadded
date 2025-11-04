@@ -4,7 +4,6 @@
 #include <array>
 #include <cstddef>
 #include <ranges>
-#include <type_traits>
 #include <utility>
 
 #include "../constexpr.hpp"
@@ -36,20 +35,18 @@ template<upd::nested_record Base, typename Joiner>
 struct upd::record_view_for<upd::record_views::join_view<Base, Joiner>> {
   using base_type = Base;
 
-  constexpr static auto size = UPD_WITH_SEQUENCE(Is, record_size_v<std::remove_cvref_t<Base>>) {
-    using type = std::remove_cvref_t<Base>;
-    return (record_size_v<std::remove_cvref_t<ith_record_element_t<Is, type>>> + ... + 0zu);
+  constexpr static auto size = UPD_WITH_SEQUENCE(Is, record_size_v<Base>) {
+    return (record_size_v<ith_record_element_t<Is, Base>> + ... + 0zu);
   };
 
-  constexpr static auto nested_indices = UPD_WITH_SEQUENCE(Is, record_size_v<std::remove_cvref_t<Base>>) {
+  constexpr static auto nested_indices = UPD_WITH_SEQUENCE(Is, record_size_v<Base>) {
     namespace stdr = std::ranges;
     namespace stdv = std::views;
 
-    using type = std::remove_cvref_t<Base>;
     using nested_index_type = std::pair<std::size_t, std::size_t>;
 
     auto retval = std::array<nested_index_type, size>{};
-    auto subsizes = std::array{record_size_v<std::remove_cvref_t<ith_record_element_t<Is, type>>>...};
+    auto subsizes = std::array{record_size_v<ith_record_element_t<Is, Base>>...};
     auto i = 0zu;
     auto it = retval.begin();
     for (auto ss : subsizes) {
@@ -66,9 +63,9 @@ struct upd::record_view_for<upd::record_views::join_view<Base, Joiner>> {
     constexpr auto i = ni.first;
     constexpr auto j = ni.second;
 
-    using subrec_type = ith_record_element_t<i, std::remove_cvref_t<Base>>;
-    constexpr auto tag = record_tag_v<i, std::remove_cvref_t<Base>>;
-    constexpr auto subtag = record_tag_v<j, std::remove_cvref_t<subrec_type>>;
+    using subrec_type = ith_record_element_t<i, Base>;
+    constexpr auto tag = record_tag_v<i, Base>;
+    constexpr auto subtag = record_tag_v<j, subrec_type>;
     constexpr auto joined_tag = UPD_INVOKE(view.joiner, tag, subtag);
 
     return entry{expr<joined_tag>, get<subtag>(get<tag>(UPD_FWD(view).base))};
