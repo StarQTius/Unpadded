@@ -3,7 +3,9 @@
 #include "record/clean.hpp"               // IWYU pragma: export
 #include "record/concepts.hpp"            // IWYU pragma: export
 #include "record/entry.hpp"               // IWYU pragma: export
+#include "record/enumerate.hpp"           // IWYU pragma: export
 #include "record/filter.hpp"              // IWYU pragma: export
+#include "record/find.hpp"                // IWYU pragma: export
 #include "record/fold.hpp"                // IWYU pragma: export
 #include "record/get_ith.hpp"             // IWYU pragma: export
 #include "record/get_ith_entry.hpp"       // IWYU pragma: export

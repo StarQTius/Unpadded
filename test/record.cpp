@@ -202,6 +202,14 @@ TEST_CASE("Record views", "[record_view]") {
     REQUIRE(get<upd::name{"b3"}>(view) == 3);
     REQUIRE(get<upd::name{"b4"}>(view) == 4);
   }
+
+  SECTION("Enumerate a record") {
+    auto view = rec | updv::enumerate;
+
+    REQUIRE(get<upd::name{"a"}>(view) == std::pair{0, 4});
+    REQUIRE(get<upd::name{"b"}>(view) == std::pair{1, 8});
+    REQUIRE(get<upd::name{"c"}>(view) == std::pair{2, 67});
+  }
 }
 
 TEST_CASE("Algorithms on records", "[record_algorithm]") {
@@ -228,5 +236,17 @@ TEST_CASE("Algorithms on records", "[record_algorithm]") {
     });
 
     REQUIRE(res == std::pair{"cba", 79});
+  }
+
+  SECTION("Find the first value matching a predicate") {
+    auto i = updv::find_if(rec, []<typename T>(auto, upd::typebox<T>) { return std::same_as<T, long &>; });
+
+    REQUIRE(i == 2);
+  }
+
+  SECTION("Find by a predicate that matches no value") {
+    auto i = updv::find_if(rec, []<typename T>(auto, upd::typebox<T>) { return std::same_as<T, void>; });
+
+    REQUIRE(i == 3);
   }
 }
