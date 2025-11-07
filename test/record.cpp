@@ -210,6 +210,17 @@ TEST_CASE("Record views", "[record_view]") {
     REQUIRE(get<upd::name{"b"}>(view) == std::pair{1, 8});
     REQUIRE(get<upd::name{"c"}>(view) == std::pair{2, 67});
   }
+
+  SECTION("Reverse a record") {
+    auto view = rec | updv::reverse;
+
+    REQUIRE(&get<upd::name{"a"}>(view) == &get<upd::name{"a"}>(rec));
+    REQUIRE(&get<upd::name{"b"}>(view) == &get<upd::name{"b"}>(rec));
+    REQUIRE(&get<upd::name{"c"}>(view) == &get<upd::name{"c"}>(rec));
+    REQUIRE(&upd::get_ith<0>(view) == &upd::get_ith<2>(rec));
+    REQUIRE(&upd::get_ith<1>(view) == &upd::get_ith<1>(rec));
+    REQUIRE(&upd::get_ith<2>(view) == &upd::get_ith<0>(rec));
+  }
 }
 
 TEST_CASE("Algorithms on records", "[record_algorithm]") {
