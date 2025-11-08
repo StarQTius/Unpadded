@@ -221,6 +221,20 @@ TEST_CASE("Record views", "[record_view]") {
     REQUIRE(&upd::get_ith<1>(view) == &upd::get_ith<1>(rec));
     REQUIRE(&upd::get_ith<2>(view) == &upd::get_ith<0>(rec));
   }
+
+  SECTION("Zip two records together") {
+    upd::record_like auto rec_ = upd::record{"1"_kw2 = bool{true}, "2"_kw2 = unsigned{9}, "3"_kw2 = bool{false}};
+
+    auto view =
+        updv::zip(rec, rec_, [](auto tag1, auto tag2) { return upd::name{{tag1.string[0], tag2.string[0], 0}}; });
+
+    REQUIRE(&upd::get<upd::name{"a1"}>(view).first == &upd::get<upd::name{"a"}>(rec));
+    REQUIRE(&upd::get<upd::name{"a1"}>(view).second == &upd::get<upd::name{"1"}>(rec_));
+    REQUIRE(&upd::get<upd::name{"b2"}>(view).first == &upd::get<upd::name{"b"}>(rec));
+    REQUIRE(&upd::get<upd::name{"b2"}>(view).second == &upd::get<upd::name{"2"}>(rec_));
+    REQUIRE(&upd::get<upd::name{"c3"}>(view).first == &upd::get<upd::name{"c"}>(rec));
+    REQUIRE(&upd::get<upd::name{"c3"}>(view).second == &upd::get<upd::name{"3"}>(rec_));
+  }
 }
 
 TEST_CASE("Algorithms on records", "[record_algorithm]") {
