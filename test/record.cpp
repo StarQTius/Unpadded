@@ -235,6 +235,15 @@ TEST_CASE("Record views", "[record_view]") {
     REQUIRE(&upd::get<upd::name{"c3"}>(view).first == &upd::get<upd::name{"c"}>(rec));
     REQUIRE(&upd::get<upd::name{"c3"}>(view).second == &upd::get<upd::name{"3"}>(rec_));
   }
+
+  SECTION("Collect a view into a regular record") {
+    upd::regular_record auto regec = rec | updv::transform([](auto, auto v) { return v + 1; }) |
+                                     updv::filter([](auto k, auto) { return k != "b"; }) | updv::to<upd::record>;
+
+    REQUIRE(regec["a"_kw2] == 5);
+    REQUIRE(!upd::has_tag<upd::name{"b"}>(regec));
+    REQUIRE(regec["c"_kw2] == 68);
+  }
 }
 
 TEST_CASE("Algorithms on records", "[record_algorithm]") {

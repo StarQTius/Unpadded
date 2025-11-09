@@ -3,6 +3,7 @@
 #include <concepts>
 #include <cstddef>
 #include <tuple>
+#include <type_traits>
 #include <utility>
 
 #include "../always_false.hpp"
@@ -11,6 +12,9 @@
 #include "../static_assert.hpp"
 #include "../type_traits.hpp"
 #include "../upd.hpp"
+#include "apply.hpp"
+#include "collector_of.hpp"
+#include "concepts.hpp"
 #include "record_element.hpp"
 #include "record_size.hpp"
 #include "record_tag.hpp"
@@ -150,3 +154,18 @@ template<auto Tag, typename... Nodes>
 }
 
 } // namespace upd
+
+template<>
+struct upd::collector_for<upd::lite_record> {
+  template<record_like View>
+  [[nodiscard]] constexpr static auto collect(View &&view) {
+    namespace updv = upd::record_views;
+
+    return updv::apply(
+        []<typename... Entries>(Entries &&...entries) {
+          return lite_record{lite_record_node<entries.tag, typename std::remove_cvref_t<Entries>::value_type>{
+              entries.identifier, UPD_FWD(UPD_FWD(entries).value)}...};
+        },
+        UPD_FWD(view));
+  }
+};

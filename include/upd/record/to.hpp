@@ -1,0 +1,21 @@
+#pragma once
+
+#include "../upd.hpp"
+#include "collector_of.hpp"
+#include "concepts.hpp"
+
+namespace upd::record_views {
+
+template<template<typename...> typename Record>
+struct to_t {};
+
+template<template<typename...> typename Record>
+constexpr auto to = to_t<Record>{};
+
+template<record_like View, template<typename...> typename Record>
+  requires collector_of<Record, View>
+[[nodiscard]] constexpr auto operator|(View &&view, to_t<Record>) {
+  return collect<Record>(UPD_FWD(view));
+}
+
+} // namespace upd::record_views

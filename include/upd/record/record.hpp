@@ -4,6 +4,9 @@
 
 #include "../is_instance_of.hpp"
 #include "../upd.hpp"
+#include "apply.hpp"
+#include "collector_of.hpp"
+#include "concepts.hpp"
 #include "entry.hpp"
 #include "lite_record.hpp"
 #include "record_element.hpp"
@@ -96,3 +99,13 @@ template<auto Id, typename... Entries>
 }
 
 } // namespace upd
+
+template<>
+struct upd::collector_for<upd::record> {
+  template<record_like View>
+  [[nodiscard]] constexpr static auto collect(View &&view) {
+    namespace updv = upd::record_views;
+
+    return updv::apply([](auto &&...entries) { return record{UPD_FWD(entries)...}; }, UPD_FWD(view));
+  }
+};
