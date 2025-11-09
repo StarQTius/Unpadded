@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../record/concepts.hpp"
 #include "../record/lite_record.hpp"
+#include "../record/record_like.hpp"
 #include "../upd.hpp"
 #include "concepts.hpp"
 
