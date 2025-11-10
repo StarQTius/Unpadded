@@ -10,8 +10,8 @@
 #include "record_like.hpp"
 #include "record_size.hpp"
 #include "record_tag.hpp"
+#include "record_view.hpp"
 #include "record_view_adaptor.hpp"
-#include "record_view_for.hpp"
 
 namespace upd::record_views {
 

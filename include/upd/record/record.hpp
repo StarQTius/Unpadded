@@ -1,17 +1,16 @@
 #pragma once
 
 #include <cstddef>
+#include <tuple>
 
+#include "../constexpr.hpp"
 #include "../is_instance_of.hpp"
 #include "../upd.hpp"
 #include "apply.hpp"
 #include "collector_of.hpp"
 #include "entry.hpp"
 #include "lite_record.hpp"
-#include "record_element.hpp"
 #include "record_like.hpp"
-#include "record_size.hpp"
-#include "record_tag.hpp"
 
 namespace upd {
 
@@ -20,26 +19,7 @@ class record;
 
 template<auto... Identifiers, typename... Ts>
 class record<entry<Identifiers, Ts>...> {
-  template<auto, typename>
-  friend struct record_element;
-
-  template<std::size_t, typename>
-  friend struct record_tag;
-
-  template<typename>
-  friend struct record_size;
-
-  template<auto, typename... Entries>
-  friend constexpr auto get(record<Entries...> &rec) -> auto &;
-
-  template<auto, typename... Entries>
-  friend constexpr auto get(const record<Entries...> &rec) -> const auto &;
-
-  template<auto, typename... Entries>
-  friend constexpr auto get(record<Entries...> &&rec) -> auto &&;
-
-  template<auto, typename... Entries>
-  friend constexpr auto get(const record<Entries...> &&rec) -> const auto &&;
+  friend struct upd::record_like_for<upd::record<upd::entry<Identifiers, Ts>...>>;
 
   using storage_type = lite_record<lite_record_node<Identifiers, Ts>...>;
 
@@ -51,7 +31,7 @@ public:
 
   template<typename Self, auto Id>
   [[nodiscard]] constexpr auto operator[](this Self &&self, keyword2<Id>) noexcept(release) -> auto && {
-    return get<Id>(UPD_FWD(self));
+    return UPD_FWD(self).m_storage.get_by_tag(expr<Id>);
   }
 
 private:
@@ -62,43 +42,25 @@ template<typename... Entries>
   requires(is_instance_of<Entries, entry>() && ...)
 explicit record(Entries...) -> record<Entries...>;
 
-template<auto Id, typename... Entries>
-struct record_element<Id, record<Entries...>> {
-  using type = record_element_t<Id, typename record<Entries...>::storage_type>;
-};
-
-template<std::size_t I, typename... Entries>
-struct record_tag<I, record<Entries...>> {
-  constexpr static auto value = record_tag_v<I, typename record<Entries...>::storage_type>;
-  ;
-};
-
-template<typename... Entries>
-struct record_size<record<Entries...>> {
-  constexpr static auto value = sizeof...(Entries);
-};
-
-template<auto Id, typename... Entries>
-[[nodiscard]] constexpr auto get(record<Entries...> &rec) noexcept(release) -> auto & {
-  return get<Id>(UPD_FWD(rec).m_storage);
-}
-
-template<auto Id, typename... Entries>
-[[nodiscard]] constexpr auto get(const record<Entries...> &rec) noexcept(release) -> const auto & {
-  return get<Id>(UPD_FWD(rec).m_storage);
-}
-
-template<auto Id, typename... Entries>
-[[nodiscard]] constexpr auto get(record<Entries...> &&rec) noexcept(release) -> auto && {
-  return get<Id>(UPD_FWD(rec).m_storage);
-}
-
-template<auto Id, typename... Entries>
-[[nodiscard]] constexpr auto get(const record<Entries...> &&rec) noexcept(release) -> const auto && {
-  return get<Id>(UPD_FWD(rec).m_storage);
-}
-
 } // namespace upd
+
+template<auto... Identifiers, typename... Ts>
+struct upd::record_like_for<upd::record<upd::entry<Identifiers, Ts>...>> {
+  using record_type = upd::record<upd::entry<Identifiers, Ts>...>;
+
+  constexpr static auto size = sizeof...(Ts);
+
+  template<std::size_t I>
+  constexpr static auto tag = std::get<I>(std::tuple{Identifiers...});
+
+  template<auto Id>
+  using element_type = typename decltype(record_type::storage_type::get_type_by_tag(expr<Id>))::type;
+
+  template<std::size_t I, typename Record>
+  [[nodiscard]] constexpr static auto get_ith(Record &&rec) noexcept(release) -> auto && {
+    return UPD_FWD(rec)[keyword2<tag<I>>{}];
+  }
+};
 
 template<>
 struct upd::collector_for<upd::record> {

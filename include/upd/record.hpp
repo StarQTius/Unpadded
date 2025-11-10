@@ -22,7 +22,6 @@
 #include "record/record_tag.hpp"          // IWYU pragma: export
 #include "record/record_view.hpp"         // IWYU pragma: export
 #include "record/record_view_adaptor.hpp" // IWYU pragma: export
-#include "record/record_view_for.hpp"     // IWYU pragma: export
 #include "record/regular_record.hpp"      // IWYU pragma: export
 #include "record/reverse.hpp"             // IWYU pragma: export
 #include "record/to.hpp"                  // IWYU pragma: export

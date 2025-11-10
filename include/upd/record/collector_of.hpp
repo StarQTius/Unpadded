@@ -2,6 +2,7 @@
 
 #include "../implementation_of.hpp"
 #include "../upd.hpp"
+#include "lite_record.hpp"
 #include "record_like.hpp"
 #include "regular_record.hpp"
 
