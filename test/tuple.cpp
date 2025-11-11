@@ -6,7 +6,7 @@
 TEST_CASE("Tuple views", "[tuple_view]") {
   namespace updv = upd::tuple_views;
 
-  upd::tuple_like auto t = std::tuple{int{4}, char{8}, long{67}};
+  upd::regular_tuple auto t = std::tuple{int{4}, char{8}, long{67}};
 
   SECTION("Transform element of a tuple") {
     upd::tuple_view auto view = t | updv::transform([](auto x) { return x + 1; });
