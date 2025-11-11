@@ -19,17 +19,24 @@
 namespace upd {
 
 template<typename View, std::size_t I>
-concept ith_element_viewer = requires(View view, record_tag<I, View> tag, record_element<tag.value, View> elem) {
+concept ith_record_element_viewer = requires(View view, record_tag<I, View> tag, record_element<tag.value, View> elem) {
   { get<tag.value>(UPD_FWD(view)) } -> std::same_as<typename decltype(elem)::type>;
 };
 
 template<typename Record>
-concept record_view = record_like<Record> && UPD_ALL_OF_CONCEPT(ith_element_viewer, Record, record_size<Record>::value);
+concept record_view =
+    record_like<Record> && UPD_ALL_OF_CONCEPT(ith_record_element_viewer, Record, record_size<Record>::value);
 
 template<typename>
 struct record_view_for; // IWYU pragma: keep
 
 } // namespace upd
+
+namespace upd::record_views {
+
+using upd::get;
+
+} // namespace upd::record_views
 
 template<typename Record>
   requires upd::implementation_of<Record, upd::record_view_for>

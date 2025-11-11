@@ -1,6 +1,7 @@
 #include <tuple>
 
 #include <catch2/catch_test_macros.hpp>
+#include <upd/record.hpp>
 #include <upd/tuple_v2.hpp>
 
 TEST_CASE("Tuple views", "[tuple_view]") {
@@ -13,5 +14,18 @@ TEST_CASE("Tuple views", "[tuple_view]") {
     REQUIRE(get<0>(view) == 5);
     REQUIRE(get<1>(view) == 9);
     REQUIRE(get<2>(view) == 68);
+  }
+}
+
+TEST_CASE("Tuples compatibility with record facilities", "[tuple][record_view]") {
+  namespace updv = upd::record_views;
+
+  upd::regular_record auto t = std::tuple{int{4}, char{8}, long{67}};
+
+  SECTION("Transform element of a tuple") {
+    upd::record_view auto view = t | updv::transform([](auto i, auto x) { return x + i; });
+    REQUIRE(get<0uz>(view) == 4);
+    REQUIRE(get<1uz>(view) == 9);
+    REQUIRE(get<2uz>(view) == 69);
   }
 }

@@ -17,7 +17,7 @@
 namespace upd {
 
 template<typename Record, std::size_t I>
-concept ith_tag_gettable =
+concept ith_record_tag_gettable =
     requires(Record rec) { record_tag<I, Record>::value; } && requires(Record rec, record_tag<I, Record> tag) {
       typename record_element<tag.value, Record>::type;
     } && requires(Record rec, record_tag<I, Record> tag, record_element<tag.value, Record> elem) {
@@ -28,7 +28,7 @@ template<typename Record>
 concept record_like = requires(Record rec) {
   record_size<Record>::value;
   { record_size<Record>::value } -> std::equality_comparable_with<std::size_t>;
-} && UPD_ALL_OF_CONCEPT(ith_tag_gettable, Record, record_size<Record>::value);
+} && UPD_ALL_OF_CONCEPT(ith_record_tag_gettable, Record, record_size<Record>::value);
 
 template<typename>
 struct record_like_for; // IWYU pragma: keep

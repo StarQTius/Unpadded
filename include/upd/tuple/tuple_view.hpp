@@ -15,12 +15,12 @@
 namespace upd {
 
 template<typename View, std::size_t I>
-concept ith_element_viewer = requires(View &&view) {
+concept ith_tuple_element_viewer = requires(View &&view) {
   { get<I>(UPD_FWD(view)) } -> std::same_as<tuple_element_t<I, View>>;
 };
 
 template<typename Tuple>
-concept tuple_view = tuple_like<Tuple> && UPD_ALL_OF_CONCEPT(ith_element_viewer, Tuple, tuple_size_v<Tuple>);
+concept tuple_view = tuple_like2<Tuple> && UPD_ALL_OF_CONCEPT(ith_tuple_element_viewer, Tuple, tuple_size_v<Tuple>);
 
 template<typename>
 struct tuple_view_for; // IWYU pragma: keep

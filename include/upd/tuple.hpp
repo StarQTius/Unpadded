@@ -71,6 +71,7 @@ template<typename T, typename BinaryOp>
 }
 
 template<std::size_t I, typename Tuple>
+  requires requires(Tuple &&t) { UPD_FWD(t).template get<I, Tuple>(); }
 [[nodiscard]] constexpr auto get(Tuple &&t) noexcept(release) -> auto && {
   return UPD_FWD(t).template get<I, Tuple>();
 }
