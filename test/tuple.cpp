@@ -15,6 +15,12 @@ TEST_CASE("Tuple views", "[tuple_view]") {
     REQUIRE(get<1>(view) == 9);
     REQUIRE(get<2>(view) == 68);
   }
+
+  SECTION("Clean elements of a tuple") {
+    upd::tuple_view auto view = t | updv::clean<char>;
+    REQUIRE(get<0>(view) == 4);
+    REQUIRE(get<1>(view) == 67);
+  }
 }
 
 TEST_CASE("Tuples compatibility with record facilities", "[tuple][record_view]") {
@@ -27,5 +33,12 @@ TEST_CASE("Tuples compatibility with record facilities", "[tuple][record_view]")
     REQUIRE(get<0uz>(view) == 4);
     REQUIRE(get<1uz>(view) == 9);
     REQUIRE(get<2uz>(view) == 69);
+  }
+
+  SECTION("Clean elements of a tuple") {
+    upd::record_view auto view = t | updv::clean<char>;
+    REQUIRE(get<0uz>(view) == 4);
+    REQUIRE(!upd::has_tag<1uz>(view));
+    REQUIRE(get<2uz>(view) == 67);
   }
 }
