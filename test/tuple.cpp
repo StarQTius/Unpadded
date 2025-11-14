@@ -1,6 +1,8 @@
 #include <tuple>
+#include <utility>
 
 #include <catch2/catch_test_macros.hpp>
+#include <upd/constexpr.hpp>
 #include <upd/record.hpp>
 #include <upd/tuple_v2.hpp>
 
@@ -21,6 +23,16 @@ TEST_CASE("Tuple views", "[tuple_view]") {
     REQUIRE(get<0>(view) == 4);
     REQUIRE(get<1>(view) == 67);
   }
+
+  SECTION("Enumerate a tuple") {
+    upd::tuple_view auto view = t | updv::enumerate;
+    REQUIRE(get<0>(view) == std::pair{0, 4});
+    REQUIRE(&get<0>(view).second == &get<0>(t));
+    REQUIRE(get<1>(view) == std::pair{1, 8});
+    REQUIRE(&get<1>(view).second == &get<1>(t));
+    REQUIRE(get<2>(view) == std::pair{2, 67});
+    REQUIRE(&get<2>(view).second == &get<2>(t));
+  }
 }
 
 TEST_CASE("Tuples compatibility with record facilities", "[tuple][record_view]") {
@@ -40,5 +52,15 @@ TEST_CASE("Tuples compatibility with record facilities", "[tuple][record_view]")
     REQUIRE(get<0uz>(view) == 4);
     REQUIRE(!upd::has_tag<1uz>(view));
     REQUIRE(get<2uz>(view) == 67);
+  }
+
+  SECTION("Enumerate a tuple") {
+    upd::record_view auto view = t | updv::enumerate;
+    REQUIRE(get<0uz>(view) == std::pair{0, 4});
+    REQUIRE(&get<0uz>(view).second == &get<0>(t));
+    REQUIRE(get<1uz>(view) == std::pair{1, 8});
+    REQUIRE(&get<1uz>(view).second == &get<1>(t));
+    REQUIRE(get<2uz>(view) == std::pair{2, 67});
+    REQUIRE(&get<2uz>(view).second == &get<2>(t));
   }
 }
