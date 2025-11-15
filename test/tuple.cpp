@@ -41,15 +41,14 @@ TEST_CASE("Tuple views", "[tuple_view]") {
     REQUIRE(&get<1>(view) == &get<2>(t));
   }
 
-  SECTION("Join together elements of a tuple") {
-    upd::nested_tuple2 auto nt = std::tuple{t, t};
-    upd::tuple_view auto view = nt | updv::join;
-    REQUIRE(&get<0>(view) == &get<0>(get<0>(nt)));
-    REQUIRE(&get<1>(view) == &get<1>(get<0>(nt)));
-    REQUIRE(&get<2>(view) == &get<2>(get<0>(nt)));
-    REQUIRE(&get<3>(view) == &get<0>(get<1>(nt)));
-    REQUIRE(&get<4>(view) == &get<1>(get<1>(nt)));
-    REQUIRE(&get<5>(view) == &get<2>(get<1>(nt)));
+  SECTION("Collect a view into a regular record") {
+    upd::regular_tuple auto regt = t | updv::to<std::tuple>;
+    REQUIRE(&get<0>(regt) != &get<0>(t));
+    REQUIRE(get<0>(regt) == get<0>(t));
+    REQUIRE(&get<1>(regt) != &get<1>(t));
+    REQUIRE(get<1>(regt) == get<1>(t));
+    REQUIRE(&get<2>(regt) != &get<2>(t));
+    REQUIRE(get<2>(regt) == get<2>(t));
   }
 }
 

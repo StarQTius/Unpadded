@@ -20,7 +20,7 @@ concept ith_tuple_element_gettable = requires(std::remove_reference_t<Tuple> x) 
 };
 
 template<typename Tuple>
-concept tuple_like2 = requires(std::remove_reference_t<Tuple> x) {
+concept tuple_like2 = requires(std::remove_cvref_t<Tuple> x) {
   std::tuple_size<decltype(x)>::value;
   { std::tuple_size_v<decltype(x)> } -> std::convertible_to<std::size_t>;
 } && UPD_ALL_OF_CONCEPT(ith_tuple_element_gettable, Tuple, std::tuple_size_v<std::remove_reference_t<Tuple>>);

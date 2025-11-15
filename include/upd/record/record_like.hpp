@@ -26,7 +26,7 @@ concept ith_record_tag_gettable =
 
 template<typename Record>
 concept record_like = requires(Record rec) {
-  record_size<Record>::value;
+  record_size<std::remove_cvref_t<Record>>::value;
   { record_size<Record>::value } -> std::equality_comparable_with<std::size_t>;
 } && UPD_ALL_OF_CONCEPT(ith_record_tag_gettable, Record, record_size<Record>::value);
 

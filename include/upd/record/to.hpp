@@ -1,7 +1,7 @@
 #pragma once
 
+#include "../collector_of.hpp"
 #include "../upd.hpp"
-#include "collector_of.hpp"
 #include "record_like.hpp"
 
 namespace upd::record_views {

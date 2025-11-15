@@ -3,7 +3,6 @@
 #include "record/apply.hpp"               // IWYU pragma: export
 #include "record/chain.hpp"               // IWYU pragma: export
 #include "record/clean.hpp"               // IWYU pragma: export
-#include "record/collector_of.hpp"        // IWYU pragma: export
 #include "record/entry.hpp"               // IWYU pragma: export
 #include "record/enumerate.hpp"           // IWYU pragma: export
 #include "record/filter.hpp"              // IWYU pragma: export
