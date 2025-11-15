@@ -62,14 +62,15 @@ struct upd::record_view_for<upd::record_views::join_view<Base, Joiner>> {
   template<std::size_t I, typename View>
   [[nodiscard]] constexpr static auto get_ith(View &&view) {
     constexpr auto ni = nested_indices[I];
-    constexpr auto i = ni.first;
-    constexpr auto j = ni.second;
+    constexpr auto i = ni.second;
+    constexpr auto j = ni.first;
 
     using subrec_type = ith_record_element_t<i, Base>;
     constexpr auto tag = record_tag_v<i, Base>;
     constexpr auto subtag = record_tag_v<j, subrec_type>;
     constexpr auto joined_tag = UPD_INVOKE(view.joiner, tag, subtag);
 
-    return entry{expr<joined_tag>, get<subtag>(get<tag>(UPD_FWD(view).base))};
+    using value_type = decltype(get<subtag>(get<tag>(UPD_FWD(view).base)));
+    return entry<joined_tag, value_type>{get<subtag>(get<tag>(UPD_FWD(view).base))};
   }
 };

@@ -58,6 +58,17 @@ TEST_CASE("Tuple views", "[tuple_view]") {
 
     REQUIRE(res == ((0 * 67 + 1) * 8 + 2) * 4);
   }
+
+  SECTION("Join together elements of a tuple") {
+    upd::nested_tuple auto nt = std::tuple{t, t};
+    upd::tuple_view auto view = nt | updv::join;
+    REQUIRE(&get<0>(view) == &get<0>(get<0>(nt)));
+    REQUIRE(&get<1>(view) == &get<1>(get<0>(nt)));
+    REQUIRE(&get<2>(view) == &get<2>(get<0>(nt)));
+    REQUIRE(&get<3>(view) == &get<0>(get<1>(nt)));
+    REQUIRE(&get<4>(view) == &get<1>(get<1>(nt)));
+    REQUIRE(&get<5>(view) == &get<2>(get<1>(nt)));
+  }
 }
 
 TEST_CASE("Tuples compatibility with record facilities", "[tuple][record_view]") {
@@ -112,5 +123,16 @@ TEST_CASE("Tuples compatibility with record facilities", "[tuple][record_view]")
     auto res = updv::fold_right(t, 0, [](auto i, auto v, auto acc) { return (acc + i) * v; });
 
     REQUIRE(res == ((2 * 67 + 1) * 8 + 0) * 4);
+  }
+
+  SECTION("Join together elements of a tuple") {
+    upd::nested_record auto nt = std::tuple{t, t};
+    upd::record_view auto view = nt | updv::join([](auto pi, auto i) { return pi * 10 + i; });
+    REQUIRE(&get<0uz>(view) == &get<0>(get<0>(nt)));
+    REQUIRE(&get<1uz>(view) == &get<1>(get<0>(nt)));
+    REQUIRE(&get<2uz>(view) == &get<2>(get<0>(nt)));
+    REQUIRE(&get<10uz>(view) == &get<0>(get<1>(nt)));
+    REQUIRE(&get<11uz>(view) == &get<1>(get<1>(nt)));
+    REQUIRE(&get<12uz>(view) == &get<2>(get<1>(nt)));
   }
 }
