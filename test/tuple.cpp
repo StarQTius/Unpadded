@@ -46,6 +46,18 @@ TEST_CASE("Tuple views", "[tuple_view]") {
     auto i = updv::find_if(t, []<typename T>(upd::typebox<T>) { return std::same_as<T, long &>; });
     REQUIRE(i == 2);
   }
+
+  SECTION("Left-fold tuple content") {
+    auto res = updv::fold_left(t, 0, [i = 0](auto acc, auto v) mutable { return (acc + v) * i++; });
+
+    REQUIRE(res == ((4 * 0 + 8) * 1 + 67) * 2);
+  }
+
+  SECTION("Right-fold tuple content") {
+    auto res = updv::fold_right(t, 0, [i = 0](auto v, auto acc) mutable { return (acc + i++) * v; });
+
+    REQUIRE(res == ((0 * 67 + 1) * 8 + 2) * 4);
+  }
 }
 
 TEST_CASE("Tuples compatibility with record facilities", "[tuple][record_view]") {
@@ -88,5 +100,17 @@ TEST_CASE("Tuples compatibility with record facilities", "[tuple][record_view]")
   SECTION("Find element in a tuple") {
     auto i = updv::find_if(t, []<typename T>(auto, upd::typebox<T>) { return std::same_as<T, long &>; });
     REQUIRE(i == 2);
+  }
+
+  SECTION("Left-fold tuple content") {
+    auto res = updv::fold_left(t, 0, [](auto acc, auto i, auto v) { return (acc + v) * i; });
+
+    REQUIRE(res == ((4 * 0 + 8) * 1 + 67) * 2);
+  }
+
+  SECTION("Right-fold tuple content") {
+    auto res = updv::fold_right(t, 0, [](auto i, auto v, auto acc) { return (acc + i) * v; });
+
+    REQUIRE(res == ((2 * 67 + 1) * 8 + 0) * 4);
   }
 }

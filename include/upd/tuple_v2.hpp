@@ -5,6 +5,7 @@
 #include "tuple/enumerate.hpp"          // IWYU pragma: export
 #include "tuple/filter.hpp"             // IWYU pragma: export
 #include "tuple/find.hpp"               // IWYU pragma: export
+#include "tuple/fold.hpp"               // IWYU pragma: export
 #include "tuple/regular_tuple.hpp"      // IWYU pragma: export
 #include "tuple/transform.hpp"          // IWYU pragma: export
 #include "tuple/tuple_element.hpp"      // IWYU pragma: export
