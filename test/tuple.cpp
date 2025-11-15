@@ -41,6 +41,11 @@ TEST_CASE("Tuple views", "[tuple_view]") {
     REQUIRE(&get<0>(view) == &get<0>(t));
     REQUIRE(&get<1>(view) == &get<2>(t));
   }
+
+  SECTION("Find element in a tuple") {
+    auto i = updv::find_if(t, []<typename T>(upd::typebox<T>) { return std::same_as<T, long &>; });
+    REQUIRE(i == 2);
+  }
 }
 
 TEST_CASE("Tuples compatibility with record facilities", "[tuple][record_view]") {
@@ -78,5 +83,10 @@ TEST_CASE("Tuples compatibility with record facilities", "[tuple][record_view]")
     REQUIRE(&get<0uz>(view) == &get<0>(t));
     REQUIRE(!upd::has_tag<1uz>(view));
     REQUIRE(&get<2uz>(view) == &get<2>(t));
+  }
+
+  SECTION("Find element in a tuple") {
+    auto i = updv::find_if(t, []<typename T>(auto, upd::typebox<T>) { return std::same_as<T, long &>; });
+    REQUIRE(i == 2);
   }
 }
