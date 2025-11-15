@@ -7,12 +7,12 @@
 #include "clean.hpp"
 #include "transform.hpp"
 
-namespace upd::record_views {
+namespace upd::tuple_views {
 
 constexpr auto filter = [](auto &&pred) {
   struct cleanme {};
-  auto f = [pred = UPD_FWD(pred)](auto k, auto &&v) -> decltype(auto) {
-    constexpr auto keep_it = UPD_INVOKE(pred, k, typebox<decltype(v) &&>{});
+  auto f = [pred = UPD_FWD(pred)](auto &&v) -> decltype(auto) {
+    constexpr auto keep_it = UPD_INVOKE(pred, typebox<decltype(v) &&>{});
     if constexpr (keep_it) {
       return UPD_FWD(v);
     } else {
@@ -23,4 +23,4 @@ constexpr auto filter = [](auto &&pred) {
   return chain{transform(UPD_FWD(f)), clean<cleanme>};
 };
 
-} // namespace upd::record_views
+} // namespace upd::tuple_views

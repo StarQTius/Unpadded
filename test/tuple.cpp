@@ -1,3 +1,4 @@
+#include <concepts>
 #include <tuple>
 #include <utility>
 
@@ -5,6 +6,7 @@
 #include <upd/constexpr.hpp>
 #include <upd/record.hpp>
 #include <upd/tuple_v2.hpp>
+#include <upd/type_traits.hpp>
 
 TEST_CASE("Tuple views", "[tuple_view]") {
   namespace updv = upd::tuple_views;
@@ -32,6 +34,12 @@ TEST_CASE("Tuple views", "[tuple_view]") {
     REQUIRE(&get<1>(view).second == &get<1>(t));
     REQUIRE(get<2>(view) == std::pair{2, 67});
     REQUIRE(&get<2>(view).second == &get<2>(t));
+  }
+
+  SECTION("Filter elements of a tuple") {
+    upd::tuple_view auto view = t | updv::filter([]<typename T>(upd::typebox<T>) { return !std::same_as<T, char &>; });
+    REQUIRE(&get<0>(view) == &get<0>(t));
+    REQUIRE(&get<1>(view) == &get<2>(t));
   }
 }
 
@@ -62,5 +70,13 @@ TEST_CASE("Tuples compatibility with record facilities", "[tuple][record_view]")
     REQUIRE(&get<1uz>(view).second == &get<1>(t));
     REQUIRE(get<2uz>(view) == std::pair{2, 67});
     REQUIRE(&get<2uz>(view).second == &get<2>(t));
+  }
+
+  SECTION("Filter elements of a tuple") {
+    upd::record_view auto view =
+        t | updv::filter([]<typename T>(auto, upd::typebox<T>) { return !std::same_as<T, char &>; });
+    REQUIRE(&get<0uz>(view) == &get<0>(t));
+    REQUIRE(!upd::has_tag<1uz>(view));
+    REQUIRE(&get<2uz>(view) == &get<2>(t));
   }
 }
