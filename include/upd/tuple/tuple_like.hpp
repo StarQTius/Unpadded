@@ -7,9 +7,6 @@
 #include <utility>
 
 #include "../implementation_of.hpp"
-#include "../record/record_element.hpp"
-#include "../record/record_size.hpp"
-#include "../record/record_tag.hpp"
 #include "../upd.hpp"
 #include "../variadic_concept.hpp"
 
@@ -52,22 +49,4 @@ template<std::size_t I, typename Tuple>
   requires upd::implementation_of<Tuple, upd::tuple_like_for>
 struct std::tuple_element<I, Tuple> {
   using type = typename upd::tuple_like_for<std::remove_cvref_t<Tuple>>::template element_type<I>;
-};
-
-template<upd::tuple_like2 Tuple>
-  requires(!(std::is_reference_v<Tuple> || std::is_const_v<Tuple>))
-struct upd::record_size<Tuple> {
-  constexpr static auto value = std::tuple_size_v<Tuple>;
-};
-
-template<std::size_t I, upd::tuple_like2 Tuple>
-  requires(!(std::is_reference_v<Tuple> || std::is_const_v<Tuple>) && I < std::tuple_size_v<Tuple>)
-struct upd::record_tag<I, Tuple> {
-  constexpr static auto value = I;
-};
-
-template<std::size_t I, upd::tuple_like2 Tuple>
-  requires(!(std::is_reference_v<Tuple> || std::is_const_v<Tuple>) && I < std::tuple_size_v<Tuple>)
-struct upd::record_element<I, Tuple> {
-  using type = std::tuple_element_t<I, Tuple>;
 };
