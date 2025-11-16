@@ -50,6 +50,16 @@ TEST_CASE("Tuple views", "[tuple_view]") {
     REQUIRE(&get<2>(regt) != &get<2>(t));
     REQUIRE(get<2>(regt) == get<2>(t));
   }
+
+  SECTION("Zip tuples together") {
+    upd::regular_tuple auto t_ = std::tuple{char{78}, long{22}};
+    upd::tuple_view auto view = updv::zip(t, t_);
+    REQUIRE(&get<0>(view).first == &get<0>(t));
+    REQUIRE(&get<0>(view).second == &get<0>(t_));
+    REQUIRE(&get<1>(view).first == &get<1>(t));
+    REQUIRE(&get<1>(view).second == &get<1>(t_));
+    REQUIRE(upd::tuple_size_v<decltype(view)> == 2);
+  }
 }
 
 TEST_CASE("Algorithms on records", "[tuple_algorithm]") {

@@ -18,3 +18,4 @@
 #include "tuple/tuple_size.hpp"         // IWYU pragma: export
 #include "tuple/tuple_view.hpp"         // IWYU pragma: export
 #include "tuple/tuple_view_adaptor.hpp" // IWYU pragma: export
+#include "tuple/zip.hpp"                // IWYU pragma: export
