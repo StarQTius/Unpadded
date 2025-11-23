@@ -338,4 +338,18 @@ TEST_CASE("Record view handling references", "[record_view]") {
     REQUIRE_SAME(get<upd::name{"x"}>(rview), std::move(xv));
     REQUIRE_SAME(get<upd::name{"pr"}>(rview), std::move(rec["pr"_kw2]));
   }
+
+  SECTION("Pass references through enumerate") {
+    upd::record_view auto lview = rec | updv::enumerate;
+
+    REQUIRE_SAME(get<upd::name{"l"}>(lview).second, (lv));
+    REQUIRE_SAME(get<upd::name{"x"}>(lview).second, (xv));
+    REQUIRE_SAME(get<upd::name{"pr"}>(lview).second, rec["pr"_kw2]);
+
+    upd::record_view auto rview = std::move(rec) | updv::enumerate;
+
+    REQUIRE_SAME(get<upd::name{"l"}>(rview).second, (lv));
+    REQUIRE_SAME(get<upd::name{"x"}>(rview).second, std::move(xv));
+    REQUIRE_SAME(get<upd::name{"pr"}>(rview).second, std::move(rec["pr"_kw2]));
+  }
 }

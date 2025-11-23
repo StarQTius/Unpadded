@@ -62,13 +62,12 @@ struct upd::record_like_for<Record> {
 
   template<std::size_t I, typename Self>
   [[nodiscard]] constexpr static auto get_ith(Self &&self) noexcept(release) -> decltype(auto) {
-    auto entry = impl_type::template get_ith<I>(UPD_FWD(self));
-    using retval_type = decltype(entry.value);
+    using retval_type = decltype(impl_type::template get_ith<I>(UPD_FWD(self)).value);
 
     if constexpr (std::is_reference_v<retval_type>) {
-      return UPD_FWD(entry.value);
+      return UPD_FWD(impl_type::template get_ith<I>(UPD_FWD(self)).value);
     } else {
-      return entry.value;
+      return impl_type::template get_ith<I>(UPD_FWD(self)).value;
     }
   }
 };
