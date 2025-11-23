@@ -6,7 +6,7 @@
 
 #include "../upd.hpp"
 #include "record_like.hpp"
-#include "regular_record.hpp"
+#include "record_view.hpp"
 #include "view.hpp"
 
 namespace upd {
@@ -26,22 +26,22 @@ constexpr auto record_view_adaptor = [](auto &&...args) {
 template<record_like Record, template<typename...> typename View, typename... Args>
   requires requires(Record rec, Args... args) { View{UPD_FWD(rec), UPD_FWD(args)...}; }
 [[nodiscard]] constexpr auto operator|(Record &&rec, const record_view_adaptor_t<View, Args...> &adaptor) {
-  if constexpr (regular_record<Record>) {
+  if constexpr (record_view<Record>) {
+    return std::apply([&](auto &&...args) { return View{UPD_FWD(rec), UPD_FWD(args)...}; }, adaptor.args);
+  } else {
     return std::apply([&](auto &&...args) { return View{record_views::view_t{UPD_FWD(rec)}, UPD_FWD(args)...}; },
                       adaptor.args);
-  } else {
-    return std::apply([&](auto &&...args) { return View{UPD_FWD(rec), UPD_FWD(args)...}; }, adaptor.args);
   }
 }
 
 template<record_like Record, template<typename...> typename View, typename... Args>
   requires requires(Record rec, Args... args) { View{UPD_FWD(rec), UPD_FWD(args)...}; }
 [[nodiscard]] constexpr auto operator|(Record &&rec, record_view_adaptor_t<View, Args...> &&adaptor) {
-  if constexpr (regular_record<Record>) {
+  if constexpr (record_view<Record>) {
+    return std::apply([&](auto &&...args) { return View{UPD_FWD(rec), UPD_FWD(args)...}; }, std::move(adaptor).args);
+  } else {
     return std::apply([&](auto &&...args) { return View{record_views::view_t{UPD_FWD(rec)}, UPD_FWD(args)...}; },
                       std::move(adaptor).args);
-  } else {
-    return std::apply([&](auto &&...args) { return View{UPD_FWD(rec), UPD_FWD(args)...}; }, std::move(adaptor).args);
   }
 }
 

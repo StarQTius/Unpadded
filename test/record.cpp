@@ -296,7 +296,7 @@ TEST_CASE("Record view handling references", "[record_view]") {
   upd::record_like auto rec = upd::record{
       upd::entry<upd::name{"l"}, int &>{lv}, upd::entry<upd::name{"x"}, int &&>{std::move(xv)}, "pr"_kw2 = 34};
 
-  SECTION("Pass references through") {
+  SECTION("Pass references through transform") {
     upd::record_view auto lview = rec | updv::transform([](auto, auto &&v) -> auto && { return UPD_FWD(v); });
 
     REQUIRE_SAME(get<upd::name{"l"}>(lview), (lv));
@@ -305,6 +305,34 @@ TEST_CASE("Record view handling references", "[record_view]") {
 
     upd::record_view auto rview =
         std::move(rec) | updv::transform([](auto, auto &&v) -> auto && { return UPD_FWD(v); });
+
+    REQUIRE_SAME(get<upd::name{"l"}>(rview), (lv));
+    REQUIRE_SAME(get<upd::name{"x"}>(rview), std::move(xv));
+    REQUIRE_SAME(get<upd::name{"pr"}>(rview), std::move(rec["pr"_kw2]));
+  }
+
+  SECTION("Pass references through clean") {
+    upd::record_view auto lview = rec | updv::clean<void>;
+
+    REQUIRE_SAME(get<upd::name{"l"}>(lview), (lv));
+    REQUIRE_SAME(get<upd::name{"x"}>(lview), (xv));
+    REQUIRE_SAME(get<upd::name{"pr"}>(lview), rec["pr"_kw2]);
+
+    upd::record_view auto rview = std::move(rec) | updv::clean<void>;
+
+    REQUIRE_SAME(get<upd::name{"l"}>(rview), (lv));
+    REQUIRE_SAME(get<upd::name{"x"}>(rview), std::move(xv));
+    REQUIRE_SAME(get<upd::name{"pr"}>(rview), std::move(rec["pr"_kw2]));
+  }
+
+  SECTION("Pass references through filter") {
+    upd::record_view auto lview = rec | updv::filter([](auto, auto) { return true; });
+
+    REQUIRE_SAME(get<upd::name{"l"}>(lview), (lv));
+    REQUIRE_SAME(get<upd::name{"x"}>(lview), (xv));
+    REQUIRE_SAME(get<upd::name{"pr"}>(lview), rec["pr"_kw2]);
+
+    upd::record_view auto rview = std::move(rec) | updv::filter([](auto, auto) { return true; });
 
     REQUIRE_SAME(get<upd::name{"l"}>(rview), (lv));
     REQUIRE_SAME(get<upd::name{"x"}>(rview), std::move(xv));

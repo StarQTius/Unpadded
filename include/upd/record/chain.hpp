@@ -27,7 +27,8 @@ explicit chain(ViewAdaptors...) -> chain<ViewAdaptors...>;
 template<record_like Record, typename ViewChain>
   requires(is_instance_of<ViewChain, chain>())
 [[nodiscard]] constexpr auto operator|(Record &&rec, ViewChain &&chain) {
-  return std::apply([&](auto &&...adaps) { return (rec | ... | adaps); }, UPD_FWD(chain).view_adaptors);
+  return std::apply([&](auto &&...adaps) { return (UPD_FWD(rec) | ... | UPD_FWD(adaps)); },
+                    UPD_FWD(chain).view_adaptors);
 }
 
 } // namespace upd::record_views

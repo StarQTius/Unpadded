@@ -24,7 +24,7 @@ inline auto address_of(T &&x) noexcept {
 template<typename T>
 inline auto identifier_of() -> std::string {
   const auto *fname = std::source_location::current().function_name();
-  auto pattern = std::regex{"std::string type_name\\(\\) \\[T = (.*)\\]"};
+  auto pattern = std::regex{"std::string identifier_of\\(\\) \\[T = (.*)\\]"};
   auto match = std::cmatch{};
   auto success = std::regex_match(fname, match, pattern);
   assert(success);
