@@ -16,7 +16,7 @@ upd_parse_cli_arguments(
   "INTERFACE_COMPILE_OPTIONS"
   "CMAKE_BINARY_DIR"
   OPTIONS
-  "IS_SOURCE")
+  "PRIVATE_SOURCE")
 
 find_program(CLANG_FORMAT_COMMAND clang-format
   DOC "Check and/or fix C/C++ source format" REQUIRED)

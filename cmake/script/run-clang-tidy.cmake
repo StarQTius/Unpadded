@@ -15,7 +15,7 @@ upd_parse_cli_arguments(
   "CMAKE_BINARY_DIR"
   "CONFIG_FILE"
   OPTIONS
-  "IS_SOURCE")
+  "PRIVATE_SOURCE")
 
 find_program(CLANG_TIDY_COMMAND clang-tidy
   DOC "Static analyzer for C and C++ code" REQUIRED)

@@ -11,6 +11,6 @@ if(PROJECT_IS_TOP_LEVEL)
     GLOB_RECURSE HEADERS
     RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     CONFIGURE_DEPENDS *.hpp)
-  upd_target_lintables(iwyu upd_Unpadded ${HEADERS})
-  upd_target_lintables(clang_format upd_Unpadded ${HEADERS})
+  upd_target_lintables(iwyu upd_Unpadded PUBLIC ${HEADERS})
+  upd_target_lintables(clang_format upd_Unpadded PUBLIC ${HEADERS})
 endif()

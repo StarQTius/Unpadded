@@ -44,13 +44,18 @@ endfunction()
 # `LINTABLE_TARGET` will be used to lint each source file from
 # `LINTABLE_TARGET` and `EXTRA_SOURCES...`.
 function(upd_target_lintables TARGET LINTABLE_TARGET)
+  cmake_parse_arguments(ARG "" "" "PUBLIC;PRIVATE" ${ARGN})
   get_property(
     SOURCES
     TARGET ${LINTABLE_TARGET}
     PROPERTY SOURCES)
 
-  foreach(SOURCE IN LISTS SOURCES ARGN)
-    upd_target_lintable(${TARGET} ${SOURCE} ${LINTABLE_TARGET})
+  foreach(SOURCE IN LISTS ARG_PUBLIC)
+    upd_target_lintable(${TARGET} ${SOURCE} ${LINTABLE_TARGET} FALSE)
+  endforeach()
+
+  foreach(SOURCE IN LISTS SOURCES ARG_PRIVATE)
+    upd_target_lintable(${TARGET} ${SOURCE} ${LINTABLE_TARGET} TRUE)
   endforeach()
 endfunction()
 

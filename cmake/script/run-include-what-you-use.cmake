@@ -16,12 +16,12 @@ upd_parse_cli_arguments(
   "CMAKE_BINARY_DIR"
   "BUGFIX_EXTRA_ARGS"
   OPTIONS
-  "IS_SOURCE")
+  "PRIVATE_SOURCE")
 
 find_program(IWYU_COMMAND include-what-you-use
              DOC "Check inclusion in C and C++ programs" REQUIRED)
 
-if(NOT IS_SOURCE)
+if(NOT PRIVATE_SOURCE)
   # Commented out because internal #includes must be relative in this project
   # set(INCLUDE_DIRECTORIES ${INTERFACE_INCLUDE_DIRECTORIES})
   set(COMPILE_DEFINITIONS ${INTERFACE_COMPILE_DEFINITIONS})

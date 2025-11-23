@@ -5,6 +5,11 @@ include(Catch)
 include(CTest)
 include(Unpadded)
 
+file(
+  GLOB_RECURSE HEADERS
+  RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+  CONFIGURE_DEPENDS *.hpp)
+
 add_executable(upd_unitary
   algebra.cpp
   record.cpp
@@ -16,8 +21,8 @@ target_link_libraries(upd_unitary PRIVATE
   FakeIt::FakeIt-catch
 )
 catch_discover_tests(upd_unitary PROPERTIES LABELS unitary)
-upd_target_lintables(iwyu upd_unitary)
-upd_target_lintables(clang_format upd_unitary)
+upd_target_lintables(iwyu upd_unitary PRIVATE ${HEADERS})
+upd_target_lintables(clang_format upd_unitary PRIVATE ${HEADERS})
 upd_target_lintables(clang_tidy upd_unitary)
 
 add_custom_target(upd_examples)

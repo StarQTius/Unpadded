@@ -3,12 +3,14 @@
 #include <string_view>
 #include <utility>
 
+#include "utility.hpp"
 #include <catch2/catch_test_macros.hpp>
 #include <upd/constexpr.hpp>
 #include <upd/equivalent_to.hpp>
 #include <upd/named_value.hpp>
 #include <upd/record.hpp>
 #include <upd/type_traits.hpp>
+#include <upd/upd.hpp>
 
 TEST_CASE("Lite record basic functionalities", "[lite_record]") {
   upd::record_like auto rec = upd::lite_record{upd::lite_record_node{upd::expr<upd::name{"a"}>, int{4}},
@@ -146,7 +148,7 @@ TEST_CASE("Record views", "[record_view]") {
   }
 
   SECTION("Clean elements from a record") {
-    upd::record_like auto view = rec | updv::clean<char>;
+    upd::record_like auto view = rec | updv::clean<char &>;
     REQUIRE(has_tag<upd::name{"a"}>(view));
     REQUIRE(!has_tag<upd::name{"b"}>(view));
     REQUIRE(has_tag<upd::name{"c"}>(view));
@@ -282,5 +284,30 @@ TEST_CASE("Algorithms on records", "[record_algorithm]") {
     auto i = updv::find_if(rec, []<typename T>(auto, upd::typebox<T>) { return std::same_as<T, void>; });
 
     REQUIRE(i == 3);
+  }
+}
+
+TEST_CASE("Record view handling references", "[record_view]") {
+  namespace updv = upd::record_views;
+  using namespace upd::literals;
+
+  auto lv = 12;
+  auto xv = 23;
+  upd::record_like auto rec = upd::record{
+      upd::entry<upd::name{"l"}, int &>{lv}, upd::entry<upd::name{"x"}, int &&>{std::move(xv)}, "pr"_kw2 = 34};
+
+  SECTION("Pass references through") {
+    upd::record_view auto lview = rec | updv::transform([](auto, auto &&v) -> auto && { return UPD_FWD(v); });
+
+    REQUIRE_SAME(get<upd::name{"l"}>(lview), (lv));
+    REQUIRE_SAME(get<upd::name{"x"}>(lview), (xv));
+    REQUIRE_SAME(get<upd::name{"pr"}>(lview), rec["pr"_kw2]);
+
+    upd::record_view auto rview =
+        std::move(rec) | updv::transform([](auto, auto &&v) -> auto && { return UPD_FWD(v); });
+
+    REQUIRE_SAME(get<upd::name{"l"}>(rview), (lv));
+    REQUIRE_SAME(get<upd::name{"x"}>(rview), std::move(xv));
+    REQUIRE_SAME(get<upd::name{"pr"}>(rview), std::move(rec["pr"_kw2]));
   }
 }
