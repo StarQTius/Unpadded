@@ -383,4 +383,18 @@ TEST_CASE("Record view handling references", "[record_view]") {
     REQUIRE_SAME(get<upd::name{"cx"}>(rview), std::move(xv));
     REQUIRE_SAME(get<upd::name{"cp"}>(rview), std::move(rec)["pr"_kw2]);
   }
+
+  SECTION("Pass references through reverse") {
+    auto lview = rec | updv::reverse;
+
+    REQUIRE_SAME(get<upd::name{"l"}>(lview), (lv));
+    REQUIRE_SAME(get<upd::name{"x"}>(lview), (xv));
+    REQUIRE_SAME(get<upd::name{"pr"}>(lview), rec["pr"_kw2]);
+
+    auto rview = std::move(rec) | updv::reverse;
+
+    REQUIRE_SAME(get<upd::name{"l"}>(rview), (lv));
+    REQUIRE_SAME(get<upd::name{"x"}>(rview), std::move(xv));
+    REQUIRE_SAME(get<upd::name{"pr"}>(rview), std::move(rec)["pr"_kw2]);
+  }
 }
