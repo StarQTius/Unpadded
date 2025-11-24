@@ -353,7 +353,7 @@ TEST_CASE("Record view handling references", "[record_view]") {
     REQUIRE_SAME(get<upd::name{"pr"}>(rview).second, std::move(rec)["pr"_kw2]);
   }
 
-  SECTION("Join entries of a record") {
+  SECTION("Pass references through join") {
     upd::nested_record auto nested_rec = upd::record{"a"_kw2 = std::move(rec),
                                                      upd::entry<upd::name{"b"}, decltype(rec) &>{rec},
                                                      upd::entry<upd::name{"c"}, decltype(rec) &&>{std::move(rec)}};
