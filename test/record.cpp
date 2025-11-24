@@ -397,4 +397,16 @@ TEST_CASE("Record view handling references", "[record_view]") {
     REQUIRE_SAME(get<upd::name{"x"}>(rview), std::move(xv));
     REQUIRE_SAME(get<upd::name{"pr"}>(rview), std::move(rec)["pr"_kw2]);
   }
+
+  SECTION("Pass references through zip") {
+    auto view = updv::zip(
+        rec, std::move(rec), [](auto tag1, auto tag2) { return upd::name{{tag1.string[0], tag2.string[0], 0}}; });
+
+    REQUIRE_SAME(get<upd::name{"ll"}>(view).first, (lv));
+    REQUIRE_SAME(get<upd::name{"ll"}>(view).second, (lv));
+    REQUIRE_SAME(get<upd::name{"xx"}>(view).first, (xv));
+    REQUIRE_SAME(get<upd::name{"xx"}>(view).second, std::move(xv));
+    REQUIRE_SAME(get<upd::name{"pp"}>(view).first, rec["pr"_kw2]);
+    REQUIRE_SAME(get<upd::name{"pp"}>(view).second, std::move(rec)["pr"_kw2]);
+  }
 }

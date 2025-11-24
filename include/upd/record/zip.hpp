@@ -14,6 +14,7 @@
 #include "record_size.hpp"
 #include "record_tag.hpp"
 #include "record_view.hpp"
+#include "view.hpp"
 
 namespace upd::record_views {
 
@@ -28,7 +29,8 @@ template<record_like Lhs, record_like Rhs, typename Zipper>
 zip_view(Lhs &&, Rhs &&, Zipper) -> zip_view<Lhs, Rhs, Zipper>;
 
 constexpr auto zip = []<record_like Lhs, record_like Rhs, typename Zipper>(Lhs &&lhs, Rhs &&rhs, Zipper &&zipper) {
-  return zip_view{UPD_FWD(lhs), UPD_FWD(rhs), UPD_FWD(zipper)};
+  auto ensure_view = [](auto &&rec) { return view_t{UPD_FWD(rec)}; };
+  return zip_view{ensure_view(UPD_FWD(lhs)), ensure_view(UPD_FWD(rhs)), UPD_FWD(zipper)};
 };
 
 } // namespace upd::record_views
