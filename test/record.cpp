@@ -352,4 +352,35 @@ TEST_CASE("Record view handling references", "[record_view]") {
     REQUIRE_SAME(get<upd::name{"x"}>(rview).second, std::move(xv));
     REQUIRE_SAME(get<upd::name{"pr"}>(rview).second, std::move(rec["pr"_kw2]));
   }
+
+  SECTION("Join entries of a record") {
+    upd::nested_record auto nested_rec = upd::record{"a"_kw2 = std::move(rec),
+                                                     upd::entry<upd::name{"b"}, decltype(rec) &>{rec},
+                                                     upd::entry<upd::name{"c"}, decltype(rec) &&>{std::move(rec)}};
+
+    auto lview = nested_rec | updv::join([](auto pk, auto k) { return upd::name{{pk.string[0], k.string[0], 0}}; });
+
+    REQUIRE_SAME(get<upd::name{"al"}>(lview), (lv));
+    REQUIRE_SAME(get<upd::name{"ax"}>(lview), (xv));
+    REQUIRE_SAME(get<upd::name{"ap"}>(lview), nested_rec["a"_kw2]["pr"_kw2]);
+    REQUIRE_SAME(get<upd::name{"bl"}>(lview), (lv));
+    REQUIRE_SAME(get<upd::name{"bx"}>(lview), (xv));
+    REQUIRE_SAME(get<upd::name{"bp"}>(lview), rec["pr"_kw2]);
+    REQUIRE_SAME(get<upd::name{"cl"}>(lview), (lv));
+    REQUIRE_SAME(get<upd::name{"cx"}>(lview), (xv));
+    REQUIRE_SAME(get<upd::name{"cp"}>(lview), rec["pr"_kw2]);
+
+    auto rview =
+        std::move(nested_rec) | updv::join([](auto pk, auto k) { return upd::name{{pk.string[0], k.string[0], 0}}; });
+
+    REQUIRE_SAME(get<upd::name{"al"}>(rview), (lv));
+    REQUIRE_SAME(get<upd::name{"ax"}>(rview), std::move(xv));
+    REQUIRE_SAME(get<upd::name{"ap"}>(rview), std::move(nested_rec)["a"_kw2]["pr"_kw2]);
+    REQUIRE_SAME(get<upd::name{"bl"}>(rview), (lv));
+    REQUIRE_SAME(get<upd::name{"bx"}>(rview), (xv));
+    REQUIRE_SAME(get<upd::name{"bp"}>(rview), rec["pr"_kw2]);
+    REQUIRE_SAME(get<upd::name{"cl"}>(rview), (lv));
+    REQUIRE_SAME(get<upd::name{"cx"}>(rview), std::move(xv));
+    REQUIRE_SAME(get<upd::name{"cp"}>(rview), std::move(rec)["pr"_kw2]);
+  }
 }

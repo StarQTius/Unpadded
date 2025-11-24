@@ -21,7 +21,7 @@ concept ith_record_tag_gettable =
     requires(Record rec) { record_tag<I, Record>::value; } && requires(Record rec, record_tag<I, Record> tag) {
       typename record_element<tag.value, Record>::type;
     } && requires(Record rec, record_tag<I, Record> tag, record_element<tag.value, Record> elem) {
-      { get<tag.value>(UPD_FWD(rec)) } -> std::common_reference_with<typename decltype(elem)::type>;
+      { get<tag.value>(UPD_FWD(rec)) } -> std::common_reference_with<typename decltype(elem)::type &&>;
     };
 
 template<typename Record>
