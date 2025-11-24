@@ -2,10 +2,12 @@
 #include <tuple>
 #include <utility>
 
+#include "utility.hpp"
 #include <catch2/catch_test_macros.hpp>
 #include <upd/constexpr.hpp>
 #include <upd/tuple_v2.hpp>
 #include <upd/type_traits.hpp>
+#include <upd/upd.hpp>
 
 TEST_CASE("Tuple views", "[tuple_view]") {
   namespace updv = upd::tuple_views;
@@ -20,7 +22,7 @@ TEST_CASE("Tuple views", "[tuple_view]") {
   }
 
   SECTION("Clean elements of a tuple") {
-    upd::tuple_view auto view = t | updv::clean<char>;
+    upd::tuple_view auto view = t | updv::clean<char &>;
     REQUIRE(get<0>(view) == 4);
     REQUIRE(get<1>(view) == 67);
   }
@@ -82,5 +84,80 @@ TEST_CASE("Algorithms on records", "[tuple_algorithm]") {
     auto res = updv::fold_right(t, 0, [i = 0](auto v, auto acc) mutable { return (acc + i++) * v; });
 
     REQUIRE(res == ((0 * 67 + 1) * 8 + 2) * 4);
+  }
+}
+
+TEST_CASE("Tuple view handling references", "[tuple_view]") {
+  namespace updv = upd::tuple_views;
+
+  auto lv = 12;
+  auto xv = 23;
+  auto t = std::tuple<int &, int &&, int>{lv, std::move(xv), 34};
+
+  SECTION("Pass references through transform") {
+    upd::tuple_view auto lview = t | updv::transform([](auto &&v) -> auto && { return UPD_FWD(v); });
+
+    REQUIRE_SAME(get<0>(lview), (lv));
+    REQUIRE_SAME(get<1>(lview), (xv));
+    REQUIRE_SAME(get<2>(lview), get<2>(t));
+
+    upd::tuple_view auto rview = std::move(t) | updv::transform([](auto &&v) -> auto && { return UPD_FWD(v); });
+
+    REQUIRE_SAME(get<0>(rview), (lv));
+    REQUIRE_SAME(get<1>(rview), std::move(xv));
+    REQUIRE_SAME(get<2>(rview), get<2>(std::move(t)));
+  }
+
+  SECTION("Pass references through clean") {
+    upd::tuple_view auto lview = t | updv::clean<void>;
+
+    REQUIRE_SAME(get<0>(lview), (lv));
+    REQUIRE_SAME(get<1>(lview), (xv));
+    REQUIRE_SAME(get<2>(lview), get<2>(t));
+
+    upd::tuple_view auto rview = std::move(t) | updv::clean<void>;
+
+    REQUIRE_SAME(get<0>(rview), (lv));
+    REQUIRE_SAME(get<1>(rview), std::move(xv));
+    REQUIRE_SAME(get<2>(rview), get<2>(std::move(t)));
+  }
+
+  SECTION("Pass references through filter") {
+    upd::tuple_view auto lview = t | updv::filter([](auto) { return true; });
+
+    REQUIRE_SAME(get<0>(lview), (lv));
+    REQUIRE_SAME(get<1>(lview), (xv));
+    REQUIRE_SAME(get<2>(lview), get<2>(t));
+
+    upd::tuple_view auto rview = std::move(t) | updv::filter([](auto) { return true; });
+
+    REQUIRE_SAME(get<0>(rview), (lv));
+    REQUIRE_SAME(get<1>(rview), std::move(xv));
+    REQUIRE_SAME(get<2>(rview), get<2>(std::move(t)));
+  }
+
+  SECTION("Pass references through enumerate") {
+    upd::tuple_view auto lview = t | updv::enumerate;
+
+    REQUIRE_SAME(get<0>(lview).second, (lv));
+    REQUIRE_SAME(get<1>(lview).second, (xv));
+    REQUIRE_SAME(get<2>(lview).second, get<2>(t));
+
+    upd::tuple_view auto rview = std::move(t) | updv::enumerate;
+
+    REQUIRE_SAME(get<0>(rview).second, (lv));
+    REQUIRE_SAME(get<1>(rview).second, std::move(xv));
+    REQUIRE_SAME(get<2>(rview).second, get<2>(std::move(t)));
+  }
+
+  SECTION("Pass references through zip") {
+    auto view = updv::zip(t, std::move(t));
+
+    REQUIRE_SAME(get<0>(view).first, (lv));
+    REQUIRE_SAME(get<0>(view).second, (lv));
+    REQUIRE_SAME(get<1>(view).first, (xv));
+    REQUIRE_SAME(get<1>(view).second, std::move(xv));
+    REQUIRE_SAME(get<2>(view).first, get<2>(t));
+    REQUIRE_SAME(get<2>(view).second, get<2>(std::move(t)));
   }
 }

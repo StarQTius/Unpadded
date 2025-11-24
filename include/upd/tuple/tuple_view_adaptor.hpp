@@ -6,6 +6,8 @@
 
 #include "../upd.hpp"
 #include "tuple_like.hpp"
+#include "tuple_view.hpp"
+#include "view.hpp"
 
 namespace upd {
 
@@ -24,13 +26,23 @@ constexpr auto tuple_view_adaptor = [](auto &&...args) {
 template<tuple_like2 Tuple, template<typename...> typename View, typename... Args>
   requires requires(Tuple t, Args... args) { View{UPD_FWD(t), UPD_FWD(args)...}; }
 [[nodiscard]] constexpr auto operator|(Tuple &&t, const tuple_view_adaptor_t<View, Args...> &adaptor) {
-  return std::apply([&](auto &&...args) { return View{UPD_FWD(t), UPD_FWD(args)...}; }, adaptor.args);
+  if constexpr (tuple_view<Tuple>) {
+    return std::apply([&](auto &&...args) { return View{UPD_FWD(t), UPD_FWD(args)...}; }, adaptor.args);
+  } else {
+    return std::apply([&](auto &&...args) { return View{tuple_views::view_t{UPD_FWD(t)}, UPD_FWD(args)...}; },
+                      adaptor.args);
+  }
 }
 
 template<tuple_like2 Tuple, template<typename...> typename View, typename... Args>
   requires requires(Tuple t, Args... args) { View{UPD_FWD(t), UPD_FWD(args)...}; }
 [[nodiscard]] constexpr auto operator|(Tuple &&t, tuple_view_adaptor_t<View, Args...> &&adaptor) {
-  return std::apply([&](auto &&...args) { return View{UPD_FWD(t), UPD_FWD(args)...}; }, std::move(adaptor).args);
+  if constexpr (tuple_view<Tuple>) {
+    return std::apply([&](auto &&...args) { return View{UPD_FWD(t), UPD_FWD(args)...}; }, std::move(adaptor).args);
+  } else {
+    return std::apply([&](auto &&...args) { return View{tuple_views::view_t{UPD_FWD(t)}, UPD_FWD(args)...}; },
+                      std::move(adaptor).args);
+  }
 }
 
 } // namespace upd

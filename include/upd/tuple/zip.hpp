@@ -9,6 +9,7 @@
 #include "tuple_like.hpp"
 #include "tuple_size.hpp"
 #include "tuple_view.hpp"
+#include "view.hpp"
 
 namespace upd::tuple_views {
 
@@ -22,7 +23,8 @@ template<tuple_like2 Lhs, tuple_like2 Rhs>
 zip_view(Lhs &&, Rhs &&) -> zip_view<Lhs, Rhs>;
 
 constexpr auto zip = []<tuple_like2 Lhs, tuple_like2 Rhs>(Lhs &&lhs, Rhs &&rhs) {
-  return zip_view{UPD_FWD(lhs), UPD_FWD(rhs)};
+  auto ensure_view = [](auto &&rec) { return view_t{UPD_FWD(rec)}; };
+  return zip_view{ensure_view(UPD_FWD(lhs)), ensure_view(UPD_FWD(rhs))};
 };
 
 } // namespace upd::tuple_views
