@@ -308,7 +308,7 @@ TEST_CASE("Record view handling references", "[record_view]") {
 
     REQUIRE_SAME(get<upd::name{"l"}>(rview), (lv));
     REQUIRE_SAME(get<upd::name{"x"}>(rview), std::move(xv));
-    REQUIRE_SAME(get<upd::name{"pr"}>(rview), std::move(rec["pr"_kw2]));
+    REQUIRE_SAME(get<upd::name{"pr"}>(rview), std::move(rec)["pr"_kw2]);
   }
 
   SECTION("Pass references through clean") {
@@ -322,7 +322,7 @@ TEST_CASE("Record view handling references", "[record_view]") {
 
     REQUIRE_SAME(get<upd::name{"l"}>(rview), (lv));
     REQUIRE_SAME(get<upd::name{"x"}>(rview), std::move(xv));
-    REQUIRE_SAME(get<upd::name{"pr"}>(rview), std::move(rec["pr"_kw2]));
+    REQUIRE_SAME(get<upd::name{"pr"}>(rview), std::move(rec)["pr"_kw2]);
   }
 
   SECTION("Pass references through filter") {
@@ -336,7 +336,7 @@ TEST_CASE("Record view handling references", "[record_view]") {
 
     REQUIRE_SAME(get<upd::name{"l"}>(rview), (lv));
     REQUIRE_SAME(get<upd::name{"x"}>(rview), std::move(xv));
-    REQUIRE_SAME(get<upd::name{"pr"}>(rview), std::move(rec["pr"_kw2]));
+    REQUIRE_SAME(get<upd::name{"pr"}>(rview), std::move(rec)["pr"_kw2]);
   }
 
   SECTION("Pass references through enumerate") {
@@ -350,7 +350,7 @@ TEST_CASE("Record view handling references", "[record_view]") {
 
     REQUIRE_SAME(get<upd::name{"l"}>(rview).second, (lv));
     REQUIRE_SAME(get<upd::name{"x"}>(rview).second, std::move(xv));
-    REQUIRE_SAME(get<upd::name{"pr"}>(rview).second, std::move(rec["pr"_kw2]));
+    REQUIRE_SAME(get<upd::name{"pr"}>(rview).second, std::move(rec)["pr"_kw2]);
   }
 
   SECTION("Join entries of a record") {
