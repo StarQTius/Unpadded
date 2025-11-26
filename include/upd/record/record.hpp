@@ -7,6 +7,7 @@
 #include "../constexpr.hpp"
 #include "../is_instance_of.hpp"
 #include "../upd.hpp"
+#include "../variadic/template_box.hpp"
 #include "apply.hpp"
 #include "entry.hpp"
 #include "lite_record.hpp"
@@ -63,7 +64,7 @@ struct upd::record_like_for<upd::record<upd::entry<Identifiers, Ts>...>> {
 };
 
 template<>
-struct upd::collector_for<upd::record> {
+struct upd::collector_for<upd::template_box<upd::record>> {
   template<record_like View>
   [[nodiscard]] constexpr static auto collect(View &&view) {
     namespace updv = upd::record_views;

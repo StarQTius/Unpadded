@@ -1,3 +1,4 @@
+#include <array>
 #include <concepts>
 #include <tuple>
 #include <utility>
@@ -61,6 +62,13 @@ TEST_CASE("Tuple views", "[tuple_view]") {
     REQUIRE(&get<1>(view).first == &get<1>(t));
     REQUIRE(&get<1>(view).second == &get<1>(t_));
     REQUIRE(upd::tuple_size_v<decltype(view)> == 2);
+  }
+
+  SECTION("Collect into a std::array") {
+    auto arr = t | updv::to<std::array>;
+    REQUIRE(arr[0] == get<0>(t));
+    REQUIRE(arr[1] == get<1>(t));
+    REQUIRE(arr[2] == get<2>(t));
   }
 }
 

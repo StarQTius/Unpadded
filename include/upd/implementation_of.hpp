@@ -20,4 +20,12 @@ template<template<typename...> typename TT, template<template<typename...> typen
   };
 }
 
+template<auto X, template<auto> typename Traits>
+[[nodiscard]] constexpr auto is_implementation_of() noexcept(release) -> bool {
+  return requires {
+    typename Traits<X>;
+    Traits<X>{};
+  };
+}
+
 } // namespace upd

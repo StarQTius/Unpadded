@@ -25,6 +25,9 @@
 #include "template_traits.hpp"
 #include "token.hpp"
 #include "tuple.hpp"
+#include "tuple/to.hpp"
+#include "tuple/transform.hpp"
+#include "tuple/tuple_view_adaptor.hpp"
 #include "tuple_impl.hpp"
 #include "type_traits.hpp"
 #include "typelist.hpp"
@@ -436,9 +439,8 @@ class description {
 
 public:
   constexpr static auto identifiers =
-      typelist<Ts...>{}.transform([]<typename T>(typebox<T>) { return expr<T::identifier>; }).apply([](auto... ids) {
-        return names{ids...};
-      });
+      typelist<Ts...>{} | tuple_views::transform([]<typename T>(typebox<T>) { return expr<T::identifier>; }) |
+      tuple_views::to<names>;
 
   using result_type = named_tuple<identifiers, typename Ts::value_type...>;
 

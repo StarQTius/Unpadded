@@ -8,10 +8,12 @@
 #include <iterator>
 #include <ranges>
 #include <string_view>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 #include <variant>
 
+#include "collector_of.hpp"
 #include "constexpr.hpp"
 #include "constlist.hpp"
 #include "detail/always_false.hpp"
@@ -21,10 +23,14 @@
 #include "ref.hpp"
 #include "template_traits.hpp"
 #include "tuple.hpp"
+#include "tuple/tuple_like.hpp"
+#include "tuple/tuple_size.hpp"
 #include "tuple_impl.hpp"
 #include "type_traits.hpp"
 #include "typelist.hpp"
 #include "upd.hpp"
+#include "variadic/template_box.hpp"
+#include "with_sequence.hpp"
 
 namespace upd {
 
@@ -392,6 +398,19 @@ template<name Identifier, typename Tuple>
 
 } // namespace upd
 
+template<std::size_t N>
+struct upd::tuple_like_for<upd::names<N>> {
+  constexpr static auto size = N;
+
+  template<std::size_t I>
+  using element_type = char[name_max_size];
+
+  template<std::size_t I, typename Names>
+  [[nodiscard]] constexpr static auto get(Names &&ns) noexcept(release) -> auto && {
+    return UPD_FWD(ns).strings[I];
+  }
+};
+
 template<auto Names, typename... Ts>
 struct std::tuple_size<upd::named_tuple<Names, Ts...>> {
   constexpr static auto value = sizeof...(Ts);
@@ -432,6 +451,14 @@ struct upd::named_tuple_element<I, upd::tagged_tuple<Names, Ts...>> {
 template<std::size_t I, auto Names, typename... Ts>
 struct upd::named_tuple_identifier<I, upd::tagged_tuple<Names, Ts...>> {
   constexpr static auto value = Names[expr<I>].value;
+};
+
+template<>
+struct upd::collector_for<upd::template_box<upd::names>> {
+  template<tuple_like2 View>
+  [[nodiscard]] constexpr static auto collect(View &&view) {
+    return UPD_WITH_SEQUENCE(Is, tuple_size_v<View>, &) { return names<sizeof...(Is)>{get<Is>(UPD_FWD(view))...}; };
+  }
 };
 
 namespace upd::literals {
