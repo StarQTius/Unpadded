@@ -6,9 +6,20 @@
 #include "utility.hpp"
 #include <catch2/catch_test_macros.hpp>
 #include <upd/constexpr.hpp>
+#include <upd/record.hpp>
 #include <upd/tuple_v2.hpp>
 #include <upd/type_traits.hpp>
 #include <upd/upd.hpp>
+
+TEST_CASE("Typelist basic functionalities", "[typelist]") {
+  upd::tuple_like2 auto tl = upd::typelist2<int, char, bool>;
+
+  SECTION("Get elements from their tag") {
+    REQUIRE_TYPE(get<0>(tl), int);
+    REQUIRE_TYPE(get<1>(tl), char);
+    REQUIRE_TYPE(get<2>(tl), bool);
+  }
+}
 
 TEST_CASE("Tuple views", "[tuple_view]") {
   namespace updv = upd::tuple_views;
@@ -69,6 +80,30 @@ TEST_CASE("Tuple views", "[tuple_view]") {
     REQUIRE(arr[0] == get<0>(t));
     REQUIRE(arr[1] == get<1>(t));
     REQUIRE(arr[2] == get<2>(t));
+  }
+
+  SECTION("Transform element types") {
+    upd::tuple_view auto view = t | updv::transform_type([]<typename T> -> T * {});
+    REQUIRE_TYPE(get<0>(view), int *);
+    REQUIRE_TYPE(get<1>(view), char *);
+    REQUIRE_TYPE(get<2>(view), long *);
+  }
+
+  SECTION("View a tuple of entries as a record") {
+    upd::record_like auto view = t | updv::enumerate | updv::transform([](auto i_and_v) {
+                                   auto [i, v] = i_and_v;
+                                   return upd::entry{i, v};
+                                 }) |
+                                 updv::as_record;
+
+    REQUIRE(get<0uz>(view) == 4);
+    REQUIRE(get<1uz>(view) == 8);
+    REQUIRE(get<2uz>(view) == 67);
+  }
+
+  SECTION("Instantiate a tuple template") {
+    using tuple_type = decltype(t | updv::transform_type([]<typename T> -> T * {}) | updv::instantiate<std::tuple>);
+    REQUIRE(std::same_as<tuple_type, std::tuple<int *, char *, long *>>);
   }
 }
 

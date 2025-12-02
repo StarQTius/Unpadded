@@ -18,6 +18,13 @@
 #include "functional.hpp"
 #include "is_instance_of.hpp"
 #include "named_value.hpp"
+#include "record/as_tuple.hpp"
+#include "record/entry.hpp"
+#include "record/fold.hpp"
+#include "record/has_tag.hpp"
+#include "record/instantiate.hpp"
+#include "record/name.hpp"
+#include "record/record.hpp"
 #include "ref.hpp"
 #include "safe_operation.hpp"
 #include "static_vector.hpp"
@@ -25,9 +32,11 @@
 #include "template_traits.hpp"
 #include "token.hpp"
 #include "tuple.hpp"
+#include "tuple/as_record.hpp"
 #include "tuple/to.hpp"
 #include "tuple/transform.hpp"
 #include "tuple/tuple_view_adaptor.hpp"
+#include "tuple/typelist.hpp"
 #include "tuple_impl.hpp"
 #include "type_traits.hpp"
 #include "typelist.hpp"
@@ -230,6 +239,16 @@ template<names Identifiers, typename... Ts, typename Description>
   return named_field_values.fold_left(0uz, [&](std::size_t acc, const auto &field_value) {
     auto field_pos = descr.m_fields.find_if([&](auto nv) { return expr<nv.identifier == field_value.identifier>; });
     return acc + bitsize(field_value.value(), descr.m_fields[field_pos]);
+  });
+}
+
+template<typename... Entries, typename Description>
+[[nodiscard]] constexpr auto bitsize(const record<Entries...> &named_field_values,
+                                     const Description &descr) noexcept(release) -> std::size_t {
+  namespace updv = record_views;
+  return updv::fold_left(named_field_values, 0uz, [&](std::size_t acc, auto k, const auto &field_value) {
+    auto field_pos = descr.m_fields.find_if([&](auto nv) { return expr<nv.identifier == k>; });
+    return acc + bitsize(field_value, descr.m_fields[field_pos]);
   });
 }
 
@@ -438,11 +457,14 @@ class description {
   friend constexpr auto operator|(description<_Ts...> lhs, description<Us...> rhs) noexcept(release);
 
 public:
-  constexpr static auto identifiers =
-      typelist<Ts...>{} | tuple_views::transform([]<typename T>(typebox<T>) { return expr<T::identifier>; }) |
-      tuple_views::to<names>;
+  constexpr static auto identifiers = typelist2<Ts...> |
+                                      tuple_views::transform_type([]<typename T> -> expr_t<T::identifier> {}) |
+                                      tuple_views::to<names>;
 
-  using result_type = named_tuple<identifiers, typename Ts::value_type...>;
+  using result_type =
+      decltype(typelist2<Ts...> |
+               tuple_views::transform_type([]<typename T> -> entry<T::identifier, typename T::value_type> {}) |
+               tuple_views::as_record | record_views::instantiate<record>);
 
   explicit constexpr description(Ts... fields) : m_fields{std::move(fields)...} {}
 
@@ -455,8 +477,8 @@ public:
   constexpr void encode(const NamedTuple &nargs, Serializer &ser, stream_interface &dest) const {
     auto packet = m_fields
                       .transform([&]<typename Field>(const Field &field) {
-                        auto id = expr<field.identifier>;
-                        if constexpr (nargs.contains(id)) {
+                        auto id = keyword2<field.identifier>{};
+                        if constexpr (has_tag<field.identifier>(nargs)) {
                           return keyword<field.identifier>{} = field.make_value(nargs[id]);
                         } else {
                           return keyword<field.identifier>{} = field.default_value();
@@ -502,6 +524,8 @@ public:
 
   template<serializer Serializer, typename Packet>
   [[nodiscard]] constexpr auto decode(stream_interface &src, Serializer &ser, const Packet &ctx = named_tuple{}) const {
+    namespace updv = record_views;
+
     auto err = error{};
     auto retval = m_fields.apply(
         [](const auto &...fields) { return named_tuple{(keyword<fields.identifier>{} = fields.default_value())...}; });
@@ -509,7 +533,8 @@ public:
     if (!err) {
       m_fields.for_each([&](const auto &field) {
         ser.checkpoint(field.identifier.string);
-        auto maybe_field_value = field.decode(src, ser, named_tuple{join(std::as_const(retval), ctx)}, m_fields);
+        auto maybe_field_value =
+            field.decode(src, ser, named_tuple{join(std::as_const(retval), ctx | updv::as_tuple)}, m_fields);
         if (maybe_field_value) {
           retval[expr<field.identifier>] = *maybe_field_value;
         } else {
@@ -519,7 +544,7 @@ public:
     }
 
     if (!err) {
-      auto merged = named_tuple{join(std::as_const(retval), ctx)};
+      auto merged = named_tuple{join(std::as_const(retval), ctx | updv::as_tuple)};
       m_fields.transform([&](const auto &field) { return field.deduce(retval, ser, m_fields); })
           .flatten()
           .for_each([&](const auto &named_value) {
@@ -1041,9 +1066,10 @@ struct one_of_t {
     requires(is_instance_of<Choice, choice_t>())
   [[nodiscard]] constexpr auto make_value(Choice &&ch) const -> value_type {
     auto id_pos = tagged_descriptions.identifiers.find(expr<ch.code>);
+    using alt_type = typename std::remove_cvref_t<decltype(alternative_types[expr<id_pos + 1>])>::type;
 
     return UPD_FWD(ch).arguments.apply(
-        [&](auto &&...args) { return value_type{std::in_place_index<id_pos + 1>, UPD_FWD(args)...}; });
+        [&](auto &&...args) { return value_type{std::in_place_index<id_pos + 1>, alt_type(UPD_FWD(args)...)}; });
   }
 
   using rule_type = Rule;

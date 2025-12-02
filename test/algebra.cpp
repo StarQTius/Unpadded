@@ -1,6 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include <upd/algebra.hpp>
-#include <upd/named_value.hpp>
+#include <upd/record.hpp>
 
 TEST_CASE("Independent equation side", "[algebra][side]") {
   using namespace upd::algebra::literals;

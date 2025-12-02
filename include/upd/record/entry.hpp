@@ -1,11 +1,12 @@
 #pragma once
 
 #include <concepts>
+#include <format>
 #include <type_traits>
 
 #include "../constexpr.hpp"
-#include "../named_value.hpp"
 #include "../upd.hpp"
+#include "name.hpp"
 
 namespace upd {
 
@@ -21,6 +22,18 @@ struct entry {
   template<typename U>
     requires std::constructible_from<T, U>
   explicit constexpr entry(auto_constant<Identifier>, U &&x) : value{UPD_FWD(x)} {}
+
+  [[nodiscard]] constexpr auto forward() & noexcept(release) -> T & { return static_cast<T &>(value); }
+
+  [[nodiscard]] constexpr auto forward() && noexcept(release) -> T && { return static_cast<T &&>(value); }
+
+  [[nodiscard]] constexpr auto forward() const & noexcept(release) -> const T & {
+    return static_cast<const T &>(value);
+  }
+
+  [[nodiscard]] constexpr auto forward() const && noexcept(release) -> const T && {
+    return static_cast<const T &&>(value);
+  }
 
   T value;
 };
@@ -49,3 +62,14 @@ template<name Identifier>
 }
 
 } // namespace upd::literals
+
+template<auto Identifier, typename T>
+struct std::formatter<upd::entry<Identifier, T>> {
+  consteval formatter() noexcept(upd::release) = default;
+
+  [[nodiscard]] constexpr static auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
+
+  [[nodiscard]] constexpr static auto format(const upd::entry<Identifier, T> &e, std::format_context &ctx) {
+    return std::format_to(ctx.out(), "{} -> {}", Identifier, e.value);
+  }
+};

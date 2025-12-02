@@ -1,14 +1,18 @@
 #pragma once
 
 #include <cstddef>
+#include <format>
 #include <tuple>
+#include <type_traits>
 
 #include "../collector_of.hpp"
 #include "../constexpr.hpp"
 #include "../is_instance_of.hpp"
+#include "../tuple/for_each.hpp"
 #include "../upd.hpp"
 #include "../variadic/template_box.hpp"
 #include "apply.hpp"
+#include "as_tuple.hpp"
 #include "entry.hpp"
 #include "lite_record.hpp"
 #include "record_like.hpp"
@@ -28,7 +32,8 @@ public:
   template<typename... Entries>
     requires(sizeof...(Ts) == sizeof...(Entries) && (is_instance_of<Entries, entry>() && ...))
   constexpr explicit record(Entries &&...entries)
-      : m_storage{lite_record_node<Identifiers, typename Entries::value_type>{UPD_FWD(UPD_FWD(entries).value)}...} {}
+      : m_storage{lite_record_node<Identifiers, typename std::remove_cvref_t<Entries>::value_type>{
+            UPD_FWD(entries).forward()}...} {}
 
   template<typename Self, auto Id>
   [[nodiscard]] constexpr auto operator[](this Self &&self, keyword2<Id>) noexcept(release) -> auto && {
@@ -70,5 +75,33 @@ struct upd::collector_for<upd::template_box<upd::record>> {
     namespace updv = upd::record_views;
 
     return updv::apply([](auto &&...entries) { return record{UPD_FWD(entries)...}; }, UPD_FWD(view));
+  }
+};
+
+template<typename... Entries>
+struct std::formatter<upd::record<Entries...>> {
+  consteval formatter() noexcept(upd::release) = default;
+
+  [[nodiscard]] constexpr static auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
+
+  [[nodiscard]] constexpr static auto format(const upd::record<Entries...> &rec, std::format_context &ctx) {
+    namespace updv = upd::record_views;
+
+    auto it = ctx.out();
+    it = std::format_to(it, "(");
+
+    auto first = true;
+    upd::tuple_views::for_each(rec | updv::as_tuple, [&](const auto &e) {
+      if (first) {
+        it = std::format_to(it, "{}", e);
+        first = false;
+      } else {
+        it = std::format_to(it, ", {}", e);
+      }
+    });
+    it = std::format_to(it, ")");
+
+    ctx.advance_to(it);
+    return it;
   }
 };

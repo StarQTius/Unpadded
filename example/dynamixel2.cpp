@@ -16,6 +16,7 @@
 #include <upd/description.hpp>
 #include <upd/error.hpp>
 #include <upd/named_value.hpp>
+#include <upd/record.hpp>
 #include <upd/stream_interface.hpp>
 #include <upd/token.hpp>
 
@@ -293,7 +294,7 @@ auto ping_example() -> upd::error {
 
   auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x07, 0x00, 0x55, 0x00, 0x06, 0x04, 0x26, 0x65, 0x5d};
   auto answer1 =
-      answer_description.decode(answer1_seq.begin(), ser, upd::named_tuple{"status_of"_kw = instruction_code::ping});
+      answer_description.decode(answer1_seq.begin(), ser, upd::record{"status_of"_kw2 = instruction_code::ping});
   if (!answer1) {
     return answer1.error();
   }
@@ -308,7 +309,7 @@ auto ping_example() -> upd::error {
 
   auto answer2_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x02, 0x07, 0x00, 0x55, 0x00, 0x06, 0x04, 0x26, 0x6f, 0x6d};
   auto answer2 =
-      answer_description.decode(answer2_seq.begin(), ser, upd::named_tuple{"status_of"_kw = instruction_code::ping});
+      answer_description.decode(answer2_seq.begin(), ser, upd::record{"status_of"_kw2 = instruction_code::ping});
   if (!answer2) {
     return answer2.error();
   }
@@ -332,7 +333,7 @@ auto read_example() -> upd::error {
 
   std::println("Read: example");
   description.encode(
-      ("id"_kw = 1, "parameters"_kw = upd::choice<instruction_code::read>("address"_kw = 0x84, "length"_kw = 4)),
+      ("id"_kw = 1, "parameters"_kw = upd::choice<instruction_code::read>("address"_kw2 = 0x84, "length"_kw2 = 4)),
       ser,
       std::cout,
       " ");
@@ -342,7 +343,7 @@ auto read_example() -> upd::error {
   auto answer1_seq =
       bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x08, 0x00, 0x55, 0x00, 0xa6, 0x00, 0x00, 0x00, 0x8c, 0xc0};
   auto answer1 =
-      answer_description.decode(answer1_seq.begin(), ser, upd::named_tuple{"status_of"_kw = instruction_code::read});
+      answer_description.decode(answer1_seq.begin(), ser, upd::record{"status_of"_kw2 = instruction_code::read});
   if (!answer1) {
     return answer1.error();
   }
@@ -367,7 +368,7 @@ auto write_example() -> upd::error {
   std::println("Write: example");
   description.encode(("id"_kw = 1,
                       "parameters"_kw = upd::choice<instruction_code::write>(
-                          "address"_kw = 0x74, "data"_kw = std::array<std::uint8_t, 4>{0x0, 0x2, 0x0, 0x0})),
+                          "address"_kw2 = 0x74, "data"_kw2 = std::array<std::uint8_t, 4>{0x0, 0x2, 0x0, 0x0})),
                      ser,
                      std::cout,
                      " ");
@@ -376,7 +377,7 @@ auto write_example() -> upd::error {
 
   auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04, 0x00, 0x55, 0x00, 0xa1, 0x0c};
   auto answer1 =
-      answer_description.decode(answer1_seq.begin(), ser, upd::named_tuple{"status_of"_kw = instruction_code::write});
+      answer_description.decode(answer1_seq.begin(), ser, upd::record{"status_of"_kw2 = instruction_code::write});
   if (!answer1) {
     return answer1.error();
   }
@@ -401,7 +402,7 @@ auto reg_write_example() -> upd::error {
   std::println("Reg Write: example");
   description.encode(("id"_kw = 1,
                       "parameters"_kw = upd::choice<instruction_code::reg_write>(
-                          "address"_kw = 0x68, "data"_kw = std::array<std::uint8_t, 4>{0xc8, 0x0, 0x0, 0x0})),
+                          "address"_kw2 = 0x68, "data"_kw2 = std::array<std::uint8_t, 4>{0xc8, 0x0, 0x0, 0x0})),
                      ser,
                      std::cout,
                      " ");
@@ -409,8 +410,8 @@ auto reg_write_example() -> upd::error {
   std::println("");
 
   auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04, 0x00, 0x55, 0x00, 0xa1, 0x0c};
-  auto answer1 = answer_description.decode(
-      answer1_seq.begin(), ser, upd::named_tuple{"status_of"_kw = instruction_code::reg_write});
+  auto answer1 =
+      answer_description.decode(answer1_seq.begin(), ser, upd::record{"status_of"_kw2 = instruction_code::reg_write});
   if (!answer1) {
     return answer1.error();
   }
@@ -438,8 +439,8 @@ auto action_example() -> upd::error {
   std::println("");
 
   auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04, 0x00, 0x55, 0x00, 0xa1, 0x0c};
-  auto answer1 = answer_description.decode(
-      answer1_seq.begin(), ser, upd::named_tuple{"status_of"_kw = instruction_code::reg_write});
+  auto answer1 =
+      answer_description.decode(answer1_seq.begin(), ser, upd::record{"status_of"_kw2 = instruction_code::reg_write});
   if (!answer1) {
     return answer1.error();
   }
@@ -471,8 +472,8 @@ auto factory_reset_example() -> upd::error {
   std::println("");
 
   auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04, 0x00, 0x55, 0x00, 0xa1, 0x0c};
-  auto answer1 = answer_description.decode(
-      answer1_seq.begin(), ser, upd::named_tuple{"status_of"_kw = instruction_code::reg_write});
+  auto answer1 =
+      answer_description.decode(answer1_seq.begin(), ser, upd::record{"status_of"_kw2 = instruction_code::reg_write});
   if (!answer1) {
     return answer1.error();
   }
@@ -500,8 +501,8 @@ auto reboot_example() -> upd::error {
   std::println("");
 
   auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04, 0x00, 0x55, 0x00, 0xa1, 0x0c};
-  auto answer1 = answer_description.decode(
-      answer1_seq.begin(), ser, upd::named_tuple{"status_of"_kw = instruction_code::reg_write});
+  auto answer1 =
+      answer_description.decode(answer1_seq.begin(), ser, upd::record{"status_of"_kw2 = instruction_code::reg_write});
   if (!answer1) {
     return answer1.error();
   }
@@ -533,8 +534,8 @@ auto clear_example() -> upd::error {
   std::println("");
 
   auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04, 0x00, 0x55, 0x00, 0xa1, 0x0c};
-  auto answer1 = answer_description.decode(
-      answer1_seq.begin(), ser, upd::named_tuple{"status_of"_kw = instruction_code::reg_write});
+  auto answer1 =
+      answer_description.decode(answer1_seq.begin(), ser, upd::record{"status_of"_kw2 = instruction_code::reg_write});
   if (!answer1) {
     return answer1.error();
   }
@@ -567,8 +568,8 @@ auto control_table_backup_example() -> upd::error {
   std::println("");
 
   auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04, 0x00, 0x55, 0x00, 0xa1, 0x0c};
-  auto answer1 = answer_description.decode(
-      answer1_seq.begin(), ser, upd::named_tuple{"status_of"_kw = instruction_code::reg_write});
+  auto answer1 =
+      answer_description.decode(answer1_seq.begin(), ser, upd::record{"status_of"_kw2 = instruction_code::reg_write});
   if (!answer1) {
     return answer1.error();
   }
@@ -593,7 +594,7 @@ auto sync_read_example() -> upd::error {
   std::println("Sync Read: example");
   description.encode(("id"_kw = 0xfe,
                       "parameters"_kw = upd::choice<instruction_code::sync_read>(
-                          "address"_kw = 0x84, "length"_kw = 0x4, "ids"_kw = std::array<std::uint8_t, 2>{1, 2})),
+                          "address"_kw2 = 0x84, "length"_kw2 = 0x4, "ids"_kw2 = std::array<std::uint8_t, 2>{1, 2})),
                      ser,
                      std::cout,
                      " ");
@@ -602,8 +603,8 @@ auto sync_read_example() -> upd::error {
 
   auto answer1_seq =
       bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x08, 0x00, 0x55, 0x00, 0xa6, 0x00, 0x00, 0x00, 0x8c, 0xc0};
-  auto answer1 = answer_description.decode(
-      answer1_seq.begin(), ser, upd::named_tuple{"status_of"_kw = instruction_code::sync_read});
+  auto answer1 =
+      answer_description.decode(answer1_seq.begin(), ser, upd::record{"status_of"_kw2 = instruction_code::sync_read});
   if (!answer1) {
     return answer1.error();
   }
@@ -618,8 +619,8 @@ auto sync_read_example() -> upd::error {
 
   auto answer2_seq =
       bytearray{0xff, 0xff, 0xfd, 0x00, 0x02, 0x08, 0x00, 0x55, 0x00, 0x1f, 0x08, 0x00, 0x00, 0xba, 0xbe};
-  auto answer2 = answer_description.decode(
-      answer2_seq.begin(), ser, upd::named_tuple{"status_of"_kw = instruction_code::sync_read});
+  auto answer2 =
+      answer_description.decode(answer2_seq.begin(), ser, upd::record{"status_of"_kw2 = instruction_code::sync_read});
   if (!answer2) {
     return answer2.error();
   }

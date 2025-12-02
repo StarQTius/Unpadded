@@ -5,7 +5,7 @@
 TEST_CASE("Testing element access features", "[named_tuple]") {
   using namespace upd::literals;
 
-  auto nt = upd::named_tuple{"a"_kw = 1, "b"_kw = 2, "c"_kw = 3};
+  upd::record_like auto nt = upd::named_tuple{"a"_kw = 1, "b"_kw = 2, "c"_kw = 3};
 
   SECTION("Access tuple through tags") {
     REQUIRE(nt["a"_kw] == 1);

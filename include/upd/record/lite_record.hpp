@@ -49,6 +49,10 @@ struct lite_record_node : lite_record_tag_node<Tag>, lite_record_type_node<T> {
     requires std::convertible_to<U, T>
   explicit constexpr lite_record_node(auto_constant<Tag>, U &&v) : value{UPD_FWD(v)} {}
 
+  template<typename Other>
+    requires(is_instance_of<Other, lite_record_node>() && std::convertible_to<typename Other::value_type, T>)
+  explicit constexpr lite_record_node(Other &&other) : value(UPD_FWD(other).value) {}
+
   [[nodiscard]] constexpr auto get_by_tag(auto_constant<Tag>) & noexcept(release) -> T & { return value; }
 
   [[nodiscard]] constexpr auto get_by_tag(auto_constant<Tag>) const & noexcept(release) -> const T & { return value; }

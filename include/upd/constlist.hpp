@@ -51,6 +51,11 @@ public:
 template<metavalue... Metas>
 explicit constlist(Metas...) -> constlist<Metas::value...>;
 
+template<std::size_t I, auto... Vs>
+[[nodiscard]] constexpr auto get(constlist<Vs...>) {
+  return constlist<Vs...>::template get<I>();
+}
+
 } // namespace upd
 
 template<auto... Values>

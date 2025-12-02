@@ -9,6 +9,7 @@
 #include <upd/equivalent_to.hpp>
 #include <upd/named_value.hpp>
 #include <upd/record.hpp>
+#include <upd/tuple_v2.hpp>
 #include <upd/type_traits.hpp>
 #include <upd/upd.hpp>
 
@@ -246,6 +247,25 @@ TEST_CASE("Record views", "[record_view]") {
     REQUIRE(!upd::has_tag<upd::name{"b"}>(regec));
     REQUIRE(regec["c"_kw2] == 68);
   }
+
+  SECTION("Instantiate a record template") {
+    using record_type =
+        decltype(rec | updv::transform([](auto, auto &x) { return &x; }) | updv::instantiate<upd::record>);
+    REQUIRE(std::same_as<record_type,
+                         upd::record<upd::entry<upd::name{"a"}, int *>,
+                                     upd::entry<upd::name{"b"}, char *>,
+                                     upd::entry<upd::name{"c"}, long *>>>);
+  }
+
+  SECTION("View a record as a tuple of entries") {
+    upd::tuple_view auto view = rec | updv::as_tuple;
+    REQUIRE(get<0>(view).identifier == upd::name{"a"});
+    REQUIRE(&get<0>(view).value == &get<upd::name{"a"}>(rec));
+    REQUIRE(get<1>(view).identifier == upd::name{"b"});
+    REQUIRE(&get<1>(view).value == &get<upd::name{"b"}>(rec));
+    REQUIRE(get<2>(view).identifier == upd::name{"c"});
+    REQUIRE(&get<2>(view).value == &get<upd::name{"c"}>(rec));
+  }
 }
 
 TEST_CASE("Algorithms on records", "[record_algorithm]") {
@@ -258,7 +278,7 @@ TEST_CASE("Algorithms on records", "[record_algorithm]") {
     using namespace std::literals;
 
     auto res = updv::fold_left(rec, std::pair{""s, 0}, [](auto acc, auto k, auto v) {
-      return std::pair{acc.first + k.string, acc.second + v};
+      return std::pair{acc.first + k.value.string, acc.second + v};
     });
 
     REQUIRE(res == std::pair{"abc", 79});
@@ -268,7 +288,7 @@ TEST_CASE("Algorithms on records", "[record_algorithm]") {
     using namespace std::literals;
 
     auto res = updv::fold_right(rec, std::pair{""s, 0}, [](auto k, auto v, auto acc) {
-      return std::pair{acc.first + k.string, acc.second + v};
+      return std::pair{acc.first + k.value.string, acc.second + v};
     });
 
     REQUIRE(res == std::pair{"cba", 79});

@@ -11,7 +11,8 @@
 #include "constexpr.hpp"
 #include "functional.hpp"
 #include "ref.hpp"
-#include "transfert_reference.hpp"
+#include "tuple/tuple_like.hpp"
+#include "tuple/tuple_size.hpp"
 #include "type_traits.hpp"
 #include "upd.hpp"
 #include "with_sequence.hpp"
@@ -19,25 +20,7 @@
 namespace upd {
 
 template<typename Tuple>
-concept tuple_like = requires(std::remove_reference_t<Tuple> x) {
-  std::tuple_size<decltype(x)>::value;
-  { std::tuple_size_v<decltype(x)> } -> std::convertible_to<std::size_t>;
-} && UPD_WITH_SEQUENCE_FOR(Is, Tuple) {
-  [[maybe_unused]] auto has_tuple_element = [](auto i) {
-    return requires(std::remove_reference_t<Tuple> x) { typename std::tuple_element_t<i, decltype(x)>; };
-  };
-  return (has_tuple_element(auto_constant<Is>{}) && ...);
-}
-&&UPD_WITH_SEQUENCE_FOR(Is, Tuple) {
-  [[maybe_unused]] auto is_nth_gettable = []([[maybe_unused]] auto i) {
-    return requires(Tuple &&x) {
-      {
-        get<i>(UPD_FWD(x))
-      } -> std::same_as<transfert_reference_t<std::tuple_element_t<i, std::remove_reference_t<Tuple>> &&, Tuple &&>>;
-    };
-  };
-  return (is_nth_gettable(auto_constant<Is>{}) && ...);
-};
+concept tuple_like = tuple_like2<Tuple>;
 
 template<typename Typelist>
 concept typelist_like = tuple_like<Typelist> && UPD_WITH_SEQUENCE_FOR(Is, Typelist) {
@@ -296,7 +279,7 @@ public:
     });
   }
 
-  template<predicate_on_each<Derived> UnaryPred>
+  template<typename UnaryPred>
   [[nodiscard]] constexpr auto find_if(UnaryPred &&p) const -> std::size_t {
     auto retval = 0uz;
     auto found_yet = false;
@@ -337,29 +320,31 @@ public:
 
     using index2 = std::pair<std::size_t, std::size_t>;
 
-    auto retval_size = self.transform([](auto sub) { return expr<sub.size()>; }).fold_left(expr<0uz>, plus);
-    auto shape = self.transform([](auto sub) { return expr<sub.size()>; }).apply(to_metafunction([=](auto... sizes) {
-      auto shape = std::array<index2, retval_size>();
-      auto size_array = std::array<std::size_t, sizeof...(sizes)>{sizes...};
+    auto retval_size =
+        self.transform([](auto sub) { return expr<tuple_size_v<decltype(sub)>>; }).fold_left(expr<0uz>, plus);
+    auto shape = self.transform([](auto sub) { return expr<tuple_size_v<decltype(sub)>>; })
+                     .apply(to_metafunction([=](auto... sizes) {
+                       auto shape = std::array<index2, retval_size>();
+                       auto size_array = std::array<std::size_t, sizeof...(sizes)>{sizes...};
 
-      auto it = shape.begin();
-      for (auto [i, size] : size_array | vw::enumerate) {
-        for (auto j = 0zu; j < size; ++j) {
-          *it++ = index2{i, j};
-        }
-      }
+                       auto it = shape.begin();
+                       for (auto [i, size] : size_array | vw::enumerate) {
+                         for (auto j = 0zu; j < size; ++j) {
+                           *it++ = index2{i, j};
+                         }
+                       }
 
-      UPD_CONSTEXPR_ASSERT(it == shape.end());
+                       UPD_CONSTEXPR_ASSERT(it == shape.end());
 
-      return shape;
-    }));
+                       return shape;
+                     }));
 
     return sequence<shape.value.size()>
         .transform([=](auto i) {
           constexpr auto ij = shape.value.at(i);
           return std::pair{expr<ij.first>, expr<ij.second>};
         })
-        .transform(unpack | [&](auto i, auto j) -> auto && { return UPD_FWD(self).at(i).at(j); })
+        .transform(unpack | [&](auto i, auto j) -> decltype(auto) { return get<j>(UPD_FWD(self).at(i)); })
       ;
   }
 

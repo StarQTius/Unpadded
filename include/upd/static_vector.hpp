@@ -100,7 +100,7 @@ public:
     return true;
   }
 
-  ~static_vector() noexcept(release) {
+  ~static_vector() {
     namespace stdv = std::views;
 
     for (auto &elem : m_content | stdv::take(m_size)) {
@@ -118,6 +118,8 @@ private:
 };
 
 } // namespace upd
+
+static_assert(std::destructible<upd::static_vector<int, 32>>);
 
 template<typename T, std::size_t Max>
 struct std::formatter<upd::static_vector<T, Max>> {

@@ -23,6 +23,9 @@ namespace upd {
 template<auto>
 struct auto_constant;
 
+template<auto Value>
+using expr_t = auto_constant<Value>;
+
 template<typename T>
 concept auto_constant_instance = requires(T x) {
   { auto_constant{x} } -> std::common_reference_with<T>;

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <concepts>
 #include <cstddef>
 #include <type_traits>
 #include <utility>
@@ -8,7 +7,8 @@
 #include "constexpr.hpp"
 #include "functional.hpp"
 #include "lite_tuple.hpp"
-#include "transfert_reference.hpp"
+#include "record/record_like.hpp"
+#include "tuple/tuple_like.hpp"
 #include "tuple_impl.hpp"
 #include "type_traits.hpp"
 #include "upd.hpp"
@@ -70,12 +70,6 @@ template<typename T, typename BinaryOp>
   return accumulable_t<T &&, BinaryOp &&>{UPD_FWD(x), UPD_FWD(op)};
 }
 
-template<std::size_t I, typename Tuple>
-  requires requires(Tuple &&t) { UPD_FWD(t).template get<I, Tuple>(); }
-[[nodiscard]] constexpr auto get(Tuple &&t) noexcept(release) -> auto && {
-  return UPD_FWD(t).template get<I, Tuple>();
-}
-
 } // namespace upd
 
 namespace upd {
@@ -123,32 +117,7 @@ template<std::size_t I, typename Tuple>
 constexpr auto named_tuple_identifier_v = named_tuple_identifier<I, Tuple>::value;
 
 template<typename T>
-concept named_tuple_like =
-    tuple_like<T> &&
-    []<std::size_t... Is>(std::index_sequence<Is...>) {
-      [[maybe_unused]] auto has_tuple_identifier = [](auto i) {
-        return requires(std::remove_reference_t<T> x) { named_tuple_identifier<i, decltype(x)>::value; };
-      };
-      return (has_tuple_identifier(expr<Is>) && ...);
-    }(std::make_index_sequence<std::tuple_size_v<std::remove_reference_t<T>>>{}) &&
-    []<std::size_t... Is>(std::index_sequence<Is...>) {
-      [[maybe_unused]] auto has_tuple_identifier = [](auto i) {
-        return requires(std::remove_reference_t<T> x) { typename named_tuple_element<i, decltype(x)>::type; };
-      };
-      return (has_tuple_identifier(expr<Is>) && ...);
-    }(std::make_index_sequence<std::tuple_size_v<std::remove_reference_t<T>>>{}) &&
-    []<std::size_t... Is>(std::index_sequence<Is...>) {
-      [[maybe_unused]] auto is_nth_id_gettable = []([[maybe_unused]] auto i) {
-        using noref_type = std::remove_reference_t<T>;
-        [[maybe_unused]] constexpr auto identifier = named_tuple_identifier_v<i, noref_type>;
-        return requires(T &&x) {
-          {
-            get<named_tuple_identifier_v<i, noref_type>>(UPD_FWD(x))
-          } -> std::same_as<transfert_reference_t<named_tuple_element_t<i, noref_type> &&, T &&>>;
-        };
-      };
-      return (is_nth_id_gettable(expr<Is>) && ...);
-    }(std::make_index_sequence<std::tuple_size_v<std::remove_reference_t<T>>>{});
+concept named_tuple_like = record_like<T>;
 
 template<tuple_like Tuple>
 [[nodiscard]] constexpr auto type_only(const Tuple &) noexcept(release);
@@ -219,4 +188,30 @@ struct std::tuple_size<upd::tuple<Ts...>> {
 template<std::size_t I, typename... Ts>
 struct std::tuple_element<I, upd::tuple<Ts...>> {
   using type = typename decltype(auto{upd::detail::lite_tuple<upd::typebox<Ts>...>{}.at(upd::expr<I>)})::type;
+};
+
+template<typename... Ts>
+struct upd::tuple_like_for<upd::tuple<Ts...>> {
+  constexpr static auto size = sizeof...(Ts);
+
+  template<std::size_t I>
+  using element_type = std::tuple_element_t<I, tuple<Ts...>>;
+
+  template<std::size_t I, typename Tuple>
+  [[nodiscard]] constexpr static auto get(Tuple &&t) noexcept(release) -> auto && {
+    return UPD_FWD(t)[expr<I>];
+  }
+};
+
+template<typename... Ts>
+struct upd::tuple_like_for<upd::typelist<Ts...>> {
+  constexpr static auto size = sizeof...(Ts);
+
+  template<std::size_t I>
+  using element_type = std::tuple_element_t<I, typelist<Ts...>>;
+
+  template<std::size_t I, typename Typelist>
+  [[nodiscard]] constexpr static auto get(Typelist &&tl) noexcept(release) -> auto && {
+    return UPD_FWD(tl).template get<I>();
+  }
 };

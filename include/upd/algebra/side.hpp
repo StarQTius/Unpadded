@@ -4,8 +4,8 @@
 
 #include "../constexpr.hpp"
 #include "../is_convertible_to_instance_of.hpp"
-#include "../named_value.hpp"
 #include "../record/lite_record.hpp"
+#include "../record/name.hpp"
 #include "../static_assert.hpp"
 #include "../upd.hpp"
 #include "concepts.hpp"

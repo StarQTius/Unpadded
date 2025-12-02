@@ -44,9 +44,21 @@ template<template<typename, auto...> typename TT, typename View>
 template<auto TemplateBox, typename View>
 concept collector_of = (tuple_like2<View> && requires(View &&view) {
                          { collect<TemplateBox>(UPD_FWD(view)) } -> regular_tuple;
+                         { collect<TemplateBox>(std::declval<View>()) } -> regular_tuple;
                        }) || (record_like<View> && requires(View &&view) {
                          { collect<TemplateBox>(UPD_FWD(view)) } -> regular_record;
+                         { collect<TemplateBox>(std::declval<View>()) } -> regular_record;
                        });
+
+template<auto TemplateBox, typename View>
+  requires tuple_like2<View> || record_like<View>
+struct collect_result {
+  using type = decltype(collect<TemplateBox>(std::declval<View>()));
+};
+
+template<auto TemplateBox, typename View>
+  requires tuple_like2<View> || record_like<View>
+using collect_result_t = typename collect_result<TemplateBox, View>::type;
 
 } // namespace upd
 

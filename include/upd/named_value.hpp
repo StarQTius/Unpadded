@@ -20,6 +20,13 @@
 #include "functional.hpp"
 #include "is_instance_of.hpp"
 #include "lite_tuple.hpp"
+#include "record/entry.hpp"
+#include "record/name.hpp"
+#include "record/record.hpp"
+#include "record/record_element.hpp"
+#include "record/record_like.hpp"
+#include "record/record_size.hpp"
+#include "record/record_tag.hpp"
 #include "ref.hpp"
 #include "template_traits.hpp"
 #include "tuple.hpp"
@@ -34,26 +41,11 @@
 
 namespace upd {
 
-constexpr auto name_max_size = std::size_t{256};
-
 template<typename T>
 concept serializer = true;
 
 template<serializer Serializer>
 using byte_type = typename Serializer::byte_type;
-
-struct name {
-  template<std::size_t Size>
-  consteval name(const char (&str)[Size]) noexcept(release) : string{} {
-    using namespace std::ranges;
-
-    copy(str, string);
-  }
-
-  constexpr operator std::string_view() const noexcept { return std::string_view{string}; }
-
-  char string[name_max_size];
-};
 
 template<name>
 struct keyword;
@@ -132,6 +124,9 @@ public:
   template<typename U>
   constexpr named_value(const named_value<Identifier, U> &other) : m_value{static_cast<T>(other.value())} {}
 
+  template<typename U>
+  constexpr named_value(const entry<Identifier, U> &other) : m_value{static_cast<T>(other.value)} {}
+
   template<typename F>
   [[nodiscard]] constexpr auto map(F &&f) & {
     decltype(auto) mapped_value = UPD_INVOKE(UPD_FWD(f), m_value);
@@ -150,13 +145,10 @@ public:
     return keyword<identifier>{} = UPD_FWD(mapped_value);
   }
 
-  [[nodiscard]] constexpr auto value() & noexcept(release) -> T & { return m_value; }
-
-  [[nodiscard]] constexpr auto value() const & noexcept(release) -> const T & { return m_value; }
-
-  [[nodiscard]] constexpr auto value() && noexcept(release) -> T && { return UPD_FWD(m_value); }
-
-  [[nodiscard]] constexpr auto value() const && noexcept(release) -> T && { return UPD_FWD(m_value); }
+  template<typename Self>
+  [[nodiscard]] constexpr auto value(this Self &&self) noexcept(release) -> auto && {
+    return UPD_FWD(self).m_value;
+  }
 
   auto_constant<Identifier> id;
   T m_value;
@@ -225,7 +217,7 @@ public:
   constexpr explicit named_tuple(tuple<NamedValues...> &&nvs) : m_nvs{std::move(nvs)} {}
 
   template<name Identifier, typename Self>
-    requires(identifiers.find(expr<Identifier>) < identifiers.size())
+  // requires(identifiers.find(expr<Identifier>) < identifiers.size())
   [[nodiscard]] constexpr auto get(this Self &&self) noexcept(release) -> auto && {
     auto position = self.m_nvs.find_if([](const auto &nv) { return expr<nv.identifier == Identifier>; });
 
@@ -239,6 +231,11 @@ public:
   template<std::size_t I, typename Self>
   [[nodiscard]] constexpr auto get(this Self &&self) noexcept(release) -> auto && {
     return UPD_FWD(self).m_nvs.at(expr<I>);
+  }
+
+  template<typename Self, name Identifier>
+  [[nodiscard]] constexpr auto operator[](this Self &&self, keyword2<Identifier>) noexcept(release) -> auto && {
+    return UPD_FWD(self).template get<Identifier, Self>();
   }
 
   template<typename Self, name Identifier>
@@ -267,7 +264,11 @@ public:
     m_nvs.apply(serialize_pack);
   }
 
-private:
+  template<typename... Entries>
+  [[nodiscard]] constexpr operator record<Entries...>() {
+    return collect<record>(*this);
+  }
+
   content_type m_nvs;
 };
 
@@ -281,9 +282,7 @@ explicit named_tuple(tuple<NamedValues...>) -> named_tuple<{std::remove_cvref_t<
                                                            typename std::remove_cvref_t<NamedValues>::value_type...>;
 
 template<typename T>
-concept named_tuple_instance = requires(T x) {
-  { named_tuple{x} } -> std::same_as<T>;
-};
+concept named_tuple_instance = record_like<T>;
 
 template<named_value_instance Lhs, named_value_instance Rhs>
 [[nodiscard]] constexpr auto operator,(Lhs &&lhs, Rhs &&rhs) noexcept(release) {
@@ -390,10 +389,27 @@ explicit tagged_tuple(NamedValues...)
     -> tagged_tuple<constlist<NamedValues::identifier...>{}, typename NamedValues::value_type...>;
 
 template<name Identifier, typename Tuple>
-  requires(is_instance_of<Tuple, tuple>() || is_instance_of<Tuple, named_tuple>() ||
-           is_instance_of<Tuple, tagged_tuple>())
+  requires(is_instance_of<Tuple, tagged_tuple>())
 [[nodiscard]] constexpr auto get(Tuple &&t) noexcept(release) -> auto && {
   return UPD_FWD(t).template get<Identifier, Tuple>();
+}
+
+template<std::size_t I, typename Tuple>
+  requires(is_instance_of<Tuple, tagged_tuple>())
+[[nodiscard]] constexpr auto get(Tuple &&t) noexcept(release) -> auto && {
+  return UPD_FWD(t).template get<I, Tuple>();
+}
+
+template<name Name, typename Record>
+  requires(is_instance_of<Record, named_tuple>())
+[[nodiscard]] constexpr auto get(Record &&rec) noexcept(release) -> auto && {
+  return UPD_FWD(rec)[expr<Name>];
+}
+
+template<std::size_t I, typename Record>
+  requires(is_instance_of<Record, named_tuple>())
+[[nodiscard]] constexpr auto get(Record &&rec) noexcept(release) -> auto && {
+  return UPD_FWD(rec)[expr<I>];
 }
 
 } // namespace upd
@@ -469,6 +485,22 @@ template<name Identifier>
 }
 
 } // namespace upd::literals
+
+template<upd::names Names, typename... Ts>
+struct upd::record_size<upd::named_tuple<Names, Ts...>> {
+  constexpr static auto value = sizeof...(Ts);
+};
+
+template<std::size_t I, upd::names Names, typename... Ts>
+struct upd::record_tag<I, upd::named_tuple<Names, Ts...>> {
+  constexpr static auto value = name{get<I>(Names)};
+};
+
+template<auto Id, upd::names Names, typename... Ts>
+struct upd::record_element<Id, upd::named_tuple<Names, Ts...>> {
+  using record_type = upd::named_tuple<Names, Ts...>;
+  using type = decltype(std::declval<record_type>()[keyword<Id>{}]);
+};
 
 template<upd::name Identifier, typename T>
 struct std::formatter<upd::named_value<Identifier, T>> {
