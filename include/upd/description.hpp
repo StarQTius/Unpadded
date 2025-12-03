@@ -25,6 +25,7 @@
 #include "record/instantiate.hpp"
 #include "record/name.hpp"
 #include "record/record.hpp"
+#include "record/record_like.hpp"
 #include "ref.hpp"
 #include "safe_operation.hpp"
 #include "static_vector.hpp"
@@ -468,18 +469,18 @@ public:
 
   explicit constexpr description(Ts... fields) : m_fields{std::move(fields)...} {}
 
-  template<named_tuple_instance NamedTuple, serializer Serializer>
-  constexpr void encode(const NamedTuple &nargs, Serializer &ser, std::ostream &dest, const char *sep) const {
-    encode(nargs, ser, standard_stream{nullptr, &dest, sep});
+  template<record_like Args, serializer Serializer>
+  constexpr void encode(const Args &args, Serializer &ser, std::ostream &dest, const char *sep) const {
+    encode(args, ser, standard_stream{nullptr, &dest, sep});
   }
 
-  template<named_tuple_instance NamedTuple, serializer Serializer>
-  constexpr void encode(const NamedTuple &nargs, Serializer &ser, stream_interface &dest) const {
+  template<record_like Args, serializer Serializer>
+  constexpr void encode(const Args &args, Serializer &ser, stream_interface &dest) const {
     auto packet = m_fields
                       .transform([&]<typename Field>(const Field &field) {
                         auto id = keyword2<field.identifier>{};
-                        if constexpr (has_tag<field.identifier>(nargs)) {
-                          return keyword<field.identifier>{} = field.make_value(nargs[id]);
+                        if constexpr (has_tag<field.identifier>(args)) {
+                          return keyword<field.identifier>{} = field.make_value(args[id]);
                         } else {
                           return keyword<field.identifier>{} = field.default_value();
                         }
@@ -498,21 +499,21 @@ public:
     });
   }
 
-  template<named_tuple_instance NamedTuple, serializer Serializer>
-  constexpr void encode(const NamedTuple &nargs, Serializer &ser, stream_interface &&dest) const {
-    encode(nargs, ser, dest);
+  template<record_like Args, serializer Serializer>
+  constexpr void encode(const Args &args, Serializer &ser, stream_interface &&dest) const {
+    encode(args, ser, dest);
   }
 
-  template<std::input_iterator InputIt, serializer Serializer, typename Packet>
+  template<std::input_iterator InputIt, serializer Serializer, record_like Context>
     requires std::convertible_to<std::iter_value_t<InputIt>, word_t>
-  [[nodiscard]] constexpr auto decode(InputIt src, Serializer &ser, const Packet &ctx = named_tuple{}) const {
+  [[nodiscard]] constexpr auto decode(InputIt src, Serializer &ser, const Context &ctx = record{}) const {
     auto null_it = static_cast<word_t *>(nullptr);
     return decode(iterator_stream{src, null_it}, ser, ctx);
   }
 
-  template<std::input_iterator InputIt, serializer Serializer, typename Packet>
+  template<std::input_iterator InputIt, serializer Serializer, record_like Context>
     requires std::same_as<std::iter_value_t<InputIt>, std::byte>
-  [[nodiscard]] constexpr auto decode(InputIt src, Serializer &ser, const Packet &ctx = named_tuple{}) const {
+  [[nodiscard]] constexpr auto decode(InputIt src, Serializer &ser, const Context &ctx = record{}) const {
     namespace stdr = std::ranges;
     namespace stdv = std::views;
 
@@ -522,8 +523,8 @@ public:
     return decode(iterator_stream{std::begin(words), null_it}, ser, ctx);
   }
 
-  template<serializer Serializer, typename Packet>
-  [[nodiscard]] constexpr auto decode(stream_interface &src, Serializer &ser, const Packet &ctx = named_tuple{}) const {
+  template<serializer Serializer, record_like Context>
+  [[nodiscard]] constexpr auto decode(stream_interface &src, Serializer &ser, const Context &ctx = record{}) const {
     namespace updv = record_views;
 
     auto err = error{};
@@ -562,9 +563,8 @@ public:
     return result_if_no_error(std::move(retval), std::move(err));
   }
 
-  template<serializer Serializer, typename Packet>
-  [[nodiscard]] constexpr auto
-  decode(stream_interface &&src, Serializer &ser, const Packet &ctx = named_tuple{}) const {
+  template<serializer Serializer, record_like Context>
+  [[nodiscard]] constexpr auto decode(stream_interface &&src, Serializer &ser, const Context &ctx = record{}) const {
     return decode(src, ser, ctx);
   }
 
@@ -611,12 +611,12 @@ struct field_t {
 
   [[nodiscard]] constexpr static auto default_value() noexcept(release) -> value_type { return value_type{}; }
 
-  template<named_tuple_like Packet, serializer Serializer, tuple_like Fields>
+  template<record_like Packet, serializer Serializer, tuple_like Fields>
   [[nodiscard]] constexpr static auto deduce(Packet &, Serializer &, const Fields &) noexcept(release) {
     return named_tuple{};
   }
 
-  template<serializer Serializer, named_tuple_like Packet, tuple_like Fields>
+  template<serializer Serializer, record_like Packet, tuple_like Fields>
   [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &, const Fields &)
       -> result<value_type> {
     if constexpr (is_signed) {
@@ -671,7 +671,7 @@ struct unamed_enum_field_t {
   using result_type = enum_type;
   constexpr static auto is_signed = std::is_signed_v<std::underlying_type_t<enum_type>>;
 
-  template<serializer Serializer, named_tuple_like Packet>
+  template<serializer Serializer, record_like Packet>
   [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &)
       -> result<result_type> {
     auto retval = [&] {
@@ -732,12 +732,12 @@ struct bound_t {
 
   [[nodiscard]] constexpr static auto default_value() noexcept(release) -> value_type { return value_type{}; }
 
-  template<named_tuple_like Packet, serializer Serializer, tuple_like Fields>
+  template<record_like Packet, serializer Serializer, tuple_like Fields>
   [[nodiscard]] constexpr auto deduce(Packet &packet, Serializer &, const Fields &fields) const {
     return tagged_tuple{named_value{expr<identifier>, rule.deduce(std::as_const(packet), fields)}};
   }
 
-  template<serializer Serializer, named_tuple_like Packet, tuple_like Fields>
+  template<serializer Serializer, record_like Packet, tuple_like Fields>
   [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &, const Fields &)
       -> result<value_type> {
     if constexpr (is_signed) {
@@ -775,12 +775,12 @@ struct enum_bound_t {
 
   [[nodiscard]] constexpr static auto default_value() noexcept(release) -> value_type { return value_type{}; }
 
-  template<named_tuple_like Packet, serializer Serializer, tuple_like Fields>
+  template<record_like Packet, serializer Serializer, tuple_like Fields>
   [[nodiscard]] constexpr auto deduce(Packet &packet, Serializer &, const Fields &fields) const {
     return tagged_tuple{named_value{expr<identifier>, rule.deduce(std::as_const(packet), fields)}};
   }
 
-  template<serializer Serializer, named_tuple_like Packet, tuple_like Fields>
+  template<serializer Serializer, record_like Packet, tuple_like Fields>
   [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &, const Fields &)
       -> result<value_type> {
     auto retval = [&] {
@@ -834,12 +834,12 @@ struct bound_elsewhere_t {
 
   [[nodiscard]] constexpr static auto default_value() noexcept(release) -> value_type { return value_type{}; }
 
-  template<named_tuple_like Packet, serializer Serializer, tuple_like Fields>
+  template<record_like Packet, serializer Serializer, tuple_like Fields>
   [[nodiscard]] constexpr static auto deduce(Packet &, Serializer &, const Fields &) noexcept(release) {
     return named_tuple{};
   }
 
-  template<serializer Serializer, named_tuple_like Packet, tuple_like Fields>
+  template<serializer Serializer, record_like Packet, tuple_like Fields>
   [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &, const Fields &)
       -> result<value_type> {
     if constexpr (is_signed) {
@@ -874,12 +874,12 @@ struct enum_bound_elsewhere_t {
 
   [[nodiscard]] constexpr static auto default_value() noexcept(release) -> value_type { return value_type{}; }
 
-  template<named_tuple_like Packet, serializer Serializer, tuple_like Fields>
+  template<record_like Packet, serializer Serializer, tuple_like Fields>
   [[nodiscard]] constexpr static auto deduce(Packet &, Serializer &, const Fields &) noexcept(release) {
     return named_tuple{};
   }
 
-  template<serializer Serializer, named_tuple_like Packet, tuple_like Fields>
+  template<serializer Serializer, record_like Packet, tuple_like Fields>
   [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &, const Fields &)
       -> result<value_type> {
     auto retval = [&] {
@@ -934,12 +934,12 @@ struct constant_t {
 
   [[nodiscard]] constexpr auto default_value() const noexcept(release) -> value_type { return field_value; }
 
-  template<named_tuple_like Packet, serializer Serializer, tuple_like Fields>
+  template<record_like Packet, serializer Serializer, tuple_like Fields>
   [[nodiscard]] constexpr static auto deduce(Packet &, Serializer &, const Fields &) noexcept(release) {
     return named_tuple{};
   }
 
-  template<serializer Serializer, named_tuple_like Packet, tuple_like Fields>
+  template<serializer Serializer, record_like Packet, tuple_like Fields>
   [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &, const Fields &)
       -> result<value_type> {
     return ser.deserialize_unsigned(src, upd::width<width>);
@@ -975,7 +975,7 @@ struct checksum_t {
 
   [[nodiscard]] constexpr auto default_value() const noexcept(release) -> value_type { return init; }
 
-  template<named_tuple_like Packet, serializer Serializer, tuple_like Fields>
+  template<record_like Packet, serializer Serializer, tuple_like Fields>
   [[nodiscard]] constexpr auto deduce(Packet &packet, Serializer &ser, const Fields &fields) const {
     using namespace upd::literals;
 
@@ -1018,7 +1018,7 @@ struct checksum_t {
     return tagged_tuple{named_value{expr<identifier>, dest.acc}};
   }
 
-  template<serializer Serializer, named_tuple_like Packet, tuple_like Fields>
+  template<serializer Serializer, record_like Packet, tuple_like Fields>
   [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &, const Fields &)
       -> result<value_type> {
     return ser.deserialize_unsigned(src, upd::width<width>);
@@ -1079,14 +1079,14 @@ struct one_of_t {
 
   [[nodiscard]] constexpr static auto default_value() -> value_type { return value_type{}; }
 
-  template<named_tuple_like Packet, serializer Serializer, tuple_like Fields>
+  template<record_like Packet, serializer Serializer, tuple_like Fields>
   [[nodiscard]] constexpr auto deduce(const Packet &packet, Serializer &, const Fields &) const noexcept(release) {
     auto id_pos = packet[expr<identifier>].index() - 1;
     auto id = tagged_descriptions.identifiers.visit(id_pos, [&](auto id) -> tag_type { return id; });
     return tagged_tuple{keyword<rule_type::from_identifier>{} = UPD_INVOKE(inverse(rule.chain), id)};
   }
 
-  template<serializer Serializer, named_tuple_like Packet, tuple_like Fields>
+  template<serializer Serializer, record_like Packet, tuple_like Fields>
   [[nodiscard]] constexpr auto
   decode(stream_interface &src, Serializer &ser, const Packet &packet, const Fields &fields) const
       -> result<value_type> {
@@ -1158,12 +1158,12 @@ struct repeat_t {
 
   [[nodiscard]] constexpr static auto default_value() -> value_type { return value_type{}; }
 
-  template<named_tuple_like Packet, serializer Serializer, tuple_like Fields>
+  template<record_like Packet, serializer Serializer, tuple_like Fields>
   [[nodiscard]] constexpr static auto deduce(Packet &, Serializer &, const Fields &) noexcept(release) {
     return named_tuple{};
   }
 
-  template<serializer Serializer, named_tuple_like Packet, tuple_like Fields>
+  template<serializer Serializer, record_like Packet, tuple_like Fields>
   [[nodiscard]] constexpr auto
   decode(stream_interface &src, Serializer &ser, const Packet &packet, const Fields &fields) const
       -> result<value_type> {
