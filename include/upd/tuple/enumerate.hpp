@@ -1,8 +1,11 @@
 #pragma once
 
+#include <array>
 #include <cstddef>
 #include <ranges>
+#include <tuple>
 #include <utility>
+#include <variant>
 
 #include "../constexpr.hpp"
 #include "../upd.hpp"

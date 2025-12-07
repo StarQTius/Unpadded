@@ -1,8 +1,10 @@
 #pragma once
 
+#include "tuple/apply.hpp"              // IWYU pragma: export
 #include "tuple/as_record.hpp"          // IWYU pragma: export
 #include "tuple/chain.hpp"              // IWYU pragma: export
 #include "tuple/clean.hpp"              // IWYU pragma: export
+#include "tuple/concat.hpp"             // IWYU pragma: export
 #include "tuple/enumerate.hpp"          // IWYU pragma: export
 #include "tuple/filter.hpp"             // IWYU pragma: export
 #include "tuple/find.hpp"               // IWYU pragma: export
@@ -23,4 +25,5 @@
 #include "tuple/tuple_view_adaptor.hpp" // IWYU pragma: export
 #include "tuple/typelist.hpp"           // IWYU pragma: export
 #include "tuple/view.hpp"               // IWYU pragma: export
+#include "tuple/visit.hpp"              // IWYU pragma: export
 #include "tuple/zip.hpp"                // IWYU pragma: export

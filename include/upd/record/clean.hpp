@@ -21,7 +21,7 @@ template<record_like Base, typename T>
 struct clean_view {
   Base base;
 
-  clean_view(Base b, typebox<T>) : base{UPD_FWD(b)} {}
+  explicit constexpr clean_view(Base b, typebox<T>) : base{UPD_FWD(b)} {}
 };
 
 template<record_like Base, typename T>

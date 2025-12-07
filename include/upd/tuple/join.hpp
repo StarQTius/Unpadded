@@ -1,13 +1,14 @@
 #pragma once
 
-#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <ranges>
+#include <tuple>
 #include <utility>
+#include <variant>
 
-#include "../constexpr.hpp"
 #include "../upd.hpp"
+#include "../variadic/nested_indices.hpp"
 #include "../with_sequence.hpp"
 #include "nested_tuple.hpp"
 #include "tuple_element.hpp"
@@ -38,26 +39,12 @@ struct upd::tuple_view_for<upd::tuple_views::join_view<Base>> {
     return (tuple_size_v<tuple_element_t<Is, Base>> + ... + 0zu);
   };
 
-  constexpr static auto nested_indices = UPD_WITH_SEQUENCE(Is, tuple_size_v<Base>) {
-    namespace stdr = std::ranges;
-    namespace stdv = std::views;
-
-    using nested_index_type = std::pair<std::size_t, std::size_t>;
-
-    auto retval = std::array<nested_index_type, size>{};
-    auto subsizes = std::array{tuple_size_v<tuple_element_t<Is, Base>>...};
-    auto i = 0zu;
-    auto it = retval.begin();
-    for (auto ss : subsizes) {
-      it = stdr::copy(stdv::repeat(i) | stdv::take(ss) | stdv::enumerate, it).out;
-      ++i;
-    }
-
-    return retval;
-  };
-
   template<std::size_t I, typename View>
   [[nodiscard]] constexpr static auto get(View &&view) -> decltype(auto) {
+    constexpr auto nested_indices = UPD_WITH_SEQUENCE(Is, tuple_size_v<Base>) {
+      return nested_indices_v<tuple_size_v<tuple_element_t<Is, Base>>...>;
+    };
+
     constexpr auto ni = nested_indices[I];
     constexpr auto i = ni.second;
     constexpr auto j = ni.first;

@@ -1,6 +1,11 @@
 #pragma once
 
+#include <array>
 #include <cstddef>
+#include <ranges>
+#include <tuple>
+#include <utility>
+#include <variant>
 
 #include "../upd.hpp"
 #include "tuple_like.hpp"

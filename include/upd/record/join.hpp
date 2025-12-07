@@ -1,14 +1,10 @@
 #pragma once
 
-#include <algorithm>
-#include <array>
 #include <cstddef>
-#include <ranges>
-#include <utility>
 
-#include "../constexpr.hpp"
 #include "../functional.hpp"
 #include "../upd.hpp"
+#include "../variadic/nested_indices.hpp"
 #include "../with_sequence.hpp"
 #include "entry.hpp"
 #include "ith_record_element.hpp"
@@ -41,26 +37,12 @@ struct upd::record_view_for<upd::record_views::join_view<Base, Joiner>> {
     return (record_size_v<ith_record_element_t<Is, Base>> + ... + 0zu);
   };
 
-  constexpr static auto nested_indices = UPD_WITH_SEQUENCE(Is, record_size_v<Base>) {
-    namespace stdr = std::ranges;
-    namespace stdv = std::views;
-
-    using nested_index_type = std::pair<std::size_t, std::size_t>;
-
-    auto retval = std::array<nested_index_type, size>{};
-    auto subsizes = std::array{record_size_v<ith_record_element_t<Is, Base>>...};
-    auto i = 0zu;
-    auto it = retval.begin();
-    for (auto ss : subsizes) {
-      it = stdr::copy(stdv::repeat(i) | stdv::take(ss) | stdv::enumerate, it).out;
-      ++i;
-    }
-
-    return retval;
-  };
-
   template<std::size_t I, typename View>
   [[nodiscard]] constexpr static auto get_ith(View &&view) {
+    constexpr auto nested_indices = UPD_WITH_SEQUENCE(Is, record_size_v<Base>) {
+      return nested_indices_v<record_size_v<ith_record_element_t<Is, Base>>...>;
+    };
+
     constexpr auto ni = nested_indices[I];
     constexpr auto i = ni.second;
     constexpr auto j = ni.first;

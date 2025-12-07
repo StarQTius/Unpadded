@@ -15,9 +15,9 @@ TEST_CASE("Typelist basic functionalities", "[typelist]") {
   upd::tuple_like2 auto tl = upd::typelist2<int, char, bool>;
 
   SECTION("Get elements from their tag") {
-    REQUIRE_TYPE(get<0>(tl), int);
-    REQUIRE_TYPE(get<1>(tl), char);
-    REQUIRE_TYPE(get<2>(tl), bool);
+    REQUIRE_TYPE(get<0>(tl), int &);
+    REQUIRE_TYPE(get<1>(tl), char &);
+    REQUIRE_TYPE(get<2>(tl), bool &);
   }
 }
 
@@ -105,6 +105,17 @@ TEST_CASE("Tuple views", "[tuple_view]") {
     using tuple_type = decltype(t | updv::transform_type([]<typename T> -> T * {}) | updv::instantiate<std::tuple>);
     REQUIRE(std::same_as<tuple_type, std::tuple<int *, char *, long *>>);
   }
+
+  SECTION("Concat tuples together") {
+    upd::tuple_view auto view = updv::concat(t, std::move(t));
+
+    REQUIRE(get<0>(view) == 4);
+    REQUIRE(get<1>(view) == 8);
+    REQUIRE(get<2>(view) == 67);
+    REQUIRE(get<3>(view) == 4);
+    REQUIRE(get<4>(view) == 8);
+    REQUIRE(get<5>(view) == 67);
+  }
 }
 
 TEST_CASE("Algorithms on records", "[tuple_algorithm]") {
@@ -127,6 +138,36 @@ TEST_CASE("Algorithms on records", "[tuple_algorithm]") {
     auto res = updv::fold_right(t, 0, [i = 0](auto v, auto acc) mutable { return (acc + i++) * v; });
 
     REQUIRE(res == ((0 * 67 + 1) * 8 + 2) * 4);
+  }
+
+  SECTION("Get intersection of metavalue set") {
+    auto inter = upd::intersect(std::tuple{upd::expr<0>, upd::expr<1>, upd::expr<2>, upd::expr<3>},
+                                std::tuple{upd::expr<4>, upd::expr<2>, upd::expr<1>, upd::expr<3>});
+
+    REQUIRE(!upd::has_type<upd::expr_t<0>>(inter));
+    REQUIRE(upd::has_type<upd::expr_t<1>>(inter));
+    REQUIRE(upd::has_type<upd::expr_t<2>>(inter));
+    REQUIRE(upd::has_type<upd::expr_t<3>>(inter));
+    REQUIRE(!upd::has_type<upd::expr_t<4>>(inter));
+  }
+
+  SECTION("Visit a tuple element") {
+    auto v0 = updv::visit(t, 0, [](auto x) -> int { return x; });
+    auto v1 = updv::visit(t, 1, [](auto x) -> int { return x; });
+    auto v2 = updv::visit(t, 2, [](auto x) -> int { return x; });
+    REQUIRE(v0 == get<0>(t));
+    REQUIRE(v1 == get<1>(t));
+    REQUIRE(v2 == get<2>(t));
+  }
+
+  SECTION("Apply a function to content") {
+    auto result = updv::apply(t, [](auto... xs) { return (xs + ... + 0); });
+    REQUIRE(result == 79);
+  }
+
+  SECTION("Apply a metafunction to content type") {
+    using result_type = decltype(updv::apply_type(t, []<typename... Ts> -> upd::typelist2_t<Ts...> {}));
+    REQUIRE(std::same_as<result_type, upd::typelist2_t<int, char, long>>);
   }
 }
 

@@ -226,17 +226,16 @@ TEST_CASE("Record views", "[record_view]") {
   }
 
   SECTION("Zip two records together") {
-    upd::record_like auto rec_ = upd::record{"1"_kw2 = bool{true}, "2"_kw2 = unsigned{9}, "3"_kw2 = bool{false}};
+    upd::record_like auto rec_ = upd::record{"a"_kw2 = bool{true}, "b"_kw2 = unsigned{9}, "z"_kw2 = bool{false}};
 
-    auto view =
-        updv::zip(rec, rec_, [](auto tag1, auto tag2) { return upd::name{{tag1.string[0], tag2.string[0], 0}}; });
+    auto view = updv::zip(rec, rec_);
 
-    REQUIRE(&upd::get<upd::name{"a1"}>(view).first == &upd::get<upd::name{"a"}>(rec));
-    REQUIRE(&upd::get<upd::name{"a1"}>(view).second == &upd::get<upd::name{"1"}>(rec_));
-    REQUIRE(&upd::get<upd::name{"b2"}>(view).first == &upd::get<upd::name{"b"}>(rec));
-    REQUIRE(&upd::get<upd::name{"b2"}>(view).second == &upd::get<upd::name{"2"}>(rec_));
-    REQUIRE(&upd::get<upd::name{"c3"}>(view).first == &upd::get<upd::name{"c"}>(rec));
-    REQUIRE(&upd::get<upd::name{"c3"}>(view).second == &upd::get<upd::name{"3"}>(rec_));
+    REQUIRE(&upd::get<upd::name{"a"}>(view).first == &upd::get<upd::name{"a"}>(rec));
+    REQUIRE(&upd::get<upd::name{"a"}>(view).second == &upd::get<upd::name{"a"}>(rec_));
+    REQUIRE(&upd::get<upd::name{"b"}>(view).first == &upd::get<upd::name{"b"}>(rec));
+    REQUIRE(&upd::get<upd::name{"b"}>(view).second == &upd::get<upd::name{"b"}>(rec_));
+    REQUIRE(!upd::has_tag<upd::name{"c"}>(view));
+    REQUIRE(!upd::has_tag<upd::name{"z"}>(view));
   }
 
   SECTION("Collect a view into a regular record") {
@@ -265,6 +264,27 @@ TEST_CASE("Record views", "[record_view]") {
     REQUIRE(&get<1>(view).value == &get<upd::name{"b"}>(rec));
     REQUIRE(get<2>(view).identifier == upd::name{"c"});
     REQUIRE(&get<2>(view).value == &get<upd::name{"c"}>(rec));
+  }
+
+  SECTION("Concat records together") {
+    auto rec_ = upd::record{
+        "1"_kw2 = 1,
+        "2"_kw2 = 2,
+    };
+    upd::record_view auto view = updv::concat(rec, std::move(rec_));
+
+    REQUIRE(get<upd::name{"a"}>(view) == 4);
+    REQUIRE(get<upd::name{"b"}>(view) == 8);
+    REQUIRE(get<upd::name{"c"}>(view) == 67);
+    REQUIRE(get<upd::name{"1"}>(view) == 1);
+    REQUIRE(get<upd::name{"2"}>(view) == 2);
+  }
+
+  SECTION("Get only values") {
+    upd::tuple_view auto view = rec | updv::values;
+    REQUIRE(&get<0>(view) == &rec["a"_kw2]);
+    REQUIRE(&get<1>(view) == &rec["b"_kw2]);
+    REQUIRE(&get<2>(view) == &rec["c"_kw2]);
   }
 }
 
@@ -304,6 +324,10 @@ TEST_CASE("Algorithms on records", "[record_algorithm]") {
     auto i = updv::find_if(rec, []<typename T>(auto, upd::typebox<T>) { return std::same_as<T, void>; });
 
     REQUIRE(i == 3);
+  }
+
+  SECTION("Loop over elements") {
+    updv::for_each(rec, [&](auto k, auto v) { REQUIRE(get<k.value>(rec) == v); });
   }
 }
 
@@ -419,14 +443,13 @@ TEST_CASE("Record view handling references", "[record_view]") {
   }
 
   SECTION("Pass references through zip") {
-    auto view = updv::zip(
-        rec, std::move(rec), [](auto tag1, auto tag2) { return upd::name{{tag1.string[0], tag2.string[0], 0}}; });
+    auto view = updv::zip(rec, std::move(rec));
 
-    REQUIRE_SAME(get<upd::name{"ll"}>(view).first, (lv));
-    REQUIRE_SAME(get<upd::name{"ll"}>(view).second, (lv));
-    REQUIRE_SAME(get<upd::name{"xx"}>(view).first, (xv));
-    REQUIRE_SAME(get<upd::name{"xx"}>(view).second, std::move(xv));
-    REQUIRE_SAME(get<upd::name{"pp"}>(view).first, rec["pr"_kw2]);
-    REQUIRE_SAME(get<upd::name{"pp"}>(view).second, std::move(rec)["pr"_kw2]);
+    REQUIRE_SAME(get<upd::name{"l"}>(view).first, (lv));
+    REQUIRE_SAME(get<upd::name{"l"}>(view).second, (lv));
+    REQUIRE_SAME(get<upd::name{"x"}>(view).first, (xv));
+    REQUIRE_SAME(get<upd::name{"x"}>(view).second, std::move(xv));
+    REQUIRE_SAME(get<upd::name{"pr"}>(view).first, rec["pr"_kw2]);
+    REQUIRE_SAME(get<upd::name{"pr"}>(view).second, std::move(rec)["pr"_kw2]);
   }
 }

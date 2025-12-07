@@ -30,6 +30,7 @@
 #include "ref.hpp"
 #include "template_traits.hpp"
 #include "tuple.hpp"
+#include "tuple/tuple_element.hpp"
 #include "tuple/tuple_like.hpp"
 #include "tuple/tuple_size.hpp"
 #include "tuple_impl.hpp"
@@ -359,7 +360,7 @@ public:
 
   template<std::size_t I, typename Self>
   [[nodiscard]] constexpr auto get(this Self &&self) noexcept(release) -> auto && {
-    return UPD_FWD(self).m_nvs.at(expr<I>);
+    return UPD_FWD(self).m_nvs.at(expr<I>).value();
   }
 
   template<typename Self, auto Identifier>
@@ -455,8 +456,7 @@ struct std::tuple_size<upd::tagged_tuple<Names, Ts...>> {
 
 template<std::size_t I, auto Names, typename... Ts>
 struct std::tuple_element<I, upd::tagged_tuple<Names, Ts...>> {
-  using type = upd::named_value<upd::named_tuple_identifier_v<I, upd::tagged_tuple<Names, Ts...>>,
-                                upd::named_tuple_element_t<I, upd::tagged_tuple<Names, Ts...>>>;
+  using type = upd::named_tuple_element_t<I, upd::tagged_tuple<Names, Ts...>>;
 };
 
 template<std::size_t I, auto Names, typename... Ts>
@@ -499,6 +499,33 @@ struct upd::record_tag<I, upd::named_tuple<Names, Ts...>> {
 template<auto Id, upd::names Names, typename... Ts>
 struct upd::record_element<Id, upd::named_tuple<Names, Ts...>> {
   using record_type = upd::named_tuple<Names, Ts...>;
+  using type = decltype(std::declval<record_type>()[keyword<Id>{}]);
+};
+
+template<auto Names, typename... Ts>
+struct upd::tuple_size<upd::tagged_tuple<Names, Ts...>> {
+  constexpr static auto value = sizeof...(Ts);
+};
+
+template<std::size_t I, auto Names, typename... Ts>
+struct upd::tuple_element<I, upd::tagged_tuple<Names, Ts...>> {
+  using record_type = upd::tagged_tuple<Names, Ts...>;
+  using type = std::tuple_element_t<I, record_type>;
+};
+
+template<auto Names, typename... Ts>
+struct upd::record_size<upd::tagged_tuple<Names, Ts...>> {
+  constexpr static auto value = sizeof...(Ts);
+};
+
+template<std::size_t I, auto Names, typename... Ts>
+struct upd::record_tag<I, upd::tagged_tuple<Names, Ts...>> {
+  constexpr static auto value = name{get<I>(Names)};
+};
+
+template<auto Id, auto Names, typename... Ts>
+struct upd::record_element<Id, upd::tagged_tuple<Names, Ts...>> {
+  using record_type = upd::tagged_tuple<Names, Ts...>;
   using type = decltype(std::declval<record_type>()[keyword<Id>{}]);
 };
 

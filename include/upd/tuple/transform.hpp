@@ -1,8 +1,12 @@
 #pragma once
 
+#include <array>
 #include <cstddef>
+#include <ranges>
+#include <tuple>
 #include <type_traits>
 #include <utility>
+#include <variant>
 
 #include "../detail/fail_unless_discarded.hpp"
 #include "../functional.hpp"

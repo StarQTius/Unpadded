@@ -7,6 +7,7 @@
 #include <utility>
 #include <variant>
 
+#include "../named_value.hpp"
 #include "../record/entry.hpp"
 #include "../record/record_like.hpp"
 #include "../record/record_view.hpp"
