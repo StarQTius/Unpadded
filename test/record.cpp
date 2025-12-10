@@ -97,15 +97,15 @@ TEST_CASE("Babelian lite record", "[universal_record]") {
   }
 
   SECTION("Access elements when record is qualified") {
-    auto &&lv = get<upd::name{"a"}>(rec);
-    auto &&cst_lv = get<upd::name{"a"}>(std::as_const(rec));
-    auto &&rv = get<upd::name{"a"}>(std::move(rec));
-    auto &&cst_rv = get<upd::name{"a"}>(std::move(std::as_const(rec)));
+    auto &&lv = upd::get<upd::name{"a"}>(rec);
+    auto &&cst_lv = upd::get<upd::name{"a"}>(std::as_const(rec));
+    auto &&rv = upd::get<upd::name{"a"}>(std::move(rec));
+    auto &&cst_rv = upd::get<upd::name{"a"}>(std::move(std::as_const(rec)));
 
     REQUIRE(std::same_as<decltype(lv), const int &>);
     REQUIRE(std::same_as<decltype(cst_lv), const int &>);
-    REQUIRE(std::same_as<decltype(rv), const int &&>);
-    REQUIRE(std::same_as<decltype(cst_rv), const int &&>);
+    REQUIRE(std::same_as<decltype(rv), const int &>);
+    REQUIRE(std::same_as<decltype(cst_rv), const int &>);
   }
 }
 
@@ -143,9 +143,9 @@ TEST_CASE("Record views", "[record_view]") {
 
   SECTION("Transform element of a record") {
     upd::record_view auto view = rec | updv::transform([](auto, auto x) { return x + 1; });
-    REQUIRE(get<upd::name{"a"}>(view) == 5);
-    REQUIRE(get<upd::name{"b"}>(view) == 9);
-    REQUIRE(get<upd::name{"c"}>(view) == 68);
+    REQUIRE(upd::get<upd::name{"a"}>(view) == 5);
+    REQUIRE(upd::get<upd::name{"b"}>(view) == 9);
+    REQUIRE(upd::get<upd::name{"c"}>(view) == 68);
   }
 
   SECTION("Clean elements from a record") {
@@ -153,17 +153,17 @@ TEST_CASE("Record views", "[record_view]") {
     REQUIRE(has_tag<upd::name{"a"}>(view));
     REQUIRE(!has_tag<upd::name{"b"}>(view));
     REQUIRE(has_tag<upd::name{"c"}>(view));
-    REQUIRE(&get<upd::name{"a"}>(view) == &get<upd::name{"a"}>(rec));
-    REQUIRE(&get<upd::name{"c"}>(view) == &get<upd::name{"c"}>(rec));
+    REQUIRE(&upd::get<upd::name{"a"}>(view) == &upd::get<upd::name{"a"}>(rec));
+    REQUIRE(&upd::get<upd::name{"c"}>(view) == &upd::get<upd::name{"c"}>(rec));
   }
 
   SECTION("Transform element by substituting references for them") {
     auto x = 0;
     upd::record_view auto view = rec | updv::transform([&](auto, auto) -> auto && { return x; });
 
-    REQUIRE(&get<upd::name{"a"}>(view) == &x);
-    REQUIRE(&get<upd::name{"b"}>(view) == &x);
-    REQUIRE(&get<upd::name{"c"}>(view) == &x);
+    REQUIRE(&upd::get<upd::name{"a"}>(view) == &x);
+    REQUIRE(&upd::get<upd::name{"b"}>(view) == &x);
+    REQUIRE(&upd::get<upd::name{"c"}>(view) == &x);
   }
 
   SECTION("Transform element according to their tag") {
@@ -171,9 +171,9 @@ TEST_CASE("Record views", "[record_view]") {
 
     upd::record_view auto view = rec | updv::transform([&](auto k, auto) { return k.value.string; });
 
-    REQUIRE(get<upd::name{"a"}>(view) == "a"sv);
-    REQUIRE(get<upd::name{"b"}>(view) == "b"sv);
-    REQUIRE(get<upd::name{"c"}>(view) == "c"sv);
+    REQUIRE(upd::get<upd::name{"a"}>(view) == "a"sv);
+    REQUIRE(upd::get<upd::name{"b"}>(view) == "b"sv);
+    REQUIRE(upd::get<upd::name{"c"}>(view) == "c"sv);
   }
 
   SECTION("Filter element from a record") {
@@ -184,7 +184,7 @@ TEST_CASE("Record views", "[record_view]") {
     REQUIRE(!has_tag<upd::name{"a"}>(view));
     REQUIRE(!has_tag<upd::name{"b"}>(view));
     REQUIRE(has_tag<upd::name{"c"}>(view));
-    REQUIRE(&get<upd::name{"c"}>(view) == &get<upd::name{"c"}>(rec));
+    REQUIRE(&upd::get<upd::name{"c"}>(view) == &upd::get<upd::name{"c"}>(rec));
   }
 
   SECTION("Join entries of a record") {
@@ -200,26 +200,26 @@ TEST_CASE("Record views", "[record_view]") {
 
     auto view = nested_rec | updv::join([](auto pk, auto k) { return upd::name{{pk.string[0], k.string[0], 0}}; });
 
-    REQUIRE(get<upd::name{"a1"}>(view) == 1);
-    REQUIRE(get<upd::name{"a2"}>(view) == 2);
-    REQUIRE(get<upd::name{"b3"}>(view) == 3);
-    REQUIRE(get<upd::name{"b4"}>(view) == 4);
+    REQUIRE(upd::get<upd::name{"a1"}>(view) == 1);
+    REQUIRE(upd::get<upd::name{"a2"}>(view) == 2);
+    REQUIRE(upd::get<upd::name{"b3"}>(view) == 3);
+    REQUIRE(upd::get<upd::name{"b4"}>(view) == 4);
   }
 
   SECTION("Enumerate a record") {
     auto view = rec | updv::enumerate;
 
-    REQUIRE(get<upd::name{"a"}>(view) == std::pair{0, 4});
-    REQUIRE(get<upd::name{"b"}>(view) == std::pair{1, 8});
-    REQUIRE(get<upd::name{"c"}>(view) == std::pair{2, 67});
+    REQUIRE(upd::get<upd::name{"a"}>(view) == std::pair{0, 4});
+    REQUIRE(upd::get<upd::name{"b"}>(view) == std::pair{1, 8});
+    REQUIRE(upd::get<upd::name{"c"}>(view) == std::pair{2, 67});
   }
 
   SECTION("Reverse a record") {
     auto view = rec | updv::reverse;
 
-    REQUIRE(&get<upd::name{"a"}>(view) == &get<upd::name{"a"}>(rec));
-    REQUIRE(&get<upd::name{"b"}>(view) == &get<upd::name{"b"}>(rec));
-    REQUIRE(&get<upd::name{"c"}>(view) == &get<upd::name{"c"}>(rec));
+    REQUIRE(&upd::get<upd::name{"a"}>(view) == &upd::get<upd::name{"a"}>(rec));
+    REQUIRE(&upd::get<upd::name{"b"}>(view) == &upd::get<upd::name{"b"}>(rec));
+    REQUIRE(&upd::get<upd::name{"c"}>(view) == &upd::get<upd::name{"c"}>(rec));
     REQUIRE(&upd::get_ith<0>(view) == &upd::get_ith<2>(rec));
     REQUIRE(&upd::get_ith<1>(view) == &upd::get_ith<1>(rec));
     REQUIRE(&upd::get_ith<2>(view) == &upd::get_ith<0>(rec));
@@ -258,12 +258,12 @@ TEST_CASE("Record views", "[record_view]") {
 
   SECTION("View a record as a tuple of entries") {
     upd::tuple_view auto view = rec | updv::as_tuple;
-    REQUIRE(get<0>(view).identifier == upd::name{"a"});
-    REQUIRE(&get<0>(view).value == &get<upd::name{"a"}>(rec));
-    REQUIRE(get<1>(view).identifier == upd::name{"b"});
-    REQUIRE(&get<1>(view).value == &get<upd::name{"b"}>(rec));
-    REQUIRE(get<2>(view).identifier == upd::name{"c"});
-    REQUIRE(&get<2>(view).value == &get<upd::name{"c"}>(rec));
+    REQUIRE(upd::get<0>(view).identifier == upd::name{"a"});
+    REQUIRE(&upd::get<0>(view).value == &upd::get<upd::name{"a"}>(rec));
+    REQUIRE(upd::get<1>(view).identifier == upd::name{"b"});
+    REQUIRE(&upd::get<1>(view).value == &upd::get<upd::name{"b"}>(rec));
+    REQUIRE(upd::get<2>(view).identifier == upd::name{"c"});
+    REQUIRE(&upd::get<2>(view).value == &upd::get<upd::name{"c"}>(rec));
   }
 
   SECTION("Concat records together") {
@@ -273,18 +273,18 @@ TEST_CASE("Record views", "[record_view]") {
     };
     upd::record_view auto view = updv::concat(rec, std::move(rec_));
 
-    REQUIRE(get<upd::name{"a"}>(view) == 4);
-    REQUIRE(get<upd::name{"b"}>(view) == 8);
-    REQUIRE(get<upd::name{"c"}>(view) == 67);
-    REQUIRE(get<upd::name{"1"}>(view) == 1);
-    REQUIRE(get<upd::name{"2"}>(view) == 2);
+    REQUIRE(upd::get<upd::name{"a"}>(view) == 4);
+    REQUIRE(upd::get<upd::name{"b"}>(view) == 8);
+    REQUIRE(upd::get<upd::name{"c"}>(view) == 67);
+    REQUIRE(upd::get<upd::name{"1"}>(view) == 1);
+    REQUIRE(upd::get<upd::name{"2"}>(view) == 2);
   }
 
   SECTION("Get only values") {
     upd::tuple_view auto view = rec | updv::values;
-    REQUIRE(&get<0>(view) == &rec["a"_kw2]);
-    REQUIRE(&get<1>(view) == &rec["b"_kw2]);
-    REQUIRE(&get<2>(view) == &rec["c"_kw2]);
+    REQUIRE(&upd::get<0>(view) == &rec["a"_kw2]);
+    REQUIRE(&upd::get<1>(view) == &rec["b"_kw2]);
+    REQUIRE(&upd::get<2>(view) == &rec["c"_kw2]);
   }
 }
 
@@ -327,7 +327,7 @@ TEST_CASE("Algorithms on records", "[record_algorithm]") {
   }
 
   SECTION("Loop over elements") {
-    updv::for_each(rec, [&](auto k, auto v) { REQUIRE(get<k.value>(rec) == v); });
+    updv::for_each(rec, [&](auto k, auto v) { REQUIRE(upd::get<k.value>(rec) == v); });
   }
 }
 
@@ -343,58 +343,58 @@ TEST_CASE("Record view handling references", "[record_view]") {
   SECTION("Pass references through transform") {
     upd::record_view auto lview = rec | updv::transform([](auto, auto &&v) -> auto && { return UPD_FWD(v); });
 
-    REQUIRE_SAME(get<upd::name{"l"}>(lview), (lv));
-    REQUIRE_SAME(get<upd::name{"x"}>(lview), (xv));
-    REQUIRE_SAME(get<upd::name{"pr"}>(lview), rec["pr"_kw2]);
+    REQUIRE_SAME(upd::get<upd::name{"l"}>(lview), (lv));
+    REQUIRE_SAME(upd::get<upd::name{"x"}>(lview), (xv));
+    REQUIRE_SAME(upd::get<upd::name{"pr"}>(lview), rec["pr"_kw2]);
 
     upd::record_view auto rview =
         std::move(rec) | updv::transform([](auto, auto &&v) -> auto && { return UPD_FWD(v); });
 
-    REQUIRE_SAME(get<upd::name{"l"}>(rview), (lv));
-    REQUIRE_SAME(get<upd::name{"x"}>(rview), std::move(xv));
-    REQUIRE_SAME(get<upd::name{"pr"}>(rview), std::move(rec)["pr"_kw2]);
+    REQUIRE_SAME(upd::get<upd::name{"l"}>(rview), (lv));
+    REQUIRE_SAME(upd::get<upd::name{"x"}>(rview), std::move(xv));
+    REQUIRE_SAME(upd::get<upd::name{"pr"}>(rview), std::move(rec)["pr"_kw2]);
   }
 
   SECTION("Pass references through clean") {
     upd::record_view auto lview = rec | updv::clean<void>;
 
-    REQUIRE_SAME(get<upd::name{"l"}>(lview), (lv));
-    REQUIRE_SAME(get<upd::name{"x"}>(lview), (xv));
-    REQUIRE_SAME(get<upd::name{"pr"}>(lview), rec["pr"_kw2]);
+    REQUIRE_SAME(upd::get<upd::name{"l"}>(lview), (lv));
+    REQUIRE_SAME(upd::get<upd::name{"x"}>(lview), (xv));
+    REQUIRE_SAME(upd::get<upd::name{"pr"}>(lview), rec["pr"_kw2]);
 
     upd::record_view auto rview = std::move(rec) | updv::clean<void>;
 
-    REQUIRE_SAME(get<upd::name{"l"}>(rview), (lv));
-    REQUIRE_SAME(get<upd::name{"x"}>(rview), std::move(xv));
-    REQUIRE_SAME(get<upd::name{"pr"}>(rview), std::move(rec)["pr"_kw2]);
+    REQUIRE_SAME(upd::get<upd::name{"l"}>(rview), (lv));
+    REQUIRE_SAME(upd::get<upd::name{"x"}>(rview), std::move(xv));
+    REQUIRE_SAME(upd::get<upd::name{"pr"}>(rview), std::move(rec)["pr"_kw2]);
   }
 
   SECTION("Pass references through filter") {
     upd::record_view auto lview = rec | updv::filter([](auto, auto) { return true; });
 
-    REQUIRE_SAME(get<upd::name{"l"}>(lview), (lv));
-    REQUIRE_SAME(get<upd::name{"x"}>(lview), (xv));
-    REQUIRE_SAME(get<upd::name{"pr"}>(lview), rec["pr"_kw2]);
+    REQUIRE_SAME(upd::get<upd::name{"l"}>(lview), (lv));
+    REQUIRE_SAME(upd::get<upd::name{"x"}>(lview), (xv));
+    REQUIRE_SAME(upd::get<upd::name{"pr"}>(lview), rec["pr"_kw2]);
 
     upd::record_view auto rview = std::move(rec) | updv::filter([](auto, auto) { return true; });
 
-    REQUIRE_SAME(get<upd::name{"l"}>(rview), (lv));
-    REQUIRE_SAME(get<upd::name{"x"}>(rview), std::move(xv));
-    REQUIRE_SAME(get<upd::name{"pr"}>(rview), std::move(rec)["pr"_kw2]);
+    REQUIRE_SAME(upd::get<upd::name{"l"}>(rview), (lv));
+    REQUIRE_SAME(upd::get<upd::name{"x"}>(rview), std::move(xv));
+    REQUIRE_SAME(upd::get<upd::name{"pr"}>(rview), std::move(rec)["pr"_kw2]);
   }
 
   SECTION("Pass references through enumerate") {
     upd::record_view auto lview = rec | updv::enumerate;
 
-    REQUIRE_SAME(get<upd::name{"l"}>(lview).second, (lv));
-    REQUIRE_SAME(get<upd::name{"x"}>(lview).second, (xv));
-    REQUIRE_SAME(get<upd::name{"pr"}>(lview).second, rec["pr"_kw2]);
+    REQUIRE_SAME(upd::get<upd::name{"l"}>(lview).second, (lv));
+    REQUIRE_SAME(upd::get<upd::name{"x"}>(lview).second, (xv));
+    REQUIRE_SAME(upd::get<upd::name{"pr"}>(lview).second, rec["pr"_kw2]);
 
     upd::record_view auto rview = std::move(rec) | updv::enumerate;
 
-    REQUIRE_SAME(get<upd::name{"l"}>(rview).second, (lv));
-    REQUIRE_SAME(get<upd::name{"x"}>(rview).second, std::move(xv));
-    REQUIRE_SAME(get<upd::name{"pr"}>(rview).second, std::move(rec)["pr"_kw2]);
+    REQUIRE_SAME(upd::get<upd::name{"l"}>(rview).second, (lv));
+    REQUIRE_SAME(upd::get<upd::name{"x"}>(rview).second, std::move(xv));
+    REQUIRE_SAME(upd::get<upd::name{"pr"}>(rview).second, std::move(rec)["pr"_kw2]);
   }
 
   SECTION("Pass references through join") {
@@ -404,52 +404,52 @@ TEST_CASE("Record view handling references", "[record_view]") {
 
     auto lview = nested_rec | updv::join([](auto pk, auto k) { return upd::name{{pk.string[0], k.string[0], 0}}; });
 
-    REQUIRE_SAME(get<upd::name{"al"}>(lview), (lv));
-    REQUIRE_SAME(get<upd::name{"ax"}>(lview), (xv));
-    REQUIRE_SAME(get<upd::name{"ap"}>(lview), nested_rec["a"_kw2]["pr"_kw2]);
-    REQUIRE_SAME(get<upd::name{"bl"}>(lview), (lv));
-    REQUIRE_SAME(get<upd::name{"bx"}>(lview), (xv));
-    REQUIRE_SAME(get<upd::name{"bp"}>(lview), rec["pr"_kw2]);
-    REQUIRE_SAME(get<upd::name{"cl"}>(lview), (lv));
-    REQUIRE_SAME(get<upd::name{"cx"}>(lview), (xv));
-    REQUIRE_SAME(get<upd::name{"cp"}>(lview), rec["pr"_kw2]);
+    REQUIRE_SAME(upd::get<upd::name{"al"}>(lview), (lv));
+    REQUIRE_SAME(upd::get<upd::name{"ax"}>(lview), (xv));
+    REQUIRE_SAME(upd::get<upd::name{"ap"}>(lview), nested_rec["a"_kw2]["pr"_kw2]);
+    REQUIRE_SAME(upd::get<upd::name{"bl"}>(lview), (lv));
+    REQUIRE_SAME(upd::get<upd::name{"bx"}>(lview), (xv));
+    REQUIRE_SAME(upd::get<upd::name{"bp"}>(lview), rec["pr"_kw2]);
+    REQUIRE_SAME(upd::get<upd::name{"cl"}>(lview), (lv));
+    REQUIRE_SAME(upd::get<upd::name{"cx"}>(lview), (xv));
+    REQUIRE_SAME(upd::get<upd::name{"cp"}>(lview), rec["pr"_kw2]);
 
     auto rview =
         std::move(nested_rec) | updv::join([](auto pk, auto k) { return upd::name{{pk.string[0], k.string[0], 0}}; });
 
-    REQUIRE_SAME(get<upd::name{"al"}>(rview), (lv));
-    REQUIRE_SAME(get<upd::name{"ax"}>(rview), std::move(xv));
-    REQUIRE_SAME(get<upd::name{"ap"}>(rview), std::move(nested_rec)["a"_kw2]["pr"_kw2]);
-    REQUIRE_SAME(get<upd::name{"bl"}>(rview), (lv));
-    REQUIRE_SAME(get<upd::name{"bx"}>(rview), (xv));
-    REQUIRE_SAME(get<upd::name{"bp"}>(rview), rec["pr"_kw2]);
-    REQUIRE_SAME(get<upd::name{"cl"}>(rview), (lv));
-    REQUIRE_SAME(get<upd::name{"cx"}>(rview), std::move(xv));
-    REQUIRE_SAME(get<upd::name{"cp"}>(rview), std::move(rec)["pr"_kw2]);
+    REQUIRE_SAME(upd::get<upd::name{"al"}>(rview), (lv));
+    REQUIRE_SAME(upd::get<upd::name{"ax"}>(rview), std::move(xv));
+    REQUIRE_SAME(upd::get<upd::name{"ap"}>(rview), std::move(nested_rec)["a"_kw2]["pr"_kw2]);
+    REQUIRE_SAME(upd::get<upd::name{"bl"}>(rview), (lv));
+    REQUIRE_SAME(upd::get<upd::name{"bx"}>(rview), (xv));
+    REQUIRE_SAME(upd::get<upd::name{"bp"}>(rview), rec["pr"_kw2]);
+    REQUIRE_SAME(upd::get<upd::name{"cl"}>(rview), (lv));
+    REQUIRE_SAME(upd::get<upd::name{"cx"}>(rview), std::move(xv));
+    REQUIRE_SAME(upd::get<upd::name{"cp"}>(rview), std::move(rec)["pr"_kw2]);
   }
 
   SECTION("Pass references through reverse") {
     auto lview = rec | updv::reverse;
 
-    REQUIRE_SAME(get<upd::name{"l"}>(lview), (lv));
-    REQUIRE_SAME(get<upd::name{"x"}>(lview), (xv));
-    REQUIRE_SAME(get<upd::name{"pr"}>(lview), rec["pr"_kw2]);
+    REQUIRE_SAME(upd::get<upd::name{"l"}>(lview), (lv));
+    REQUIRE_SAME(upd::get<upd::name{"x"}>(lview), (xv));
+    REQUIRE_SAME(upd::get<upd::name{"pr"}>(lview), rec["pr"_kw2]);
 
     auto rview = std::move(rec) | updv::reverse;
 
-    REQUIRE_SAME(get<upd::name{"l"}>(rview), (lv));
-    REQUIRE_SAME(get<upd::name{"x"}>(rview), std::move(xv));
-    REQUIRE_SAME(get<upd::name{"pr"}>(rview), std::move(rec)["pr"_kw2]);
+    REQUIRE_SAME(upd::get<upd::name{"l"}>(rview), (lv));
+    REQUIRE_SAME(upd::get<upd::name{"x"}>(rview), std::move(xv));
+    REQUIRE_SAME(upd::get<upd::name{"pr"}>(rview), std::move(rec)["pr"_kw2]);
   }
 
   SECTION("Pass references through zip") {
     auto view = updv::zip(rec, std::move(rec));
 
-    REQUIRE_SAME(get<upd::name{"l"}>(view).first, (lv));
-    REQUIRE_SAME(get<upd::name{"l"}>(view).second, (lv));
-    REQUIRE_SAME(get<upd::name{"x"}>(view).first, (xv));
-    REQUIRE_SAME(get<upd::name{"x"}>(view).second, std::move(xv));
-    REQUIRE_SAME(get<upd::name{"pr"}>(view).first, rec["pr"_kw2]);
-    REQUIRE_SAME(get<upd::name{"pr"}>(view).second, std::move(rec)["pr"_kw2]);
+    REQUIRE_SAME(upd::get<upd::name{"l"}>(view).first, (lv));
+    REQUIRE_SAME(upd::get<upd::name{"l"}>(view).second, (lv));
+    REQUIRE_SAME(upd::get<upd::name{"x"}>(view).first, (xv));
+    REQUIRE_SAME(upd::get<upd::name{"x"}>(view).second, std::move(xv));
+    REQUIRE_SAME(upd::get<upd::name{"pr"}>(view).first, rec["pr"_kw2]);
+    REQUIRE_SAME(upd::get<upd::name{"pr"}>(view).second, std::move(rec)["pr"_kw2]);
   }
 }

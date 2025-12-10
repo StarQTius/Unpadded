@@ -5,6 +5,7 @@
 
 #include "constexpr.hpp"
 #include "lite_tuple.hpp"
+#include "tuple/tuple_like.hpp"
 #include "tuple_impl.hpp"
 #include "type_traits.hpp"
 #include "typelist.hpp"
@@ -14,9 +15,6 @@ namespace upd {
 
 template<auto... Vs>
 class constlist : public tuple_implementation<constlist<Vs...>> {
-  template<std::size_t, typename Tuple>
-  friend constexpr auto get(Tuple &&) noexcept(release) -> auto &&;
-
   constexpr static auto leaves = detail::leaves<std::make_index_sequence<sizeof...(Vs)>, auto_constant<Vs>...>{};
 
 public:
@@ -51,19 +49,17 @@ public:
 template<metavalue... Metas>
 explicit constlist(Metas...) -> constlist<Metas::value...>;
 
-template<std::size_t I, auto... Vs>
-[[nodiscard]] constexpr auto get(constlist<Vs...>) {
-  return constlist<Vs...>::template get<I>();
-}
-
 } // namespace upd
 
-template<auto... Values>
-struct std::tuple_size<upd::constlist<Values...>> {
-  constexpr static auto value = sizeof...(Values);
-};
+template<auto... Xs>
+struct upd::tuple_like_for<upd::constlist<Xs...>> {
+  constexpr static auto size = sizeof...(Xs);
 
-template<std::size_t I, auto... Values>
-struct std::tuple_element<I, upd::constlist<Values...>> {
-  using type = decltype(auto{upd::detail::lite_tuple<upd::auto_constant<Values>...>{}.at(upd::expr<I>)}) const &;
+  template<std::size_t I>
+  using element_type = decltype(auto{upd::detail::lite_tuple<upd::auto_constant<Xs>...>{}.at(upd::expr<I>)}) const &;
+
+  template<std::size_t I, typename Tuple>
+  [[nodiscard]] constexpr static auto get(Tuple &&t) noexcept(release) -> auto && {
+    return UPD_FWD(t).template get<I>();
+  }
 };

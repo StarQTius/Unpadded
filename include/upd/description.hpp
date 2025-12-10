@@ -16,6 +16,7 @@
 #include "constexpr.hpp"
 #include "error.hpp"
 #include "functional.hpp"
+#include "get.hpp"
 #include "is_instance_of.hpp"
 #include "named_value.hpp"
 #include "record/concat.hpp"

@@ -2,13 +2,13 @@
 
 #include <cstddef>
 
+#include "../get.hpp"
 #include "../type_traits.hpp"
 #include "../upd.hpp"
 #include "../variadic/clean_occurences_of.hpp"
 #include "../with_sequence.hpp"
 #include "entry.hpp"
 #include "ith_record_element.hpp"
-#include "lite_record.hpp"
 #include "record_like.hpp"
 #include "record_size.hpp"
 #include "record_tag.hpp"

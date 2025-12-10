@@ -6,6 +6,7 @@
 #include <utility>
 
 #include "../constexpr.hpp"
+#include "../get.hpp"
 #include "../implementation_of.hpp"
 #include "../upd.hpp"
 #include "../variadic_concept.hpp"
@@ -31,12 +32,6 @@ template<typename>
 struct record_view_for; // IWYU pragma: keep
 
 } // namespace upd
-
-namespace upd::record_views {
-
-using upd::get;
-
-} // namespace upd::record_views
 
 template<typename Record>
   requires upd::implementation_of<Record, upd::record_view_for>

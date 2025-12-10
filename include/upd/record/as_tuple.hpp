@@ -1,13 +1,8 @@
 #pragma once
 
-#include <array>
 #include <cstddef>
-#include <ranges>
-#include <tuple>
-#include <utility>
-#include <variant>
 
-#include "../tuple/tuple_like.hpp"
+#include "../get.hpp"
 #include "../tuple/tuple_view.hpp"
 #include "../upd.hpp"
 #include "entry.hpp"
@@ -17,8 +12,6 @@
 #include "record_view_adaptor.hpp"
 
 namespace upd::record_views {
-
-using upd::get;
 
 template<record_like Base>
 struct as_tuple_view {

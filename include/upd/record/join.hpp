@@ -3,6 +3,7 @@
 #include <cstddef>
 
 #include "../functional.hpp"
+#include "../get.hpp"
 #include "../upd.hpp"
 #include "../variadic/nested_indices.hpp"
 #include "../with_sequence.hpp"

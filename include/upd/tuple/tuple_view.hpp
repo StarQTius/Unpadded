@@ -2,9 +2,9 @@
 
 #include <concepts>
 #include <cstddef>
-#include <tuple>
 #include <utility>
 
+#include "../get.hpp"
 #include "../implementation_of.hpp"
 #include "../upd.hpp"
 #include "../variadic_concept.hpp"
@@ -26,12 +26,6 @@ template<typename>
 struct tuple_view_for; // IWYU pragma: keep
 
 } // namespace upd
-
-namespace upd::tuple_views {
-
-using upd::get;
-
-} // namespace upd::tuple_views
 
 template<typename Tuple>
   requires upd::implementation_of<Tuple, upd::tuple_view_for>

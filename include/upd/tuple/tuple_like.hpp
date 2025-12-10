@@ -2,10 +2,10 @@
 
 #include <concepts>
 #include <cstddef>
-#include <tuple>
 #include <type_traits>
 #include <utility>
 
+#include "../get.hpp"
 #include "../implementation_of.hpp"
 #include "../upd.hpp"
 #include "../variadic_concept.hpp"
@@ -27,15 +27,6 @@ concept tuple_like2 = requires(std::remove_cvref_t<Tuple> x) {
 
 template<typename>
 struct tuple_like_for; // IWYU pragma: keep
-
-template<std::size_t I, typename Tuple>
-  requires implementation_of<Tuple, tuple_like_for>
-[[nodiscard]] constexpr auto get(Tuple &&t) -> decltype(auto) {
-  using impl_type = tuple_like_for<std::remove_cvref_t<Tuple>>;
-  return impl_type::template get<I>(UPD_FWD(t));
-}
-
-using std::get;
 
 } // namespace upd
 

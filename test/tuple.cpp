@@ -15,9 +15,9 @@ TEST_CASE("Typelist basic functionalities", "[typelist]") {
   upd::tuple_like2 auto tl = upd::typelist2<int, char, bool>;
 
   SECTION("Get elements from their tag") {
-    REQUIRE_TYPE(get<0>(tl), int &);
-    REQUIRE_TYPE(get<1>(tl), char &);
-    REQUIRE_TYPE(get<2>(tl), bool &);
+    REQUIRE_TYPE(upd::get<0>(tl), int &);
+    REQUIRE_TYPE(upd::get<1>(tl), char &);
+    REQUIRE_TYPE(upd::get<2>(tl), bool &);
   }
 }
 
@@ -28,65 +28,65 @@ TEST_CASE("Tuple views", "[tuple_view]") {
 
   SECTION("Transform element of a tuple") {
     upd::tuple_view auto view = t | updv::transform([](auto x) { return x + 1; });
-    REQUIRE(get<0>(view) == 5);
-    REQUIRE(get<1>(view) == 9);
-    REQUIRE(get<2>(view) == 68);
+    REQUIRE(upd::get<0>(view) == 5);
+    REQUIRE(upd::get<1>(view) == 9);
+    REQUIRE(upd::get<2>(view) == 68);
   }
 
   SECTION("Clean elements of a tuple") {
     upd::tuple_view auto view = t | updv::clean<char &>;
-    REQUIRE(get<0>(view) == 4);
-    REQUIRE(get<1>(view) == 67);
+    REQUIRE(upd::get<0>(view) == 4);
+    REQUIRE(upd::get<1>(view) == 67);
   }
 
   SECTION("Enumerate a tuple") {
     upd::tuple_view auto view = t | updv::enumerate;
-    REQUIRE(get<0>(view) == std::pair{0, 4});
-    REQUIRE(&get<0>(view).second == &get<0>(t));
-    REQUIRE(get<1>(view) == std::pair{1, 8});
-    REQUIRE(&get<1>(view).second == &get<1>(t));
-    REQUIRE(get<2>(view) == std::pair{2, 67});
-    REQUIRE(&get<2>(view).second == &get<2>(t));
+    REQUIRE(upd::get<0>(view) == std::pair{0, 4});
+    REQUIRE(&upd::get<0>(view).second == &upd::get<0>(t));
+    REQUIRE(upd::get<1>(view) == std::pair{1, 8});
+    REQUIRE(&upd::get<1>(view).second == &upd::get<1>(t));
+    REQUIRE(upd::get<2>(view) == std::pair{2, 67});
+    REQUIRE(&upd::get<2>(view).second == &upd::get<2>(t));
   }
 
   SECTION("Filter elements of a tuple") {
     upd::tuple_view auto view = t | updv::filter([]<typename T>(upd::typebox<T>) { return !std::same_as<T, char &>; });
-    REQUIRE(&get<0>(view) == &get<0>(t));
-    REQUIRE(&get<1>(view) == &get<2>(t));
+    REQUIRE(&upd::get<0>(view) == &upd::get<0>(t));
+    REQUIRE(&upd::get<1>(view) == &upd::get<2>(t));
   }
 
   SECTION("Collect a view into a regular record") {
     upd::regular_tuple auto regt = t | updv::to<std::tuple>;
-    REQUIRE(&get<0>(regt) != &get<0>(t));
-    REQUIRE(get<0>(regt) == get<0>(t));
-    REQUIRE(&get<1>(regt) != &get<1>(t));
-    REQUIRE(get<1>(regt) == get<1>(t));
-    REQUIRE(&get<2>(regt) != &get<2>(t));
-    REQUIRE(get<2>(regt) == get<2>(t));
+    REQUIRE(&upd::get<0>(regt) != &upd::get<0>(t));
+    REQUIRE(upd::get<0>(regt) == upd::get<0>(t));
+    REQUIRE(&upd::get<1>(regt) != &upd::get<1>(t));
+    REQUIRE(upd::get<1>(regt) == upd::get<1>(t));
+    REQUIRE(&upd::get<2>(regt) != &upd::get<2>(t));
+    REQUIRE(upd::get<2>(regt) == upd::get<2>(t));
   }
 
-  SECTION("Zip tuples together") {
+  SECTION("Zip tuples toupd::gether") {
     upd::regular_tuple auto t_ = std::tuple{char{78}, long{22}};
     upd::tuple_view auto view = updv::zip(t, t_);
-    REQUIRE(&get<0>(view).first == &get<0>(t));
-    REQUIRE(&get<0>(view).second == &get<0>(t_));
-    REQUIRE(&get<1>(view).first == &get<1>(t));
-    REQUIRE(&get<1>(view).second == &get<1>(t_));
+    REQUIRE(&upd::get<0>(view).first == &upd::get<0>(t));
+    REQUIRE(&upd::get<0>(view).second == &upd::get<0>(t_));
+    REQUIRE(&upd::get<1>(view).first == &upd::get<1>(t));
+    REQUIRE(&upd::get<1>(view).second == &upd::get<1>(t_));
     REQUIRE(upd::tuple_size_v<decltype(view)> == 2);
   }
 
   SECTION("Collect into a std::array") {
     auto arr = t | updv::to<std::array>;
-    REQUIRE(arr[0] == get<0>(t));
-    REQUIRE(arr[1] == get<1>(t));
-    REQUIRE(arr[2] == get<2>(t));
+    REQUIRE(arr[0] == upd::get<0>(t));
+    REQUIRE(arr[1] == upd::get<1>(t));
+    REQUIRE(arr[2] == upd::get<2>(t));
   }
 
   SECTION("Transform element types") {
     upd::tuple_view auto view = t | updv::transform_type([]<typename T> -> T * {});
-    REQUIRE_TYPE(get<0>(view), int *);
-    REQUIRE_TYPE(get<1>(view), char *);
-    REQUIRE_TYPE(get<2>(view), long *);
+    REQUIRE_TYPE(upd::get<0>(view), int *);
+    REQUIRE_TYPE(upd::get<1>(view), char *);
+    REQUIRE_TYPE(upd::get<2>(view), long *);
   }
 
   SECTION("View a tuple of entries as a record") {
@@ -96,9 +96,9 @@ TEST_CASE("Tuple views", "[tuple_view]") {
                                  }) |
                                  updv::as_record;
 
-    REQUIRE(get<0uz>(view) == 4);
-    REQUIRE(get<1uz>(view) == 8);
-    REQUIRE(get<2uz>(view) == 67);
+    REQUIRE(upd::get<0uz>(view) == 4);
+    REQUIRE(upd::get<1uz>(view) == 8);
+    REQUIRE(upd::get<2uz>(view) == 67);
   }
 
   SECTION("Instantiate a tuple template") {
@@ -106,15 +106,15 @@ TEST_CASE("Tuple views", "[tuple_view]") {
     REQUIRE(std::same_as<tuple_type, std::tuple<int *, char *, long *>>);
   }
 
-  SECTION("Concat tuples together") {
+  SECTION("Concat tuples toupd::gether") {
     upd::tuple_view auto view = updv::concat(t, std::move(t));
 
-    REQUIRE(get<0>(view) == 4);
-    REQUIRE(get<1>(view) == 8);
-    REQUIRE(get<2>(view) == 67);
-    REQUIRE(get<3>(view) == 4);
-    REQUIRE(get<4>(view) == 8);
-    REQUIRE(get<5>(view) == 67);
+    REQUIRE(upd::get<0>(view) == 4);
+    REQUIRE(upd::get<1>(view) == 8);
+    REQUIRE(upd::get<2>(view) == 67);
+    REQUIRE(upd::get<3>(view) == 4);
+    REQUIRE(upd::get<4>(view) == 8);
+    REQUIRE(upd::get<5>(view) == 67);
   }
 }
 
@@ -155,9 +155,9 @@ TEST_CASE("Algorithms on records", "[tuple_algorithm]") {
     auto v0 = updv::visit(t, 0, [](auto x) -> int { return x; });
     auto v1 = updv::visit(t, 1, [](auto x) -> int { return x; });
     auto v2 = updv::visit(t, 2, [](auto x) -> int { return x; });
-    REQUIRE(v0 == get<0>(t));
-    REQUIRE(v1 == get<1>(t));
-    REQUIRE(v2 == get<2>(t));
+    REQUIRE(v0 == upd::get<0>(t));
+    REQUIRE(v1 == upd::get<1>(t));
+    REQUIRE(v2 == upd::get<2>(t));
   }
 
   SECTION("Apply a function to content") {
@@ -181,67 +181,67 @@ TEST_CASE("Tuple view handling references", "[tuple_view]") {
   SECTION("Pass references through transform") {
     upd::tuple_view auto lview = t | updv::transform([](auto &&v) -> auto && { return UPD_FWD(v); });
 
-    REQUIRE_SAME(get<0>(lview), (lv));
-    REQUIRE_SAME(get<1>(lview), (xv));
-    REQUIRE_SAME(get<2>(lview), get<2>(t));
+    REQUIRE_SAME(upd::get<0>(lview), (lv));
+    REQUIRE_SAME(upd::get<1>(lview), (xv));
+    REQUIRE_SAME(upd::get<2>(lview), upd::get<2>(t));
 
     upd::tuple_view auto rview = std::move(t) | updv::transform([](auto &&v) -> auto && { return UPD_FWD(v); });
 
-    REQUIRE_SAME(get<0>(rview), (lv));
-    REQUIRE_SAME(get<1>(rview), std::move(xv));
-    REQUIRE_SAME(get<2>(rview), get<2>(std::move(t)));
+    REQUIRE_SAME(upd::get<0>(rview), (lv));
+    REQUIRE_SAME(upd::get<1>(rview), std::move(xv));
+    REQUIRE_SAME(upd::get<2>(rview), upd::get<2>(std::move(t)));
   }
 
   SECTION("Pass references through clean") {
     upd::tuple_view auto lview = t | updv::clean<void>;
 
-    REQUIRE_SAME(get<0>(lview), (lv));
-    REQUIRE_SAME(get<1>(lview), (xv));
-    REQUIRE_SAME(get<2>(lview), get<2>(t));
+    REQUIRE_SAME(upd::get<0>(lview), (lv));
+    REQUIRE_SAME(upd::get<1>(lview), (xv));
+    REQUIRE_SAME(upd::get<2>(lview), upd::get<2>(t));
 
     upd::tuple_view auto rview = std::move(t) | updv::clean<void>;
 
-    REQUIRE_SAME(get<0>(rview), (lv));
-    REQUIRE_SAME(get<1>(rview), std::move(xv));
-    REQUIRE_SAME(get<2>(rview), get<2>(std::move(t)));
+    REQUIRE_SAME(upd::get<0>(rview), (lv));
+    REQUIRE_SAME(upd::get<1>(rview), std::move(xv));
+    REQUIRE_SAME(upd::get<2>(rview), upd::get<2>(std::move(t)));
   }
 
   SECTION("Pass references through filter") {
     upd::tuple_view auto lview = t | updv::filter([](auto) { return true; });
 
-    REQUIRE_SAME(get<0>(lview), (lv));
-    REQUIRE_SAME(get<1>(lview), (xv));
-    REQUIRE_SAME(get<2>(lview), get<2>(t));
+    REQUIRE_SAME(upd::get<0>(lview), (lv));
+    REQUIRE_SAME(upd::get<1>(lview), (xv));
+    REQUIRE_SAME(upd::get<2>(lview), upd::get<2>(t));
 
     upd::tuple_view auto rview = std::move(t) | updv::filter([](auto) { return true; });
 
-    REQUIRE_SAME(get<0>(rview), (lv));
-    REQUIRE_SAME(get<1>(rview), std::move(xv));
-    REQUIRE_SAME(get<2>(rview), get<2>(std::move(t)));
+    REQUIRE_SAME(upd::get<0>(rview), (lv));
+    REQUIRE_SAME(upd::get<1>(rview), std::move(xv));
+    REQUIRE_SAME(upd::get<2>(rview), upd::get<2>(std::move(t)));
   }
 
   SECTION("Pass references through enumerate") {
     upd::tuple_view auto lview = t | updv::enumerate;
 
-    REQUIRE_SAME(get<0>(lview).second, (lv));
-    REQUIRE_SAME(get<1>(lview).second, (xv));
-    REQUIRE_SAME(get<2>(lview).second, get<2>(t));
+    REQUIRE_SAME(upd::get<0>(lview).second, (lv));
+    REQUIRE_SAME(upd::get<1>(lview).second, (xv));
+    REQUIRE_SAME(upd::get<2>(lview).second, upd::get<2>(t));
 
     upd::tuple_view auto rview = std::move(t) | updv::enumerate;
 
-    REQUIRE_SAME(get<0>(rview).second, (lv));
-    REQUIRE_SAME(get<1>(rview).second, std::move(xv));
-    REQUIRE_SAME(get<2>(rview).second, get<2>(std::move(t)));
+    REQUIRE_SAME(upd::get<0>(rview).second, (lv));
+    REQUIRE_SAME(upd::get<1>(rview).second, std::move(xv));
+    REQUIRE_SAME(upd::get<2>(rview).second, upd::get<2>(std::move(t)));
   }
 
   SECTION("Pass references through zip") {
     auto view = updv::zip(t, std::move(t));
 
-    REQUIRE_SAME(get<0>(view).first, (lv));
-    REQUIRE_SAME(get<0>(view).second, (lv));
-    REQUIRE_SAME(get<1>(view).first, (xv));
-    REQUIRE_SAME(get<1>(view).second, std::move(xv));
-    REQUIRE_SAME(get<2>(view).first, get<2>(t));
-    REQUIRE_SAME(get<2>(view).second, get<2>(std::move(t)));
+    REQUIRE_SAME(upd::get<0>(view).first, (lv));
+    REQUIRE_SAME(upd::get<0>(view).second, (lv));
+    REQUIRE_SAME(upd::get<1>(view).first, (xv));
+    REQUIRE_SAME(upd::get<1>(view).second, std::move(xv));
+    REQUIRE_SAME(upd::get<2>(view).first, upd::get<2>(t));
+    REQUIRE_SAME(upd::get<2>(view).second, upd::get<2>(std::move(t)));
   }
 }

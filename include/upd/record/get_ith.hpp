@@ -2,6 +2,7 @@
 
 #include <cstddef>
 
+#include "../get.hpp"
 #include "../upd.hpp"
 #include "record_like.hpp"
 #include "record_tag.hpp"

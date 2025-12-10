@@ -5,9 +5,7 @@
 #include <utility>
 
 #include "../upd.hpp"
-#include "record_element.hpp"
-#include "record_size.hpp"
-#include "record_tag.hpp"
+#include "record_like.hpp"
 
 namespace upd {
 
@@ -20,29 +18,6 @@ struct universal_record {
 };
 
 template<auto Tag, typename T>
-struct record_element<Tag, universal_record<T>> {
-  using type = T;
-};
-
-template<std::size_t I, typename T>
-struct record_tag<I, universal_record<T>> {};
-
-template<typename T>
-struct record_size<universal_record<T>> {
-  constexpr static auto value = 0zu;
-};
-
-template<auto Tag, typename T>
-[[nodiscard]] constexpr auto get(const universal_record<T> &rec) noexcept(release) -> const T & {
-  return rec.value;
-}
-
-template<auto Tag, typename T>
-[[nodiscard]] constexpr auto get(const universal_record<T> &&rec) noexcept(release) -> const T && {
-  return std::move(rec).value;
-}
-
-template<auto Tag, typename T>
 [[nodiscard]] constexpr auto has_tag(const universal_record<T> &) noexcept(release) -> bool {
   return true;
 }
@@ -53,3 +28,13 @@ template<typename U, typename T>
 }
 
 } // namespace upd
+
+template<typename T>
+struct upd::record_like_for<upd::universal_record<T>> {
+  constexpr static auto size = 0zu;
+
+  template<std::size_t I, typename Record>
+  [[nodiscard]] constexpr static auto get_ith(const Record &rec) noexcept(release) -> const auto & {
+    return UPD_FWD(rec).value;
+  }
+};

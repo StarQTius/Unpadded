@@ -1,5 +1,6 @@
 #pragma once
 
+#include "get.hpp"                      // IWYU pragma: export
 #include "tuple/apply.hpp"              // IWYU pragma: export
 #include "tuple/as_record.hpp"          // IWYU pragma: export
 #include "tuple/chain.hpp"              // IWYU pragma: export

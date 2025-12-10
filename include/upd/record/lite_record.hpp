@@ -138,12 +138,6 @@ struct record_size<lite_record<Nodes...>> {
   constexpr static auto value = sizeof...(Nodes);
 };
 
-template<auto Tag, typename Record>
-  requires(is_instance_of<Record, lite_record>())
-[[nodiscard]] constexpr auto get(Record &&rec) noexcept(release) -> auto && {
-  return UPD_FWD(rec).get_by_tag(expr<Tag>);
-}
-
 template<typename Record>
   requires(is_instance_of<Record, lite_record>())
 [[nodiscard]] constexpr static auto collect(Record &&rec) {
@@ -163,3 +157,15 @@ template<auto Tag, typename... Nodes>
 }
 
 } // namespace upd
+
+namespace upd::detail {
+
+using upd::lite_record;
+
+template<auto Tag, typename Record>
+  requires(is_instance_of<Record, lite_record>())
+[[nodiscard]] constexpr auto get(Record &&rec) noexcept(release) -> auto && {
+  return UPD_FWD(rec).get_by_tag(expr<Tag>);
+}
+
+} // namespace upd::detail

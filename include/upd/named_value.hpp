@@ -8,7 +8,6 @@
 #include <iterator>
 #include <ranges>
 #include <string_view>
-#include <tuple>
 #include <type_traits>
 #include <utility>
 #include <variant>
@@ -18,6 +17,7 @@
 #include "constlist.hpp"
 #include "detail/always_false.hpp"
 #include "functional.hpp"
+#include "get.hpp"
 #include "is_instance_of.hpp"
 #include "lite_tuple.hpp"
 #include "record/entry.hpp"
@@ -389,30 +389,6 @@ template<named_value_instance... NamedValues>
 explicit tagged_tuple(NamedValues...)
     -> tagged_tuple<constlist<NamedValues::identifier...>{}, typename NamedValues::value_type...>;
 
-template<name Identifier, typename Tuple>
-  requires(is_instance_of<Tuple, tagged_tuple>())
-[[nodiscard]] constexpr auto get(Tuple &&t) noexcept(release) -> auto && {
-  return UPD_FWD(t).template get<Identifier, Tuple>();
-}
-
-template<std::size_t I, typename Tuple>
-  requires(is_instance_of<Tuple, tagged_tuple>())
-[[nodiscard]] constexpr auto get(Tuple &&t) noexcept(release) -> auto && {
-  return UPD_FWD(t).template get<I, Tuple>();
-}
-
-template<name Name, typename Record>
-  requires(is_instance_of<Record, named_tuple>())
-[[nodiscard]] constexpr auto get(Record &&rec) noexcept(release) -> auto && {
-  return UPD_FWD(rec)[expr<Name>];
-}
-
-template<std::size_t I, typename Record>
-  requires(is_instance_of<Record, named_tuple>())
-[[nodiscard]] constexpr auto get(Record &&rec) noexcept(release) -> auto && {
-  return UPD_FWD(rec)[expr<I>];
-}
-
 } // namespace upd
 
 template<std::size_t N>
@@ -425,6 +401,27 @@ struct upd::tuple_like_for<upd::names<N>> {
   template<std::size_t I, typename Names>
   [[nodiscard]] constexpr static auto get(Names &&ns) noexcept(release) -> auto && {
     return UPD_FWD(ns).strings[I];
+  }
+};
+
+template<auto Names, typename... Ts>
+struct upd::tuple_like_for<upd::named_tuple<Names, Ts...>> {
+  template<std::size_t I, typename Tuple>
+  [[nodiscard]] constexpr static auto get(Tuple &&t) noexcept(release) -> auto && {
+    return UPD_FWD(t).template get<I>();
+  }
+};
+
+template<auto Names, typename... Ts>
+struct upd::record_like_for<upd::named_tuple<Names, Ts...>> {
+  constexpr static auto size = sizeof...(Ts);
+
+  template<std::size_t I>
+  using element_type = named_tuple_element_t<I, upd::named_tuple<Names, Ts...>>;
+
+  template<std::size_t I, typename Record>
+  [[nodiscard]] constexpr static auto get_ith(Record &&rec) noexcept(release) -> auto && {
+    return UPD_FWD(rec).template get<I>().value();
   }
 };
 
@@ -457,6 +454,22 @@ struct std::tuple_size<upd::tagged_tuple<Names, Ts...>> {
 template<std::size_t I, auto Names, typename... Ts>
 struct std::tuple_element<I, upd::tagged_tuple<Names, Ts...>> {
   using type = upd::named_tuple_element_t<I, upd::tagged_tuple<Names, Ts...>>;
+};
+
+template<auto Names, typename... Ts>
+struct upd::tuple_like_for<upd::tagged_tuple<Names, Ts...>> {
+  template<std::size_t I, typename View>
+  [[nodiscard]] constexpr static auto get(View &&view) noexcept(release) -> auto && {
+    return UPD_FWD(view).template get<I>();
+  }
+};
+
+template<auto Names, typename... Ts>
+struct upd::record_like_for<upd::tagged_tuple<Names, Ts...>> {
+  template<std::size_t I, typename View>
+  [[nodiscard]] constexpr static auto get_ith(View &&view) noexcept(release) -> auto && {
+    return UPD_FWD(view).template get<I>();
+  }
 };
 
 template<std::size_t I, auto Names, typename... Ts>
