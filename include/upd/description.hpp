@@ -9,6 +9,7 @@
 #include <iterator>
 #include <limits>
 #include <ranges>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 #include <variant>
@@ -42,16 +43,21 @@
 #include "template_traits.hpp"
 #include "token.hpp"
 #include "tuple.hpp"
+#include "tuple/apply.hpp"
 #include "tuple/as_record.hpp"
+#include "tuple/concat.hpp"
 #include "tuple/enumerate.hpp"
+#include "tuple/fold.hpp"
+#include "tuple/reverse.hpp"
 #include "tuple/to.hpp"
 #include "tuple/transform.hpp"
+#include "tuple/tuple_element.hpp"
 #include "tuple/tuple_size.hpp"
 #include "tuple/tuple_view_adaptor.hpp"
 #include "tuple/typelist.hpp"
 #include "tuple/visit.hpp"
+#include "tuple/zip.hpp"
 #include "tuple_impl.hpp"
-#include "type_traits.hpp"
 #include "typelist.hpp"
 #include "upd.hpp"
 #include "with_sequence.hpp"
@@ -70,18 +76,6 @@ template<auto Code, typename... Args>
 [[nodiscard]] constexpr auto choice(Args &&...args) -> choice_t<Code, Args...> {
   return choice_t<Code, Args...>{.arguments = {UPD_FWD(args)...}};
 }
-
-template<typename Tuple>
-struct equivalent_typelist {
-  using type = decltype(
-    sequence<std::tuple_size_v<Tuple>>
-      .transform([](auto i) { return typebox<std::tuple_element_t<i, Tuple>>{}; })
-      .to_typelist()
-  );
-};
-
-template<typename Tuple>
-using equivalent_typelist_t = typename equivalent_typelist<Tuple>::type;
 
 template<typename T>
 concept inversible = requires(T x) {
@@ -131,17 +125,22 @@ struct divide_some {
 
 template<inversible... Inversibles>
 struct bijective_chain {
-  tuple<Inversibles...> operations;
+  std::tuple<Inversibles...> operations;
 
   template<typename Self, typename U>
   [[nodiscard]] constexpr auto operator()(this Self &&self, U x) {
-    return UPD_FWD(self).operations.fold_left(x, [](auto acc, auto &&op) { return UPD_INVOKE(op, acc); });
+    namespace updv = upd::tuple_views;
+
+    return updv::fold_left(UPD_FWD(self).operations, x, [](auto acc, auto &&op) { return UPD_INVOKE(op, acc); });
   };
 
   template<typename Self, inversible Inversible>
   [[nodiscard]] constexpr auto and_then(this Self &&self, Inversible &&op) {
-    return UPD_FWD(self).operations.apply(
-        [&](auto &&...ops) { return bijective_chain<Inversibles..., Inversible>{{UPD_FWD(ops)..., UPD_FWD(op)}}; });
+    namespace updv = upd::tuple_views;
+
+    return updv::apply(UPD_FWD(self).operations, [&](auto &&...ops) {
+      return bijective_chain<Inversibles..., Inversible>{{UPD_FWD(ops)..., UPD_FWD(op)}};
+    });
   }
 };
 
@@ -167,14 +166,20 @@ template<typename T>
 
 template<inversible... Inversibles>
 [[nodiscard]] constexpr auto inverse(const bijective_chain<Inversibles...> &chain) {
-  auto inv_ops = chain.operations.transform([](const auto &op) { return inverse(op); }).reverse();
+  namespace updv = upd::tuple_views;
+
+  auto inv_ops = chain.operations | updv::transform([](const auto &op) { return inverse(op); }) | updv::reverse |
+                 updv::to<std::tuple>;
 
   return bijective_chain{std::move(inv_ops)};
 }
 
 template<inversible... Inversibles>
 [[nodiscard]] constexpr auto inverse(bijective_chain<Inversibles...> &&chain) {
-  auto inv_ops = std::move(chain).operations.transform([](auto &&op) { return inverse(std::move(op)); }).reverse();
+  namespace updv = upd::tuple_views;
+
+  auto inv_ops = std::move(chain).operations | updv::transform([](auto &&op) { return inverse(std::move(op)); }) |
+                 updv::reverse | updv::to<std::tuple>;
 
   return bijective_chain{std::move(inv_ops)};
 }
@@ -245,8 +250,9 @@ template<typename Enum, typename Field>
 template<typename... Ts, typename Field>
 [[nodiscard]] constexpr auto bitsize(const std::variant<Ts...> &sum_of_field_values,
                                      const Field &field) noexcept(release) -> std::size_t {
+  namespace updv = upd::tuple_views;
   auto alt_index = sum_of_field_values.index();
-  return sequence<sizeof...(Ts) - 1>.visit(alt_index - 1, [&](auto i) {
+  return updv::visit(sequence<sizeof...(Ts) - 1>, alt_index - 1, [&](auto i) {
     const auto &field_value = *std::get_if<i + 1>(&sum_of_field_values);
     const auto &alt_descr = field.tagged_descriptions[i];
     return bitsize(field_value, alt_descr);
@@ -256,8 +262,9 @@ template<typename... Ts, typename Field>
 template<names Identifiers, typename... Ts, typename Description>
 [[nodiscard]] constexpr auto bitsize(const named_tuple<Identifiers, Ts...> &named_field_values,
                                      const Description &descr) noexcept(release) -> std::size_t {
-  return named_field_values.fold_left(0uz, [&](std::size_t acc, const auto &field_value) {
-    auto field_pos = descr.m_fields.find_if([&](auto nv) { return expr<nv.identifier == field_value.identifier>; });
+  namespace updv = upd::record_views;
+  return updv::fold_left(named_field_values, 0uz, [&](std::size_t acc, auto k, const auto &field_value) {
+    auto field_pos = updv::find_if(descr.m_fields, [&](auto id, const auto &) { return expr<id == k>; });
     return acc + bitsize(field_value.value(), descr.m_fields[field_pos]);
   });
 }
@@ -1050,16 +1057,18 @@ template<auto Identifier, typename Rule, typename TaggedDescriptions>
 struct one_of_t {
   constexpr static auto identifier = Identifier;
   constexpr static auto size = std::tuple_size_v<TaggedDescriptions>;
-  constexpr static auto alternative_types = equivalent_typelist_t<TaggedDescriptions>{}
-                                                .metatransform([]<typename T>(T &&x) { return UPD_FWD(x); })
-                                                .metatransform([]<typename T>(T &&) -> typename T::result_type {})
-                                                .chain_before(typebox<std::monostate>{})
-                                                .to_typelist();
+  constexpr static auto alternative_types =
+      decltype(tuple_views::concat(typelist2<upd::description<>>,
+                                   std::declval<TaggedDescriptions>() | tuple_views::to<typelist2_t>) |
+               tuple_views::transform_type([]<typename T> -> std::remove_cvref_t<T> {}) |
+               tuple_views::transform_type([]<typename T> -> typename T::result_type {}) |
+               tuple_views::to<typelist2_t>){};
 
-  using value_type = decltype(alternative_types.template metaapply<std::variant>());
-  using tag_type = typename decltype(TaggedDescriptions::identifiers.apply([]<typename... Identifiers>(Identifiers...) {
-    return typebox<std::common_type_t<typename Identifiers::value_type...>>{};
-  }))::type;
+  using value_type = decltype(tuple_views::apply_type(alternative_types, []<typename... Ts> -> std::variant<Ts...> {}));
+
+  using tag_type = decltype(tuple_views::apply_type(
+      TaggedDescriptions::identifiers | tuple_views::transform_type([]<typename T> -> typename T::value_type {}),
+      []<typename... Ts> -> std::common_type_t<Ts...> {}));
 
   template<typename... Args>
     requires std::constructible_from<value_type, Args...>
@@ -1071,7 +1080,7 @@ struct one_of_t {
     requires(is_instance_of<Choice, choice_t>())
   [[nodiscard]] constexpr auto make_value(Choice &&ch) const -> value_type {
     auto id_pos = tagged_descriptions.identifiers.find(expr<ch.code>);
-    using alt_type = typename std::remove_cvref_t<decltype(alternative_types[expr<id_pos + 1>])>::type;
+    using alt_type = tuple_element_t<id_pos + 1, decltype(alternative_types)>;
 
     return UPD_FWD(ch).arguments.apply(
         [&](auto &&...args) { return value_type{std::in_place_index<id_pos + 1>, alt_type(UPD_FWD(args)...)}; });
@@ -1086,8 +1095,10 @@ struct one_of_t {
 
   template<record_like Packet, serializer Serializer, record_like Fields>
   [[nodiscard]] constexpr auto deduce(const Packet &packet, Serializer &, const Fields &) const noexcept(release) {
+    namespace updv = upd::tuple_views;
+
     auto id_pos = get<identifier>(packet).index() - 1;
-    auto id = tagged_descriptions.identifiers.visit(id_pos, [&](auto id) -> tag_type { return id; });
+    auto id = updv::visit(tagged_descriptions.identifiers, id_pos, [&](auto id) -> tag_type { return id; });
     return tagged_tuple{keyword<rule_type::from_identifier>{} = UPD_INVOKE(inverse(rule.chain), id)};
   }
 
@@ -1096,6 +1107,7 @@ struct one_of_t {
   decode(stream_interface &src, Serializer &ser, const Packet &packet, const Fields &fields) const
       -> result<value_type> {
     namespace stdr = std::ranges;
+    namespace updv = upd::tuple_views;
 
     auto id = rule.deduce(packet, fields);
     auto id_pos = tagged_descriptions.identifiers.find(id);
@@ -1111,7 +1123,7 @@ struct one_of_t {
       return retval;
     };
 
-    return zip(sequence<size>, tagged_descriptions).visit(id_pos, make_alt);
+    return updv::visit(updv::zip(sequence<size>, tagged_descriptions), id_pos, make_alt);
   }
 
   template<serializer Serializer>
