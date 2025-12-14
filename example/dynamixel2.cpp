@@ -15,7 +15,6 @@
 
 #include <upd/description.hpp>
 #include <upd/error.hpp>
-#include <upd/named_value.hpp>
 #include <upd/record.hpp>
 #include <upd/stream_interface.hpp>
 #include <upd/token.hpp>
@@ -284,12 +283,13 @@ auto main() -> int {
 
 auto ping_example() -> upd::error {
   using namespace upd::literals;
+  using namespace upd::record_operators;
 
   auto ser = serializer{};
   std::cout << std::hex;
 
   std::println("Ping: example 1");
-  description.encode(("id"_kw = 1, "parameters"_kw = upd::choice<instruction_code::ping>()), ser, std::cout, " ");
+  description.encode(("id"_kw2 = 1, "parameters"_kw2 = upd::choice<instruction_code::ping>()), ser, std::cout, " ");
   std::println("");
   std::println("");
 
@@ -328,13 +328,14 @@ auto ping_example() -> upd::error {
 
 auto read_example() -> upd::error {
   using namespace upd::literals;
+  using namespace upd::record_operators;
 
   auto ser = serializer{};
   std::cout << std::hex;
 
   std::println("Read: example");
   description.encode(
-      ("id"_kw = 1, "parameters"_kw = upd::choice<instruction_code::read>("address"_kw2 = 0x84, "length"_kw2 = 4)),
+      ("id"_kw2 = 1, "parameters"_kw2 = upd::choice<instruction_code::read>("address"_kw2 = 0x84, "length"_kw2 = 4)),
       ser,
       std::cout,
       " ");
@@ -362,13 +363,14 @@ auto read_example() -> upd::error {
 
 auto write_example() -> upd::error {
   using namespace upd::literals;
+  using namespace upd::record_operators;
 
   auto ser = serializer{};
   std::cout << std::hex;
 
   std::println("Write: example");
-  description.encode(("id"_kw = 1,
-                      "parameters"_kw = upd::choice<instruction_code::write>(
+  description.encode(("id"_kw2 = 1,
+                      "parameters"_kw2 = upd::choice<instruction_code::write>(
                           "address"_kw2 = 0x74, "data"_kw2 = std::array<std::uint8_t, 4>{0x0, 0x2, 0x0, 0x0})),
                      ser,
                      std::cout,
@@ -396,13 +398,14 @@ auto write_example() -> upd::error {
 
 auto reg_write_example() -> upd::error {
   using namespace upd::literals;
+  using namespace upd::record_operators;
 
   auto ser = serializer{};
   std::cout << std::hex;
 
   std::println("Reg Write: example");
-  description.encode(("id"_kw = 1,
-                      "parameters"_kw = upd::choice<instruction_code::reg_write>(
+  description.encode(("id"_kw2 = 1,
+                      "parameters"_kw2 = upd::choice<instruction_code::reg_write>(
                           "address"_kw2 = 0x68, "data"_kw2 = std::array<std::uint8_t, 4>{0xc8, 0x0, 0x0, 0x0})),
                      ser,
                      std::cout,
@@ -430,12 +433,13 @@ auto reg_write_example() -> upd::error {
 
 auto action_example() -> upd::error {
   using namespace upd::literals;
+  using namespace upd::record_operators;
 
   auto ser = serializer{};
   std::cout << std::hex;
 
   std::println("Action: example");
-  description.encode(("id"_kw = 1, "parameters"_kw = upd::choice<instruction_code::action>()), ser, std::cout, " ");
+  description.encode(("id"_kw2 = 1, "parameters"_kw2 = upd::choice<instruction_code::action>()), ser, std::cout, " ");
   std::println("");
   std::println("");
 
@@ -459,13 +463,14 @@ auto action_example() -> upd::error {
 
 auto factory_reset_example() -> upd::error {
   using namespace upd::literals;
+  using namespace upd::record_operators;
 
   auto ser = serializer{};
   std::cout << std::hex;
 
   std::println("Action: example");
   description.encode(
-      ("id"_kw = 1, "parameters"_kw = upd::choice<instruction_code::factory_reset>(factory_reset_target::all_but_id)),
+      ("id"_kw2 = 1, "parameters"_kw2 = upd::choice<instruction_code::factory_reset>(factory_reset_target::all_but_id)),
       ser,
       std::cout,
       " ");
@@ -492,12 +497,13 @@ auto factory_reset_example() -> upd::error {
 
 auto reboot_example() -> upd::error {
   using namespace upd::literals;
+  using namespace upd::record_operators;
 
   auto ser = serializer{};
   std::cout << std::hex;
 
   std::println("Reboot: example");
-  description.encode(("id"_kw = 1, "parameters"_kw = upd::choice<instruction_code::reboot>()), ser, std::cout, " ");
+  description.encode(("id"_kw2 = 1, "parameters"_kw2 = upd::choice<instruction_code::reboot>()), ser, std::cout, " ");
   std::println("");
   std::println("");
 
@@ -521,13 +527,14 @@ auto reboot_example() -> upd::error {
 
 auto clear_example() -> upd::error {
   using namespace upd::literals;
+  using namespace upd::record_operators;
 
   auto ser = serializer{};
   std::cout << std::hex;
 
   std::println("Clear: example");
   description.encode(
-      ("id"_kw = 1, "parameters"_kw = upd::choice<instruction_code::clear>(clear_target::present_position)),
+      ("id"_kw2 = 1, "parameters"_kw2 = upd::choice<instruction_code::clear>(clear_target::present_position)),
       ser,
       std::cout,
       " ");
@@ -554,13 +561,14 @@ auto clear_example() -> upd::error {
 
 auto control_table_backup_example() -> upd::error {
   using namespace upd::literals;
+  using namespace upd::record_operators;
 
   auto ser = serializer{};
   std::cout << std::hex;
 
   std::println("Control Table Backup: example");
-  description.encode(("id"_kw = 1,
-                      "parameters"_kw = upd::choice<instruction_code::control_table_backup>(
+  description.encode(("id"_kw2 = 1,
+                      "parameters"_kw2 = upd::choice<instruction_code::control_table_backup>(
                           control_table_backup_target::store_current)),
                      ser,
                      std::cout,
@@ -588,13 +596,14 @@ auto control_table_backup_example() -> upd::error {
 
 auto sync_read_example() -> upd::error {
   using namespace upd::literals;
+  using namespace upd::record_operators;
 
   auto ser = serializer{};
   std::cout << std::hex;
 
   std::println("Sync Read: example");
-  description.encode(("id"_kw = 0xfe,
-                      "parameters"_kw = upd::choice<instruction_code::sync_read>(
+  description.encode(("id"_kw2 = 0xfe,
+                      "parameters"_kw2 = upd::choice<instruction_code::sync_read>(
                           "address"_kw2 = 0x84, "length"_kw2 = 0x4, "ids"_kw2 = std::array<std::uint8_t, 2>{1, 2})),
                      ser,
                      std::cout,

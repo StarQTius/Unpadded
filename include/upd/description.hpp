@@ -15,11 +15,11 @@
 #include <variant>
 
 #include "constexpr.hpp"
+#include "description/serializer.hpp"
 #include "error.hpp"
 #include "functional.hpp"
 #include "get.hpp"
 #include "is_instance_of.hpp"
-#include "named_value.hpp"
 #include "record/concat.hpp"
 #include "record/entry.hpp"
 #include "record/filter.hpp"
@@ -45,7 +45,6 @@
 #include "stream_interface.hpp"
 #include "template_traits.hpp"
 #include "token.hpp"
-#include "tuple.hpp"
 #include "tuple/apply.hpp"
 #include "tuple/as_record.hpp"
 #include "tuple/concat.hpp"
@@ -60,8 +59,6 @@
 #include "tuple/tuple_view_adaptor.hpp"
 #include "tuple/typelist.hpp"
 #include "tuple/visit.hpp"
-#include "tuple_impl.hpp"
-#include "typelist.hpp"
 #include "upd.hpp"
 #include "with_sequence.hpp"
 
@@ -70,9 +67,9 @@ namespace upd {
 template<auto Code, typename... Args>
 struct choice_t {
   constexpr static auto code = Code;
-  constexpr static auto argument_types = typelist<Args...>{};
+  constexpr static auto argument_types = typelist2<Args...>;
 
-  tuple<Args...> arguments;
+  std::tuple<Args...> arguments;
 };
 
 template<auto Code, typename... Args>
@@ -228,12 +225,6 @@ struct field_expression_t {
   }
 };
 
-template<typename NamedValue, typename Field>
-  requires(is_instance_of<NamedValue, named_value>())
-[[nodiscard]] constexpr auto bitsize(const NamedValue &nv, const Field &field) noexcept(release) -> std::size_t {
-  return bitsize(nv.value(), field);
-}
-
 template<typename Field>
 [[nodiscard]] constexpr auto bitsize(std::uintmax_t, const Field &field) noexcept(release) -> std::size_t {
   return field.width;
@@ -255,7 +246,8 @@ template<typename... Ts, typename Field>
                                      const Field &field) noexcept(release) -> std::size_t {
   namespace updv = upd::tuple_views;
   auto alt_index = sum_of_field_values.index();
-  return updv::visit(sequence<sizeof...(Ts) - 1>, alt_index - 1, [&](auto i) {
+  auto seq = UPD_WITH_SEQUENCE(Is, sizeof...(Ts) - 1, &) { return std::tuple{expr<Is>...}; };
+  return updv::visit(seq, alt_index - 1, [&](auto i) {
     const auto &field_value = *std::get_if<i + 1>(&sum_of_field_values);
     const auto &alt_descr = get_ith<i>(field.tagged_descriptions);
     return bitsize(field_value, alt_descr);
@@ -1082,8 +1074,9 @@ struct one_of_t {
     auto id_pos = updv::find_tag<ch.code>(tagged_descriptions);
     using alt_type = tuple_element_t<id_pos + 1, decltype(alternative_types)>;
 
-    return UPD_FWD(ch).arguments.apply(
-        [&](auto &&...args) { return value_type{std::in_place_index<id_pos + 1>, alt_type(UPD_FWD(args)...)}; });
+    return tuple_views::apply(UPD_FWD(ch).arguments, [&](auto &&...args) {
+      return value_type{std::in_place_index<id_pos + 1>, alt_type(UPD_FWD(args)...)};
+    });
   }
 
   using rule_type = Rule;

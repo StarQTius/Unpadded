@@ -9,9 +9,9 @@
 #include <variant>
 
 #include "template_traits.hpp"
-#include "typelist.hpp"
+#include "tuple/has_type.hpp"
+#include "tuple/typelist.hpp"
 #include "upd.hpp"
-#include "variadic.hpp"
 
 namespace upd {
 
@@ -39,11 +39,14 @@ struct repeated_beyond_max {
   std::size_t max;
 };
 
-using error_data_types =
-    typelist<no_error, not_matching_deduction, invalid_code_in_one_of, negative_repetition_count, repeated_beyond_max>;
+using error_data_types = typelist2_t<no_error,
+                                     not_matching_deduction,
+                                     invalid_code_in_one_of,
+                                     negative_repetition_count,
+                                     repeated_beyond_max>;
 
 template<typename T>
-concept error_data = element_of<std::remove_cvref_t<T>, error_data_types>;
+concept error_data = has_type<T>(error_data_types{});
 
 class error {
   using data_type = instantiate_variadic<std::variant, error_data_types>;

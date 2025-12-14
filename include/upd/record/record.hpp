@@ -7,15 +7,19 @@
 
 #include "../collector_of.hpp"
 #include "../constexpr.hpp"
+#include "../get.hpp"
 #include "../is_instance_of.hpp"
 #include "../tuple/for_each.hpp"
 #include "../upd.hpp"
 #include "../variadic/template_box.hpp"
+#include "../with_sequence.hpp"
 #include "apply.hpp"
 #include "as_tuple.hpp"
 #include "entry.hpp"
 #include "lite_record.hpp"
 #include "record_like.hpp"
+#include "record_size.hpp"
+#include "record_tag.hpp"
 
 namespace upd {
 
@@ -49,6 +53,24 @@ template<typename... Entries>
 explicit record(Entries...) -> record<Entries...>;
 
 } // namespace upd
+
+namespace upd::record_operators {
+
+template<typename Lhs, typename Rhs>
+  requires(is_instance_of<Lhs, entry>() && is_instance_of<Rhs, entry>())
+[[nodiscard]] constexpr auto operator,(Lhs &&lhs, Rhs &&rhs) {
+  return record{UPD_FWD(lhs), UPD_FWD(rhs)};
+}
+
+template<typename Record, typename Entry>
+  requires(is_instance_of<Record, record>() && is_instance_of<Entry, entry>())
+[[nodiscard]] constexpr auto operator,(Record &&rec, Entry &&ent) {
+  return UPD_WITH_SEQUENCE(Is, record_size_v<Record>, &) {
+    return record{entry{expr<record_tag_v<Is, Record>>, get<Is>(UPD_FWD(rec))}..., UPD_FWD(ent)};
+  };
+}
+
+} // namespace upd::record_operators
 
 template<auto... Identifiers, typename... Ts>
 struct upd::record_like_for<upd::record<upd::entry<Identifiers, Ts>...>> {

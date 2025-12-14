@@ -13,8 +13,7 @@ file(
 add_executable(upd_unitary
   algebra.cpp
   record.cpp
-  tuple.cpp
-  named_tuple_v2.cpp)
+  tuple.cpp)
 target_link_libraries(upd_unitary PRIVATE
   Unpadded::UnpaddedDebug
   Catch2::Catch2WithMain

@@ -7,7 +7,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include <upd/constexpr.hpp>
 #include <upd/equivalent_to.hpp>
-#include <upd/named_value.hpp>
 #include <upd/record.hpp>
 #include <upd/tuple_v2.hpp>
 #include <upd/type_traits.hpp>
