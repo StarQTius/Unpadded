@@ -169,6 +169,16 @@ TEST_CASE("Algorithms on records", "[tuple_algorithm]") {
     using result_type = decltype(updv::apply_type(t, []<typename... Ts> -> upd::typelist2_t<Ts...> {}));
     REQUIRE(std::same_as<result_type, upd::typelist2_t<int, char, long>>);
   }
+
+  SECTION("Find element of a given type in a tuple") {
+    auto i = updv::find<long &>(t);
+    REQUIRE(i == 2);
+  }
+
+  SECTION("Find element equals to a value") {
+    auto i = updv::dynfind(t, 67);
+    REQUIRE(i == 2);
+  }
 }
 
 TEST_CASE("Tuple view handling references", "[tuple_view]") {

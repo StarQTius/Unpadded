@@ -329,6 +329,18 @@ TEST_CASE("Algorithms on records", "[record_algorithm]") {
   SECTION("Loop over elements") {
     updv::for_each(rec, [&](auto k, auto v) { REQUIRE(upd::get<k.value>(rec) == v); });
   }
+
+  SECTION("Find the first value of given type") {
+    auto i = updv::find_type<long &>(rec);
+
+    REQUIRE(i == 2);
+  }
+
+  SECTION("Find the first value of given tag") {
+    auto i = updv::find_tag<upd::name{"c"}>(rec);
+
+    REQUIRE(i == 2);
+  }
 }
 
 TEST_CASE("Record view handling references", "[record_view]") {

@@ -33,6 +33,9 @@
 #include "record/name.hpp"
 #include "record/record.hpp"
 #include "record/record_like.hpp"
+#include "record/record_size.hpp"
+#include "record/tags.hpp"
+#include "record/tags_of.hpp"
 #include "record/to.hpp"
 #include "record/transform.hpp"
 #include "record/values.hpp"
@@ -47,6 +50,7 @@
 #include "tuple/as_record.hpp"
 #include "tuple/concat.hpp"
 #include "tuple/enumerate.hpp"
+#include "tuple/find.hpp"
 #include "tuple/fold.hpp"
 #include "tuple/reverse.hpp"
 #include "tuple/to.hpp"
@@ -56,7 +60,6 @@
 #include "tuple/tuple_view_adaptor.hpp"
 #include "tuple/typelist.hpp"
 #include "tuple/visit.hpp"
-#include "tuple/zip.hpp"
 #include "tuple_impl.hpp"
 #include "typelist.hpp"
 #include "upd.hpp"
@@ -254,13 +257,13 @@ template<typename... Ts, typename Field>
   auto alt_index = sum_of_field_values.index();
   return updv::visit(sequence<sizeof...(Ts) - 1>, alt_index - 1, [&](auto i) {
     const auto &field_value = *std::get_if<i + 1>(&sum_of_field_values);
-    const auto &alt_descr = field.tagged_descriptions[i];
+    const auto &alt_descr = get_ith<i>(field.tagged_descriptions);
     return bitsize(field_value, alt_descr);
   });
 }
 
-template<names Identifiers, typename... Ts, typename Description>
-[[nodiscard]] constexpr auto bitsize(const named_tuple<Identifiers, Ts...> &named_field_values,
+template<record_like NamedFieldValues, typename Description>
+[[nodiscard]] constexpr auto bitsize(const NamedFieldValues &named_field_values,
                                      const Description &descr) noexcept(release) -> std::size_t {
   namespace updv = upd::record_views;
   return updv::fold_left(named_field_values, 0uz, [&](std::size_t acc, auto k, const auto &field_value) {
@@ -329,8 +332,7 @@ constexpr auto when = when_t<Match>{};
 
 template<typename... WhenThens>
 [[nodiscard]] constexpr auto aggregate_when_thens(WhenThens &&...when_thens) {
-  return tagged_tuple{
-      named_value<when_thens.match, typename WhenThens::result_type>{std::in_place, UPD_FWD(when_thens).result}...};
+  return record{entry<when_thens.match, typename WhenThens::result_type>{UPD_FWD(when_thens).result}...};
 }
 
 template<typename>
@@ -452,26 +454,21 @@ enum class field_tag {
   checksum,
 };
 
-template<named_value_instance... NamedValues>
-using named_value_bundle = decltype(named_tuple{std::declval<NamedValues>()...});
-
 template<typename T>
 concept field_like = requires(T) { typename T::value_type; } && requires(T x) {
   { x.default_value() } -> std::same_as<typename T::value_type>;
 };
 
 template<typename T, typename Serializer>
-concept deducible_field =
-    field_like<T> && serializer<Serializer> && requires(T x, Serializer ser, named_tuple<{}> packet) {
-      { x.deduce(packet, ser) } -> std::same_as<void>;
-    };
+concept deducible_field = field_like<T> && serializer<Serializer> && requires(T x, Serializer ser, record<> packet) {
+  { x.deduce(packet, ser) } -> std::same_as<void>;
+};
 
 template<typename T, typename Serializer>
-concept decodable_field =
-    serializer<Serializer> && deducible_field<T, Serializer> &&
-    requires(T x, Serializer ser, const named_tuple<{}> packet, const byte_type<Serializer> *src) {
-      { x.decode(src, ser, packet) } -> std::same_as<typename T::value_type>;
-    };
+concept decodable_field = serializer<Serializer> && deducible_field<T, Serializer> &&
+                          requires(T x, Serializer ser, const record<> packet, const byte_type<Serializer> *src) {
+                            { x.decode(src, ser, packet) } -> std::same_as<typename T::value_type>;
+                          };
 
 template<typename T, typename Serializer>
 concept encodable_field = serializer<Serializer> && deducible_field<T, Serializer> &&
@@ -634,7 +631,7 @@ struct field_t {
 
   template<record_like Packet, serializer Serializer, record_like Fields>
   [[nodiscard]] constexpr static auto deduce(Packet &, Serializer &, const Fields &) noexcept(release) {
-    return named_tuple{};
+    return record{};
   }
 
   template<serializer Serializer, record_like Packet, record_like Fields>
@@ -755,7 +752,7 @@ struct bound_t {
 
   template<record_like Packet, serializer Serializer, record_like Fields>
   [[nodiscard]] constexpr auto deduce(Packet &packet, Serializer &, const Fields &fields) const {
-    return tagged_tuple{named_value{expr<identifier>, rule.deduce(std::as_const(packet), fields)}};
+    return record{entry{expr<identifier>, rule.deduce(std::as_const(packet), fields)}};
   }
 
   template<serializer Serializer, record_like Packet, record_like Fields>
@@ -798,7 +795,7 @@ struct enum_bound_t {
 
   template<record_like Packet, serializer Serializer, record_like Fields>
   [[nodiscard]] constexpr auto deduce(Packet &packet, Serializer &, const Fields &fields) const {
-    return tagged_tuple{named_value{expr<identifier>, rule.deduce(std::as_const(packet), fields)}};
+    return record{entry{expr<identifier>, rule.deduce(std::as_const(packet), fields)}};
   }
 
   template<serializer Serializer, record_like Packet, record_like Fields>
@@ -857,7 +854,7 @@ struct bound_elsewhere_t {
 
   template<record_like Packet, serializer Serializer, record_like Fields>
   [[nodiscard]] constexpr static auto deduce(Packet &, Serializer &, const Fields &) noexcept(release) {
-    return named_tuple{};
+    return record{};
   }
 
   template<serializer Serializer, record_like Packet, record_like Fields>
@@ -897,7 +894,7 @@ struct enum_bound_elsewhere_t {
 
   template<record_like Packet, serializer Serializer, record_like Fields>
   [[nodiscard]] constexpr static auto deduce(Packet &, Serializer &, const Fields &) noexcept(release) {
-    return named_tuple{};
+    return record{};
   }
 
   template<serializer Serializer, record_like Packet, record_like Fields>
@@ -957,7 +954,7 @@ struct constant_t {
 
   template<record_like Packet, serializer Serializer, record_like Fields>
   [[nodiscard]] constexpr static auto deduce(Packet &, Serializer &, const Fields &) noexcept(release) {
-    return named_tuple{};
+    return record{};
   }
 
   template<serializer Serializer, record_like Packet, record_like Fields>
@@ -1027,7 +1024,7 @@ struct checksum_t {
       field.encode(value, ser, dest);
     });
 
-    return tagged_tuple{named_value{expr<identifier>, dest.acc}};
+    return record{entry{expr<identifier>, dest.acc}};
   }
 
   template<serializer Serializer, record_like Packet, record_like Fields>
@@ -1056,10 +1053,11 @@ checksum(BinaryOp op, std::uintmax_t init, width_t<Width>, all_fields_t) noexcep
 template<auto Identifier, typename Rule, typename TaggedDescriptions>
 struct one_of_t {
   constexpr static auto identifier = Identifier;
-  constexpr static auto size = std::tuple_size_v<TaggedDescriptions>;
+  constexpr static auto size = record_size_v<TaggedDescriptions>;
   constexpr static auto alternative_types =
       decltype(tuple_views::concat(typelist2<upd::description<>>,
-                                   std::declval<TaggedDescriptions>() | tuple_views::to<typelist2_t>) |
+                                   std::declval<TaggedDescriptions>() | record_views::values |
+                                       tuple_views::to<typelist2_t>) |
                tuple_views::transform_type([]<typename T> -> std::remove_cvref_t<T> {}) |
                tuple_views::transform_type([]<typename T> -> typename T::result_type {}) |
                tuple_views::to<typelist2_t>){};
@@ -1067,7 +1065,7 @@ struct one_of_t {
   using value_type = decltype(tuple_views::apply_type(alternative_types, []<typename... Ts> -> std::variant<Ts...> {}));
 
   using tag_type = decltype(tuple_views::apply_type(
-      TaggedDescriptions::identifiers | tuple_views::transform_type([]<typename T> -> typename T::value_type {}),
+      tags_of_v<TaggedDescriptions> | tuple_views::transform_type([]<typename T> -> typename T::value_type {}),
       []<typename... Ts> -> std::common_type_t<Ts...> {}));
 
   template<typename... Args>
@@ -1079,7 +1077,9 @@ struct one_of_t {
   template<typename Choice>
     requires(is_instance_of<Choice, choice_t>())
   [[nodiscard]] constexpr auto make_value(Choice &&ch) const -> value_type {
-    auto id_pos = tagged_descriptions.identifiers.find(expr<ch.code>);
+    namespace updv = upd::record_views;
+
+    auto id_pos = updv::find_tag<ch.code>(tagged_descriptions);
     using alt_type = tuple_element_t<id_pos + 1, decltype(alternative_types)>;
 
     return UPD_FWD(ch).arguments.apply(
@@ -1098,8 +1098,8 @@ struct one_of_t {
     namespace updv = upd::tuple_views;
 
     auto id_pos = get<identifier>(packet).index() - 1;
-    auto id = updv::visit(tagged_descriptions.identifiers, id_pos, [&](auto id) -> tag_type { return id; });
-    return tagged_tuple{keyword<rule_type::from_identifier>{} = UPD_INVOKE(inverse(rule.chain), id)};
+    auto id = updv::visit(tagged_descriptions | record_views::tags, id_pos, [&](auto id) -> tag_type { return id; });
+    return record{entry{expr<rule_type::from_identifier>, UPD_INVOKE(inverse(rule.chain), id)}};
   }
 
   template<serializer Serializer, record_like Packet, record_like Fields>
@@ -1110,9 +1110,9 @@ struct one_of_t {
     namespace updv = upd::tuple_views;
 
     auto id = rule.deduce(packet, fields);
-    auto id_pos = tagged_descriptions.identifiers.find(id);
+    auto id_pos = updv::dynfind(tagged_descriptions | record_views::tags, id);
 
-    if (id_pos == tagged_descriptions.size()) {
+    if (id_pos == record_size_v<TaggedDescriptions>) {
       return std::unexpected{invalid_code_in_one_of{identifier.string, std::to_underlying(id)}};
     }
 
@@ -1123,7 +1123,7 @@ struct one_of_t {
       return retval;
     };
 
-    return updv::visit(updv::zip(sequence<size>, tagged_descriptions), id_pos, make_alt);
+    return updv::visit(tagged_descriptions | record_views::values | updv::enumerate, id_pos, make_alt);
   }
 
   template<serializer Serializer>
@@ -1131,7 +1131,7 @@ struct one_of_t {
     namespace updv = upd::tuple_views;
 
     auto alt_index = value.index();
-    auto encode_alt = [&](const auto &i_and_named_descr) {
+    auto encode_alt = [&](auto i_and_named_descr) {
       const auto &[i, named_descr] = i_and_named_descr;
       const auto *alt = std::get_if<i.value + 1>(&value);
 
@@ -1140,7 +1140,7 @@ struct one_of_t {
       named_descr.encode(*alt, ser, dest);
     };
 
-    return updv::visit(tagged_descriptions | updv::enumerate, alt_index - 1, encode_alt);
+    return updv::visit(tagged_descriptions | record_views::values | updv::enumerate, alt_index - 1, encode_alt);
   }
 };
 
@@ -1178,7 +1178,7 @@ struct repeat_t {
 
   template<record_like Packet, serializer Serializer, record_like Fields>
   [[nodiscard]] constexpr static auto deduce(Packet &, Serializer &, const Fields &) noexcept(release) {
-    return named_tuple{};
+    return record{};
   }
 
   template<serializer Serializer, record_like Packet, record_like Fields>
