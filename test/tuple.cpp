@@ -10,6 +10,7 @@
 #include <upd/tuple_v2.hpp>
 #include <upd/type_traits.hpp>
 #include <upd/upd.hpp>
+#include <upd/variadic/intersect.hpp>
 
 TEST_CASE("Typelist basic functionalities", "[typelist]") {
   upd::tuple_like2 auto tl = upd::typelist2<int, char, bool>;

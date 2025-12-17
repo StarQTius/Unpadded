@@ -5,7 +5,6 @@
 
 #include "../constexpr.hpp"
 #include "../equivalent_to.hpp"
-#include "../functional.hpp"
 #include "../type_traits.hpp"
 #include "../upd.hpp"
 #include "enumerate.hpp"

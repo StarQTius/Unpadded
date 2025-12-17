@@ -4,9 +4,11 @@
 #include <cstddef>
 #include <type_traits>
 
+#include "../concept/invocable.hpp"
 #include "../constexpr.hpp"
-#include "../functional.hpp"
 #include "../get.hpp"
+#include "../tuple/instantiate.hpp"
+#include "../tuple/typelist.hpp"
 #include "../upd.hpp"
 #include "../with_sequence.hpp"
 #include "apply.hpp"
@@ -18,9 +20,13 @@ namespace upd::tuple_views {
 
 constexpr auto visit =
     []<tuple_like2 Tuple, typename F> [[nodiscard]] (Tuple &&t, std::size_t i, F &&f) -> decltype(auto) {
+  using xxx = decltype(t | transform_type([]<typename T>
+                                            requires invocable<F, T>
+                                          -> std::invoke_result<F, T> {}) |
+                                          instantiate<typelist2_t>);
+
   using retval_type =
-      decltype(apply_type(t | transform_type([]<typename T> -> std::invoke_result<F, T> {}),
-                          []<typename... Metatype> -> std::common_type_t<typename Metatype::type...> {}));
+      decltype(apply_type(xxx{}, []<typename... Metatype> -> std::common_type_t<typename Metatype::type...> {}));
 
   UPD_ASSERT(i < tuple_size_v<Tuple>);
 

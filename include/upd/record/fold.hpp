@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../constexpr.hpp"
-#include "../functional.hpp"
 #include "../upd.hpp"
 #include "../variadic/folder.hpp"
 #include "../with_sequence.hpp"

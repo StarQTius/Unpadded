@@ -74,8 +74,12 @@ struct upd::collector_for<upd::template_box<std::array>> {
   template<tuple_like2 View>
   [[nodiscard]] constexpr static auto collect(View &&view) {
     return UPD_WITH_SEQUENCE(Is, tuple_size_v<View>, &) {
-      using common_type = std::common_reference_t<tuple_element_t<Is, View>...>;
-      return std::array<common_type, sizeof...(Is)>{get<Is>(UPD_FWD(view))...};
+      if constexpr (tuple_size_v<View> > 0) {
+        using common_type = std::common_reference_t<tuple_element_t<Is, View>...>;
+        return std::array<common_type, sizeof...(Is)>{get<Is>(UPD_FWD(view))...};
+      } else {
+        return std::array<int, 0>{};
+      }
     };
   }
 };

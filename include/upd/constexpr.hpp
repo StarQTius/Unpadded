@@ -4,7 +4,7 @@
 #include <type_traits>
 #include <utility>
 
-#include "functional.hpp"
+#include "concept/invocable.hpp"
 #include "upd.hpp"
 
 #define UPD_CONSTEXPR_ASSERT(...)                                                                                      \

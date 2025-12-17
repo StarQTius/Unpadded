@@ -5,7 +5,6 @@
 #include <utility>
 
 #include "../detail/fail_unless_discarded.hpp"
-#include "../functional.hpp"
 #include "../get.hpp"
 #include "../type_traits.hpp"
 #include "../upd.hpp"

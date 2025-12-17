@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../functional.hpp"
 #include "../upd.hpp"
 
 namespace upd::variadic {

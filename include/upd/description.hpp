@@ -14,12 +14,11 @@
 #include <utility>
 #include <variant>
 
+#include "concept/invocable.hpp"
 #include "constexpr.hpp"
 #include "description/serializer.hpp"
 #include "error.hpp"
-#include "functional.hpp"
 #include "get.hpp"
-#include "is_instance_of.hpp"
 #include "record/concat.hpp"
 #include "record/entry.hpp"
 #include "record/filter.hpp"
@@ -38,6 +37,7 @@
 #include "record/tags_of.hpp"
 #include "record/to.hpp"
 #include "record/transform.hpp"
+#include "record/universal_record.hpp"
 #include "record/values.hpp"
 #include "record/zip.hpp"
 #include "safe_operation.hpp"
@@ -54,7 +54,6 @@
 #include "tuple/reverse.hpp"
 #include "tuple/to.hpp"
 #include "tuple/transform.hpp"
-#include "tuple/tuple_element.hpp"
 #include "tuple/tuple_size.hpp"
 #include "tuple/tuple_view_adaptor.hpp"
 #include "tuple/typelist.hpp"
@@ -448,7 +447,7 @@ enum class field_tag {
 
 template<typename T>
 concept field_like = requires(T) { typename T::value_type; } && requires(T x) {
-  { x.default_value() } -> std::same_as<typename T::value_type>;
+  { x.default_value(universal_record{0}) } -> std::same_as<typename T::value_type>;
 };
 
 template<typename T, typename Serializer>
@@ -501,9 +500,9 @@ public:
     auto packet = m_fields | updv::transform([&]<typename Field>(auto, const Field &field) {
                     auto id = keyword2<field.identifier>{};
                     if constexpr (has_tag<field.identifier>(args)) {
-                      return field.make_value(args[id]);
+                      return field.make_value(args, args[id]);
                     } else {
-                      return field.default_value();
+                      return field.default_value(args);
                     }
                   }) |
                   updv::to<record>;
@@ -549,7 +548,7 @@ public:
 
     auto err = error{};
     auto retval =
-        m_fields | updv::transform([](auto, const auto &field) { return field.default_value(); }) | updv::to<record>;
+        m_fields | updv::transform([&](auto, const auto &field) { return field.default_value(); }) | updv::to<record>;
 
     if (!err) {
       updv::for_each(m_fields, [&](auto id, const auto &field) {
@@ -614,9 +613,14 @@ struct field_t {
 
   using value_type = std::conditional_t<is_signed, std::intmax_t, std::uintmax_t>;
 
-  template<typename... Args>
-  [[nodiscard]] constexpr auto make_value(Args &&...args) const -> value_type {
+  template<record_like Context, typename... Args>
+  [[nodiscard]] constexpr auto make_value(const Context &, Args &&...args) const -> value_type {
     return value_type(UPD_FWD(args)...);
+  }
+
+  template<record_like Context>
+  [[nodiscard]] constexpr static auto default_value(const Context &) noexcept(release) -> value_type {
+    return value_type{};
   }
 
   [[nodiscard]] constexpr static auto default_value() noexcept(release) -> value_type { return value_type{}; }
@@ -732,13 +736,18 @@ struct bound_t {
 
   using value_type = std::conditional_t<is_signed, std::intmax_t, std::uintmax_t>;
 
-  template<typename... Args>
-  [[nodiscard]] constexpr auto make_value(Args &&...args) const -> value_type {
+  template<record_like Context, typename... Args>
+  [[nodiscard]] constexpr auto make_value(const Context &, Args &&...args) const -> value_type {
     return value_type{UPD_FWD(args)...};
   }
   using rule_type = Rule;
 
   rule_type rule;
+
+  template<record_like Context>
+  [[nodiscard]] constexpr static auto default_value(const Context &) noexcept(release) -> value_type {
+    return value_type{};
+  }
 
   [[nodiscard]] constexpr static auto default_value() noexcept(release) -> value_type { return value_type{}; }
 
@@ -775,13 +784,18 @@ struct enum_bound_t {
 
   using value_type = Enum;
 
-  template<typename... Args>
-  [[nodiscard]] constexpr auto make_value(Args &&...args) const -> value_type {
+  template<record_like Context, typename... Args>
+  [[nodiscard]] constexpr auto make_value(const Context &, Args &&...args) const -> value_type {
     return value_type{UPD_FWD(args)...};
   }
   using rule_type = Rule;
 
   rule_type rule;
+
+  template<record_like Context>
+  [[nodiscard]] constexpr static auto default_value(const Context &) noexcept(release) -> value_type {
+    return value_type{};
+  }
 
   [[nodiscard]] constexpr static auto default_value() noexcept(release) -> value_type { return value_type{}; }
 
@@ -837,9 +851,14 @@ struct bound_elsewhere_t {
 
   using value_type = std::conditional_t<is_signed, std::intmax_t, std::uintmax_t>;
 
-  template<typename... Args>
-  [[nodiscard]] constexpr auto make_value(Args &&...args) const -> value_type {
+  template<record_like Context, typename... Args>
+  [[nodiscard]] constexpr auto make_value(const Context &, Args &&...args) const -> value_type {
     return value_type{UPD_FWD(args)...};
+  }
+
+  template<record_like Context>
+  [[nodiscard]] constexpr static auto default_value(const Context &) noexcept(release) -> value_type {
+    return value_type{};
   }
 
   [[nodiscard]] constexpr static auto default_value() noexcept(release) -> value_type { return value_type{}; }
@@ -877,9 +896,14 @@ struct enum_bound_elsewhere_t {
 
   using value_type = Enum;
 
-  template<typename... Args>
-  [[nodiscard]] constexpr auto make_value(Args &&...args) const -> value_type {
+  template<record_like Context, typename... Args>
+  [[nodiscard]] constexpr auto make_value(const Context &, Args &&...args) const -> value_type {
     return value_type{UPD_FWD(args)...};
+  }
+
+  template<record_like Context>
+  [[nodiscard]] constexpr static auto default_value(const Context &) noexcept(release) -> value_type {
+    return value_type{};
   }
 
   [[nodiscard]] constexpr static auto default_value() noexcept(release) -> value_type { return value_type{}; }
@@ -935,12 +959,17 @@ struct constant_t {
 
   using value_type = std::intmax_t;
 
-  template<typename... Args>
-  [[nodiscard]] constexpr auto make_value(Args &&...args) const -> value_type {
+  template<record_like Context, typename... Args>
+  [[nodiscard]] constexpr auto make_value(const Context &, Args &&...args) const -> value_type {
     return value_type{UPD_FWD(args)...};
   }
 
   value_type field_value;
+
+  template<record_like Context>
+  [[nodiscard]] constexpr auto default_value(const Context &) const noexcept(release) -> value_type {
+    return field_value;
+  }
 
   [[nodiscard]] constexpr auto default_value() const noexcept(release) -> value_type { return field_value; }
 
@@ -974,14 +1003,19 @@ struct checksum_t {
 
   using value_type = std::uintmax_t;
 
-  template<typename... Args>
-  [[nodiscard]] constexpr auto make_value(Args &&...args) const -> value_type {
+  template<record_like Context, typename... Args>
+  [[nodiscard]] constexpr auto make_value(const Context &, Args &&...args) const -> value_type {
     return value_type(UPD_FWD(args)...);
   }
 
   BinaryOp op;
   value_type init;
   FieldFilter identifier_filter;
+
+  template<record_like Context>
+  [[nodiscard]] constexpr auto default_value(const Context &) const noexcept(release) -> value_type {
+    return init;
+  }
 
   [[nodiscard]] constexpr auto default_value() const noexcept(release) -> value_type { return init; }
 
@@ -1060,22 +1094,21 @@ struct one_of_t {
       tags_of_v<TaggedDescriptions> | tuple_views::transform_type([]<typename T> -> typename T::value_type {}),
       []<typename... Ts> -> std::common_type_t<Ts...> {}));
 
-  template<typename... Args>
-    requires std::constructible_from<value_type, Args...>
-  [[nodiscard]] constexpr auto make_value(Args &&...args) const -> value_type {
-    return value_type{UPD_FWD(args)...};
-  }
+  template<record_like Context, typename... Args>
+  [[nodiscard]] constexpr auto make_value(const Context &ctx, Args &&...args) const -> value_type {
+    namespace updv = upd::tuple_views;
 
-  template<typename Choice>
-    requires(is_instance_of<Choice, choice_t>())
-  [[nodiscard]] constexpr auto make_value(Choice &&ch) const -> value_type {
-    namespace updv = upd::record_views;
+    auto seq = UPD_WITH_SEQUENCE(Is, size) { return std::tuple{expr<Is>...}; };
 
-    auto id_pos = updv::find_tag<ch.code>(tagged_descriptions);
-    using alt_type = tuple_element_t<id_pos + 1, decltype(alternative_types)>;
+    auto code = get<rule_type::from_identifier>(ctx);
+    auto i = updv::dynfind(tags_of_v<TaggedDescriptions>, code);
 
-    return tuple_views::apply(UPD_FWD(ch).arguments, [&](auto &&...args) {
-      return value_type{std::in_place_index<id_pos + 1>, alt_type(UPD_FWD(args)...)};
+    return updv::visit(seq, i, [&](auto i) -> value_type {
+      if constexpr (std::constructible_from<value_type, std::in_place_index_t<i + 1>, Args...>) {
+        return value_type{std::in_place_index<i + 1>, UPD_FWD(args)...};
+      } else {
+        UPD_ASSERT(false);
+      }
     });
   }
 
@@ -1084,7 +1117,12 @@ struct one_of_t {
   rule_type rule;
   TaggedDescriptions tagged_descriptions;
 
-  [[nodiscard]] constexpr static auto default_value() -> value_type { return value_type{}; }
+  template<record_like Context>
+  [[nodiscard]] constexpr auto default_value(const Context &ctx) const -> value_type {
+    return make_value(ctx);
+  }
+
+  [[nodiscard]] constexpr auto default_value() const -> value_type { return value_type{}; }
 
   template<record_like Packet, serializer Serializer, record_like Fields>
   [[nodiscard]] constexpr auto deduce(const Packet &packet, Serializer &, const Fields &) const noexcept(release) {
@@ -1157,8 +1195,8 @@ struct repeat_t {
 
   using value_type = static_vector<typename Description::result_type, Max>;
 
-  template<typename... Args>
-  [[nodiscard]] constexpr auto make_value(Args &&...args) const -> value_type {
+  template<record_like Context, typename... Args>
+  [[nodiscard]] constexpr auto make_value(const Context &, Args &&...args) const -> value_type {
     return value_type{UPD_FWD(args)...};
   }
   using description_type = Description;
@@ -1166,6 +1204,11 @@ struct repeat_t {
 
   Description description;
   Rule rule;
+
+  template<record_like Context>
+  [[nodiscard]] constexpr static auto default_value(const Context &) -> value_type {
+    return value_type{};
+  }
 
   [[nodiscard]] constexpr static auto default_value() -> value_type { return value_type{}; }
 

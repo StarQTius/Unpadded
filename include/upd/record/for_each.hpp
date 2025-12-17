@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../constexpr.hpp"
-#include "../functional.hpp"
 #include "../upd.hpp"
 #include "../with_sequence.hpp"
 #include "get_ith.hpp"

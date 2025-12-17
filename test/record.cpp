@@ -132,6 +132,14 @@ TEST_CASE("Record basic functionalities", "[record]") {
     REQUIRE(!upd::has_tag<upd::name{"d"}>(rec));
     REQUIRE(!upd::has_tag<upd::name{"e"}>(rec));
   }
+
+  SECTION("Convert to another record") {
+    upd::record_like auto rec_ = upd::record{"a"_kw2 = int{}, "b"_kw2 = int{}, "c"_kw2 = int{}};
+    rec_ = rec;
+
+    REQUIRE(rec_ == rec);
+    REQUIRE(decltype(rec_){rec} == rec);
+  }
 }
 
 TEST_CASE("Record views", "[record_view]") {

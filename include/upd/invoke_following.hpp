@@ -1,8 +1,8 @@
 #pragma once
 
-#include <concepts>
 #include <tuple>
 
+#include "concept/invocable.hpp"
 #include "upd.hpp"
 
 namespace upd {
@@ -13,7 +13,7 @@ public:
   constexpr explicit invoke_following(Args... args) : m_args{UPD_FWD(args)...} {}
 
   template<typename F>
-    requires std::invocable<F, Args...>
+    requires invocable<F, Args...>
   constexpr auto operator|(F &&f) -> decltype(auto) {
     return std::apply(UPD_FWD(f), UPD_FWD(m_args));
   }

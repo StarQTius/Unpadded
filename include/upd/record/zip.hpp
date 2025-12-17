@@ -2,22 +2,14 @@
 
 #include <cstddef>
 #include <ranges>
-#include <tuple>
-#include <type_traits>
 #include <utility>
 
 #include "../constexpr.hpp"
 #include "../get.hpp"
-#include "../tuple/concat.hpp"
-#include "../tuple/filter.hpp"
-#include "../tuple/has_type.hpp"
-#include "../tuple/to.hpp"
 #include "../tuple/tuple_size.hpp"
-#include "../type_traits.hpp"
 #include "../upd.hpp"
-#include "../with_sequence.hpp"
+#include "../variadic/intersect.hpp"
 #include "entry.hpp"
-#include "lite_record.hpp"
 #include "record_like.hpp"
 #include "record_view.hpp"
 #include "tags_of.hpp"
@@ -40,30 +32,6 @@ constexpr auto zip = []<record_like Lhs, record_like Rhs>(Lhs &&lhs, Rhs &&rhs) 
 };
 
 } // namespace upd::record_views
-
-namespace upd {
-
-template<metavalue... Xs, metavalue... Ys>
-[[nodiscard]] constexpr auto intersect(std::tuple<Xs...> lhs, std::tuple<Ys...> rhs) noexcept(release) {
-  namespace updv = upd::tuple_views;
-
-  auto merged_view = updv::concat(lhs, rhs);
-  auto merged = UPD_WITH_SEQUENCE(Is, sizeof...(Xs) + sizeof...(Ys), &) {
-    return lite_record{lite_record_node{get<Is>(merged_view), expr<Is>}...};
-  };
-
-  auto inter_with_dup =
-      merged_view |
-      updv::filter([&]<typename T>(typebox<T>) { return !requires { merged.get_by_tag(std::decay_t<T>{}); }; }) |
-      updv::to<std::tuple>;
-
-  return lhs | updv::filter([&]<typename T>(typebox<T>) {
-           return tuple_has_type_v<std::decay_t<T>, decltype(inter_with_dup)>;
-         }) |
-         updv::to<std::tuple>;
-}
-
-} // namespace upd
 
 template<upd::record_like Lhs, upd::record_like Rhs>
 struct upd::record_view_for<upd::record_views::zip_view<Lhs, Rhs>> {

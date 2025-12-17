@@ -28,6 +28,7 @@ constexpr auto release = true;
 #define UPD_FWD(x) static_cast<decltype(x) &&>(x)
 #define UPD_PACK(...) __VA_ARGS__
 #define UPD_SCOPE_OPERATOR(LHS, RHS) LHS::RHS
+#define UPD_INVOKE(INVOCABLE, ...) ((INVOCABLE)(__VA_ARGS__))
 
 namespace upd::detail {};
 

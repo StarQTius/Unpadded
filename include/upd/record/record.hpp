@@ -1,5 +1,6 @@
 #pragma once
 
+#include <concepts>
 #include <cstddef>
 #include <format>
 #include <tuple>
@@ -11,15 +12,19 @@
 #include "../is_instance_of.hpp"
 #include "../tuple/for_each.hpp"
 #include "../upd.hpp"
+#include "../variadic/identical.hpp"
 #include "../variadic/template_box.hpp"
 #include "../with_sequence.hpp"
 #include "apply.hpp"
 #include "as_tuple.hpp"
 #include "entry.hpp"
+#include "get_ith.hpp"
 #include "lite_record.hpp"
+#include "record_element.hpp"
 #include "record_like.hpp"
 #include "record_size.hpp"
 #include "record_tag.hpp"
+#include "tags_of.hpp"
 
 namespace upd {
 
@@ -39,6 +44,14 @@ public:
       : m_storage{lite_record_node<Identifiers, typename std::remove_cvref_t<Entries>::value_type>{
             UPD_FWD(entries).forward()}...} {}
 
+  template<typename Record>
+    requires(is_instance_of<Record, record>() &&
+             variadic::identical(std::tuple{expr<Identifiers>...}, tags_of_v<Record>))
+  constexpr record(Record &&other)
+    requires(std::constructible_from<Ts, decltype(get<Identifiers>(UPD_FWD(other)))> && ...)
+      : m_storage{lite_record_node<Identifiers, record_element_t<Identifiers, Record>>{
+            get<Identifiers>(UPD_FWD(other))}...} {}
+
   template<typename Self, auto Id>
   [[nodiscard]] constexpr auto operator[](this Self &&self, keyword2<Id>) noexcept(release) -> auto && {
     return UPD_FWD(self).m_storage.get_by_tag(expr<Id>);
@@ -51,6 +64,17 @@ private:
 template<typename... Entries>
   requires(is_instance_of<Entries, entry>() && ...)
 explicit record(Entries...) -> record<Entries...>;
+
+template<typename... Es, typename... Fs>
+[[nodiscard]] constexpr auto operator==(const record<Es...> &lhs, const record<Fs...> &rhs) noexcept(release) -> bool {
+  auto lhs_tags = std::tuple{expr<Es::identifier>...};
+  auto rhs_tags = std::tuple{expr<Fs::identifier>...};
+  if constexpr (variadic::identical(lhs_tags, rhs_tags)) {
+    return ((get<Es::identifier>(lhs) == get<Es::identifier>(rhs)) && ...);
+  } else {
+    return false;
+  }
+}
 
 } // namespace upd
 
@@ -66,7 +90,7 @@ template<typename Record, typename Entry>
   requires(is_instance_of<Record, record>() && is_instance_of<Entry, entry>())
 [[nodiscard]] constexpr auto operator,(Record &&rec, Entry &&ent) {
   return UPD_WITH_SEQUENCE(Is, record_size_v<Record>, &) {
-    return record{entry{expr<record_tag_v<Is, Record>>, get<Is>(UPD_FWD(rec))}..., UPD_FWD(ent)};
+    return record{entry{expr<record_tag_v<Is, Record>>, get_ith<Is>(UPD_FWD(rec))}..., UPD_FWD(ent)};
   };
 }
 

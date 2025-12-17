@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../functional.hpp"
 #include "../upd.hpp"
 #include "../with_sequence.hpp"
 #include "get_ith_entry.hpp"

@@ -3,7 +3,6 @@
 #include <cstddef>
 
 #include "../constexpr.hpp"
-#include "../functional.hpp"
 #include "../upd.hpp"
 #include "entry.hpp"
 #include "get_ith.hpp"

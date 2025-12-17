@@ -289,7 +289,7 @@ auto ping_example() -> upd::error {
   std::cout << std::hex;
 
   std::println("Ping: example 1");
-  description.encode(("id"_kw2 = 1, "parameters"_kw2 = upd::choice<instruction_code::ping>()), ser, std::cout, " ");
+  description.encode(("id"_kw2 = 1, "instruction"_kw2 = instruction_code::ping), ser, std::cout, " ");
   std::println("");
   std::println("");
 
@@ -334,11 +334,12 @@ auto read_example() -> upd::error {
   std::cout << std::hex;
 
   std::println("Read: example");
-  description.encode(
-      ("id"_kw2 = 1, "parameters"_kw2 = upd::choice<instruction_code::read>("address"_kw2 = 0x84, "length"_kw2 = 4)),
-      ser,
-      std::cout,
-      " ");
+  description.encode(("id"_kw2 = 1,
+                      "instruction"_kw2 = instruction_code::read,
+                      "parameters"_kw2 = ("address"_kw2 = 0x84, "length"_kw2 = 4)),
+                     ser,
+                     std::cout,
+                     " ");
   std::println("");
   std::println("");
 
@@ -369,12 +370,13 @@ auto write_example() -> upd::error {
   std::cout << std::hex;
 
   std::println("Write: example");
-  description.encode(("id"_kw2 = 1,
-                      "parameters"_kw2 = upd::choice<instruction_code::write>(
-                          "address"_kw2 = 0x74, "data"_kw2 = std::array<std::uint8_t, 4>{0x0, 0x2, 0x0, 0x0})),
-                     ser,
-                     std::cout,
-                     " ");
+  description.encode(
+      ("id"_kw2 = 1,
+       "instruction"_kw2 = instruction_code::write,
+       "parameters"_kw2 = ("address"_kw2 = 0x74, "data"_kw2 = std::array<std::uint8_t, 4>{0x0, 0x2, 0x0, 0x0})),
+      ser,
+      std::cout,
+      " ");
   std::println("");
   std::println("");
 
@@ -404,12 +406,13 @@ auto reg_write_example() -> upd::error {
   std::cout << std::hex;
 
   std::println("Reg Write: example");
-  description.encode(("id"_kw2 = 1,
-                      "parameters"_kw2 = upd::choice<instruction_code::reg_write>(
-                          "address"_kw2 = 0x68, "data"_kw2 = std::array<std::uint8_t, 4>{0xc8, 0x0, 0x0, 0x0})),
-                     ser,
-                     std::cout,
-                     " ");
+  description.encode(
+      ("id"_kw2 = 1,
+       "instruction"_kw2 = instruction_code::reg_write,
+       "parameters"_kw2 = ("address"_kw2 = 0x68, "data"_kw2 = std::array<std::uint8_t, 4>{0xc8, 0x0, 0x0, 0x0})),
+      ser,
+      std::cout,
+      " ");
   std::println("");
   std::println("");
 
@@ -439,7 +442,7 @@ auto action_example() -> upd::error {
   std::cout << std::hex;
 
   std::println("Action: example");
-  description.encode(("id"_kw2 = 1, "parameters"_kw2 = upd::choice<instruction_code::action>()), ser, std::cout, " ");
+  description.encode(("id"_kw2 = 1, "instruction"_kw2 = instruction_code::action), ser, std::cout, " ");
   std::println("");
   std::println("");
 
@@ -469,11 +472,12 @@ auto factory_reset_example() -> upd::error {
   std::cout << std::hex;
 
   std::println("Action: example");
-  description.encode(
-      ("id"_kw2 = 1, "parameters"_kw2 = upd::choice<instruction_code::factory_reset>(factory_reset_target::all_but_id)),
-      ser,
-      std::cout,
-      " ");
+  description.encode(("id"_kw2 = 1,
+                      "instruction"_kw2 = instruction_code::factory_reset,
+                      "parameters"_kw2 = factory_reset_target::all_but_id),
+                     ser,
+                     std::cout,
+                     " ");
   std::println("");
   std::println("");
 
@@ -503,7 +507,7 @@ auto reboot_example() -> upd::error {
   std::cout << std::hex;
 
   std::println("Reboot: example");
-  description.encode(("id"_kw2 = 1, "parameters"_kw2 = upd::choice<instruction_code::reboot>()), ser, std::cout, " ");
+  description.encode(("id"_kw2 = 1, "instruction"_kw2 = instruction_code::reboot), ser, std::cout, " ");
   std::println("");
   std::println("");
 
@@ -534,7 +538,7 @@ auto clear_example() -> upd::error {
 
   std::println("Clear: example");
   description.encode(
-      ("id"_kw2 = 1, "parameters"_kw2 = upd::choice<instruction_code::clear>(clear_target::present_position)),
+      ("id"_kw2 = 1, "instruction"_kw2 = instruction_code::clear, "parameters"_kw2 = clear_target::present_position),
       ser,
       std::cout,
       " ");
@@ -568,8 +572,8 @@ auto control_table_backup_example() -> upd::error {
 
   std::println("Control Table Backup: example");
   description.encode(("id"_kw2 = 1,
-                      "parameters"_kw2 = upd::choice<instruction_code::control_table_backup>(
-                          control_table_backup_target::store_current)),
+                      "instruction"_kw2 = instruction_code::control_table_backup,
+                      "parameters"_kw2 = (control_table_backup_target::store_current)),
                      ser,
                      std::cout,
                      " ");
@@ -602,12 +606,13 @@ auto sync_read_example() -> upd::error {
   std::cout << std::hex;
 
   std::println("Sync Read: example");
-  description.encode(("id"_kw2 = 0xfe,
-                      "parameters"_kw2 = upd::choice<instruction_code::sync_read>(
-                          "address"_kw2 = 0x84, "length"_kw2 = 0x4, "ids"_kw2 = std::array<std::uint8_t, 2>{1, 2})),
-                     ser,
-                     std::cout,
-                     " ");
+  description.encode(
+      ("id"_kw2 = 0xfe,
+       "instruction"_kw2 = instruction_code::sync_read,
+       "parameters"_kw2 = ("address"_kw2 = 0x84, "length"_kw2 = 0x4, "ids"_kw2 = std::array<std::uint8_t, 2>{1, 2})),
+      ser,
+      std::cout,
+      " ");
   std::println("");
   std::println("");
 

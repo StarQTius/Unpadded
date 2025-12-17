@@ -4,12 +4,7 @@
 
 #include "upd.hpp"
 
-#define UPD_INVOKE(INVOCABLE, ...) ((INVOCABLE)(__VA_ARGS__))
-
 namespace upd {
-
-template<typename T, typename... Args>
-concept invocable = requires(T &&x, Args &&...args) { UPD_INVOKE(UPD_FWD(x), UPD_FWD(args)...); };
 
 template<typename F, typename... Args>
 struct invoke_result {

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../functional.hpp"
 #include "../type_traits.hpp"
 #include "../upd.hpp"
 #include "chain.hpp"
