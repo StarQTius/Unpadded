@@ -1,12 +1,14 @@
 #pragma once
 
 #include <concepts>
+#include <cstddef>
 #include <format>
 #include <type_traits>
 
 #include "../constexpr.hpp"
 #include "../upd.hpp"
 #include "name.hpp"
+#include "record_like.hpp"
 
 namespace upd {
 
@@ -71,5 +73,21 @@ struct std::formatter<upd::entry<Identifier, T>> {
 
   [[nodiscard]] constexpr static auto format(const upd::entry<Identifier, T> &e, std::format_context &ctx) {
     return std::format_to(ctx.out(), "{} -> {}", Identifier, e.value);
+  }
+};
+
+template<auto Identifier, typename T>
+struct upd::record_like_for<upd::entry<Identifier, T>> {
+  constexpr static auto size = 1uz;
+
+  template<std::size_t>
+  constexpr static auto tag = Identifier;
+
+  template<auto>
+  using element_type = T;
+
+  template<std::size_t, typename Entry>
+  [[nodiscard]] constexpr static auto get_ith(Entry &&ent) noexcept(release) -> auto && {
+    return UPD_FWD(ent).forward();
   }
 };

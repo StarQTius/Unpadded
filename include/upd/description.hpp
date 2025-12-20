@@ -498,9 +498,8 @@ public:
     namespace updv = record_views;
 
     auto packet = m_fields | updv::transform([&]<typename Field>(auto, const Field &field) {
-                    auto id = keyword2<field.identifier>{};
                     if constexpr (has_tag<field.identifier>(args)) {
-                      return field.make_value(args, args[id]);
+                      return field.make_value(args, get<field.identifier>(args));
                     } else {
                       return field.default_value(args);
                     }
@@ -523,14 +522,14 @@ public:
     encode(args, ser, dest);
   }
 
-  template<std::input_iterator InputIt, serializer Serializer, record_like Context>
+  template<std::input_iterator InputIt, serializer Serializer, record_like Context = upd::record<>>
     requires std::convertible_to<std::iter_value_t<InputIt>, word_t>
   [[nodiscard]] constexpr auto decode(InputIt src, Serializer &ser, const Context &ctx = record{}) const {
     auto null_it = static_cast<word_t *>(nullptr);
     return decode(iterator_stream{src, null_it}, ser, ctx);
   }
 
-  template<std::input_iterator InputIt, serializer Serializer, record_like Context>
+  template<std::input_iterator InputIt, serializer Serializer, record_like Context = upd::record<>>
     requires std::same_as<std::iter_value_t<InputIt>, std::byte>
   [[nodiscard]] constexpr auto decode(InputIt src, Serializer &ser, const Context &ctx = record{}) const {
     namespace stdr = std::ranges;
@@ -542,7 +541,7 @@ public:
     return decode(iterator_stream{std::begin(words), null_it}, ser, ctx);
   }
 
-  template<serializer Serializer, record_like Context>
+  template<serializer Serializer, record_like Context = upd::record<>>
   [[nodiscard]] constexpr auto decode(stream_interface &src, Serializer &ser, const Context &ctx = record{}) const {
     namespace updv = record_views;
 
@@ -581,7 +580,7 @@ public:
     return result_if_no_error(std::move(retval), std::move(err));
   }
 
-  template<serializer Serializer, record_like Context>
+  template<serializer Serializer, record_like Context = upd::record<>>
   [[nodiscard]] constexpr auto decode(stream_interface &&src, Serializer &ser, const Context &ctx = record{}) const {
     return decode(src, ser, ctx);
   }

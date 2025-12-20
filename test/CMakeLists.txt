@@ -12,6 +12,7 @@ file(
 
 add_executable(upd_unitary
   algebra.cpp
+  description.cpp
   record.cpp
   tuple.cpp)
 target_link_libraries(upd_unitary PRIVATE
