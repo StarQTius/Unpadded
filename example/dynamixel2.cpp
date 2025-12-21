@@ -130,7 +130,7 @@ constexpr auto description = [] {
 
   return constant<"header">(0x00fdffff, width<32>) | ufield2<"id", 8> |
          bound<"length">(unsigned_int, width<16>, length_of<"parameters"> / 8 + 3) |
-         bound<"instruction">(enumeration<instruction_code>, width<7>) |
+         efield2<"instruction", instruction_code, 8> |
          one_of<"parameters">(
              value_of<"instruction">,
              when<ping> = empty_description,

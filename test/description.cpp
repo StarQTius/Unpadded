@@ -104,4 +104,20 @@ TEST_CASE("Protocol descriptors", "[descriptor]") {
     descr.encode(("abc"_kw2 = -8), ser, st);
     REQUIRE((*descr.decode(st, ser))["abc"_kw2] == -8);
   }
+
+  SECTION("Encode then decode enumeration field") {
+    enum class abc {
+      a = -34,
+      b = 5,
+      c = 56,
+    };
+
+    auto descr = efield2<"abc", abc, 16>;
+    descr.encode(("abc"_kw2 = abc::a), ser, st);
+    REQUIRE((*descr.decode(st, ser))["abc"_kw2] == abc::a);
+    descr.encode(("abc"_kw2 = abc::b), ser, st);
+    REQUIRE((*descr.decode(st, ser))["abc"_kw2] == abc::b);
+    descr.encode(("abc"_kw2 = abc::c), ser, st);
+    REQUIRE((*descr.decode(st, ser))["abc"_kw2] == abc::c);
+  }
 }
