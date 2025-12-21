@@ -9,6 +9,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <upd/description.hpp>
+#include <upd/description_v2.hpp>
 #include <upd/record.hpp>
 #include <upd/stream_interface.hpp>
 #include <upd/token.hpp>
@@ -91,13 +92,13 @@ TEST_CASE("Protocol descriptors", "[descriptor]") {
   auto st = upd::iterator_stream{buf.begin(), buf.begin()};
 
   SECTION("Encode then decode unsigned field") {
-    auto descr = field<"abc">(upd::unsigned_int, upd::width<16>);
+    auto descr = ufield2<"abc", 16>;
     descr.encode(("abc"_kw2 = 42), ser, st);
     REQUIRE((*descr.decode(st, ser))["abc"_kw2] == 42);
   }
 
   SECTION("Encode then decode signed field") {
-    auto descr = field<"abc">(upd::signed_int, upd::width<15>);
+    auto descr = field2<"abc", 15>;
     descr.encode(("abc"_kw2 = 42), ser, st);
     REQUIRE((*descr.decode(st, ser))["abc"_kw2] == 42);
     descr.encode(("abc"_kw2 = -8), ser, st);

@@ -14,6 +14,7 @@
 #include <variant>
 
 #include <upd/description.hpp>
+#include <upd/description_v2.hpp>
 #include <upd/error.hpp>
 #include <upd/record.hpp>
 #include <upd/stream_interface.hpp>
@@ -127,14 +128,14 @@ constexpr auto description = [] {
 
   using enum instruction_code;
 
-  return constant<"header">(0x00fdffff, width<32>) | field<"id">(unsigned_int, width<8>) |
+  return constant<"header">(0x00fdffff, width<32>) | ufield2<"id", 8> |
          bound<"length">(unsigned_int, width<16>, length_of<"parameters"> / 8 + 3) |
          bound<"instruction">(enumeration<instruction_code>, width<7>) |
          one_of<"parameters">(
              value_of<"instruction">,
              when<ping> = empty_description,
-             when<read> = field<"address">(unsigned_int, width<16>) | field<"length">(unsigned_int, width<16>),
-             when<write> = field<"address">(unsigned_int, width<16>) |
+             when<read> = ufield2<"address", 16> | ufield2<"length", 16>,
+             when<write> = ufield2<"address", 16> |
                            repeat<"data">(field(unsigned_int, width<8>), value_of<"length"> - 3, at_most<1024>),
              when<reg_write> = field<"address">(unsigned_int, width<16>) |
                                repeat<"data">(field(unsigned_int, width<8>), value_of<"length"> - 3, at_most<1024>),
@@ -143,7 +144,7 @@ constexpr auto description = [] {
              when<reboot> = empty_description,
              when<clear> = field(enumeration<clear_target>, width<40>),
              when<control_table_backup> = field(enumeration<control_table_backup_target>, width<40>),
-             when<sync_read> = field<"address">(unsigned_int, width<16>) | field<"length">(unsigned_int, width<16>) |
+             when<sync_read> = ufield2<"address", 16> | ufield2<"length", 16> |
                                repeat<"ids">(field(unsigned_int, width<8>), value_of<"length"> - 3, at_most<1024>)) |
          checksum<"crc">(accumulate_crc, 0, width<16>, all_fields);
 }();
