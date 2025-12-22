@@ -120,4 +120,18 @@ TEST_CASE("Protocol descriptors", "[descriptor]") {
     descr.encode(("abc"_kw2 = abc::c), ser, st);
     REQUIRE((*descr.decode(st, ser))["abc"_kw2] == abc::c);
   }
+
+  SECTION("Encode then decode an anonymous unsigned field") {
+    auto descr = ufield2<upd::anon, 16>;
+    descr.encode(42, ser, st);
+    REQUIRE(*descr.decode(st, ser, upd::record{}) == 42);
+  }
+
+  SECTION("Encode then decode an anonymous signed field") {
+    auto descr = field2<upd::anon, 15>;
+    descr.encode(42, ser, st);
+    REQUIRE(*descr.decode(st, ser, upd::record{}) == 42);
+    descr.encode(-8, ser, st);
+    REQUIRE(*descr.decode(st, ser, upd::record{}) == -8);
+  }
 }

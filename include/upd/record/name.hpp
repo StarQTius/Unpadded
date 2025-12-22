@@ -26,14 +26,16 @@ namespace upd {
 constexpr auto name_max_size = std::size_t{256};
 
 struct name {
+  constexpr name() noexcept(release) : anonymous{true}, string{} {}
+
   template<std::size_t Size>
-  consteval name(const char (&str)[Size]) noexcept(release) : string{} {
+  consteval name(const char (&str)[Size]) noexcept(release) : anonymous{false}, string{} {
     using namespace std::ranges;
 
     copy(str, string);
   }
 
-  consteval name(const char *str) noexcept(release) : string{} {
+  consteval name(const char *str) noexcept(release) : anonymous{false}, string{} {
     using namespace std::ranges;
 
     copy(std::string_view{str}, string);
@@ -41,8 +43,11 @@ struct name {
 
   constexpr operator std::string_view() const noexcept(release) { return std::string_view{string}; }
 
+  bool anonymous;
   char string[name_max_size];
 };
+
+constexpr auto anon = name{};
 
 [[nodiscard]] constexpr inline auto operator==(const name &lhs, const name &rhs) noexcept(release) -> bool {
   return std::string_view{lhs.string} == std::string_view{rhs.string};

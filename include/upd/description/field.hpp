@@ -59,6 +59,33 @@ struct field_t {
   }
 };
 
+template<bool Signedness, std::size_t Width>
+struct anonymous_field_t {
+  constexpr static auto is_signed = Signedness;
+  constexpr static auto width = Width;
+
+  using result_type = std::conditional_t<is_signed, std::intmax_t, std::uintmax_t>;
+
+  template<serializer Serializer>
+  constexpr void encode(result_type value, Serializer &ser, stream_interface &dest) const {
+    if constexpr (is_signed) {
+      ser.serialize_signed(value, upd::width<width>, dest);
+    } else {
+      ser.serialize_unsigned(value, upd::width<width>, dest);
+    }
+  }
+
+  template<serializer Serializer, typename Packet>
+  [[nodiscard]] constexpr auto decode(stream_interface &src, Serializer &ser, const Packet &) const
+      -> result<result_type> {
+    if constexpr (is_signed) {
+      return ser.deserialize_signed(src, upd::width<width>);
+    } else {
+      return ser.deserialize_unsigned(src, upd::width<width>);
+    }
+  }
+};
+
 template<name Identifier, bool Signedness, std::size_t Width>
 [[nodiscard]] constexpr auto field(signedness_t<Signedness>, width_t<Width>) noexcept(release) {
   field_like auto retval = field_t<Identifier, Signedness, Width>{};
@@ -67,9 +94,21 @@ template<name Identifier, bool Signedness, std::size_t Width>
 }
 
 template<name Identifier, std::size_t Width>
-constexpr auto field2 = description{field_t<Identifier, true, Width>{}};
+constexpr auto field2 = [] {
+  if constexpr (Identifier.anonymous) {
+    return anonymous_field_t<true, Width>{};
+  } else {
+    return description{field_t<Identifier, true, Width>{}};
+  }
+}();
 
 template<name Identifier, std::size_t Width>
-constexpr auto ufield2 = description{field_t<Identifier, false, Width>{}};
+constexpr auto ufield2 = [] {
+  if constexpr (Identifier.anonymous) {
+    return anonymous_field_t<false, Width>{};
+  } else {
+    return description{field_t<Identifier, false, Width>{}};
+  }
+}();
 
 } // namespace upd::descriptor
