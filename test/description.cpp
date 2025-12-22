@@ -134,4 +134,18 @@ TEST_CASE("Protocol descriptors", "[descriptor]") {
     descr.encode(-8, ser, st);
     REQUIRE(*descr.decode(st, ser, upd::record{}) == -8);
   }
+
+  SECTION("Encode then decode unsigned field") {
+    auto descr = ufield2<"def", 16> | ubound2<"abc", 16>(upd::value_of<"def"> * 3);
+    descr.encode(("def"_kw2 = 10), ser, st);
+    REQUIRE((*descr.decode(st, ser))["abc"_kw2] == 30);
+  }
+
+  SECTION("Encode then decode signed field") {
+    auto descr = field2<"def", 15> | bound2<"abc", 15>(upd::value_of<"def"> - 10);
+    descr.encode(("def"_kw2 = 5), ser, st);
+    REQUIRE((*descr.decode(st, ser))["abc"_kw2] == -5);
+    descr.encode(("def"_kw2 = 18), ser, st);
+    REQUIRE((*descr.decode(st, ser))["abc"_kw2] == 8);
+  }
 }

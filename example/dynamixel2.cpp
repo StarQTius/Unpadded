@@ -129,8 +129,7 @@ constexpr auto description = [] {
   using enum instruction_code;
 
   return constant<"header">(0x00fdffff, width<32>) | ufield2<"id", 8> |
-         bound<"length">(unsigned_int, width<16>, length_of<"parameters"> / 8 + 3) |
-         efield2<"instruction", instruction_code, 8> |
+         ubound2<"length", 16>(length_of<"parameters"> / 8 + 3) | efield2<"instruction", instruction_code, 8> |
          one_of<"parameters">(value_of<"instruction">,
                               when<ping> = empty_description,
                               when<read> = ufield2<"address", 16> | ufield2<"length", 16>,
@@ -157,7 +156,7 @@ constexpr auto answer_description = [] {
   using enum instruction_code;
 
   return constant<"header">(0x00fdffff, width<32>) | ufield2<"id", 8> |
-         bound<"length">(unsigned_int, width<16>, length_of<"parameters"> / 8 + 4) |
+         ubound2<"length", 16>(length_of<"parameters"> / 8 + 4) |
          constant<"instruction">(std::to_underlying(instruction_code::ping), width<8>) | ufield2<"error", 8> |
          one_of<"parameters">(value_of<"status_of">,
                               when<ping> = ufield2<"model_number", 16> | ufield2<"firmware_version", 8>,
