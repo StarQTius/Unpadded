@@ -95,7 +95,7 @@ template<name Identifier, bool Signedness, std::size_t Width>
 
 template<name Identifier, std::size_t Width>
 constexpr auto field2 = [] {
-  if constexpr (Identifier.anonymous) {
+  if constexpr (Identifier.anonymous()) {
     return anonymous_field_t<true, Width>{};
   } else {
     return description{field_t<Identifier, true, Width>{}};
@@ -104,7 +104,7 @@ constexpr auto field2 = [] {
 
 template<name Identifier, std::size_t Width>
 constexpr auto ufield2 = [] {
-  if constexpr (Identifier.anonymous) {
+  if constexpr (Identifier.anonymous()) {
     return anonymous_field_t<false, Width>{};
   } else {
     return description{field_t<Identifier, false, Width>{}};

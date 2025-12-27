@@ -467,10 +467,6 @@ class description {
   friend constexpr auto operator|(description<_Ts...> lhs, description<Us...> rhs) noexcept(release);
 
 public:
-  constexpr static auto identifiers = typelist2<Ts...> |
-                                      tuple_views::transform_type([]<typename T> -> expr_t<T::identifier> {}) |
-                                      tuple_views::to<names>;
-
   using result_type =
       decltype(typelist2<Ts...> |
                tuple_views::transform_type([]<typename T> -> entry<T::identifier, typename T::value_type> {}) |
