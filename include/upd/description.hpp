@@ -838,50 +838,6 @@ template<name Identifier, typename Enum, std::size_t Width>
   return description{retval};
 }
 
-template<name Identifier, std::size_t Width>
-struct constant_t {
-  constexpr static auto identifier = Identifier;
-  constexpr static auto width = Width;
-
-  using value_type = std::intmax_t;
-
-  template<record_like Context, typename... Args>
-  [[nodiscard]] constexpr auto make_value(const Context &, Args &&...args) const -> value_type {
-    return value_type{UPD_FWD(args)...};
-  }
-
-  value_type field_value;
-
-  template<record_like Context>
-  [[nodiscard]] constexpr auto default_value(const Context &) const noexcept(release) -> value_type {
-    return field_value;
-  }
-
-  [[nodiscard]] constexpr auto default_value() const noexcept(release) -> value_type { return field_value; }
-
-  template<record_like Packet, serializer Serializer, record_like Fields>
-  [[nodiscard]] constexpr static auto deduce(Packet &, Serializer &, const Fields &) noexcept(release) {
-    return record{};
-  }
-
-  template<serializer Serializer, record_like Packet, record_like Fields>
-  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &, const Fields &)
-      -> result<value_type> {
-    return ser.deserialize_unsigned(src, upd::width<width>);
-  }
-
-  template<serializer Serializer>
-  constexpr static void encode(value_type value, Serializer &ser, stream_interface &dest) {
-    return ser.serialize_unsigned(value, upd::width<width>, dest);
-  }
-};
-
-template<name Identifier, typename T, std::size_t Width>
-[[nodiscard]] constexpr auto constant(T n, width_t<Width>) noexcept(release) {
-  auto retval = constant_t<Identifier, Width>{n};
-  return description{retval};
-}
-
 template<auto Identifier, typename Rule, typename TaggedDescriptions>
 struct one_of_t {
   constexpr static auto identifier = Identifier;

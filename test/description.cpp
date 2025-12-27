@@ -176,4 +176,22 @@ TEST_CASE("Protocol descriptors", "[descriptor]") {
     REQUIRE(result["def"_kw2] == 46);
     REQUIRE(result["ghi"_kw2] == 100);
   }
+
+  SECTION("Encode and decode a constant field") {
+    auto descr = constant2<"abc", 32>(0x12345678);
+    descr.encode(upd::record{}, ser, st);
+
+    auto result = *descr.decode(st, ser);
+    REQUIRE(result["abc"_kw2] == 0x12345678);
+  }
+
+  SECTION("Encode and decode a constant enumeration field") {
+    enum class abc { a = 67 };
+
+    auto descr = constant2<"abc", 16>(abc::a);
+    descr.encode(upd::record{}, ser, st);
+
+    auto result = *descr.decode(st, ser);
+    REQUIRE(result["abc"_kw2] == abc::a);
+  }
 }
