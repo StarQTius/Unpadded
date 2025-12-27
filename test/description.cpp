@@ -14,6 +14,7 @@
 #include <upd/static_vector.hpp>
 #include <upd/stream_interface.hpp>
 #include <upd/token.hpp>
+#include <upd/tuple_v2.hpp>
 
 #define BITMASK(N) ((1u << N) - 1u)
 #define NTH_BIT(N) (1u << N)
@@ -163,5 +164,16 @@ TEST_CASE("Protocol descriptors", "[descriptor]") {
     REQUIRE(result["abc"_kw2][0]["def"_kw2] == 4);
     REQUIRE(result["abc"_kw2][1]["def"_kw2] == 8);
     REQUIRE(result["abc"_kw2][2]["def"_kw2] == 16);
+  }
+
+  SECTION("Encode and decode a checksum field") {
+    auto descr = ufield2<"abc", 16> | ufield2<"def", 16> |
+                 checksum2<"ghi", 16>([](auto acc, auto v) { return acc + v; }, all_fields);
+    descr.encode(("abc"_kw2 = 54, "def"_kw2 = 46), ser, st);
+
+    auto result = *descr.decode(st, ser);
+    REQUIRE(result["abc"_kw2] == 54);
+    REQUIRE(result["def"_kw2] == 46);
+    REQUIRE(result["ghi"_kw2] == 100);
   }
 }

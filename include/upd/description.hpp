@@ -21,7 +21,6 @@
 #include "get.hpp"
 #include "record/concat.hpp"
 #include "record/entry.hpp"
-#include "record/filter.hpp"
 #include "record/find.hpp"
 #include "record/fold.hpp"
 #include "record/for_each.hpp"
@@ -39,7 +38,6 @@
 #include "record/transform.hpp"
 #include "record/universal_record.hpp"
 #include "record/values.hpp"
-#include "record/zip.hpp"
 #include "safe_operation.hpp"
 #include "static_vector.hpp"
 #include "stream_interface.hpp"
@@ -413,10 +411,6 @@ private:
 } // namespace upd
 
 namespace upd::descriptor {
-
-struct all_fields_t {};
-
-constexpr auto all_fields = all_fields_t{};
 
 template<name, bool Is_Signed, std::size_t Width>
 constexpr auto field(signedness_t<Is_Signed>, width_t<Width>) noexcept(release);
@@ -886,86 +880,6 @@ template<name Identifier, typename T, std::size_t Width>
 [[nodiscard]] constexpr auto constant(T n, width_t<Width>) noexcept(release) {
   auto retval = constant_t<Identifier, Width>{n};
   return description{retval};
-}
-
-template<name Identifier, typename BinaryOp, std::size_t Width, typename FieldFilter>
-struct checksum_t {
-  constexpr static auto identifier = Identifier;
-  constexpr static auto width = Width;
-
-  using value_type = std::uintmax_t;
-
-  template<record_like Context, typename... Args>
-  [[nodiscard]] constexpr auto make_value(const Context &, Args &&...args) const -> value_type {
-    return value_type(UPD_FWD(args)...);
-  }
-
-  BinaryOp op;
-  value_type init;
-  FieldFilter identifier_filter;
-
-  template<record_like Context>
-  [[nodiscard]] constexpr auto default_value(const Context &) const noexcept(release) -> value_type {
-    return init;
-  }
-
-  [[nodiscard]] constexpr auto default_value() const noexcept(release) -> value_type { return init; }
-
-  template<record_like Packet, serializer Serializer, record_like Fields>
-  [[nodiscard]] constexpr auto deduce(Packet &packet, Serializer &ser, const Fields &fields) const {
-    using namespace upd::literals;
-    namespace updv = upd::record_views;
-
-    struct stream_t : stream_interface {
-      stream_t(const BinaryOp *op, value_type acc) : op{op}, acc{acc} {}
-
-      auto read(std::size_t, word_t *) -> stream_error_t override { return 1; }
-
-      auto write(const word_t *src, std::size_t size) -> stream_error_t override {
-        namespace stdr = std::ranges;
-
-        for (auto w : stdr::subrange{src, src + size}) {
-          acc = UPD_INVOKE(*op, acc, static_cast<value_type>(w));
-        }
-
-        return 0;
-      }
-
-      const BinaryOp *op;
-      value_type acc;
-    } dest{&op, init};
-
-    auto field_filter = [&]<auto Id>(expr_t<Id>, auto) { return UPD_INVOKE(FieldFilter{}, expr<Id>); };
-
-    updv::for_each(updv::zip(packet | updv::filter(field_filter), fields), [&](auto, const auto &value_and_field) {
-      const auto &[value, field] = value_and_field;
-      field.encode(value, ser, dest);
-    });
-
-    return record{entry{expr<identifier>, dest.acc}};
-  }
-
-  template<serializer Serializer, record_like Packet, record_like Fields>
-  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &, const Fields &)
-      -> result<value_type> {
-    return ser.deserialize_unsigned(src, upd::width<width>);
-  }
-
-  template<serializer Serializer>
-  constexpr static void encode(value_type value, Serializer &ser, stream_interface &dest) {
-    return ser.serialize_unsigned(value, upd::width<width>, dest);
-  }
-};
-
-template<name Identifier, typename BinaryOp, std::size_t Width>
-[[nodiscard]] constexpr auto
-checksum(BinaryOp op, std::uintmax_t init, width_t<Width>, all_fields_t) noexcept(release) {
-  auto is_not_this_field = [](auto id) { return expr<id != Identifier>; };
-
-  auto retval =
-      checksum_t<Identifier, BinaryOp, Width, decltype(is_not_this_field)>{std::move(op), init, is_not_this_field};
-
-  return description{std::move(retval)};
 }
 
 template<auto Identifier, typename Rule, typename TaggedDescriptions>

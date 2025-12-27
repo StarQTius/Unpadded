@@ -143,7 +143,7 @@ constexpr auto description = [] {
              when<control_table_backup> = efield2<anon, control_table_backup_target, 40>,
              when<sync_read> = ufield2<"address", 16> | ufield2<"length", 16> |
                                repeat<"ids">(ufield2<anon, 8>, value_of<"length"> - 3)) |
-         checksum<"crc">(accumulate_crc, 0, width<16>, all_fields);
+         checksum2<"crc", 16>(accumulate_crc, all_fields);
 }();
 
 constexpr auto answer_description = [] {
@@ -166,7 +166,7 @@ constexpr auto answer_description = [] {
                               when<reboot> = empty_description,
                               when<control_table_backup> = empty_description,
                               when<sync_read> = repeat<"data">(ufield2<anon, 8>, value_of<"length"> - 4)) |
-         checksum<"crc">(accumulate_crc, 0, width<16>, all_fields);
+         checksum2<"crc", 16>(accumulate_crc, all_fields);
 }();
 
 struct serializer {
