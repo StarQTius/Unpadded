@@ -41,6 +41,10 @@ struct lite_record_node : lite_record_tag_node<Tag>, lite_record_type_node<T> {
 
   constexpr static auto tag = Tag;
 
+  constexpr lite_record_node()
+    requires std::default_initializable<T>
+  = default;
+
   template<typename U>
     requires std::convertible_to<U, T>
   explicit constexpr lite_record_node(U &&v) : value{UPD_FWD(v)} {}
@@ -88,6 +92,10 @@ struct lite_record<lite_record_node<Tags, Ts>...> : lite_record_node<Tags, Ts>..
   using lite_record_node<Tags, Ts>::find_by_type...;
   using lite_record_node<Tags, Ts>::has_tag...;
   using lite_record_node<Tags, Ts>::has_type...;
+
+  constexpr lite_record()
+    requires(std::default_initializable<Ts> && ...)
+  = default;
 
   template<typename... Nodes>
     requires(is_instance_of<Nodes, lite_record_node>() && ...)

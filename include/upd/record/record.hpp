@@ -38,6 +38,10 @@ class record<entry<Identifiers, Ts>...> {
   using storage_type = lite_record<lite_record_node<Identifiers, Ts>...>;
 
 public:
+  constexpr record()
+    requires(std::default_initializable<Ts> && ...)
+  = default;
+
   template<typename... Entries>
     requires(sizeof...(Ts) == sizeof...(Entries) && (is_instance_of<Entries, entry>() && ...))
   constexpr explicit record(Entries &&...entries)

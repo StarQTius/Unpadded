@@ -11,6 +11,7 @@
 #include <upd/description.hpp>
 #include <upd/description_v2.hpp>
 #include <upd/record.hpp>
+#include <upd/static_vector.hpp>
 #include <upd/stream_interface.hpp>
 #include <upd/token.hpp>
 
@@ -147,5 +148,20 @@ TEST_CASE("Protocol descriptors", "[descriptor]") {
     REQUIRE((*descr.decode(st, ser))["abc"_kw2] == -5);
     descr.encode(("def"_kw2 = 18), ser, st);
     REQUIRE((*descr.decode(st, ser))["abc"_kw2] == 8);
+  }
+
+  SECTION("Encode and decode a repeated field") {
+    auto descr = ufield2<"len", 16> | repeat<"abc">(ufield2<"def", 16>, upd::value_of<"len">);
+    descr.encode(
+        ("len"_kw2 = 3,
+         "abc"_kw2 = std::array{upd::record{"def"_kw2 = 4}, upd::record{"def"_kw2 = 8}, upd::record{"def"_kw2 = 16}}),
+        ser,
+        st);
+
+    auto result = *descr.decode(st, ser);
+    REQUIRE(result["len"_kw2] == 3);
+    REQUIRE(result["abc"_kw2][0]["def"_kw2] == 4);
+    REQUIRE(result["abc"_kw2][1]["def"_kw2] == 8);
+    REQUIRE(result["abc"_kw2][2]["def"_kw2] == 16);
   }
 }

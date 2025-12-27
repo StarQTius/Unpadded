@@ -17,6 +17,10 @@ struct entry {
   constexpr static auto identifier = Identifier;
   using value_type = T;
 
+  constexpr entry()
+    requires std::default_initializable<T>
+  = default;
+
   template<typename U>
     requires std::constructible_from<T, U>
   explicit constexpr entry(U &&x) : value{UPD_FWD(x)} {}

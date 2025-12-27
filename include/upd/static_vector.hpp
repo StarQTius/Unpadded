@@ -42,6 +42,22 @@ public:
     }
   }
 
+  constexpr auto operator[](std::size_t i) & noexcept(release) -> auto & {
+    return reinterpret_cast<value_type &>(m_content[i]);
+  }
+
+  constexpr auto operator[](std::size_t i) && noexcept(release) -> auto && {
+    return reinterpret_cast<value_type &&>(m_content[i]);
+  }
+
+  constexpr auto operator[](std::size_t i) const & noexcept(release) -> const auto & {
+    return reinterpret_cast<const value_type &>(m_content[i]);
+  }
+
+  constexpr auto operator[](std::size_t i) const && noexcept(release) -> const auto && {
+    return reinterpret_cast<const value_type &&>(m_content[i]);
+  }
+
   [[nodiscard]] constexpr auto begin() noexcept(release) -> value_type * {
     return reinterpret_cast<value_type *>(m_content.begin());
   }
