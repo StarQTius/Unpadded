@@ -8,6 +8,7 @@
 #include <string_view>
 
 #include <catch2/catch_test_macros.hpp>
+#include <upd/algebra.hpp>
 #include <upd/description.hpp>
 #include <upd/description_v2.hpp>
 #include <upd/record.hpp>

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <format>
 #include <type_traits>
 
 #include "../record/record_like.hpp"
@@ -130,3 +131,31 @@ template<typename Lhs, expression Rhs>
 }
 
 } // namespace upd::algebra
+
+template<upd::algebra::expression Lhs, upd::algebra::expression Rhs>
+struct std::formatter<upd::algebra::add<Lhs, Rhs>> {
+  constexpr static auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
+
+  static auto format(const upd::algebra::add<Lhs, Rhs> &eq, std::format_context &ctx) {
+    auto it = ctx.out();
+
+    it = std::format_to(it, "({} + {})", eq.lhs, eq.rhs);
+
+    ctx.advance_to(it);
+    return it;
+  }
+};
+
+template<upd::algebra::expression Lhs, upd::algebra::expression Rhs>
+struct std::formatter<upd::algebra::substract<Lhs, Rhs>> {
+  constexpr static auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
+
+  static auto format(const upd::algebra::substract<Lhs, Rhs> &eq, std::format_context &ctx) {
+    auto it = ctx.out();
+
+    it = std::format_to(it, "({} - {})", eq.lhs, eq.rhs);
+
+    ctx.advance_to(it);
+    return it;
+  }
+};

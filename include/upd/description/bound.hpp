@@ -2,15 +2,19 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 
+#include "../algebra/system.hpp"
 #include "../constexpr.hpp"
 #include "../description.hpp"
 #include "../error.hpp"
 #include "../record.hpp"
 #include "../stream_interface.hpp"
 #include "../token.hpp"
+#include "../tuple/instantiate.hpp"
+#include "../tuple/tuple_like.hpp"
 #include "../upd.hpp"
 #include "serializer.hpp"
 
@@ -24,29 +28,36 @@ struct bound_t {
 
   using value_type = std::conditional_t<is_signed, std::intmax_t, std::uintmax_t>;
 
-  template<record_like Context, typename... Args>
-  [[nodiscard]] constexpr auto make_value(const Context &, Args &&...args) const -> value_type {
+  template<tuple_like2 System, typename... Args>
+  [[nodiscard]] constexpr auto make_value(const System &, Args &&...args) const -> value_type {
     return value_type{UPD_FWD(args)...};
   }
   using rule_type = Rule;
 
   rule_type rule;
 
-  template<record_like Context>
-  [[nodiscard]] constexpr static auto default_value(const Context &) noexcept(release) -> value_type {
+  template<tuple_like2 System>
+  [[nodiscard]] constexpr static auto default_value(const System &) noexcept(release) -> value_type {
     return value_type{};
   }
 
   [[nodiscard]] constexpr static auto default_value() noexcept(release) -> value_type { return value_type{}; }
 
-  template<record_like Packet, serializer Serializer, record_like Fields>
-  [[nodiscard]] constexpr auto deduce(Packet &packet, Serializer &, const Fields &fields) const {
-    return record{entry{expr<identifier>, rule.deduce(std::as_const(packet), fields)}};
+  template<record_like Packet, serializer Serializer, record_like Fields, tuple_like2 System>
+  [[nodiscard]] constexpr auto deduce(Packet &, Serializer &, const Fields &, const System &sys) const {
+    namespace updv = upd::tuple_views;
+
+    return record{entry{expr<identifier>, algebra::solve_for(value_of<Identifier>, sys)}};
   }
 
-  template<serializer Serializer, record_like Packet, record_like Fields>
-  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &, const Fields &)
-      -> result<value_type> {
+  template<record_like Packet, record_like Fields>
+  [[nodiscard]] constexpr auto rules(const Packet &, const Fields &) const {
+    return std::tuple{value_of<Identifier> = rule};
+  };
+
+  template<serializer Serializer, record_like Packet, record_like Fields, tuple_like2 System>
+  [[nodiscard]] constexpr static auto
+  decode(stream_interface &src, Serializer &ser, const Packet &, const Fields &, const System &) -> result<value_type> {
     if constexpr (is_signed) {
       return ser.deserialize_signed(src, upd::width<width>);
     } else {

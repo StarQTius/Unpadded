@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <tuple>
+#include <type_traits>
 
 #include "../get.hpp"
 #include "../upd.hpp"
@@ -35,11 +36,17 @@ struct upd::tuple_view_for<upd::tuple_views::concat_view<Bases...>> {
   constexpr static auto size = (tuple_size_v<Bases> + ... + 0zu);
 
   template<std::size_t I, typename View>
-  [[nodiscard]] constexpr static auto get(View &&view) -> auto && {
+  [[nodiscard]] constexpr static auto get(View &&view) -> decltype(auto) {
     constexpr auto ni = nested_indices_v<tuple_size_v<Bases>...>[I];
     constexpr auto i = ni.second;
     constexpr auto j = ni.first;
 
-    return upd::get<j>(upd::get<i>(UPD_FWD(view).bases));
+    using intermediate_type = decltype(upd::get<i>(UPD_FWD(view).bases));
+
+    if constexpr (std::is_reference_v<intermediate_type>) {
+      return upd::get<j>(upd::get<i>(UPD_FWD(view).bases));
+    } else {
+      return auto{upd::get<j>(upd::get<i>(UPD_FWD(view).bases))};
+    }
   }
 };

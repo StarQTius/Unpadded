@@ -293,6 +293,29 @@ TEST_CASE("Record views", "[record_view]") {
     REQUIRE(&upd::get<1>(view) == &rec["b"_kw2]);
     REQUIRE(&upd::get<2>(view) == &rec["c"_kw2]);
   }
+
+  SECTION("Join viewed record together") {
+    upd::record_view auto view = rec | updv::transform([](auto k, auto v) { return upd::entry{k, v}; }) |
+                                 updv::join([](auto, auto k) { return k; });
+
+    REQUIRE(upd::get<upd::name{"a"}>(view) == upd::get<upd::name{"a"}>(rec));
+    REQUIRE(upd::get<upd::name{"b"}>(view) == upd::get<upd::name{"b"}>(rec));
+    REQUIRE(upd::get<upd::name{"c"}>(view) == upd::get<upd::name{"c"}>(rec));
+
+    upd::regular_record auto rec_ = view | updv::to<upd::record>;
+
+    REQUIRE(upd::get<upd::name{"a"}>(rec_) == upd::get<upd::name{"a"}>(rec));
+    REQUIRE(upd::get<upd::name{"b"}>(rec_) == upd::get<upd::name{"b"}>(rec));
+    REQUIRE(upd::get<upd::name{"c"}>(rec_) == upd::get<upd::name{"c"}>(rec));
+  }
+
+  SECTION("Take elements until a tag is met") {
+    upd::record_view auto view = rec | updv::take_until<upd::name{"b"}>;
+
+    REQUIRE(&upd::get<upd::name{"a"}>(view) == &upd::get<upd::name{"a"}>(rec));
+    REQUIRE(&upd::get<upd::name{"b"}>(view) == &upd::get<upd::name{"b"}>(rec));
+    REQUIRE(!upd::has_tag<upd::name{"c"}>(view));
+  }
 }
 
 TEST_CASE("Algorithms on records", "[record_algorithm]") {

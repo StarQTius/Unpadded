@@ -2,6 +2,7 @@
 
 #include <concepts>
 #include <cstddef>
+#include <format>
 #include <type_traits>
 #include <utility>
 
@@ -9,6 +10,8 @@
 #include "../implementation_of.hpp"
 #include "../upd.hpp"
 #include "../variadic_concept.hpp"
+#include "../with_sequence.hpp"
+#include "tuple_size.hpp"
 
 namespace upd {
 
@@ -40,4 +43,33 @@ template<std::size_t I, typename Tuple>
   requires upd::implementation_of<Tuple, upd::tuple_like_for>
 struct std::tuple_element<I, Tuple> {
   using type = typename upd::tuple_like_for<std::remove_cvref_t<Tuple>>::template element_type<I>;
+};
+
+template<upd::tuple_like2 TupleLike>
+struct std::formatter<TupleLike> {
+  constexpr static auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
+
+  template<typename Tuple>
+  static auto format(const Tuple &t, std::format_context &ctx) {
+    auto it = ctx.out();
+    it = std::format_to(it, "(");
+
+    auto first = true;
+    UPD_WITH_SEQUENCE(Is, upd::tuple_size_v<Tuple>, &) {
+      auto format_elem = [&](const auto &e) {
+        if (first) {
+          it = std::format_to(it, "{}", e);
+          first = false;
+        } else {
+          it = std::format_to(it, ", {}", e);
+        }
+      };
+
+      (format_elem(upd::get<Is>(t)), ...);
+    };
+    it = std::format_to(it, ")");
+
+    ctx.advance_to(it);
+    return it;
+  }
 };

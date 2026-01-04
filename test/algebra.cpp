@@ -1,6 +1,9 @@
+#include <tuple>
+
 #include <catch2/catch_test_macros.hpp>
 #include <upd/algebra.hpp>
 #include <upd/record.hpp>
+#include <upd/tuple_v2.hpp>
 
 TEST_CASE("Independent equation side", "[algebra][side]") {
   using namespace upd::algebra::literals;
@@ -110,5 +113,23 @@ TEST_CASE("Two-variable equation", "[algebra][equation]") {
     auto eq4 = ("y"_var = 6 - 7 * "x"_var).isolate("x"_var);
     REQUIRE(eq4.lhs == "x"_var.expr);
     REQUIRE(eq4.rhs == ((6 - "y"_var) / 7).expr);
+  }
+}
+
+TEST_CASE("System", "[algebra][system]") {
+  using namespace upd::algebra::literals;
+  namespace updv = upd::tuple_views;
+
+  auto sys = std::tuple{"y"_var = 2 * "x"_var + 3, "z"_var = 4 * "x"_var - 2, "x"_var = 3 * "a"_var - 11};
+
+  SECTION("Substitute a variable") {
+    auto y = solve_for("y"_var, updv::concat(sys, std::tuple{"x"_var = 4}));
+    REQUIRE(y == 11);
+
+    auto z = solve_for("z"_var, updv::concat(sys, std::tuple{"x"_var = 4}));
+    REQUIRE(z == 14);
+
+    auto a = solve_for("a"_var, updv::concat(sys, std::tuple{"x"_var = 4}));
+    REQUIRE(a == 5);
   }
 }

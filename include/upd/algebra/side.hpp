@@ -1,7 +1,9 @@
 #pragma once
 
+#include <functional>
 #include <type_traits>
 
+#include "../concept/invocable.hpp"
 #include "../constexpr.hpp"
 #include "../is_convertible_to_instance_of.hpp"
 #include "../record/lite_record.hpp"
@@ -39,7 +41,7 @@ struct side {
     auto retval = substitute(expr, lite_record{lite_record_node{upd::expr<lets.var.name>, lets.val}...});
 
     using retval_type = decltype(retval);
-    UPD_STATIC_ASSERT(std::is_arithmetic_v<retval_type>,
+    UPD_STATIC_ASSERT(std::is_scalar_v<retval_type>,
                       "Substitution resulted in value of type `{}` which is not an arithmetic type",
                       typeid(retval_type));
 
@@ -47,7 +49,7 @@ struct side {
   }
 
   template<typename... Ts>
-    requires(is_convertible_to_instance_of<Ts, let>() && ...)
+    requires(sizeof...(Ts) > 0 && (is_convertible_to_instance_of<Ts, let>() && ...))
   [[nodiscard]] constexpr auto calculate(const Ts &...xs) const noexcept(release) {
     return calculate(let{xs}...);
   }
@@ -61,11 +63,28 @@ struct side {
   }
 
   template<typename Self, typename T>
-    requires std::is_arithmetic_v<T>
+    requires std::is_scalar_v<T>
   [[nodiscard]] constexpr auto operator=(this Self &&self, T value) noexcept(release) {
     return equation{
         .lhs = UPD_FWD(self).expr,
         .rhs = value,
+    };
+  }
+
+  template<typename Self, typename T>
+    requires std::is_scalar_v<T>
+  [[nodiscard]] constexpr auto operator=(this Self &&self, std::reference_wrapper<T> ref) noexcept(release) {
+    return equation{
+        .lhs = UPD_FWD(self).expr,
+        .rhs = ref,
+    };
+  }
+
+  template<typename Self, invocable F>
+  [[nodiscard]] constexpr auto operator=(this Self &&self, F &&f) noexcept(release) {
+    return equation{
+        .lhs = UPD_FWD(self).expr,
+        .rhs = UPD_FWD(f),
     };
   }
 

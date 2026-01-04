@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <tuple>
 #include <type_traits>
 
 #include "../description.hpp"
@@ -9,6 +10,7 @@
 #include "../record.hpp"
 #include "../stream_interface.hpp"
 #include "../token.hpp"
+#include "../tuple/tuple_like.hpp"
 #include "../upd.hpp"
 #include "serializer.hpp"
 
@@ -21,28 +23,33 @@ struct constant_t {
 
   using value_type = std::uintmax_t;
 
-  template<record_like Context, typename... Args>
-  [[nodiscard]] constexpr auto make_value(const Context &, Args &&...args) const -> value_type {
+  template<tuple_like2 System, typename... Args>
+  [[nodiscard]] constexpr auto make_value(const System &, Args &&...args) const -> value_type {
     return value_type{UPD_FWD(args)...};
   }
 
   value_type field_value;
 
-  template<record_like Context>
-  [[nodiscard]] constexpr auto default_value(const Context &) const noexcept(release) -> value_type {
+  template<tuple_like2 System>
+  [[nodiscard]] constexpr auto default_value(const System &) const noexcept(release) -> value_type {
     return field_value;
   }
 
   [[nodiscard]] constexpr auto default_value() const noexcept(release) -> value_type { return field_value; }
 
-  template<record_like Packet, serializer Serializer, record_like Fields>
-  [[nodiscard]] constexpr static auto deduce(Packet &, Serializer &, const Fields &) noexcept(release) {
+  template<record_like Packet, serializer Serializer, record_like Fields, tuple_like2 System>
+  [[nodiscard]] constexpr static auto deduce(Packet &, Serializer &, const Fields &, const System &) noexcept(release) {
     return record{};
   }
 
-  template<serializer Serializer, record_like Packet, record_like Fields>
-  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &, const Fields &)
-      -> result<value_type> {
+  template<record_like Packet, record_like Fields>
+  [[nodiscard]] constexpr auto rules(const Packet &, const Fields &) const {
+    return std::tuple{};
+  }
+
+  template<serializer Serializer, record_like Packet, record_like Fields, tuple_like2 System>
+  [[nodiscard]] constexpr static auto
+  decode(stream_interface &src, Serializer &ser, const Packet &, const Fields &, const System &) -> result<value_type> {
     return ser.deserialize_unsigned(src, upd::width<width>);
   }
 
@@ -59,26 +66,31 @@ struct enumeration_constant_t {
 
   using value_type = Enum;
 
-  template<record_like Context, typename... Args>
-  [[nodiscard]] constexpr auto make_value(const Context &, Args &&...args) const -> value_type {
+  template<tuple_like2 System, typename... Args>
+  [[nodiscard]] constexpr auto make_value(const System &, Args &&...args) const -> value_type {
     return value_type{UPD_FWD(args)...};
   }
 
-  template<record_like Context>
-  [[nodiscard]] constexpr auto default_value(const Context &) const noexcept(release) -> value_type {
+  template<tuple_like2 System>
+  [[nodiscard]] constexpr auto default_value(const System &) const noexcept(release) -> value_type {
     return field_value;
   }
 
   [[nodiscard]] constexpr auto default_value() const noexcept(release) -> value_type { return field_value; }
 
-  template<record_like Packet, serializer Serializer, record_like Fields>
-  [[nodiscard]] constexpr static auto deduce(Packet &, Serializer &, const Fields &) noexcept(release) {
+  template<record_like Packet, serializer Serializer, record_like Fields, tuple_like2 System>
+  [[nodiscard]] constexpr static auto deduce(Packet &, Serializer &, const Fields &, const System &) noexcept(release) {
     return record{};
   }
 
-  template<serializer Serializer, record_like Packet, record_like Fields>
-  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &, const Fields &)
-      -> result<value_type> {
+  template<record_like Packet, record_like Fields>
+  [[nodiscard]] constexpr auto rules(const Packet &, const Fields &) const {
+    return std::tuple{};
+  }
+
+  template<serializer Serializer, record_like Packet, record_like Fields, tuple_like2 System>
+  [[nodiscard]] constexpr static auto
+  decode(stream_interface &src, Serializer &ser, const Packet &, const Fields &, const System &) -> result<value_type> {
     return static_cast<Enum>(ser.deserialize_unsigned(src, upd::width<width>));
   }
 

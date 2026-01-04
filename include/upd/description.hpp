@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <format>
 #include <iosfwd>
 #include <iterator>
 #include <limits>
@@ -14,13 +15,17 @@
 #include <utility>
 #include <variant>
 
+#include "algebra/side.hpp"
+#include "algebra/variable.hpp"
 #include "concept/invocable.hpp"
 #include "constexpr.hpp"
 #include "description/serializer.hpp"
 #include "error.hpp"
 #include "get.hpp"
+#include "is_instance_of.hpp"
 #include "record/concat.hpp"
 #include "record/entry.hpp"
+#include "record/filter.hpp"
 #include "record/find.hpp"
 #include "record/fold.hpp"
 #include "record/for_each.hpp"
@@ -30,10 +35,12 @@
 #include "record/join.hpp"
 #include "record/name.hpp"
 #include "record/record.hpp"
+#include "record/record_element.hpp"
 #include "record/record_like.hpp"
 #include "record/record_size.hpp"
 #include "record/tags.hpp"
 #include "record/tags_of.hpp"
+#include "record/take.hpp"
 #include "record/to.hpp"
 #include "record/transform.hpp"
 #include "record/universal_record.hpp"
@@ -49,13 +56,16 @@
 #include "tuple/enumerate.hpp"
 #include "tuple/find.hpp"
 #include "tuple/fold.hpp"
+#include "tuple/join.hpp"
 #include "tuple/reverse.hpp"
 #include "tuple/to.hpp"
 #include "tuple/transform.hpp"
+#include "tuple/tuple_like.hpp"
 #include "tuple/tuple_size.hpp"
 #include "tuple/tuple_view_adaptor.hpp"
 #include "tuple/typelist.hpp"
 #include "tuple/visit.hpp"
+#include "type_traits.hpp"
 #include "upd.hpp"
 #include "with_sequence.hpp"
 
@@ -243,6 +253,10 @@ template<typename... Ts, typename Field>
                                      const Field &field) noexcept(release) -> std::size_t {
   namespace updv = upd::tuple_views;
   auto alt_index = sum_of_field_values.index();
+  if (alt_index == 0) {
+    return 0;
+  }
+
   auto seq = UPD_WITH_SEQUENCE(Is, sizeof...(Ts) - 1, &) { return std::tuple{expr<Is>...}; };
   return updv::visit(seq, alt_index - 1, [&](auto i) {
     const auto &field_value = *std::get_if<i + 1>(&sum_of_field_values);
@@ -277,24 +291,30 @@ template<typename T, std::size_t Max, typename Field>
   return stdr::fold_left(svec, 0uz, [&](auto acc, const auto &elem) { return acc + bitsize(elem, field.description); });
 }
 
-template<name Identifier>
-constexpr auto value_of = field_expression_t{
-    expr<Identifier>, [](auto &packet, const auto &) -> auto & { return get<Identifier>(packet); }, {}};
+enum class vartype {
+  value,
+  length,
+  count,
+  code,
+};
+
+template<std::size_t N>
+struct varname {
+  vartype type;
+  name<N> id;
+};
 
 template<name Identifier>
-constexpr auto length_of = field_expression_t{
-    expr<Identifier>,
-    [](const auto &packet, const auto &fields) {
-      namespace updv = upd::record_views;
-
-      auto field_pos = updv::find_if(fields, [](auto id, const auto &) { return expr<id == Identifier>; });
-      return static_cast<std::uint16_t>(bitsize(get<Identifier>(packet), get_ith<field_pos>(fields)));
-    },
-    {}};
+constexpr auto value_of = upd::algebra::side{upd::algebra::variable<varname{vartype::value, Identifier}>{}};
 
 template<name Identifier>
-constexpr auto code_of = field_expression_t{
-    expr<Identifier>, [](const auto &packet, const auto &) { return packet[expr<Identifier>].index(); }, {}};
+constexpr auto length_of = upd::algebra::side{upd::algebra::variable<varname{vartype::length, Identifier}>{}};
+
+template<name Identifier>
+constexpr auto count_of = upd::algebra::side{upd::algebra::variable<varname{vartype::count, Identifier}>{}};
+
+template<name Identifier>
+constexpr auto code_of = upd::algebra::side{upd::algebra::variable<varname{vartype::code, Identifier}>{}};
 
 template<auto Match, typename Result>
 struct when_then_t {
@@ -440,9 +460,7 @@ enum class field_tag {
 };
 
 template<typename T>
-concept field_like = requires(T) { typename T::value_type; } && requires(T x) {
-  { x.default_value(universal_record{0}) } -> std::same_as<typename T::value_type>;
-};
+concept field_like = true;
 
 template<typename T, typename Serializer>
 concept deducible_field = field_like<T> && serializer<Serializer> && requires(T x, Serializer ser, record<> packet) {
@@ -487,17 +505,37 @@ public:
   constexpr void encode(const Args &args, Serializer &ser, stream_interface &dest) const {
     namespace updv = record_views;
 
+    auto presys = m_fields | updv::values |
+                  tuple_views::transform([&](const auto &field) { return field.rules(args, m_fields); }) |
+                  tuple_views::join | tuple_views::to<std::tuple>;
+
+    auto presys2 = args | updv::filter([]<auto Tag, typename T>(expr_t<Tag>, typebox<T>) {
+                     return std::is_scalar_v<std::remove_cvref_t<T>>;
+                   }) |
+                   updv::transform([](auto id, auto v) { return value_of<id.value> = v; }) | updv::values |
+                   tuple_views::to<std::tuple>;
+
     auto packet = m_fields | updv::transform([&]<typename Field>(auto, const Field &field) {
                     if constexpr (has_tag<field.identifier>(args)) {
-                      return field.make_value(args, get<field.identifier>(args));
+                      return field.make_value(tuple_views::concat(presys, presys2), get<field.identifier>(args));
                     } else {
-                      return field.default_value(args);
+                      return field.default_value(tuple_views::concat(presys, presys2));
                     }
                   }) |
                   updv::to<record>;
 
-    updv::for_each(m_fields, [&](auto, const auto &field) {
-      updv::for_each(field.deduce(packet, ser, m_fields),
+    auto sys = m_fields | updv::values |
+               tuple_views::transform([&](const auto &field) { return field.rules(packet, m_fields); }) |
+               tuple_views::join | tuple_views::to<std::tuple>;
+
+    updv::for_each(m_fields, [&](auto id, const auto &field) {
+      auto postsys = packet | updv::take_until<id.value> |
+                     updv::filter([]<auto Tag, typename T>(expr_t<Tag>, typebox<T>) {
+                       return std::is_scalar_v<std::remove_cvref_t<T>>;
+                     }) |
+                     updv::transform([](auto id, auto v) { return value_of<id.value> = v; }) | updv::values |
+                     tuple_views::to<std::tuple>;
+      updv::for_each(field.deduce(packet, ser, m_fields, tuple_views::concat(sys, postsys)),
                      [&](auto id, const auto &named_value) { packet[keyword2<id.value>{}] = named_value; });
     });
 
@@ -512,38 +550,60 @@ public:
     encode(args, ser, dest);
   }
 
-  template<std::input_iterator InputIt, serializer Serializer, record_like Context = upd::record<>>
+  template<std::input_iterator InputIt,
+           serializer Serializer,
+           record_like Context = upd::record<>,
+           tuple_like2 System = std::tuple<>>
     requires std::convertible_to<std::iter_value_t<InputIt>, word_t>
-  [[nodiscard]] constexpr auto decode(InputIt src, Serializer &ser, const Context &ctx = record{}) const {
+  [[nodiscard]] constexpr auto
+  decode(InputIt src, Serializer &ser, const Context &ctx = record{}, const System &sys = std::tuple{}) const {
     auto null_it = static_cast<word_t *>(nullptr);
-    return decode(iterator_stream{src, null_it}, ser, ctx);
+    return decode(iterator_stream{src, null_it}, ser, ctx, sys);
   }
 
-  template<std::input_iterator InputIt, serializer Serializer, record_like Context = upd::record<>>
+  template<std::input_iterator InputIt,
+           serializer Serializer,
+           record_like Context = upd::record<>,
+           tuple_like2 System = std::tuple<>>
     requires std::same_as<std::iter_value_t<InputIt>, std::byte>
-  [[nodiscard]] constexpr auto decode(InputIt src, Serializer &ser, const Context &ctx = record{}) const {
+  [[nodiscard]] constexpr auto
+  decode(InputIt src, Serializer &ser, const Context &ctx = record{}, const System &sys = std::tuple{}) const {
     namespace stdr = std::ranges;
     namespace stdv = std::views;
 
     auto words = stdr::subrange(src, std::unreachable_sentinel) | stdv::transform(std::to_integer<word_t>);
 
     auto null_it = static_cast<word_t *>(nullptr);
-    return decode(iterator_stream{std::begin(words), null_it}, ser, ctx);
+    return decode(iterator_stream{std::begin(words), null_it}, ser, ctx, sys);
   }
 
-  template<serializer Serializer, record_like Context = upd::record<>>
-  [[nodiscard]] constexpr auto decode(stream_interface &src, Serializer &ser, const Context &ctx = record{}) const {
+  template<serializer Serializer, record_like Context = upd::record<>, tuple_like2 System = std::tuple<>>
+  [[nodiscard]] constexpr auto decode(stream_interface &src,
+                                      Serializer &ser,
+                                      const Context &ctx = record{},
+                                      const System &presys = std::tuple{}) const {
     namespace updv = record_views;
 
     auto err = error{};
     auto retval =
         m_fields | updv::transform([&](auto, const auto &field) { return field.default_value(); }) | updv::to<record>;
 
+    auto sys = tuple_views::concat(presys, m_fields | updv::values | tuple_views::transform([&](const auto &field) {
+                                             return field.rules(retval, m_fields);
+                                           }) | tuple_views::join) |
+               tuple_views::to<std::tuple>;
+
     if (!err) {
       updv::for_each(m_fields, [&](auto id, const auto &field) {
         ser.checkpoint(id.value.string);
         auto packet = updv::concat(std::as_const(retval), ctx);
-        auto maybe_field_value = field.decode(src, ser, packet, m_fields);
+        auto postsys = retval | updv::take_until<id.value> |
+                       updv::filter([]<auto Tag, typename T>(expr_t<Tag>, typebox<T>) {
+                         return std::is_scalar_v<std::remove_cvref_t<T>>;
+                       }) |
+                       updv::transform([](auto id, auto v) { return value_of<id.value> = v; }) | updv::values |
+                       tuple_views::to<std::tuple>;
+        auto maybe_field_value = field.decode(src, ser, packet, m_fields, tuple_views::concat(sys, postsys));
         if (maybe_field_value) {
           get<id.value>(retval) = *maybe_field_value;
         } else {
@@ -554,8 +614,14 @@ public:
 
     if (!err) {
       auto merged = updv::concat(std::as_const(retval), ctx);
-      auto deduced = m_fields |
-                     updv::transform([&](auto, const auto &field) { return field.deduce(retval, ser, m_fields); }) |
+      auto postsys = retval | updv::filter([]<auto Tag, typename T>(expr_t<Tag>, typebox<T>) {
+                       return std::is_scalar_v<std::remove_cvref_t<T>>;
+                     }) |
+                     updv::transform([](auto id, auto v) { return value_of<id.value> = v; }) | updv::values |
+                     tuple_views::to<std::tuple>;
+      auto deduced = m_fields | updv::transform([&](auto, const auto &field) {
+                       return field.deduce(retval, ser, m_fields, tuple_views::concat(sys, postsys));
+                     }) |
                      updv::join([](auto, auto k) { return k; }) | updv::to<record>;
 
       updv::for_each(deduced, [&](auto id, const auto &ded) {
@@ -570,9 +636,12 @@ public:
     return result_if_no_error(std::move(retval), std::move(err));
   }
 
-  template<serializer Serializer, record_like Context = upd::record<>>
-  [[nodiscard]] constexpr auto decode(stream_interface &&src, Serializer &ser, const Context &ctx = record{}) const {
-    return decode(src, ser, ctx);
+  template<serializer Serializer, record_like Context = upd::record<>, tuple_like2 System = std::tuple<>>
+  [[nodiscard]] constexpr auto decode(stream_interface &&src,
+                                      Serializer &ser,
+                                      const Context &ctx = record{},
+                                      const System &sys = std::tuple{}) const {
+    return decode(src, ser, ctx, sys);
   }
 
   storage_type m_fields;
@@ -852,13 +921,13 @@ struct one_of_t {
       tags_of_v<TaggedDescriptions> | tuple_views::transform_type([]<typename T> -> typename T::value_type {}),
       []<typename... Ts> -> std::common_type_t<Ts...> {}));
 
-  template<record_like Context, typename... Args>
-  [[nodiscard]] constexpr auto make_value(const Context &ctx, Args &&...args) const -> value_type {
+  template<tuple_like2 System, typename... Args>
+  [[nodiscard]] constexpr auto make_value(const System &sys, Args &&...args) const -> value_type {
     namespace updv = upd::tuple_views;
 
     auto seq = UPD_WITH_SEQUENCE(Is, size) { return std::tuple{expr<Is>...}; };
 
-    auto code = get<rule_type::from_identifier>(ctx);
+    auto code = solve_for(code_of<Identifier>, sys);
     auto i = updv::dynfind(tags_of_v<TaggedDescriptions>, code);
 
     return updv::visit(seq, i, [&](auto i) -> value_type {
@@ -875,30 +944,42 @@ struct one_of_t {
   rule_type rule;
   TaggedDescriptions tagged_descriptions;
 
-  template<record_like Context>
-  [[nodiscard]] constexpr auto default_value(const Context &ctx) const -> value_type {
-    return make_value(ctx);
+  template<tuple_like2 System>
+  [[nodiscard]] constexpr auto default_value(const System &sys) const -> value_type {
+    return make_value(sys);
   }
 
   [[nodiscard]] constexpr auto default_value() const -> value_type { return value_type{}; }
 
-  template<record_like Packet, serializer Serializer, record_like Fields>
-  [[nodiscard]] constexpr auto deduce(const Packet &packet, Serializer &, const Fields &) const noexcept(release) {
-    namespace updv = upd::tuple_views;
-
-    auto id_pos = get<identifier>(packet).index() - 1;
-    auto id = updv::visit(tagged_descriptions | record_views::tags, id_pos, [&](auto id) -> tag_type { return id; });
-    return record{entry{expr<rule_type::from_identifier>, UPD_INVOKE(inverse(rule.chain), id)}};
+  template<record_like Packet, serializer Serializer, record_like Fields, tuple_like2 System>
+  [[nodiscard]] constexpr auto deduce(const Packet &, Serializer &, const Fields &, const System &) const
+      noexcept(release) {
+    return record{};
   }
 
-  template<serializer Serializer, record_like Packet, record_like Fields>
+  template<record_like Packet, record_like Fields>
+  [[nodiscard]] constexpr auto rules(const Packet &packet, const Fields &fields) const {
+    return std::tuple{code_of<Identifier> = rule, length_of<Identifier> = [&] {
+                        if constexpr (has_tag<Identifier>(packet)) {
+                          if constexpr (is_instance_of<record_element_t<Identifier, Packet>, std::variant>()) {
+                            return bitsize(get<Identifier>(packet), get<Identifier>(fields));
+                          } else {
+                            return 0uz;
+                          }
+                        } else {
+                          return 0uz;
+                        }
+                      }};
+  }
+
+  template<serializer Serializer, record_like Packet, record_like Fields, tuple_like2 System>
   [[nodiscard]] constexpr auto
-  decode(stream_interface &src, Serializer &ser, const Packet &packet, const Fields &fields) const
+  decode(stream_interface &src, Serializer &ser, const Packet &packet, const Fields &, const System &sys) const
       -> result<value_type> {
     namespace stdr = std::ranges;
     namespace updv = upd::tuple_views;
 
-    auto id = rule.deduce(packet, fields);
+    auto id = solve_for(code_of<Identifier>, sys);
     auto id_pos = updv::dynfind(tagged_descriptions | record_views::tags, id);
 
     if (id_pos == record_size_v<TaggedDescriptions>) {
@@ -908,7 +989,7 @@ struct one_of_t {
     auto make_alt = [&](const auto &id_pos_and_descr) {
       const auto &[id_pos, descr] = id_pos_and_descr;
       auto make_retval = [&](auto &&alt) { return value_type{std::in_place_index<id_pos + 1>, UPD_FWD(alt)}; };
-      auto retval = descr.decode(src, ser, packet).transform(make_retval);
+      auto retval = descr.decode(src, ser, packet, sys).transform(make_retval);
       return retval;
     };
 
@@ -967,3 +1048,34 @@ namespace upd::literals {
 }
 
 } // namespace upd::literals
+
+template<std::size_t N>
+struct std::formatter<upd::varname<N>> {
+  constexpr static auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
+
+  static auto format(upd::varname<N> vn, std::format_context &ctx) {
+    auto it = ctx.out();
+
+    switch (vn.type) {
+    case upd::vartype::value:
+      it = std::format_to(it, "[value of ");
+      break;
+    case upd::vartype::length:
+      it = std::format_to(it, "[length of ");
+      break;
+    case upd::vartype::count:
+      it = std::format_to(it, "[count of ");
+      break;
+    case upd::vartype::code:
+      it = std::format_to(it, "[code of ");
+      break;
+    default:
+      it = std::format_to(it, "[??? of ");
+      break;
+    };
+    it = std::format_to(it, "{}]", vn.id);
+
+    ctx.advance_to(it);
+    return it;
+  }
+};

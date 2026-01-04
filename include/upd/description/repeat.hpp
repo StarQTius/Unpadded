@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <expected>
 #include <ranges>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 
@@ -12,6 +13,8 @@
 #include "../record.hpp"
 #include "../static_vector.hpp"
 #include "../stream_interface.hpp"
+#include "../tuple/for_each.hpp"
+#include "../tuple/tuple_like.hpp"
 #include "../upd.hpp"
 #include "serializer.hpp"
 
@@ -30,8 +33,8 @@ struct repeat_t {
 
   using value_type = static_vector<typename Description::result_type, Max>;
 
-  template<record_like Context, typename... Args>
-  [[nodiscard]] constexpr auto make_value(const Context &, Args &&...args) const -> value_type {
+  template<tuple_like2 System, typename... Args>
+  [[nodiscard]] constexpr auto make_value(const System &, Args &&...args) const -> value_type {
     return value_type{UPD_FWD(args)...};
   }
   using description_type = Description;
@@ -40,25 +43,31 @@ struct repeat_t {
   Description description;
   Rule rule;
 
-  template<record_like Context>
-  [[nodiscard]] constexpr static auto default_value(const Context &) -> value_type {
+  template<tuple_like2 System>
+  [[nodiscard]] constexpr static auto default_value(const System &) -> value_type {
     return value_type{};
   }
 
   [[nodiscard]] constexpr static auto default_value() -> value_type { return value_type{}; }
 
-  template<record_like Packet, serializer Serializer, record_like Fields>
-  [[nodiscard]] constexpr static auto deduce(Packet &, Serializer &, const Fields &) noexcept(release) {
+  template<record_like Packet, serializer Serializer, record_like Fields, tuple_like2 System>
+  [[nodiscard]] constexpr static auto deduce(Packet &, Serializer &, const Fields &, const System &) noexcept(release) {
     return record{};
   }
 
-  template<serializer Serializer, record_like Packet, record_like Fields>
+  template<record_like Packet, record_like Fields>
+  [[nodiscard]] constexpr auto rules(const Packet &, const Fields &) const {
+    return std::tuple{count_of<Identifier> = rule};
+  }
+
+  template<serializer Serializer, record_like Packet, record_like Fields, tuple_like2 System>
   [[nodiscard]] constexpr auto
-  decode(stream_interface &src, Serializer &ser, const Packet &packet, const Fields &fields) const
+  decode(stream_interface &src, Serializer &ser, const Packet &packet, const Fields &, const System &sys) const
       -> result<value_type> {
     namespace stdv = std::views;
+    namespace updv = upd::tuple_views;
 
-    auto count = rule.deduce(packet, fields);
+    auto count = solve_for(count_of<Identifier>, sys);
     if (count < 0) {
       return std::unexpected{negative_repetition_count{identifier.string, static_cast<std::intmax_t>(count)}};
     }

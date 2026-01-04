@@ -1,5 +1,7 @@
 #pragma once
 
+#include <format>
+
 #include "../get.hpp"
 #include "../record/lite_record.hpp"
 #include "../record/record_like.hpp"
@@ -45,3 +47,17 @@ template<auto Varname, expression Expr>
 }
 
 } // namespace upd::algebra
+
+template<auto Name>
+struct std::formatter<upd::algebra::variable<Name>> {
+  constexpr static auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
+
+  static auto format(upd::algebra::variable<Name>, std::format_context &ctx) {
+    auto it = ctx.out();
+
+    it = std::format_to(it, "{}", Name);
+
+    ctx.advance_to(it);
+    return it;
+  }
+};

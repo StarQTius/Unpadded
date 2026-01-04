@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <type_traits>
 
 #include "../get.hpp"
 #include "../upd.hpp"
@@ -44,6 +45,12 @@ struct upd::tuple_view_for<upd::tuple_views::join_view<Base>> {
     constexpr auto i = ni.second;
     constexpr auto j = ni.first;
 
-    return upd::get<j>(upd::get<i>(UPD_FWD(view).base));
+    using intermediate_type = decltype(upd::get<i>(UPD_FWD(view).base));
+
+    if constexpr (std::is_reference_v<intermediate_type>) {
+      return upd::get<j>(upd::get<i>(UPD_FWD(view).base));
+    } else {
+      return auto{upd::get<j>(upd::get<i>(UPD_FWD(view).base))};
+    }
   }
 };

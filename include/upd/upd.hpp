@@ -1,5 +1,11 @@
 #pragma once
 
+#include <format>
+#include <functional>
+#include <string_view>
+#include <type_traits>
+#include <utility>
+
 namespace upd {
 
 #if defined(UPD_DEBUG)
@@ -33,3 +39,20 @@ constexpr auto release = true;
 namespace upd::detail {};
 
 // NOLINTEND
+
+template<typename T>
+struct std::formatter<std::reference_wrapper<T>> {
+  constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
+
+  auto format(std::reference_wrapper<T> ref, std::format_context &ctx) const {
+    return std::format_to(ctx.out(), "[std::reference_wrapper: {}]", reinterpret_cast<const void *>(&ref.get()));
+  }
+};
+
+template<typename Enum>
+  requires std::is_enum_v<Enum>
+struct std::formatter<Enum> {
+  constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
+
+  auto format(Enum e, std::format_context &ctx) const { return std::format_to(ctx.out(), "{}", std::to_underlying(e)); }
+};

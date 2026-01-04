@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 
@@ -10,6 +11,7 @@
 #include "../record.hpp"
 #include "../stream_interface.hpp"
 #include "../token.hpp"
+#include "../tuple/tuple_like.hpp"
 #include "../upd.hpp"
 #include "serializer.hpp"
 
@@ -23,31 +25,36 @@ struct enumeration_field_t {
 
   using value_type = Enum;
 
-  template<record_like Context, typename... Args>
-  [[nodiscard]] constexpr auto make_value(const Context &, Args &&...args) const -> value_type {
+  template<tuple_like2 System, typename... Args>
+  [[nodiscard]] constexpr auto make_value(const System &, Args &&...args) const -> value_type {
     return value_type{UPD_FWD(args)...};
   }
 
-  template<record_like Context>
-  [[nodiscard]] constexpr static auto default_value(const Context &) noexcept(release) -> value_type {
+  template<tuple_like2 System>
+  [[nodiscard]] constexpr static auto default_value(const System &) noexcept(release) -> value_type {
     return value_type{};
   }
 
   [[nodiscard]] constexpr static auto default_value() noexcept(release) -> value_type { return value_type{}; }
 
-  template<record_like Packet, serializer Serializer, record_like Fields>
-  [[nodiscard]] constexpr static auto deduce(Packet &, Serializer &, const Fields &) noexcept(release) {
+  template<record_like Packet, serializer Serializer, record_like Fields, tuple_like2 System>
+  [[nodiscard]] constexpr static auto deduce(Packet &, Serializer &, const Fields &, const System &) noexcept(release) {
     return record{};
   }
 
-  template<serializer Serializer, record_like Packet, record_like Fields>
-  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &, const Fields &)
-      -> result<value_type> {
+  template<serializer Serializer, record_like Packet, record_like Fields, tuple_like2 System>
+  [[nodiscard]] constexpr static auto
+  decode(stream_interface &src, Serializer &ser, const Packet &, const Fields &, const System &) -> result<value_type> {
     if constexpr (is_signed) {
       return static_cast<value_type>(ser.deserialize_signed(src, upd::width<width - 1>));
     } else {
       return static_cast<value_type>(ser.deserialize_unsigned(src, upd::width<width>));
     }
+  }
+
+  template<record_like Packet, record_like Fields>
+  [[nodiscard]] constexpr auto rules(const Packet &, const Fields &) const {
+    return std::tuple{};
   }
 
   template<serializer Serializer>
@@ -68,8 +75,8 @@ struct anonymous_enumeration_field_t {
   using result_type = enum_type;
   constexpr static auto is_signed = std::is_signed_v<std::underlying_type_t<enum_type>>;
 
-  template<serializer Serializer, record_like Packet>
-  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &)
+  template<serializer Serializer, record_like Packet, tuple_like2 System>
+  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &, const System &)
       -> result<result_type> {
     auto retval = [&] {
       if constexpr (is_signed) {

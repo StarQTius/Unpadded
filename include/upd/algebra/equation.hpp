@@ -1,5 +1,7 @@
 #pragma once
 
+#include <format>
+
 #include "../constexpr.hpp"
 #include "../is_convertible_to_instance_of.hpp"
 #include "../record/lite_record.hpp"
@@ -15,6 +17,9 @@ template<expression Lhs, expression Rhs>
 struct equation {
   Lhs lhs;
   Rhs rhs;
+
+  using lhs_type = Lhs;
+  using rhs_type = Rhs;
 
   template<auto... Varnames, typename... Vals>
     requires(sizeof...(Varnames) == sizeof...(Vals))
@@ -67,3 +72,17 @@ struct equation {
 };
 
 } // namespace upd::algebra
+
+template<upd::algebra::expression Lhs, upd::algebra::expression Rhs>
+struct std::formatter<upd::algebra::equation<Lhs, Rhs>> {
+  constexpr static auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
+
+  static auto format(const upd::algebra::equation<Lhs, Rhs> &eq, std::format_context &ctx) {
+    auto it = ctx.out();
+
+    it = std::format_to(it, "{} = {}", eq.lhs, eq.rhs);
+
+    ctx.advance_to(it);
+    return it;
+  }
+};

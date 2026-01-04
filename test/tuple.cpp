@@ -117,6 +117,28 @@ TEST_CASE("Tuple views", "[tuple_view]") {
     REQUIRE(upd::get<4>(view) == 8);
     REQUIRE(upd::get<5>(view) == 67);
   }
+
+  SECTION("Join viewed tuples together") {
+    upd::tuple_view auto view = t | updv::transform([](auto x) { return std::tuple{x}; }) | updv::join;
+
+    REQUIRE(upd::get<0>(view) == upd::get<0>(t));
+    REQUIRE(upd::get<1>(view) == upd::get<1>(t));
+    REQUIRE(upd::get<2>(view) == upd::get<2>(t));
+
+    upd::regular_tuple auto t_ = view | updv::to<std::tuple>;
+
+    REQUIRE(upd::get<0>(t_) == upd::get<0>(t));
+    REQUIRE(upd::get<1>(t_) == upd::get<1>(t));
+    REQUIRE(upd::get<2>(t_) == upd::get<2>(t));
+  }
+
+  SECTION("Take N elements") {
+    upd::tuple_view auto view = t | updv::take<2>;
+
+    REQUIRE(upd::tuple_size_v<decltype(view)> == 2);
+    REQUIRE(&upd::get<0>(view) == &upd::get<0>(t));
+    REQUIRE(&upd::get<1>(view) == &upd::get<1>(t));
+  }
 }
 
 TEST_CASE("Algorithms on records", "[tuple_algorithm]") {
