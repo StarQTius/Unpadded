@@ -18,4 +18,9 @@ template<auto Tag, record_like Record>
   };
 }
 
+template<auto Tag, record_like Record>
+constexpr auto has_tag_v = UPD_WITH_SEQUENCE(Is, record_size_v<Record>) {
+  return (std::same_as<auto_constant<record_tag_v<Is, Record>>, auto_constant<Tag>> || ...);
+};
+
 } // namespace upd

@@ -6,6 +6,7 @@
 #include <limits>
 #include <ranges>
 #include <string_view>
+#include <variant>
 
 #include <catch2/catch_test_macros.hpp>
 #include <upd/algebra.hpp>
@@ -155,13 +156,13 @@ TEST_CASE("Protocol descriptors", "[descriptor]") {
   SECTION("Encode and decode a repeated field") {
     auto descr = ufield2<"len", 16> | repeat<"abc">(ufield2<"def", 16>, upd::value_of<"len">);
     descr.encode(
-        ("len"_kw2 = 3,
+        ("len"_kw2 = 3 * 16,
          "abc"_kw2 = std::array{upd::record{"def"_kw2 = 4}, upd::record{"def"_kw2 = 8}, upd::record{"def"_kw2 = 16}}),
         ser,
         st);
 
     auto result = *descr.decode(st, ser);
-    REQUIRE(result["len"_kw2] == 3);
+    REQUIRE(result["len"_kw2] == 3 * 16);
     REQUIRE(result["abc"_kw2][0]["def"_kw2] == 4);
     REQUIRE(result["abc"_kw2][1]["def"_kw2] == 8);
     REQUIRE(result["abc"_kw2][2]["def"_kw2] == 16);
@@ -194,5 +195,44 @@ TEST_CASE("Protocol descriptors", "[descriptor]") {
 
     auto result = *descr.decode(st, ser);
     REQUIRE(result["abc"_kw2] == abc::a);
+  }
+
+  SECTION("Encode and decode an expanding repeated field") {
+    auto descr = ubound2<"len", 16>(upd::length_of<"abc">) | repeat<"abc">(ufield2<upd::anon, 16>);
+    descr.encode(("abc"_kw2 = std::array{4, 8, 16}), ser, st);
+
+    auto result = *descr.decode(st, ser);
+    REQUIRE(result["len"_kw2] == 3 * 16);
+    REQUIRE(result["abc"_kw2].size() == 3);
+    REQUIRE(result["abc"_kw2][0] == 4);
+    REQUIRE(result["abc"_kw2][1] == 8);
+    REQUIRE(result["abc"_kw2][2] == 16);
+  }
+}
+
+TEST_CASE("Nested protocol descriptors", "[descriptor]") {
+  using namespace upd::descriptor;
+  using namespace upd::record_operators;
+  using namespace upd::literals;
+
+  auto buf = std::array<upd::word_t, 64>{};
+  auto ser = serializer{};
+  auto st = upd::iterator_stream{buf.begin(), buf.begin()};
+
+  SECTION("Expanding repeated field in a one-of field") {
+    enum class abc { a };
+
+    auto descr = ubound2<"len", 16>(upd::length_of<"param">) | efield2<"i", abc, 16> |
+                 one_of<"param">(upd::value_of<"i">, upd::when<abc::a> = repeat<"abc">(ufield2<upd::anon, 16>));
+
+    descr.encode(("i"_kw2 = abc::a, "param"_kw2 = ("abc"_kw2 = std::array{4, 8, 16})), ser, st);
+
+    auto result = *descr.decode(st, ser);
+    REQUIRE(result["len"_kw2] == 3 * 16);
+    REQUIRE(result["i"_kw2] == abc::a);
+    REQUIRE(std::get<1>(result["param"_kw2])["abc"_kw2].size() == 3);
+    REQUIRE(std::get<1>(result["param"_kw2])["abc"_kw2][0] == 4);
+    REQUIRE(std::get<1>(result["param"_kw2])["abc"_kw2][1] == 8);
+    REQUIRE(std::get<1>(result["param"_kw2])["abc"_kw2][2] == 16);
   }
 }

@@ -60,8 +60,9 @@ template<auto Tag, typename Record>
     return get<Tag>(UPD_FWD(rec));
   } else if constexpr (implementation_of<Record, record_like_for>) {
     using impl_type = upd::record_like_for<std::remove_cvref_t<Record>>;
-    auto i = variadic::position_of<Tag>(tags);
-    UPD_STATIC_ASSERT(requires { impl_type::template get_ith<i>(UPD_FWD(rec)); }, "`{}` is not a tag of `rec`", tag);
+    constexpr auto i = variadic::position_of<Tag>(tags).value;
+    constexpr auto rec_size = record_size_v<Record>;
+    UPD_STATIC_ASSERT(rec_size == 0 || i < rec_size, "`{}` is not a tag of `rec`", tag);
 
     return impl_type::template get_ith<i>(UPD_FWD(rec));
   }

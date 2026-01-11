@@ -86,6 +86,12 @@ TEST_CASE("Identity", "[algebra][equation]") {
     REQUIRE(lt.var == upd::algebra::variable<upd::name{"x"}>{});
     REQUIRE(lt.val == 6);
   }
+
+  SECTION("Simplify a one-variable equation into an identity") {
+    auto eq = ("x"_var * 5 + 3 = 18);
+    auto id = eq.simplify();
+    REQUIRE(id == ("x"_var = 3));
+  }
 }
 
 TEST_CASE("Two-variable equation", "[algebra][equation]") {

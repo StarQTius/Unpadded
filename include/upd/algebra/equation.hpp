@@ -3,9 +3,12 @@
 #include <format>
 
 #include "../constexpr.hpp"
+#include "../get.hpp"
 #include "../is_convertible_to_instance_of.hpp"
 #include "../record/lite_record.hpp"
 #include "../static_assert.hpp"
+#include "../tuple/concat.hpp"
+#include "../tuple/tuple_size.hpp"
 #include "../upd.hpp"
 #include "concepts.hpp"
 #include "let.hpp"
@@ -23,7 +26,7 @@ struct equation {
 
   template<auto... Varnames, typename... Vals>
     requires(sizeof...(Varnames) == sizeof...(Vals))
-  [[nodiscard]] constexpr auto substitute(const let<Varnames, Vals> &...lets) noexcept(release) {
+  [[nodiscard]] constexpr auto substitute(const let<Varnames, Vals> &...lets) const noexcept(release) {
     using upd::algebra::substitute;
 
     auto letrec = lite_record{lite_record_node{upd::expr<lets.var.name>, lets.val}...};
@@ -35,13 +38,13 @@ struct equation {
 
   template<typename... Ts>
     requires(is_convertible_to_instance_of<Ts, let>() && ...)
-  [[nodiscard]] constexpr auto substitute(const Ts &...xs) noexcept(release) {
+  [[nodiscard]] constexpr auto substitute(const Ts &...xs) const noexcept(release) {
     return substitute(let{xs}...);
   }
 
   template<auto Varname>
     requires balanceable<Lhs, Varname> || balanceable<Rhs, Varname>
-  [[nodiscard]] constexpr auto isolate(side<variable<Varname>> var) noexcept(release) {
+  [[nodiscard]] constexpr auto isolate(side<variable<Varname>> var) const noexcept(release) {
     UPD_STATIC_ASSERT((!depends_on_v<decltype(lhs), Varname> || !depends_on_v<decltype(rhs), Varname>),
                       "{} and {} both depend on {}; Only one operand should depend on {}",
                       lhs,
@@ -65,6 +68,20 @@ struct equation {
           .lhs = var.expr,
           .rhs = balance_on<Varname>(lhs, rhs),
       };
+    }
+  }
+
+  [[nodiscard]] constexpr auto simplify() const noexcept(release) -> decltype(auto) {
+    namespace updv = upd::tuple_views;
+
+    auto deps = updv::concat(dependencies(lhs), dependencies(rhs));
+    using deps_type = decltype(deps);
+
+    constexpr auto dep_count = upd::tuple_size_v<deps_type>;
+    if constexpr (dep_count == 1) {
+      return isolate(side{get<0>(deps)});
+    } else {
+      return *this;
     }
   }
 

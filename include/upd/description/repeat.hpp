@@ -13,8 +13,8 @@
 #include "../record.hpp"
 #include "../static_vector.hpp"
 #include "../stream_interface.hpp"
-#include "../tuple/for_each.hpp"
 #include "../tuple/tuple_like.hpp"
+#include "../tuple/view.hpp"
 #include "../upd.hpp"
 #include "serializer.hpp"
 
@@ -57,7 +57,7 @@ struct repeat_t {
 
   template<record_like Packet, record_like Fields>
   [[nodiscard]] constexpr auto rules(const Packet &, const Fields &) const {
-    return std::tuple{count_of<Identifier> = rule};
+    return std::tuple{length_of<Identifier> = rule};
   }
 
   template<serializer Serializer, record_like Packet, record_like Fields, tuple_like2 System>
@@ -67,33 +67,39 @@ struct repeat_t {
     namespace stdv = std::views;
     namespace updv = upd::tuple_views;
 
-    auto count = solve_for(count_of<Identifier>, sys);
-    if (count < 0) {
-      return std::unexpected{negative_repetition_count{identifier.string, static_cast<std::intmax_t>(count)}};
-    }
-    if (Max < count) {
-      return std::unexpected{repeated_beyond_max{identifier.string, static_cast<std::uintmax_t>(count), Max}};
+    auto len = solve_for(length_of<Identifier>, sys);
+    if (len < 0) {
+      return std::unexpected{negative_repetition_count{identifier.string, static_cast<std::intmax_t>(len)}};
     }
 
     auto retval = static_vector<typename Description::result_type, Max>{};
 
-    for (auto _ : stdv::iota(0uz, std::size_t(count))) {
+    auto i = 0uz;
+    auto overflown = false;
+    while (!overflown && i < len) {
       auto maybe_value = description.decode(src, ser, packet);
       if (!maybe_value) {
         return std::unexpected{std::move(maybe_value).error()};
       }
-      retval.push_back(std::move(maybe_value).value());
+      overflown = !retval.try_push_back(std::move(maybe_value).value());
+      i += bitsize(retval.back(), description);
+    }
+
+    if (overflown) {
+      return std::unexpected{repeated_beyond_max{identifier.string, static_cast<std::uintmax_t>(len), Max}};
     }
 
     return retval;
   }
 
-  template<serializer Serializer>
-  constexpr void encode(const value_type &value, Serializer &ser, stream_interface &dest) const {
+  template<serializer Serializer, tuple_like2 System>
+  constexpr void encode(const value_type &value, Serializer &ser, stream_interface &dest, const System &) const {
     for (const auto &element : value) {
       description.encode(element, ser, dest);
     }
   }
+
+  [[nodiscard]] constexpr static auto length() noexcept(release) { return length_of<Identifier>; }
 };
 
 template<name Identifier, typename Description, typename Rule>
@@ -107,6 +113,11 @@ template<name Identifier, typename Description, typename Rule>
   };
 
   return description{std::move(retval)};
+}
+
+template<name Identifier, typename Description>
+[[nodiscard]] constexpr auto repeat(Description &&descr) {
+  return repeat<Identifier>(UPD_FWD(descr), length_of<Identifier>);
 }
 
 } // namespace upd::descriptor

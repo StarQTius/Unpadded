@@ -2,6 +2,7 @@
 
 #include <concepts>
 #include <functional>
+#include <tuple>
 #include <type_traits>
 
 #include "../concept/invocable.hpp"
@@ -18,6 +19,12 @@ template<typename T, record_like Lets>
   requires std::is_scalar_v<T>
 [[nodiscard]] constexpr auto substitute(T value, const Lets &) noexcept(release) -> T {
   return value;
+}
+
+template<typename T>
+  requires std::is_scalar_v<T>
+[[nodiscard]] constexpr auto dependencies(T) noexcept(release) -> std::tuple<> {
+  return std::tuple{};
 }
 
 template<typename T, auto Varname>

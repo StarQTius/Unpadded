@@ -56,14 +56,17 @@ struct field_t {
     }
   }
 
-  template<serializer Serializer>
-  constexpr static void encode(value_type value, Serializer &ser, stream_interface &dest) {
+  template<serializer Serializer, tuple_like2 System = std::tuple<>>
+  constexpr static void
+  encode(value_type value, Serializer &ser, stream_interface &dest, const System & = std::tuple{}) {
     if constexpr (is_signed) {
       return ser.serialize_signed(value, upd::width<width>, dest);
     } else {
       return ser.serialize_unsigned(value, upd::width<width>, dest);
     }
   }
+
+  [[nodiscard]] constexpr static auto length() noexcept(release) { return Width; }
 };
 
 template<bool Signedness, std::size_t Width>
@@ -73,8 +76,9 @@ struct anonymous_field_t {
 
   using result_type = std::conditional_t<is_signed, std::intmax_t, std::uintmax_t>;
 
-  template<serializer Serializer>
-  constexpr void encode(result_type value, Serializer &ser, stream_interface &dest) const {
+  template<serializer Serializer, tuple_like2 System = std::tuple<>>
+  constexpr void
+  encode(result_type value, Serializer &ser, stream_interface &dest, const System & = std::tuple{}) const {
     if constexpr (is_signed) {
       ser.serialize_signed(value, upd::width<width>, dest);
     } else {
@@ -91,6 +95,8 @@ struct anonymous_field_t {
       return ser.deserialize_unsigned(src, upd::width<width>);
     }
   }
+
+  [[nodiscard]] constexpr static auto length() noexcept(release) { return Width; }
 };
 
 template<name Identifier, bool Signedness, std::size_t Width>

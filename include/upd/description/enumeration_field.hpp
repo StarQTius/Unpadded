@@ -57,14 +57,16 @@ struct enumeration_field_t {
     return std::tuple{};
   }
 
-  template<serializer Serializer>
-  constexpr static void encode(value_type value, Serializer &ser, stream_interface &dest) {
+  template<serializer Serializer, tuple_like2 System>
+  constexpr static void encode(value_type value, Serializer &ser, stream_interface &dest, const System &) {
     if constexpr (is_signed) {
       return ser.serialize_signed(static_cast<std::intmax_t>(value), upd::width<width - 1>, dest);
     } else {
       return ser.serialize_unsigned(static_cast<std::uintmax_t>(value), upd::width<width>, dest);
     }
   }
+
+  [[nodiscard]] constexpr static auto length() noexcept(release) { return Width; }
 };
 
 template<typename Enum, std::size_t Width>
@@ -89,8 +91,8 @@ struct anonymous_enumeration_field_t {
     return result_type{retval};
   }
 
-  template<serializer Serializer>
-  constexpr static void encode(result_type value, Serializer &ser, stream_interface &dest) {
+  template<serializer Serializer, tuple_like2 System>
+  constexpr static void encode(result_type value, Serializer &ser, stream_interface &dest, const System &) {
     auto underlying_value = std::to_underlying(value);
 
     if constexpr (is_signed) {
@@ -99,6 +101,8 @@ struct anonymous_enumeration_field_t {
       ser.serialize_unsigned(underlying_value, upd::width<width>, dest);
     }
   }
+
+  [[nodiscard]] constexpr static auto length() noexcept(release) { return Width; }
 };
 
 template<name Identifier, typename Enum, std::size_t Width>

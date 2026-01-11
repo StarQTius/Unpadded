@@ -74,6 +74,28 @@ public:
     return reinterpret_cast<const value_type *>(m_content.begin()) + m_size;
   }
 
+  [[nodiscard]] constexpr auto front() noexcept(release) -> value_type & {
+    UPD_ASSERT(m_size > 0);
+    return reinterpret_cast<value_type &>(m_content.front());
+  }
+
+  [[nodiscard]] constexpr auto front() const noexcept(release) -> const value_type & {
+    UPD_ASSERT(m_size > 0);
+    return reinterpret_cast<const value_type &>(m_content.front());
+  }
+
+  [[nodiscard]] constexpr auto back() noexcept(release) -> value_type & {
+    UPD_ASSERT(m_size > 0);
+    return reinterpret_cast<value_type &>(m_content[m_size - 1]);
+  }
+
+  [[nodiscard]] constexpr auto back() const noexcept(release) -> const value_type & {
+    UPD_ASSERT(m_size > 0);
+    return reinterpret_cast<const value_type &>(m_content[m_size - 1]);
+  }
+
+  [[nodiscard]] constexpr auto size() const noexcept(release) -> std::size_t { return m_size; }
+
   template<typename U, std::size_t N>
   [[nodiscard]] constexpr auto operator==(const static_vector<U, N> &other) const -> bool {
     if (m_size != other.m_size) {

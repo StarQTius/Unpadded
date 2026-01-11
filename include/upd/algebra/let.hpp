@@ -25,6 +25,8 @@ struct let {
 
   explicit constexpr let(const equation<variable<Varname>, Val> &eq) : var{eq.lhs}, val{eq.rhs} {}
 
+  explicit constexpr let(const equation<Val, variable<Varname>> &eq) : var{eq.rhs}, val{eq.lhs} {}
+
   explicit constexpr let(const equation<variable<Varname>, std::reference_wrapper<Val>> &eq)
       : var{eq.lhs}, val{eq.rhs} {}
 

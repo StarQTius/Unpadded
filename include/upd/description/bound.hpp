@@ -65,14 +65,16 @@ struct bound_t {
     }
   }
 
-  template<serializer Serializer>
-  constexpr static void encode(value_type value, Serializer &ser, stream_interface &dest) {
+  template<serializer Serializer, tuple_like2 System>
+  constexpr static void encode(value_type value, Serializer &ser, stream_interface &dest, const System &) {
     if constexpr (is_signed) {
       return ser.serialize_signed(value, upd::width<width>, dest);
     } else {
       return ser.serialize_unsigned(value, upd::width<width>, dest);
     }
   }
+
+  [[nodiscard]] constexpr static auto length() noexcept(release) { return Width; }
 };
 
 template<name Identifier, bool Signedness, std::size_t Width, typename Rule>

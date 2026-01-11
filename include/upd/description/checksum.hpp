@@ -45,7 +45,7 @@ struct checksum_t {
   [[nodiscard]] constexpr auto default_value() const noexcept(release) -> value_type { return init; }
 
   template<record_like Packet, serializer Serializer, record_like Fields, tuple_like2 System>
-  [[nodiscard]] constexpr auto deduce(Packet &packet, Serializer &ser, const Fields &fields, const System &) const {
+  [[nodiscard]] constexpr auto deduce(Packet &packet, Serializer &ser, const Fields &fields, const System &sys) const {
     using namespace upd::literals;
     namespace updv = upd::record_views;
 
@@ -72,7 +72,7 @@ struct checksum_t {
 
     updv::for_each(updv::zip(packet | updv::filter(field_filter), fields), [&](auto, const auto &value_and_field) {
       const auto &[value, field] = value_and_field;
-      field.encode(value, ser, dest);
+      field.encode(value, ser, dest, sys);
     });
 
     return record{entry{expr<identifier>, dest.acc}};
@@ -89,10 +89,12 @@ struct checksum_t {
     return ser.deserialize_unsigned(src, upd::width<width>);
   }
 
-  template<serializer Serializer>
-  constexpr static void encode(value_type value, Serializer &ser, stream_interface &dest) {
+  template<serializer Serializer, tuple_like2 System>
+  constexpr static void encode(value_type value, Serializer &ser, stream_interface &dest, const System &) {
     return ser.serialize_unsigned(value, upd::width<width>, dest);
   }
+
+  [[nodiscard]] constexpr auto length() const noexcept(release) { return Width; }
 };
 
 template<name Identifier, typename BinaryOp, std::size_t Width>

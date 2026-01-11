@@ -1,18 +1,18 @@
 #pragma once
 
 #include <format>
+#include <tuple>
 #include <type_traits>
 
 #include "../record/record_like.hpp"
 #include "../static_assert.hpp"
+#include "../tuple/concat.hpp"
+#include "../tuple/to.hpp"
 #include "../upd.hpp"
 #include "concepts.hpp"
 #include "side.hpp"
 
 namespace upd::algebra {
-
-template<expression, expression>
-struct substract;
 
 template<expression Lhs, expression Rhs>
 struct add {
@@ -49,10 +49,16 @@ template<auto Varname, expression Expr, expression Lhs, expression Rhs>
                     Varname);
 
   if constexpr (depends_on_v<decltype(expr.lhs), Varname>) {
-    return balance_on<Varname>(substract{base, expr.rhs}, expr.lhs);
+    return balance_on<Varname>(base - expr.rhs, expr.lhs);
   } else {
-    return balance_on<Varname>(substract{base, expr.lhs}, expr.rhs);
+    return balance_on<Varname>(base - expr.lhs, expr.rhs);
   }
+}
+
+template<expression Lhs, expression Rhs>
+[[nodiscard]] constexpr auto dependencies(const add<Lhs, Rhs> &expr) noexcept(release) {
+  namespace updv = upd::tuple_views;
+  return updv::concat(dependencies(expr.lhs), dependencies(expr.rhs)) | updv::to<std::tuple>;
 }
 
 template<expression Lhs, expression Rhs>
@@ -70,6 +76,11 @@ template<typename Lhs, expression Rhs>
   requires std::is_arithmetic_v<Lhs>
 [[nodiscard]] constexpr auto operator+(Lhs lhs, const side<Rhs> &rhs) noexcept(release) {
   return side{add{lhs, rhs.expr}};
+}
+
+template<expression Lhs, expression Rhs>
+[[nodiscard]] constexpr auto operator+(const Lhs &lhs, const Rhs &rhs) noexcept(release) {
+  return add{lhs, rhs};
 }
 
 template<expression Lhs, expression Rhs>
@@ -107,10 +118,16 @@ template<auto Varname, expression Expr, expression Lhs, expression Rhs>
                     Varname);
 
   if constexpr (depends_on_v<decltype(expr.lhs), Varname>) {
-    return balance_on<Varname>(add{base, expr.rhs}, expr.lhs);
+    return balance_on<Varname>(base + expr.rhs, expr.lhs);
   } else {
-    return balance_on<Varname>(substract{expr.lhs, base}, expr.rhs);
+    return balance_on<Varname>(expr.lhs - base, expr.rhs);
   }
+}
+
+template<expression Lhs, expression Rhs>
+[[nodiscard]] constexpr auto dependencies(const substract<Lhs, Rhs> &expr) noexcept(release) {
+  namespace updv = upd::tuple_views;
+  return updv::concat(dependencies(expr.lhs), dependencies(expr.rhs)) | updv::to<std::tuple>;
 }
 
 template<expression Lhs, expression Rhs>
@@ -128,6 +145,11 @@ template<typename Lhs, expression Rhs>
   requires std::is_arithmetic_v<Lhs>
 [[nodiscard]] constexpr auto operator-(Lhs lhs, const side<Rhs> &rhs) noexcept(release) {
   return side{substract{lhs, rhs.expr}};
+}
+
+template<expression Lhs, expression Rhs>
+[[nodiscard]] constexpr auto operator-(const Lhs &lhs, const Rhs &rhs) noexcept(release) {
+  return substract{lhs, rhs};
 }
 
 } // namespace upd::algebra

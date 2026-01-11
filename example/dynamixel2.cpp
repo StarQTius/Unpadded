@@ -132,19 +132,18 @@ constexpr auto description = [] {
 
   return constant2<"header", 32>(0x00fdffff) | ufield2<"id", 8> |
          ubound2<"length", 16>(length_of<"parameters"> / 8 + 3) | efield2<"instruction", instruction_code, 8> |
-         one_of<"parameters">(
-             value_of<"instruction">,
-             when<ping> = empty_description,
-             when<read> = ufield2<"address", 16> | ufield2<"length", 16>,
-             when<write> = ufield2<"address", 16> | repeat<"data">(ufield2<anon, 8>, value_of<"length"> - 3),
-             when<reg_write> = ufield2<"address", 16> | repeat<"data">(ufield2<anon, 8>, value_of<"length"> - 3),
-             when<action> = empty_description,
-             when<factory_reset> = efield2<anon, factory_reset_target, 8>,
-             when<reboot> = empty_description,
-             when<clear> = efield2<anon, clear_target, 40>,
-             when<control_table_backup> = efield2<anon, control_table_backup_target, 40>,
-             when<sync_read> = ufield2<"address", 16> | ufield2<"length", 16> |
-                               repeat<"ids">(ufield2<anon, 8>, value_of<"length"> - 3)) |
+         one_of<"parameters">(value_of<"instruction">,
+                              when<ping> = empty_description,
+                              when<read> = ufield2<"address", 16> | ufield2<"length_", 16>,
+                              when<write> = ufield2<"address", 16> | repeat<"data">(ufield2<anon, 8>),
+                              when<reg_write> = ufield2<"address", 16> | repeat<"data">(ufield2<anon, 8>),
+                              when<action> = empty_description,
+                              when<factory_reset> = efield2<anon, factory_reset_target, 8>,
+                              when<reboot> = empty_description,
+                              when<clear> = efield2<anon, clear_target, 40>,
+                              when<control_table_backup> = efield2<anon, control_table_backup_target, 40>,
+                              when<sync_read> =
+                                  ufield2<"address", 16> | ufield2<"length_", 16> | repeat<"ids">(ufield2<anon, 8>)) |
          checksum2<"crc", 16>(accumulate_crc, all_fields);
 }();
 
@@ -160,14 +159,14 @@ constexpr auto answer_description = [] {
          ufield2<"error", 8> |
          one_of<"parameters">(value_of<"status_of">,
                               when<ping> = ufield2<"model_number", 16> | ufield2<"firmware_version", 8>,
-                              when<read> = repeat<"data">(ufield2<anon, 8>, value_of<"length"> - 4),
+                              when<read> = repeat<"data">(ufield2<anon, 8>),
                               when<write> = empty_description,
                               when<reg_write> = empty_description,
                               when<action> = empty_description,
                               when<factory_reset> = empty_description,
                               when<reboot> = empty_description,
                               when<control_table_backup> = empty_description,
-                              when<sync_read> = repeat<"data">(ufield2<anon, 8>, value_of<"length"> - 4)) |
+                              when<sync_read> = repeat<"data">(ufield2<anon, 8>)) |
          checksum2<"crc", 16>(accumulate_crc, all_fields);
 }();
 
@@ -286,7 +285,10 @@ auto ping_example() -> upd::error {
   std::cout << std::hex;
 
   std::println("Ping: example 1");
-  description.encode(("id"_kw2 = 1, "instruction"_kw2 = instruction_code::ping), ser, std::cout, " ");
+  description.encode(("id"_kw2 = 1, "instruction"_kw2 = instruction_code::ping, "parameters"_kw2 = upd::record{}),
+                     ser,
+                     std::cout,
+                     " ");
   std::println("");
   std::println("");
 
@@ -337,7 +339,7 @@ auto read_example() -> upd::error {
   std::println("Read: example");
   description.encode(("id"_kw2 = 1,
                       "instruction"_kw2 = instruction_code::read,
-                      "parameters"_kw2 = ("address"_kw2 = 0x84, "length"_kw2 = 4)),
+                      "parameters"_kw2 = ("address"_kw2 = 0x84, "length_"_kw2 = 4)),
                      ser,
                      std::cout,
                      " ");
@@ -449,7 +451,10 @@ auto action_example() -> upd::error {
   std::cout << std::hex;
 
   std::println("Action: example");
-  description.encode(("id"_kw2 = 1, "instruction"_kw2 = instruction_code::action), ser, std::cout, " ");
+  description.encode(("id"_kw2 = 1, "instruction"_kw2 = instruction_code::action, "parameters"_kw2 = upd::record{}),
+                     ser,
+                     std::cout,
+                     " ");
   std::println("");
   std::println("");
 
@@ -518,7 +523,10 @@ auto reboot_example() -> upd::error {
   std::cout << std::hex;
 
   std::println("Reboot: example");
-  description.encode(("id"_kw2 = 1, "instruction"_kw2 = instruction_code::reboot), ser, std::cout, " ");
+  description.encode(("id"_kw2 = 1, "instruction"_kw2 = instruction_code::reboot, "parameters"_kw2 = upd::record{}),
+                     ser,
+                     std::cout,
+                     " ");
   std::println("");
   std::println("");
 
@@ -626,7 +634,7 @@ auto sync_read_example() -> upd::error {
   description.encode(
       ("id"_kw2 = 0xfe,
        "instruction"_kw2 = instruction_code::sync_read,
-       "parameters"_kw2 = ("address"_kw2 = 0x84, "length"_kw2 = 0x4, "ids"_kw2 = std::array<std::uint8_t, 2>{1, 2})),
+       "parameters"_kw2 = ("address"_kw2 = 0x84, "length_"_kw2 = 0x4, "ids"_kw2 = std::array<std::uint8_t, 2>{1, 2})),
       ser,
       std::cout,
       " ");

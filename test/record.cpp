@@ -310,7 +310,7 @@ TEST_CASE("Record views", "[record_view]") {
   }
 
   SECTION("Take elements until a tag is met") {
-    upd::record_view auto view = rec | updv::take_until<upd::name{"b"}>;
+    upd::record_view auto view = rec | updv::take_until<upd::name{"c"}>;
 
     REQUIRE(&upd::get<upd::name{"a"}>(view) == &upd::get<upd::name{"a"}>(rec));
     REQUIRE(&upd::get<upd::name{"b"}>(view) == &upd::get<upd::name{"b"}>(rec));

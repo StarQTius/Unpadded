@@ -1,6 +1,7 @@
 #pragma once
 
 #include <format>
+#include <tuple>
 
 #include "../get.hpp"
 #include "../record/lite_record.hpp"
@@ -44,6 +45,11 @@ struct depends_on<variable<Varname>, Varname> {
 template<auto Varname, expression Expr>
 [[nodiscard]] constexpr auto balance_on(const Expr &base, variable<Varname>) noexcept(release) -> Expr {
   return base;
+}
+
+template<auto Varname>
+[[nodiscard]] constexpr auto dependencies(variable<Varname> var) noexcept(release) {
+  return std::tuple{var};
 }
 
 } // namespace upd::algebra
