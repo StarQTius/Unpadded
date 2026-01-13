@@ -7,7 +7,9 @@
 #include "../is_convertible_to_instance_of.hpp"
 #include "../record/lite_record.hpp"
 #include "../static_assert.hpp"
+#include "../tuple/apply.hpp"
 #include "../tuple/concat.hpp"
+#include "../tuple/tuple_like.hpp"
 #include "../tuple/tuple_size.hpp"
 #include "../upd.hpp"
 #include "concepts.hpp"
@@ -40,6 +42,13 @@ struct equation {
     requires(is_convertible_to_instance_of<Ts, let>() && ...)
   [[nodiscard]] constexpr auto substitute(const Ts &...xs) const noexcept(release) {
     return substitute(let{xs}...);
+  }
+
+  template<tuple_like2 Tuple>
+  [[nodiscard]] constexpr auto substitute(const Tuple &t) const noexcept(release) {
+    namespace updv = upd::tuple_views;
+
+    return updv::apply(t, [&](const auto &...xs) { return substitute(let{xs}...); });
   }
 
   template<auto Varname>
@@ -83,6 +92,11 @@ struct equation {
     } else {
       return *this;
     }
+  }
+
+  template<auto Varname>
+  [[nodiscard]] consteval static auto depends_on(variable<Varname>) noexcept(release) -> bool {
+    return depends_on_v<decltype(lhs), Varname> || depends_on_v<decltype(rhs), Varname>;
   }
 
   [[nodiscard]] constexpr auto operator==(const equation &) const noexcept(release) -> bool = default;

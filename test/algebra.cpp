@@ -2,6 +2,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <upd/algebra.hpp>
+#include <upd/constexpr.hpp>
 #include <upd/record.hpp>
 #include <upd/tuple_v2.hpp>
 
@@ -122,20 +123,19 @@ TEST_CASE("Two-variable equation", "[algebra][equation]") {
   }
 }
 
-TEST_CASE("System", "[algebra][system]") {
+TEST_CASE("Triangular system", "[algebra][system]") {
   using namespace upd::algebra::literals;
   namespace updv = upd::tuple_views;
 
-  auto sys = std::tuple{"y"_var = 2 * "x"_var + 3, "z"_var = 4 * "x"_var - 2, "x"_var = 3 * "a"_var - 11};
+  auto sys = std::tuple{"x"_var = 15, "y"_var = "x"_var / 3 - 2, "z"_var = "x"_var / 5 + "y"_var + 3};
 
-  SECTION("Substitute a variable") {
-    auto y = solve_for("y"_var, updv::concat(sys, std::tuple{"x"_var = 4}));
-    REQUIRE(y == 11);
+  SECTION("Solve a triangular system") {
+    auto x = solve_for("x"_var, updv::concat(sys));
+    auto y = solve_for("y"_var, updv::concat(sys));
+    auto z = solve_for("z"_var, updv::concat(sys));
 
-    auto z = solve_for("z"_var, updv::concat(sys, std::tuple{"x"_var = 4}));
-    REQUIRE(z == 14);
-
-    auto a = solve_for("a"_var, updv::concat(sys, std::tuple{"x"_var = 4}));
-    REQUIRE(a == 5);
+    REQUIRE(x == 15);
+    REQUIRE(y == 3);
+    REQUIRE(z == 9);
   }
 }
