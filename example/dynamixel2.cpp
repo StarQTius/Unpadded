@@ -21,6 +21,7 @@
 #include <upd/record.hpp>
 #include <upd/stream_interface.hpp>
 #include <upd/token.hpp>
+#include <upd/tuple_v2.hpp>
 
 #define BITMASK(N) ((1u << N) - 1u)
 #define NTH_BIT(N) (1u << N)

@@ -16,6 +16,7 @@
 #include <upd/static_vector.hpp>
 #include <upd/stream_interface.hpp>
 #include <upd/token.hpp>
+#include <upd/tuple_v2.hpp>
 
 #define BITMASK(N) ((1u << N) - 1u)
 #define NTH_BIT(N) (1u << N)
@@ -206,6 +207,29 @@ TEST_CASE("Protocol descriptors", "[descriptor]") {
     REQUIRE(result["abc"_kw2][0] == 4);
     REQUIRE(result["abc"_kw2][1] == 8);
     REQUIRE(result["abc"_kw2][2] == 16);
+  }
+
+  SECTION("Encode and decode a one-of field") {
+    enum class abc { a, b, c };
+    auto descr = efield2<"i", abc, 16> | one_of<"alts">(upd::value_of<"i">,
+                                                        upd::when<abc::a> = constant2<"k", 8>(34),
+                                                        upd::when<abc::b> = constant2<"k", 8>(45),
+                                                        upd::when<abc::c> = constant2<"k", 8>(56));
+
+    descr.encode(("i"_kw2 = abc::a), ser, st);
+    auto result = *descr.decode(st, ser);
+    REQUIRE(result["i"_kw2] == abc::a);
+    REQUIRE(std::get<1>(result["alts"_kw2])["k"_kw2] == 34);
+
+    descr.encode(("i"_kw2 = abc::b), ser, st);
+    result = *descr.decode(st, ser);
+    REQUIRE(result["i"_kw2] == abc::b);
+    REQUIRE(std::get<2>(result["alts"_kw2])["k"_kw2] == 45);
+
+    descr.encode(("i"_kw2 = abc::c), ser, st);
+    result = *descr.decode(st, ser);
+    REQUIRE(result["i"_kw2] == abc::c);
+    REQUIRE(std::get<3>(result["alts"_kw2])["k"_kw2] == 56);
   }
 }
 

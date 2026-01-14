@@ -54,8 +54,8 @@ struct constant_t {
   }
 
   template<serializer Serializer, tuple_like2 System>
-  constexpr static void encode(value_type value, Serializer &ser, stream_interface &dest, const System &) {
-    return ser.serialize_unsigned(value, upd::width<width>, dest);
+  constexpr void encode(value_type, Serializer &ser, stream_interface &dest, const System &) const noexcept(release) {
+    return ser.serialize_unsigned(field_value, upd::width<width>, dest);
   }
 
   [[nodiscard]] constexpr static auto length() noexcept(release) { return Width; }
