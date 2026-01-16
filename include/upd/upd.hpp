@@ -5,6 +5,7 @@
 #include <string_view>
 #include <type_traits>
 #include <utility>
+#include <variant>
 
 namespace upd {
 
@@ -55,4 +56,21 @@ struct std::formatter<Enum> {
   constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
 
   auto format(Enum e, std::format_context &ctx) const { return std::format_to(ctx.out(), "{}", std::to_underlying(e)); }
+};
+
+template<typename... Ts>
+struct std::formatter<std::variant<Ts...>> {
+  constexpr static auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
+
+  static auto format(const std::variant<Ts...> &one_of_values, std::format_context &ctx) {
+    auto format_alt = [&](const auto &alt) { return std::format_to(ctx.out(), "{}", alt); };
+    return std::visit(format_alt, one_of_values);
+  }
+};
+
+template<>
+struct std::formatter<std::monostate> {
+  constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
+
+  auto format(std::monostate, std::format_context &ctx) const { return std::format_to(ctx.out(), "<monostate>"); }
 };
