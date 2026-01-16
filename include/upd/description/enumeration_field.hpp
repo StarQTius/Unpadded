@@ -52,8 +52,8 @@ struct enumeration_field_t {
     }
   }
 
-  template<record_like Packet, record_like Fields>
-  [[nodiscard]] constexpr auto rules(const Packet &, const Fields &) const {
+  template<record_like Packet, record_like Fields, serializer Serializer>
+  [[nodiscard]] constexpr auto rules(const Packet &, const Fields &, Serializer &) const {
     return std::tuple{};
   }
 

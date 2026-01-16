@@ -50,8 +50,8 @@ struct bound_t {
     return record{entry{expr<identifier>, algebra::solve_for(value_of<Identifier>, sys)}};
   }
 
-  template<record_like Packet, record_like Fields>
-  [[nodiscard]] constexpr auto rules(const Packet &, const Fields &) const {
+  template<record_like Packet, record_like Fields, serializer Serializer>
+  [[nodiscard]] constexpr auto rules(const Packet &, const Fields &, Serializer &) const {
     return std::tuple{value_of<Identifier> = rule};
   };
 

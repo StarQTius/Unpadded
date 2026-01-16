@@ -88,8 +88,8 @@ struct one_of_t {
     return record{};
   }
 
-  template<record_like Packet, record_like Fields>
-  [[nodiscard]] constexpr auto rules(const Packet &, const Fields &) const {
+  template<record_like Packet, record_like Fields, serializer Serializer>
+  [[nodiscard]] constexpr auto rules(const Packet &, const Fields &, Serializer &) const {
     return std::tuple{code_of<Identifier> = rule};
   }
 

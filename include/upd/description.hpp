@@ -566,7 +566,7 @@ public:
     namespace updv = record_views;
 
     auto presys = m_fields | updv::values |
-                  tuple_views::transform([&](const auto &field) { return field.rules(record{}, m_fields); }) |
+                  tuple_views::transform([&](const auto &field) { return field.rules(args, m_fields, ser); }) |
                   tuple_views::join | tuple_views::to<std::tuple>;
 
     auto presys2 = args | updv::filter([]<auto Tag, typename T>(expr_t<Tag>, typebox<T>) {
@@ -594,7 +594,11 @@ public:
 
     updv::for_each(m_fields, [&](auto, const auto &field) {
       updv::for_each(field.deduce(packet, ser, m_fields, tuple_views::concat(sys, presys, presys2, lensys, ctx_sys)),
-                     [&](auto id, const auto &named_value) { packet[keyword2<id.value>{}] = named_value; });
+                     [&](auto id, const auto &named_value) {
+                       if constexpr (!has_tag<field.identifier>(args)) {
+                         packet[keyword2<id.value>{}] = named_value;
+                       }
+                     });
     });
 
     auto postsys = packet | updv::filter([]<auto Tag, typename T>(expr_t<Tag>, typebox<T>) {
@@ -652,11 +656,6 @@ public:
     auto retval =
         m_fields | updv::transform([&](auto, const auto &field) { return field.default_value(); }) | updv::to<record>;
 
-    auto sys = tuple_views::concat(presys, m_fields | updv::values | tuple_views::transform([&](const auto &field) {
-                                             return field.rules(retval, m_fields);
-                                           }) | tuple_views::join) |
-               tuple_views::to<std::tuple>;
-
     if (!err) {
       updv::for_each(m_fields, [&](auto id, const auto &field) {
         ser.checkpoint(id.value.string);
@@ -667,6 +666,12 @@ public:
                        }) |
                        updv::transform([](auto id, auto v) { return value_of<id.value> = v; }) | updv::values |
                        tuple_views::to<std::tuple>;
+        auto sys = tuple_views::concat(
+            presys,
+            get<id.value>(m_fields).rules(retval, m_fields, ser),
+            m_fields | updv::take_until<id.value> | updv::values | tuple_views::transform([&](const auto &field) {
+              return field.rules(retval, m_fields, ser);
+            }) | tuple_views::join);
         auto lensys =
             retval | updv::take_until<id.value> | updv::transform([&](auto id_, const auto &field_value) {
               auto field = get<id_.value>(m_fields);
@@ -683,6 +688,10 @@ public:
         }
       });
     }
+
+    auto sys = tuple_views::concat(presys, m_fields | updv::values | tuple_views::transform([&](const auto &field) {
+                                             return field.rules(retval, m_fields, ser);
+                                           }) | tuple_views::join);
 
     if (!err) {
       auto merged = updv::concat(std::as_const(retval), ctx);

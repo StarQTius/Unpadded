@@ -45,7 +45,7 @@ struct checksum_t {
   [[nodiscard]] constexpr auto default_value() const noexcept(release) -> value_type { return init; }
 
   template<record_like Packet, serializer Serializer, record_like Fields, tuple_like2 System>
-  [[nodiscard]] constexpr auto deduce(Packet &packet, Serializer &ser, const Fields &fields, const System &sys) const {
+  [[nodiscard]] constexpr auto deduce(Packet &packet, Serializer &ser, const Fields &fields, const System &) const {
     using namespace upd::literals;
     namespace updv = upd::record_views;
 
@@ -68,19 +68,16 @@ struct checksum_t {
       value_type acc;
     } dest{&op, init};
 
-    auto field_filter = [&]<auto Id>(expr_t<Id>, auto) { return UPD_INVOKE(FieldFilter{}, expr<Id>); };
+    auto descr = updv::apply([](const auto &...es) { return description{es.value...}; },
+                             fields | updv::filter([](auto id, auto) { return id != Identifier; }));
 
-    updv::for_each(updv::zip(packet | updv::filter(field_filter), fields), [&](auto, const auto &value_and_field) {
-      const auto &[value, field] = value_and_field;
-      field.encode(value, ser, dest, sys);
-    });
-
-    return record{entry{expr<identifier>, dest.acc}};
+    descr.encode(packet | updv::filter([](auto id, auto) { return id != Identifier; }), ser, dest);
+    return record{entry{expr<Identifier>, dest.acc}};
   }
 
-  template<record_like Packet, record_like Fields>
-  [[nodiscard]] constexpr auto rules(const Packet &, const Fields &) const {
-    return std::tuple{};
+  template<record_like Packet, record_like Fields, serializer Serializer>
+  [[nodiscard]] constexpr auto rules(const Packet &packet, const Fields &fields, Serializer &ser) const {
+    return std::tuple{value_of<Identifier> = get<Identifier>(deduce(packet, ser, fields, std::tuple{}))};
   }
 
   template<serializer Serializer, record_like Packet, record_like Fields, tuple_like2 System>
