@@ -7,14 +7,12 @@
 #include <utility>
 
 #include "../algebra/system.hpp"
-#include "../constexpr.hpp"
 #include "../description.hpp"
 #include "../error.hpp"
 #include "../record.hpp"
 #include "../stream_interface.hpp"
 #include "../token.hpp"
 #include "../tuple/tuple_like.hpp"
-#include "../tuple/view.hpp"
 #include "../upd.hpp"
 #include "serializer.hpp"
 
@@ -44,10 +42,8 @@ struct bound_t {
   [[nodiscard]] constexpr static auto default_value() noexcept(release) -> value_type { return value_type{}; }
 
   template<record_like Packet, serializer Serializer, record_like Fields, tuple_like2 System>
-  [[nodiscard]] constexpr auto deduce(Packet &, Serializer &, const Fields &, const System &sys) const {
-    namespace updv = upd::tuple_views;
-
-    return record{entry{expr<identifier>, algebra::solve_for(value_of<Identifier>, sys)}};
+  [[nodiscard]] constexpr auto deduce(Packet &, Serializer &, const Fields &, const System &) const {
+    return record{};
   }
 
   template<record_like Packet, record_like Fields, serializer Serializer>
@@ -66,7 +62,8 @@ struct bound_t {
   }
 
   template<serializer Serializer, tuple_like2 System>
-  constexpr static void encode(value_type value, Serializer &ser, stream_interface &dest, const System &) {
+  constexpr static void encode(value_type, Serializer &ser, stream_interface &dest, const System &sys) {
+    auto value = algebra::solve_for(value_of<Identifier>, sys);
     if constexpr (is_signed) {
       return ser.serialize_signed(value, upd::width<width>, dest);
     } else {

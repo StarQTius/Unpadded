@@ -6,6 +6,7 @@
 #include <tuple>
 #include <utility>
 
+#include "../algebra/system.hpp"
 #include "../constexpr.hpp"
 #include "../description.hpp"
 #include "../error.hpp"
@@ -87,7 +88,8 @@ struct checksum_t {
   }
 
   template<serializer Serializer, tuple_like2 System>
-  constexpr static void encode(value_type value, Serializer &ser, stream_interface &dest, const System &) {
+  constexpr static void encode(value_type, Serializer &ser, stream_interface &dest, const System &sys) {
+    auto value = algebra::solve_for(value_of<Identifier>, sys);
     return ser.serialize_unsigned(value, upd::width<width>, dest);
   }
 

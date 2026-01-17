@@ -565,51 +565,36 @@ public:
   encode(const Args &args, Serializer &ser, stream_interface &dest, const System &ctx_sys = std::tuple{}) const {
     namespace updv = record_views;
 
-    auto presys = m_fields | updv::values |
-                  tuple_views::transform([&](const auto &field) { return field.rules(args, m_fields, ser); }) |
-                  tuple_views::join | tuple_views::to<std::tuple>;
+    auto initial_sys = args | updv::filter([]<auto Tag, typename T>(expr_t<Tag>, typebox<T>) {
+                         return std::is_scalar_v<std::remove_cvref_t<T>>;
+                       }) |
+                       updv::transform([](auto id, auto v) { return value_of<id.value> = v; }) | updv::values;
 
-    auto presys2 = args | updv::filter([]<auto Tag, typename T>(expr_t<Tag>, typebox<T>) {
-                     return std::is_scalar_v<std::remove_cvref_t<T>>;
-                   }) |
-                   updv::transform([](auto id, auto v) { return value_of<id.value> = v; }) | updv::values;
+    auto rule_sys = m_fields | updv::values |
+                    tuple_views::transform([&](const auto &field) { return field.rules(args, m_fields, ser); }) |
+                    tuple_views::join;
 
-    auto lensys = args | updv::transform([&](auto id_, const auto &field_value) {
-                    auto field = get<id_.value>(m_fields);
-                    return length_of<id_.value> =
-                               bitsize(field.make_value(tuple_views::concat(presys, presys2), field_value), field);
-                  }) |
-                  updv::values;
+    auto length_sys = args | updv::transform([&](auto id_, const auto &field_value) {
+                        auto field = get<id_.value>(m_fields);
+                        return length_of<id_.value> = bitsize(
+                                   field.make_value(tuple_views::concat(initial_sys, rule_sys), field_value), field);
+                      }) |
+                      updv::values;
 
-    auto sys = std::tuple{};
+    auto sys = tuple_views::concat(initial_sys, rule_sys, length_sys, ctx_sys);
 
     auto packet = m_fields | updv::transform([&]<typename Field>(auto, const Field &field) {
                     if constexpr (has_tag<field.identifier>(args)) {
-                      return field.make_value(tuple_views::concat(presys, presys2), get<field.identifier>(args));
+                      return field.make_value(sys, get<field.identifier>(args));
                     } else {
-                      return field.default_value(tuple_views::concat(presys, presys2));
+                      return field.default_value(sys);
                     }
                   }) |
                   updv::to<record>;
 
-    updv::for_each(m_fields, [&](auto, const auto &field) {
-      updv::for_each(field.deduce(packet, ser, m_fields, tuple_views::concat(sys, presys, presys2, lensys, ctx_sys)),
-                     [&](auto id, const auto &named_value) {
-                       if constexpr (!has_tag<field.identifier>(args)) {
-                         packet[keyword2<id.value>{}] = named_value;
-                       }
-                     });
-    });
-
-    auto postsys = packet | updv::filter([]<auto Tag, typename T>(expr_t<Tag>, typebox<T>) {
-                     return std::is_scalar_v<std::remove_cvref_t<T>>;
-                   }) |
-                   updv::transform([](auto id, auto v) { return value_of<id.value> = v; }) | updv::values |
-                   tuple_views::to<std::tuple>;
-
     updv::for_each(m_fields, [&](auto id, const auto &field) {
       ser.checkpoint(id.value.string);
-      field.encode(packet[keyword2<id.value>{}], ser, dest, tuple_views::concat(sys, postsys, ctx_sys));
+      field.encode(packet[keyword2<id.value>{}], ser, dest, sys);
     });
   }
 
