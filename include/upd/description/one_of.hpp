@@ -1,15 +1,18 @@
 #pragma once
 
 #include <concepts>
+#include <cstddef>
 #include <expected>
 #include <tuple>
 #include <type_traits>
 #include <utility>
 #include <variant>
 
+#include "../algebra/system.hpp"
 #include "../constexpr.hpp"
 #include "../description.hpp"
 #include "../error.hpp"
+#include "../is_instance_of.hpp"
 #include "../record.hpp"
 #include "../record/tags.hpp"
 #include "../record/tags_of.hpp"
@@ -18,6 +21,8 @@
 #include "../tuple/concat.hpp"
 #include "../tuple/enumerate.hpp"
 #include "../tuple/find.hpp"
+#include "../tuple/fold.hpp"
+#include "../tuple/join.hpp"
 #include "../tuple/to.hpp"
 #include "../tuple/transform.hpp"
 #include "../tuple/tuple_like.hpp"
@@ -26,6 +31,33 @@
 #include "../upd.hpp"
 #include "../with_sequence.hpp"
 #include "serializer.hpp"
+
+namespace upd {
+
+class counting_stream : public stream_interface {
+public:
+  counting_stream() = default;
+
+  [[nodiscard]] auto read(std::size_t count, word_t *) noexcept(release) -> stream_error_t override {
+    m_read += count;
+    return 0;
+  }
+
+  [[nodiscard]] auto write(const word_t *, std::size_t size) noexcept(release) -> stream_error_t override {
+    m_written += size;
+    return 0;
+  }
+
+  [[nodiscard]] constexpr auto read() const noexcept(release) -> std::size_t { return m_read; }
+
+  [[nodiscard]] constexpr auto written() const noexcept(release) -> std::size_t { return m_written; }
+
+private:
+  std::size_t m_read;
+  std::size_t m_written;
+};
+
+} // namespace upd
 
 namespace upd::descriptor {
 
@@ -58,7 +90,7 @@ struct one_of_t {
 
     auto seq = UPD_WITH_SEQUENCE(Is, size) { return std::tuple{expr<Is>...}; };
 
-    auto code = solve_for(code_of<Identifier>, sys);
+    auto code = solve_for(code_of<Identifier>, sys | updv::to<std::tuple>);
     auto i = updv::dynfind(tags_of_v<TaggedDescriptions>, code);
 
     return updv::visit(seq, i, [&](auto i) -> value_type {
@@ -89,13 +121,49 @@ struct one_of_t {
   }
 
   template<record_like Packet, record_like Fields, serializer Serializer>
-  [[nodiscard]] constexpr auto rules(const Packet &, const Fields &, Serializer &) const {
-    return std::tuple{code_of<Identifier> = rule};
+  [[nodiscard]] constexpr auto rules(const Packet &packet, const Fields &fields, Serializer &ser) const {
+    namespace updv = upd::record_views;
+
+    auto rule_sys = fields | updv::filter([](auto id, const auto &) { return id != Identifier; }) | updv::values |
+                    tuple_views::transform([&](const auto &field) { return field.rules(packet, fields, ser); }) |
+                    tuple_views::join;
+
+    auto sys = tuple_views::concat(std::tuple{code_of<Identifier> = rule}, rule_sys);
+    auto id = try_solve_for(code_of<Identifier>, sys);
+    if constexpr (id == unit || !has_tag<Identifier>(packet)) {
+      return std::tuple{code_of<Identifier> = rule};
+    } else {
+      auto id_pos = tuple_views::dynfind(tagged_descriptions | record_views::tags, id);
+      auto count =
+          tuple_views::visit(tagged_descriptions | updv::values | tuple_views::enumerate,
+                             id_pos,
+                             [&](const auto &i_and_descr) -> std::size_t {
+                               const auto &[i, descr] = i_and_descr;
+                               auto cnt_stream = counting_stream{};
+                               if constexpr (!is_instance_of<decltype(descr), description>()) {
+                                 descr.encode({}, ser, cnt_stream, std::tuple{});
+                                 return cnt_stream.written();
+                               } else if constexpr (std::constructible_from<value_type,
+                                                                            std::in_place_index_t<i + 1>,
+                                                                            record_element_t<Identifier, Packet>>) {
+                                 descr.encode(get<Identifier>(packet), ser, cnt_stream, std::tuple{});
+                                 return cnt_stream.written();
+                               } else if constexpr (std::constructible_from<value_type, std::in_place_index_t<i + 1>>) {
+                                 auto cnt_stream = counting_stream{};
+                                 descr.encode(record{}, ser, cnt_stream, std::tuple{});
+                                 return cnt_stream.written();
+                               } else {
+                                 UPD_ASSERT(false);
+                               }
+                             });
+
+      return std::tuple{code_of<Identifier> = rule, length_of<Identifier> = count * ser.bytewidth};
+    }
   }
 
   template<serializer Serializer, record_like Packet, record_like Fields, tuple_like2 System>
   [[nodiscard]] constexpr auto
-  decode(stream_interface &src, Serializer &ser, const Packet &packet, const Fields &, const System &sys) const
+  decode(stream_interface &src, Serializer &ser, const Packet &, const Fields &, const System &sys) const
       -> result<value_type> {
     namespace stdr = std::ranges;
     namespace updv = upd::tuple_views;
@@ -109,10 +177,13 @@ struct one_of_t {
 
     auto make_alt = [&](const auto &id_pos_and_descr) {
       const auto &[id_pos, descr] = id_pos_and_descr;
-      auto lensys = std::tuple{length_of<Identifier> = descr.length()};
+      auto length_rule = tuple_views::fold_left(descr.m_fields | record_views::tags |
+                                                    updv::transform([](auto id) { return length_of<id.value>; }),
+                                                0uz,
+                                                [](auto acc, auto var) { return acc + var; });
       auto make_retval = [&](auto &&alt) { return value_type{std::in_place_index<id_pos + 1>, UPD_FWD(alt)}; };
-      auto retval = descr.decode(src, ser, packet, updv::concat(sys, lensys)).transform(make_retval);
-      return retval;
+      return descr.decode(src, ser, record{}, updv::concat(sys, std::tuple{length_of<Identifier> = length_rule}))
+          .transform(make_retval);
     };
 
     return updv::visit(tagged_descriptions | record_views::values | updv::enumerate, id_pos, make_alt);
@@ -130,7 +201,16 @@ struct one_of_t {
 
       UPD_ASSERT(alt);
 
-      named_descr.encode(*alt, ser, dest, sys);
+      if constexpr (is_instance_of<decltype(named_descr), description>()) {
+        auto length_rule = tuple_views::fold_left(named_descr.m_fields | record_views::tags |
+                                                      updv::transform([](auto id) { return length_of<id.value>; }),
+                                                  0uz,
+                                                  [](auto acc, auto var) { return acc + var; });
+
+        named_descr.encode(*alt, ser, dest, updv::concat(sys, std::tuple{length_of<Identifier> = length_rule}));
+      } else {
+        named_descr.encode(*alt, ser, dest, sys);
+      }
     };
 
     return updv::visit(tagged_descriptions | record_views::values | updv::enumerate, alt_index - 1, encode_alt);

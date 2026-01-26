@@ -42,8 +42,12 @@ struct field_t {
   }
 
   template<record_like Packet, record_like Fields, serializer Serializer>
-  [[nodiscard]] constexpr auto rules(const Packet &, const Fields &, Serializer &) const {
-    return std::tuple{};
+  [[nodiscard]] constexpr auto rules(const Packet &packet, const Fields &, Serializer &) const {
+    if constexpr (has_tag<Identifier>(packet)) {
+      return std::tuple{value_of<Identifier> = get<Identifier>(packet), length_of<Identifier> = Width};
+    } else {
+      return std::tuple{length_of<Identifier> = Width};
+    }
   }
 
   template<serializer Serializer, record_like Packet, record_like Fields, tuple_like2 System>
@@ -86,8 +90,8 @@ struct anonymous_field_t {
     }
   }
 
-  template<serializer Serializer, typename Packet>
-  [[nodiscard]] constexpr auto decode(stream_interface &src, Serializer &ser, const Packet &) const
+  template<serializer Serializer, typename Packet, tuple_like2 System>
+  [[nodiscard]] constexpr auto decode(stream_interface &src, Serializer &ser, const Packet &, const System &) const
       -> result<result_type> {
     if constexpr (is_signed) {
       return ser.deserialize_signed(src, upd::width<width>);

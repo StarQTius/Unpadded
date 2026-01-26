@@ -53,8 +53,12 @@ struct enumeration_field_t {
   }
 
   template<record_like Packet, record_like Fields, serializer Serializer>
-  [[nodiscard]] constexpr auto rules(const Packet &, const Fields &, Serializer &) const {
-    return std::tuple{};
+  [[nodiscard]] constexpr auto rules(const Packet &packet, const Fields &, Serializer &) const {
+    if constexpr (has_tag<Identifier>(packet)) {
+      return std::tuple{value_of<Identifier> = get<Identifier>(packet), length_of<Identifier> = Width};
+    } else {
+      return std::tuple{length_of<Identifier> = Width};
+    }
   }
 
   template<serializer Serializer, tuple_like2 System>

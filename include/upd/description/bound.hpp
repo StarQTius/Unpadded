@@ -12,6 +12,7 @@
 #include "../record.hpp"
 #include "../stream_interface.hpp"
 #include "../token.hpp"
+#include "../tuple/to.hpp"
 #include "../tuple/tuple_like.hpp"
 #include "../upd.hpp"
 #include "serializer.hpp"
@@ -47,8 +48,13 @@ struct bound_t {
   }
 
   template<record_like Packet, record_like Fields, serializer Serializer>
-  [[nodiscard]] constexpr auto rules(const Packet &, const Fields &, Serializer &) const {
-    return std::tuple{value_of<Identifier> = rule};
+  [[nodiscard]] constexpr auto rules(const Packet &packet, const Fields &, Serializer &) const {
+    if constexpr (has_tag<Identifier>(packet)) {
+      return std::tuple{
+          value_of<Identifier> = get<Identifier>(packet), value_of<Identifier> = rule, length_of<Identifier> = Width};
+    } else {
+      return std::tuple{value_of<Identifier> = rule, length_of<Identifier> = Width};
+    }
   };
 
   template<serializer Serializer, record_like Packet, record_like Fields, tuple_like2 System>
@@ -63,7 +69,7 @@ struct bound_t {
 
   template<serializer Serializer, tuple_like2 System>
   constexpr static void encode(value_type, Serializer &ser, stream_interface &dest, const System &sys) {
-    auto value = algebra::solve_for(value_of<Identifier>, sys);
+    auto value = algebra::solve_for(value_of<Identifier>, sys | tuple_views::to<std::tuple>);
     if constexpr (is_signed) {
       return ser.serialize_signed(value, upd::width<width>, dest);
     } else {

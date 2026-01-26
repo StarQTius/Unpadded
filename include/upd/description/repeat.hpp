@@ -13,7 +13,7 @@
 #include "../record.hpp"
 #include "../static_vector.hpp"
 #include "../stream_interface.hpp"
-#include "../tuple/instantiate.hpp"
+#include "../tuple/to.hpp"
 #include "../tuple/tuple_like.hpp"
 #include "../upd.hpp"
 #include "serializer.hpp"
@@ -56,18 +56,23 @@ struct repeat_t {
   }
 
   template<record_like Packet, record_like Fields, serializer Serializer>
-  [[nodiscard]] constexpr auto rules(const Packet &, const Fields &, Serializer &) const {
-    return std::tuple{length_of<Identifier> = rule};
+  [[nodiscard]] constexpr auto rules(const Packet &packet, const Fields &fields, Serializer &) const {
+    if constexpr (has_tag_v<Identifier, Packet>) {
+      return std::tuple{length_of<Identifier> = rule,
+                        length_of<Identifier> = bitsize(get<Identifier>(packet), get<Identifier>(fields))};
+    } else {
+      return std::tuple{length_of<Identifier> = rule};
+    }
   }
 
   template<serializer Serializer, record_like Packet, record_like Fields, tuple_like2 System>
   [[nodiscard]] constexpr auto
-  decode(stream_interface &src, Serializer &ser, const Packet &packet, const Fields &, const System &sys) const
+  decode(stream_interface &src, Serializer &ser, const Packet &, const Fields &, const System &sys) const
       -> result<value_type> {
     namespace stdv = std::views;
     namespace updv = upd::tuple_views;
 
-    auto len = solve_for(length_of<Identifier>, sys);
+    auto len = solve_for(length_of<Identifier>, sys | updv::to<std::tuple>);
     if (len < 0) {
       return std::unexpected{negative_repetition_count{identifier.string, static_cast<std::intmax_t>(len)}};
     }
@@ -77,7 +82,7 @@ struct repeat_t {
     auto i = 0uz;
     auto overflown = false;
     while (!overflown && i < len) {
-      auto maybe_value = description.decode(src, ser, packet);
+      auto maybe_value = description.decode(src, ser, record{}, sys);
       if (!maybe_value) {
         return std::unexpected{std::move(maybe_value).error()};
       }

@@ -6,6 +6,7 @@
 #include <type_traits>
 
 #include "../constexpr.hpp"
+#include "../equivalent_to.hpp"
 #include "../upd.hpp"
 #include "name.hpp"
 #include "record_like.hpp"
@@ -84,13 +85,16 @@ template<auto Identifier, typename T>
 struct upd::record_like_for<upd::entry<Identifier, T>> {
   constexpr static auto size = 1uz;
 
-  template<std::size_t>
+  template<std::size_t I>
+    requires(I == 0)
   constexpr static auto tag = Identifier;
 
-  template<auto>
+  template<auto Tag>
+    requires equivalent_to<Tag, Identifier>
   using element_type = T;
 
-  template<std::size_t, typename Entry>
+  template<std::size_t I, typename Entry>
+    requires(I == 0)
   [[nodiscard]] constexpr static auto get_ith(Entry &&ent) noexcept(release) -> auto && {
     return UPD_FWD(ent).forward();
   }

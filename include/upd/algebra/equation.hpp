@@ -44,6 +44,8 @@ struct equation {
     return substitute(let{xs}...);
   }
 
+  [[nodiscard]] constexpr auto substitute() const noexcept(release) { return *this; }
+
   template<tuple_like2 Tuple>
   [[nodiscard]] constexpr auto substitute(const Tuple &t) const noexcept(release) {
     namespace updv = upd::tuple_views;

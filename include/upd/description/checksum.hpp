@@ -78,7 +78,8 @@ struct checksum_t {
 
   template<record_like Packet, record_like Fields, serializer Serializer>
   [[nodiscard]] constexpr auto rules(const Packet &packet, const Fields &fields, Serializer &ser) const {
-    return std::tuple{value_of<Identifier> = get<Identifier>(deduce(packet, ser, fields, std::tuple{}))};
+    return std::tuple{value_of<Identifier> = get<Identifier>(deduce(packet, ser, fields, std::tuple{})),
+                      length_of<Identifier> = Width};
   }
 
   template<serializer Serializer, record_like Packet, record_like Fields, tuple_like2 System>

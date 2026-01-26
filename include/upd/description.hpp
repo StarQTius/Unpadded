@@ -24,7 +24,6 @@
 #include "get.hpp"
 #include "record/concat.hpp"
 #include "record/entry.hpp"
-#include "record/filter.hpp"
 #include "record/find.hpp"
 #include "record/fold.hpp"
 #include "record/for_each.hpp"
@@ -58,7 +57,6 @@
 #include "tuple/tuple_view_adaptor.hpp"
 #include "tuple/typelist.hpp"
 #include "tuple/visit.hpp"
-#include "type_traits.hpp"
 #include "upd.hpp"
 #include "with_sequence.hpp"
 
@@ -565,23 +563,11 @@ public:
   encode(const Args &args, Serializer &ser, stream_interface &dest, const System &ctx_sys = std::tuple{}) const {
     namespace updv = record_views;
 
-    auto initial_sys = args | updv::filter([]<auto Tag, typename T>(expr_t<Tag>, typebox<T>) {
-                         return std::is_scalar_v<std::remove_cvref_t<T>>;
-                       }) |
-                       updv::transform([](auto id, auto v) { return value_of<id.value> = v; }) | updv::values;
-
     auto rule_sys = m_fields | updv::values |
                     tuple_views::transform([&](const auto &field) { return field.rules(args, m_fields, ser); }) |
                     tuple_views::join;
 
-    auto length_sys = args | updv::transform([&](auto id_, const auto &field_value) {
-                        auto field = get<id_.value>(m_fields);
-                        return length_of<id_.value> = bitsize(
-                                   field.make_value(tuple_views::concat(initial_sys, rule_sys), field_value), field);
-                      }) |
-                      updv::values;
-
-    auto sys = tuple_views::concat(initial_sys, rule_sys, length_sys, ctx_sys);
+    auto sys = tuple_views::concat(rule_sys, ctx_sys);
 
     auto packet = m_fields | updv::transform([&]<typename Field>(auto, const Field &field) {
                     if constexpr (has_tag<field.identifier>(args)) {
@@ -641,31 +627,26 @@ public:
     auto retval =
         m_fields | updv::transform([&](auto, const auto &field) { return field.default_value(); }) | updv::to<record>;
 
+    updv::for_each(ctx, [&](auto id, const auto &value) { get<id.value>(retval) = value; });
+
     if (!err) {
       updv::for_each(m_fields, [&](auto id, const auto &field) {
         ser.checkpoint(id.value.string);
-        auto packet = updv::concat(ctx, std::as_const(retval));
-        auto postsys = retval | updv::take_until<id.value> |
-                       updv::filter([]<auto Tag, typename T>(expr_t<Tag>, typebox<T>) {
-                         return std::is_scalar_v<std::remove_cvref_t<T>>;
-                       }) |
-                       updv::transform([](auto id, auto v) { return value_of<id.value> = v; }) | updv::values |
-                       tuple_views::to<std::tuple>;
+        auto ctx_ = [&] {
+          if constexpr (has_tag<id.value>(ctx)) {
+            return updv::concat(retval | updv::take_until<id.value>, entry{id, get<id.value>(ctx)}) |
+                   updv::to<upd::record>;
+          } else {
+            return retval | updv::take_until<id.value>;
+          }
+        }();
         auto sys = tuple_views::concat(
             presys,
-            get<id.value>(m_fields).rules(retval, m_fields, ser),
+            get<id.value>(m_fields).rules(ctx_, m_fields, ser),
             m_fields | updv::take_until<id.value> | updv::values | tuple_views::transform([&](const auto &field) {
-              return field.rules(retval, m_fields, ser);
+              return field.rules(ctx_, m_fields, ser);
             }) | tuple_views::join);
-        auto lensys =
-            retval | updv::take_until<id.value> | updv::transform([&](auto id_, const auto &field_value) {
-              auto field = get<id_.value>(m_fields);
-              return length_of<id_.value> = bitsize(
-                         field.make_value(tuple_views::concat(sys, postsys) | tuple_views::to<std::tuple>, field_value),
-                         field);
-            }) |
-            updv::values | tuple_views::to<std::tuple>;
-        auto maybe_field_value = field.decode(src, ser, packet, m_fields, tuple_views::concat(sys, postsys, lensys));
+        auto maybe_field_value = field.decode(src, ser, retval, m_fields, sys);
         if (maybe_field_value) {
           get<id.value>(retval) = *maybe_field_value;
         } else {
@@ -680,15 +661,10 @@ public:
 
     if (!err) {
       auto merged = updv::concat(std::as_const(retval), ctx);
-      auto postsys = retval | updv::filter([]<auto Tag, typename T>(expr_t<Tag>, typebox<T>) {
-                       return std::is_scalar_v<std::remove_cvref_t<T>>;
-                     }) |
-                     updv::transform([](auto id, auto v) { return value_of<id.value> = v; }) | updv::values |
-                     tuple_views::to<std::tuple>;
-      auto deduced = m_fields | updv::transform([&](auto, const auto &field) {
-                       return field.deduce(retval, ser, m_fields, tuple_views::concat(sys, postsys));
-                     }) |
-                     updv::join([](auto, auto k) { return k; }) | updv::to<record>;
+      auto deduced =
+          m_fields |
+          updv::transform([&](auto, const auto &field) { return field.deduce(retval, ser, m_fields, sys); }) |
+          updv::join([](auto, auto k) { return k; }) | updv::to<record>;
 
       updv::for_each(deduced, [&](auto id, const auto &ded) {
         const auto &actual = get<id.value>(merged);

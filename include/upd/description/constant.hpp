@@ -44,7 +44,7 @@ struct constant_t {
 
   template<record_like Packet, record_like Fields, serializer Serializer>
   [[nodiscard]] constexpr auto rules(const Packet &, const Fields &, Serializer &) const {
-    return std::tuple{};
+    return std::tuple{length_of<Identifier> = Width};
   }
 
   template<serializer Serializer, record_like Packet, record_like Fields, tuple_like2 System>
@@ -87,7 +87,7 @@ struct enumeration_constant_t {
 
   template<record_like Packet, record_like Fields, serializer Serializer>
   [[nodiscard]] constexpr auto rules(const Packet &, const Fields &, Serializer &) const {
-    return std::tuple{};
+    return std::tuple{length_of<Identifier> = Width};
   }
 
   template<serializer Serializer, record_like Packet, record_like Fields, tuple_like2 System>

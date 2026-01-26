@@ -21,10 +21,29 @@
 #include "side.hpp"
 #include "variable.hpp"
 
+namespace upd {
+
+constexpr struct unit_t {
+} unit;
+
+template<typename T>
+[[nodiscard]] constexpr auto operator==(unit_t, const T &) noexcept(release) -> bool {
+  return false;
+}
+
+template<typename T>
+[[nodiscard]] constexpr auto operator==(const T &, unit_t) noexcept(release) -> bool {
+  return false;
+}
+
+[[nodiscard]] constexpr inline auto operator==(unit_t, unit_t) noexcept(release) -> bool { return true; }
+
+} // namespace upd
+
 namespace upd::algebra {
 
 template<std::size_t MaxPassCount = 16, auto Varname, tuple_like2 System>
-[[nodiscard]] constexpr auto solve_for(side<variable<Varname>> var, const System &sys) noexcept(release) {
+[[nodiscard]] constexpr auto try_solve_for(side<variable<Varname>> var, const System &sys) noexcept(release) {
   namespace updv = upd::tuple_views;
 
   auto solpos = updv::find_if(sys, [&]<typename Eq>(typebox<Eq>) {
@@ -44,7 +63,17 @@ template<std::size_t MaxPassCount = 16, auto Varname, tuple_like2 System>
         updv::transform([&](const auto &eq) { return eq.substitute(lets).simplify(); });
 
     auto newsys = updv::concat(lets, eqs) | updv::to<std::tuple>;
-    return solve_for<MaxPassCount - 1>(var, newsys);
+    return try_solve_for<MaxPassCount - 1>(var, newsys);
+  } else {
+    return unit;
+  }
+}
+
+template<std::size_t MaxPassCount = 16, auto Varname, tuple_like2 System>
+[[nodiscard]] constexpr auto solve_for(side<variable<Varname>> var, const System &sys) noexcept(release) {
+  auto retval = try_solve_for<MaxPassCount>(var, sys);
+  if constexpr (retval != unit) {
+    return retval;
   } else {
     UPD_STATIC_ASSERT(always_false<>, "Maximum number of passes reached");
   }

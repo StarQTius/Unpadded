@@ -6,6 +6,7 @@
 #include <limits>
 #include <ranges>
 #include <string_view>
+#include <tuple>
 #include <variant>
 
 #include <catch2/catch_test_macros.hpp>
@@ -128,15 +129,15 @@ TEST_CASE("Protocol descriptors", "[descriptor]") {
   SECTION("Encode then decode an anonymous unsigned field") {
     auto descr = ufield2<upd::anon, 16>;
     descr.encode(42, ser, st);
-    REQUIRE(*descr.decode(st, ser, upd::record{}) == 42);
+    REQUIRE(*descr.decode(st, ser, upd::record{}, std::tuple{}) == 42);
   }
 
   SECTION("Encode then decode an anonymous signed field") {
     auto descr = field2<upd::anon, 15>;
     descr.encode(42, ser, st);
-    REQUIRE(*descr.decode(st, ser, upd::record{}) == 42);
+    REQUIRE(*descr.decode(st, ser, upd::record{}, std::tuple{}) == 42);
     descr.encode(-8, ser, st);
-    REQUIRE(*descr.decode(st, ser, upd::record{}) == -8);
+    REQUIRE(*descr.decode(st, ser, upd::record{}, std::tuple{}) == -8);
   }
 
   SECTION("Encode then decode unsigned field") {
@@ -230,6 +231,34 @@ TEST_CASE("Protocol descriptors", "[descriptor]") {
     result = *descr.decode(st, ser);
     REQUIRE(result["i"_kw2] == abc::c);
     REQUIRE(std::get<3>(result["alts"_kw2])["k"_kw2] == 56);
+  }
+
+  SECTION("Encode then decode a shadow enumeration field") {
+    enum class abc {
+      a = -34,
+      b = 5,
+      c = 56,
+    };
+
+    auto descr = shadow_efield2<"abc", abc, 16> | one_of<"alts">(upd::value_of<"abc">,
+                                                                 upd::when<abc::a> = constant2<"k", 8>(34),
+                                                                 upd::when<abc::b> = constant2<"k", 8>(45),
+                                                                 upd::when<abc::c> = constant2<"k", 8>(56));
+
+    descr.encode(("abc"_kw2 = abc::a), ser, st);
+    auto res1 = *descr.decode(st, ser, ("abc"_kw2 = abc::a));
+    REQUIRE(res1["abc"_kw2] == abc::a);
+    REQUIRE(std::get<1>(res1["alts"_kw2])["k"_kw2] == 34);
+
+    descr.encode(("abc"_kw2 = abc::b), ser, st);
+    auto res2 = *descr.decode(st, ser, ("abc"_kw2 = abc::b));
+    REQUIRE(res2["abc"_kw2] == abc::b);
+    REQUIRE(std::get<2>(res2["alts"_kw2])["k"_kw2] == 45);
+
+    descr.encode(("abc"_kw2 = abc::c), ser, st);
+    auto res3 = *descr.decode(st, ser, ("abc"_kw2 = abc::c));
+    REQUIRE(res3["abc"_kw2] == abc::c);
+    REQUIRE(std::get<3>(res3["alts"_kw2])["k"_kw2] == 56);
   }
 }
 
