@@ -7,17 +7,6 @@
 #include "concept/invocable.hpp"
 #include "upd.hpp"
 
-#define UPD_CONSTEXPR_ASSERT(...)                                                                                      \
-  do {                                                                                                                 \
-    if (std::is_constant_evaluated() && !(__VA_ARGS__)) {                                                              \
-      throw;                                                                                                           \
-    }                                                                                                                  \
-  } while (false)
-
-#define UPD_THIS_DEDUCTION_REQUIRES_WORKAROUND(...) static_assert(__VA_ARGS__)
-
-#define UPD_VARIADIC_CONSTRAINT_WORKAROUND(...) ((__VA_ARGS__) && ...)
-
 namespace upd {
 
 template<auto>
@@ -25,11 +14,6 @@ struct auto_constant;
 
 template<auto Value>
 using expr_t = auto_constant<Value>;
-
-template<typename T>
-concept auto_constant_instance = requires(T x) {
-  { auto_constant{x} } -> std::common_reference_with<T>;
-};
 
 template<auto Expr>
 constexpr auto expr = auto_constant<Expr>{};
