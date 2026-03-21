@@ -44,13 +44,9 @@
 #include "stream_interface.hpp"
 #include "template_traits.hpp"
 #include "token.hpp"
-#include "tuple/apply.hpp"
 #include "tuple/as_record.hpp"
 #include "tuple/concat.hpp"
-#include "tuple/fold.hpp"
 #include "tuple/join.hpp"
-#include "tuple/reverse.hpp"
-#include "tuple/to.hpp"
 #include "tuple/transform.hpp"
 #include "tuple/tuple_like.hpp"
 #include "tuple/tuple_size.hpp"
@@ -111,154 +107,6 @@ template<auto Code, typename... Args>
 [[nodiscard]] constexpr auto choice(Args &&...args) -> choice_t<Code, Args...> {
   return choice_t<Code, Args...>{.arguments = {UPD_FWD(args)...}};
 }
-
-template<typename T>
-concept inversible = requires(T x) {
-  inverse(UPD_FWD(x));
-  { inverse(inverse(UPD_FWD(x))) } -> std::convertible_to<T>;
-};
-
-template<typename T>
-struct add_some {
-  T offset;
-
-  template<typename U>
-  [[nodiscard]] constexpr auto operator()(U &&x) const noexcept(release) {
-    return UPD_FWD(x) + offset;
-  }
-};
-
-template<typename T>
-struct substract_some {
-  T offset;
-
-  template<typename U>
-  [[nodiscard]] constexpr auto operator()(U &&x) const noexcept(release) {
-    return UPD_FWD(x) - offset;
-  }
-};
-
-template<typename T>
-struct multiply_some {
-  T factor;
-
-  template<typename U>
-  [[nodiscard]] constexpr auto operator()(U &&x) const noexcept(release) {
-    return UPD_FWD(x) * factor;
-  }
-};
-
-template<typename T>
-struct divide_some {
-  T factor;
-
-  template<typename U>
-  [[nodiscard]] constexpr auto operator()(U &&x) const noexcept(release) {
-    return UPD_FWD(x) / factor;
-  }
-};
-
-template<inversible... Inversibles>
-struct bijective_chain {
-  std::tuple<Inversibles...> operations;
-
-  template<typename Self, typename U>
-  [[nodiscard]] constexpr auto operator()(this Self &&self, U x) {
-    namespace updv = upd::tuple_views;
-
-    return updv::fold_left(UPD_FWD(self).operations, x, [](auto acc, auto &&op) { return UPD_INVOKE(op, acc); });
-  };
-
-  template<typename Self, inversible Inversible>
-  [[nodiscard]] constexpr auto and_then(this Self &&self, Inversible &&op) {
-    namespace updv = upd::tuple_views;
-
-    return updv::apply(UPD_FWD(self).operations, [&](auto &&...ops) {
-      return bijective_chain<Inversibles..., Inversible>{{UPD_FWD(ops)..., UPD_FWD(op)}};
-    });
-  }
-};
-
-template<typename T>
-[[nodiscard]] constexpr auto inverse(add_some<T> op) noexcept(release) -> substract_some<T> {
-  return substract_some{op.offse};
-}
-
-template<typename T>
-[[nodiscard]] constexpr auto inverse(substract_some<T> op) noexcept(release) -> add_some<T> {
-  return add_some{op.offset};
-}
-
-template<typename T>
-[[nodiscard]] constexpr auto inverse(multiply_some<T> op) noexcept(release) -> divide_some<T> {
-  return divide_some{op.factor};
-}
-
-template<typename T>
-[[nodiscard]] constexpr auto inverse(divide_some<T> op) noexcept(release) -> multiply_some<T> {
-  return multiply_some{op.factor};
-}
-
-template<inversible... Inversibles>
-[[nodiscard]] constexpr auto inverse(const bijective_chain<Inversibles...> &chain) {
-  namespace updv = upd::tuple_views;
-
-  auto inv_ops = chain.operations | updv::transform([](const auto &op) { return inverse(op); }) | updv::reverse |
-                 updv::to<std::tuple>;
-
-  return bijective_chain{std::move(inv_ops)};
-}
-
-template<inversible... Inversibles>
-[[nodiscard]] constexpr auto inverse(bijective_chain<Inversibles...> &&chain) {
-  namespace updv = upd::tuple_views;
-
-  auto inv_ops = std::move(chain).operations | updv::transform([](auto &&op) { return inverse(std::move(op)); }) |
-                 updv::reverse | updv::to<std::tuple>;
-
-  return bijective_chain{std::move(inv_ops)};
-}
-
-template<auto Identifier, typename F, inversible... Inversibles>
-struct field_expression_t {
-  constexpr static auto from_identifier = Identifier;
-
-  auto_constant<Identifier> id_const;
-  F get_value;
-  bijective_chain<Inversibles...> chain;
-
-  template<typename Self, typename T>
-  [[nodiscard]] constexpr auto operator+(this Self &&self, T &&x) {
-    return UPD_FWD(self).and_then(add_some{UPD_FWD(x)});
-  }
-
-  template<typename Self, typename T>
-  [[nodiscard]] constexpr auto operator-(this Self &&self, T &&x) {
-    return UPD_FWD(self).and_then(substract_some{UPD_FWD(x)});
-  }
-
-  template<typename Self, typename T>
-  [[nodiscard]] constexpr auto operator*(this Self &&self, T &&x) {
-    return UPD_FWD(self).and_then(multiply_some{UPD_FWD(x)});
-  }
-
-  template<typename Self, typename T>
-  [[nodiscard]] constexpr auto operator/(this Self &&self, T &&x) {
-    return UPD_FWD(self).and_then(divide_some{UPD_FWD(x)});
-  }
-
-  template<typename Self, typename T, typename Fields>
-  [[nodiscard]] constexpr auto deduce(this Self &&self, T &&from, const Fields &fields) {
-    decltype(auto) value = UPD_INVOKE(UPD_FWD(self).get_value, UPD_FWD(from), fields);
-    return UPD_INVOKE(UPD_FWD(self).chain, UPD_FWD(value));
-  }
-
-  template<typename Self, inversible Inversible>
-  [[nodiscard]] constexpr auto and_then(this Self &&self, Inversible &&op) {
-    return field_expression_t<Identifier, F, Inversibles..., Inversible>{
-        self.id_const, UPD_FWD(self).get_value, UPD_FWD(self).chain.and_then(UPD_FWD(op))};
-  }
-};
 
 template<name Identifier, std::size_t Width>
 [[nodiscard]] constexpr auto bitsize(std::uintmax_t, descriptor::field_t<Identifier, false, Width>) noexcept(release)
