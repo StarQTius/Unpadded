@@ -56,6 +56,16 @@ public:
       : m_storage{lite_record_node<Identifiers, record_element_t<Identifiers, Record>>{
             get<Identifiers>(UPD_FWD(other))}...} {}
 
+  template<typename Record>
+    requires(is_instance_of<Record, record>() &&
+             variadic::identical(std::tuple{expr<Identifiers>...}, tags_of_v<Record>))
+  constexpr record &operator=(Record && other)
+    requires(std::assignable_from<Ts, decltype(get<Identifiers>(UPD_FWD(other)))> && ...)
+  {
+    ((void)(get<Identifiers>(*this) = get<Identifiers>(UPD_FWD(other))), ...);
+    return *this;
+  }
+
   template<typename Self, auto Id>
   [[nodiscard]] constexpr auto operator[](this Self &&self, keyword2<Id>) noexcept(release) -> auto && {
     return UPD_FWD(self).m_storage.get_by_tag(expr<Id>);

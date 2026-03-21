@@ -81,6 +81,24 @@ struct checksum_t; // IWYU pragma: keep
 
 namespace upd {
 
+struct defval_t {
+  template<std::default_initializable T>
+  [[nodiscard]] constexpr operator T() const noexcept(release) {
+    return T{};
+  }
+};
+
+constexpr auto defval = defval_t{};
+
+template<auto Tag, record_like Record, typename T>
+[[nodiscard]] constexpr auto get_or(Record &&rec, T &&x) -> decltype(auto) {
+  if constexpr (has_tag<Tag>(rec)) {
+    return get<Tag>(UPD_FWD(rec));
+  } else {
+    return UPD_FWD(x);
+  }
+}
+
 template<auto Code, typename... Args>
 struct choice_t {
   constexpr static auto code = Code;
@@ -551,6 +569,11 @@ public:
       decltype(typelist2<Ts...> | tuple_views::transform_type([]<typename T> -> entry<T::identifier, T> {}) |
                tuple_views::as_record | record_views::instantiate<record>);
 
+  using input_type =
+      decltype(typelist2<Ts...> |
+               tuple_views::transform_type([]<typename T> -> entry<T::identifier, typename T::input_type> {}) |
+               tuple_views::as_record | record_views::instantiate<record>);
+
   explicit constexpr description(Ts... fields) : m_fields{entry{expr<fields.identifier>, std::move(fields)}...} {}
 
   template<record_like Args, serializer Serializer>
@@ -569,18 +592,9 @@ public:
 
     auto sys = tuple_views::concat(rule_sys, ctx_sys);
 
-    auto packet = m_fields | updv::transform([&]<typename Field>(auto, const Field &field) {
-                    if constexpr (has_tag<field.identifier>(args)) {
-                      return field.make_value(sys, get<field.identifier>(args));
-                    } else {
-                      return field.default_value(sys);
-                    }
-                  }) |
-                  updv::to<record>;
-
     updv::for_each(m_fields, [&](auto id, const auto &field) {
       ser.checkpoint(id.value.string);
-      field.encode(packet[keyword2<id.value>{}], ser, dest, sys);
+      field.encode(get_or<id.value>(args, defval), ser, dest, sys);
     });
   }
 
@@ -973,6 +987,20 @@ namespace upd::literals {
 }
 
 } // namespace upd::literals
+
+template<>
+struct std::formatter<upd::defval_t> {
+  constexpr static auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
+
+  constexpr static auto format(upd::defval_t, std::format_context &ctx) {
+    auto it = ctx.out();
+
+    it = std::format_to(it, "defval");
+
+    ctx.advance_to(it);
+    return it;
+  }
+};
 
 template<std::size_t N>
 struct std::formatter<upd::varname<N>> {

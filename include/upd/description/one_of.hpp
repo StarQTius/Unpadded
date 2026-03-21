@@ -16,7 +16,9 @@
 #include "../record.hpp"
 #include "../record/tags.hpp"
 #include "../record/tags_of.hpp"
+#include "../static_assert.hpp"
 #include "../stream_interface.hpp"
+#include "../template_traits.hpp"
 #include "../tuple/apply.hpp"
 #include "../tuple/concat.hpp"
 #include "../tuple/enumerate.hpp"
@@ -28,11 +30,53 @@
 #include "../tuple/tuple_like.hpp"
 #include "../tuple/typelist.hpp"
 #include "../tuple/visit.hpp"
+#include "../type_traits.hpp"
 #include "../upd.hpp"
 #include "../with_sequence.hpp"
 #include "serializer.hpp"
 
 namespace upd {
+
+template<typename... Targets>
+class deferred_caster {
+  template<typename Orig, typename Target>
+  static auto caster(const void *orig) noexcept(release) -> Target {
+    const auto &o = *reinterpret_cast<const Orig *>(orig);
+    auto cast_alt = []<typename T>(const T &alt) -> Target {
+      if constexpr (std::constructible_from<Target, T>) {
+        return Target{alt};
+      } else {
+        UPD_ASSERT(false);
+      }
+    };
+
+    if constexpr (std::constructible_from<Target, Orig>) {
+      return Target{o};
+    } else if constexpr (is_instance_of<Orig, std::variant>()) {
+      return std::visit(cast_alt, o);
+    } else {
+      UPD_ASSERT(false);
+    }
+  }
+
+public:
+  template<typename T>
+  constexpr deferred_caster(const T &orig) noexcept(release) : m_orig{&orig}, m_casters{caster<T, Targets>...} {}
+
+  template<typename Target>
+  [[nodiscard]] constexpr auto cast_to() const noexcept(release) {
+    using namespace tuple_views;
+
+    auto i = find_if(m_casters, []<typename F>(typebox<F>) { return std::is_invocable_r_v<Target, F, const void *>; });
+    UPD_STATIC_ASSERT(i < sizeof...(Targets), "Cannot cast to target type `{}`", typebox<Target>{});
+
+    return UPD_INVOKE(get<i>(m_casters), m_orig);
+  }
+
+private:
+  const void *m_orig;
+  std::tuple<Targets (*)(const void *)...> m_casters;
+};
 
 class counting_stream : public stream_interface {
 public:
@@ -72,7 +116,13 @@ struct one_of_t {
                tuple_views::transform_type([]<typename T> -> std::remove_cvref_t<T> {}) |
                tuple_views::transform_type([]<typename T> -> typename T::result_type {}) |
                tuple_views::to<typelist2_t>){};
+  constexpr static auto subinput_types =
+      decltype(std::declval<TaggedDescriptions>() | record_views::values | tuple_views::to<typelist2_t> |
+               tuple_views::transform_type([]<typename T> -> std::remove_cvref_t<T> {}) |
+               tuple_views::transform_type([]<typename T> -> typename T::input_type {}) |
+               tuple_views::to<typelist2_t>){};
 
+  using input_type = instantiate_variadic<deferred_caster, decltype(subinput_types)>;
   using value_type = decltype(tuple_views::apply_type(alternative_types, []<typename... Ts> -> std::variant<Ts...> {}));
 
   using tag_type = decltype(tuple_views::apply_type(
@@ -130,34 +180,13 @@ struct one_of_t {
 
     auto sys = tuple_views::concat(std::tuple{code_of<Identifier> = rule}, rule_sys);
     auto id = try_solve_for(code_of<Identifier>, sys);
-    if constexpr (id == unit || !has_tag<Identifier>(packet)) {
+    auto len = try_solve_for(length_of<Identifier>, sys);
+    if constexpr (id == unit || len != unit) {
       return std::tuple{code_of<Identifier> = rule};
     } else {
-      auto id_pos = tuple_views::dynfind(tagged_descriptions | record_views::tags, id);
-      auto count =
-          tuple_views::visit(tagged_descriptions | updv::values | tuple_views::enumerate,
-                             id_pos,
-                             [&](const auto &i_and_descr) -> std::size_t {
-                               const auto &[i, descr] = i_and_descr;
-                               auto cnt_stream = counting_stream{};
-                               if constexpr (!is_instance_of<decltype(descr), description>()) {
-                                 descr.encode({}, ser, cnt_stream, std::tuple{});
-                                 return cnt_stream.written();
-                               } else if constexpr (std::constructible_from<value_type,
-                                                                            std::in_place_index_t<i + 1>,
-                                                                            record_element_t<Identifier, Packet>>) {
-                                 descr.encode(get<Identifier>(packet), ser, cnt_stream, std::tuple{});
-                                 return cnt_stream.written();
-                               } else if constexpr (std::constructible_from<value_type, std::in_place_index_t<i + 1>>) {
-                                 auto cnt_stream = counting_stream{};
-                                 descr.encode(record{}, ser, cnt_stream, std::tuple{});
-                                 return cnt_stream.written();
-                               } else {
-                                 UPD_ASSERT(false);
-                               }
-                             });
-
-      return std::tuple{code_of<Identifier> = rule, length_of<Identifier> = count * ser.bytewidth};
+      auto cnt_stream = counting_stream{};
+      encode(get_or<Identifier>(packet, defval), ser, cnt_stream, sys);
+      return std::tuple{code_of<Identifier> = rule, length_of<Identifier> = cnt_stream.written() * ser.bytewidth};
     }
   }
 
@@ -190,16 +219,15 @@ struct one_of_t {
   }
 
   template<serializer Serializer, tuple_like2 System>
-  constexpr void encode(const value_type &value, Serializer &ser, stream_interface &dest, const System &sys) const
+  constexpr void encode(const input_type &args, Serializer &ser, stream_interface &dest, const System &sys) const
       noexcept(release) {
     namespace updv = upd::tuple_views;
 
-    auto alt_index = value.index();
-    auto encode_alt = [&](auto i_and_named_descr) {
-      const auto &[i, named_descr] = i_and_named_descr;
-      const auto *alt = std::get_if<i.value + 1>(&value);
-
-      UPD_ASSERT(alt);
+    auto code = solve_for(code_of<Identifier>, sys | updv::to<std::tuple>);
+    auto i = updv::dynfind(tags_of_v<TaggedDescriptions>, code);
+    auto encode_alt = [&](const auto &named_descr) {
+      using target_type = typename std::remove_cvref_t<decltype(named_descr)>::input_type;
+      auto target = args.template cast_to<target_type>();
 
       if constexpr (is_instance_of<decltype(named_descr), description>()) {
         auto length_rule = tuple_views::fold_left(named_descr.m_fields | record_views::tags |
@@ -207,13 +235,13 @@ struct one_of_t {
                                                   0uz,
                                                   [](auto acc, auto var) { return acc + var; });
 
-        named_descr.encode(*alt, ser, dest, updv::concat(sys, std::tuple{length_of<Identifier> = length_rule}));
+        named_descr.encode(target, ser, dest, updv::concat(sys, std::tuple{length_of<Identifier> = length_rule}));
       } else {
-        named_descr.encode(*alt, ser, dest, sys);
+        named_descr.encode(target, ser, dest, sys);
       }
     };
 
-    return updv::visit(tagged_descriptions | record_views::values | updv::enumerate, alt_index - 1, encode_alt);
+    return updv::visit(tagged_descriptions | record_views::values, i, encode_alt);
   }
 
   [[nodiscard]] constexpr static auto length() noexcept(release) { return length_of<Identifier>; }

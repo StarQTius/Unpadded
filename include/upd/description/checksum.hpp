@@ -1,5 +1,6 @@
 #pragma once
 
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <ranges>
@@ -11,9 +12,14 @@
 #include "../description.hpp"
 #include "../error.hpp"
 #include "../record.hpp"
+#include "../record/tags_of.hpp"
 #include "../stream_interface.hpp"
 #include "../token.hpp"
+#include "../tuple/as_record.hpp"
+#include "../tuple/filter.hpp"
+#include "../tuple/transform.hpp"
 #include "../tuple/tuple_like.hpp"
+#include "../type_traits.hpp"
 #include "../upd.hpp"
 #include "serializer.hpp"
 
@@ -28,6 +34,7 @@ struct checksum_t {
   constexpr static auto width = Width;
 
   using value_type = std::uintmax_t;
+  using input_type = std::uintmax_t;
 
   template<tuple_like2 System, typename... Args>
   [[nodiscard]] constexpr auto make_value(const System &, Args &&...args) const -> value_type {
@@ -72,7 +79,15 @@ struct checksum_t {
     auto descr = updv::apply([](const auto &...es) { return description{es.value...}; },
                              fields | updv::filter([](auto id, auto) { return id != Identifier; }));
 
-    descr.encode(packet | updv::filter([](auto id, auto) { return id != Identifier; }), ser, dest);
+    using descr_input = typename decltype(descr)::input_type;
+    auto curated_packet = tags_of_v<descr_input> | tuple_views::filter([&]<typename Id>(typebox<const Id &>) {
+                            return !std::convertible_to<record_element_t<Id::value, descr_input>, unit_t>;
+                          }) |
+                          tuple_views::transform([&](auto id) { return entry{id, get_or<id.value>(packet, defval)}; }) |
+                          tuple_views::as_record;
+
+    descr.encode(curated_packet | updv::to<record>, ser, dest);
+
     return record{entry{expr<Identifier>, dest.acc}};
   }
 
@@ -89,7 +104,7 @@ struct checksum_t {
   }
 
   template<serializer Serializer, tuple_like2 System>
-  constexpr static void encode(value_type, Serializer &ser, stream_interface &dest, const System &sys) {
+  constexpr static void encode(unit_t, Serializer &ser, stream_interface &dest, const System &sys) {
     auto value = algebra::solve_for(value_of<Identifier>, sys);
     return ser.serialize_unsigned(value, upd::width<width>, dest);
   }

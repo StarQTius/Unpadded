@@ -136,8 +136,9 @@ constexpr auto answer_description = [] {
   using enum instruction_code;
 
   return constant2<"header", 32>(0x00fdffff) | ufield2<"id", 8> |
-         ubound2<"length", 16>(length_of<"parameters"> / 8 + 4) | constant2<"instruction", 8>(instruction_code::ping) |
-         ufield2<"error", 8> | shadow_efield2<"status_of", instruction_code, 8> |
+         ubound2<"length", 16>(length_of<"parameters"> / 8 + 4) |
+         constant2<"instruction", 8>(instruction_code::status) | ufield2<"error", 8> |
+         shadow_efield2<"status_of", instruction_code, 8> |
          one_of<"parameters">(value_of<"status_of">,
                               when<ping> = ufield2<"model_number", 16> | ufield2<"firmware_version", 8>,
                               when<read> = repeat<"data">(ufield2<anon, 8>),

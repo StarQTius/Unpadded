@@ -23,6 +23,7 @@ struct field_t {
   constexpr static auto width = Width;
 
   using value_type = std::conditional_t<is_signed, std::intmax_t, std::uintmax_t>;
+  using input_type = value_type;
 
   template<tuple_like2 System, typename... Args>
   [[nodiscard]] constexpr auto make_value(const System &, Args &&...args) const -> value_type {
@@ -79,6 +80,7 @@ struct anonymous_field_t {
   constexpr static auto width = Width;
 
   using result_type = std::conditional_t<is_signed, std::intmax_t, std::uintmax_t>;
+  using input_type = result_type;
 
   template<serializer Serializer, tuple_like2 System = std::tuple<>>
   constexpr void

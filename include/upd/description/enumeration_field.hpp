@@ -4,7 +4,6 @@
 #include <cstdint>
 #include <tuple>
 #include <type_traits>
-#include <utility>
 
 #include "../description.hpp"
 #include "../error.hpp"
@@ -24,6 +23,7 @@ struct enumeration_field_t {
   constexpr static auto width = Width;
 
   using value_type = Enum;
+  using input_type = Enum;
 
   template<tuple_like2 System, typename... Args>
   [[nodiscard]] constexpr auto make_value(const System &, Args &&...args) const -> value_type {
@@ -62,7 +62,7 @@ struct enumeration_field_t {
   }
 
   template<serializer Serializer, tuple_like2 System>
-  constexpr static void encode(value_type value, Serializer &ser, stream_interface &dest, const System &) {
+  constexpr static void encode(Enum value, Serializer &ser, stream_interface &dest, const System &) {
     if constexpr (is_signed) {
       return ser.serialize_signed(static_cast<std::intmax_t>(value), upd::width<width - 1>, dest);
     } else {
@@ -79,7 +79,13 @@ struct anonymous_enumeration_field_t {
   constexpr static auto width = Width;
 
   using result_type = enum_type;
+  using input_type = enum_type;
   constexpr static auto is_signed = std::is_signed_v<std::underlying_type_t<enum_type>>;
+
+  template<record_like Fields, serializer Serializer>
+  [[nodiscard]] constexpr auto rules(Enum, const Fields &, Serializer &) const {
+    return std::tuple{};
+  }
 
   template<serializer Serializer, record_like Packet, tuple_like2 System>
   [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &, const System &)
@@ -96,13 +102,11 @@ struct anonymous_enumeration_field_t {
   }
 
   template<serializer Serializer, tuple_like2 System>
-  constexpr static void encode(result_type value, Serializer &ser, stream_interface &dest, const System &) {
-    auto underlying_value = std::to_underlying(value);
-
+  constexpr static void encode(Enum value, Serializer &ser, stream_interface &dest, const System &) {
     if constexpr (is_signed) {
-      ser.serialize_signed(underlying_value, upd::width<width - 1>, dest);
+      ser.serialize_signed(static_cast<std::intmax_t>(value), upd::width<width - 1>, dest);
     } else {
-      ser.serialize_unsigned(underlying_value, upd::width<width>, dest);
+      ser.serialize_unsigned(static_cast<std::uintmax_t>(value), upd::width<width>, dest);
     }
   }
 

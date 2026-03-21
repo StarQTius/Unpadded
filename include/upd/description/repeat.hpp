@@ -32,6 +32,7 @@ struct repeat_t {
   constexpr static auto max = Max;
 
   using value_type = static_vector<typename Description::result_type, Max>;
+  using input_type = value_type;
 
   template<tuple_like2 System, typename... Args>
   [[nodiscard]] constexpr auto make_value(const System &, Args &&...args) const -> value_type {

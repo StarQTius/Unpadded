@@ -22,6 +22,7 @@ struct shadow_enumeration_field_t {
   constexpr static auto width = Width;
 
   using value_type = Enum;
+  using input_type = Enum;
 
   template<tuple_like2 System, typename... Args>
   [[nodiscard]] constexpr auto make_value(const System &, Args &&...args) const -> value_type {

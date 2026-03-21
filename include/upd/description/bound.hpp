@@ -26,6 +26,7 @@ struct bound_t {
   constexpr static auto width = Width;
 
   using value_type = std::conditional_t<is_signed, std::intmax_t, std::uintmax_t>;
+  using input_type = unit_t;
 
   template<tuple_like2 System, typename... Args>
   [[nodiscard]] constexpr auto make_value(const System &, Args &&...args) const -> value_type {
@@ -68,7 +69,7 @@ struct bound_t {
   }
 
   template<serializer Serializer, tuple_like2 System>
-  constexpr static void encode(value_type, Serializer &ser, stream_interface &dest, const System &sys) {
+  constexpr static void encode(unit_t, Serializer &ser, stream_interface &dest, const System &sys) {
     auto value = algebra::solve_for(value_of<Identifier>, sys | tuple_views::to<std::tuple>);
     if constexpr (is_signed) {
       return ser.serialize_signed(value, upd::width<width>, dest);

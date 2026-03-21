@@ -5,6 +5,7 @@
 #include <tuple>
 #include <type_traits>
 
+#include "../algebra/system.hpp"
 #include "../description.hpp"
 #include "../error.hpp"
 #include "../record.hpp"
@@ -22,6 +23,7 @@ struct constant_t {
   constexpr static auto width = Width;
 
   using value_type = std::uintmax_t;
+  using input_type = unit_t;
 
   template<tuple_like2 System, typename... Args>
   [[nodiscard]] constexpr auto make_value(const System &, Args &&...args) const -> value_type {
@@ -54,7 +56,7 @@ struct constant_t {
   }
 
   template<serializer Serializer, tuple_like2 System>
-  constexpr void encode(value_type, Serializer &ser, stream_interface &dest, const System &) const noexcept(release) {
+  constexpr void encode(unit_t, Serializer &ser, stream_interface &dest, const System &) const noexcept(release) {
     return ser.serialize_unsigned(field_value, upd::width<width>, dest);
   }
 
@@ -67,6 +69,7 @@ struct enumeration_constant_t {
   constexpr static auto width = Width;
 
   using value_type = Enum;
+  using input_type = unit_t;
 
   template<tuple_like2 System, typename... Args>
   [[nodiscard]] constexpr auto make_value(const System &, Args &&...args) const -> value_type {
@@ -97,8 +100,8 @@ struct enumeration_constant_t {
   }
 
   template<serializer Serializer, tuple_like2 System>
-  constexpr static void encode(value_type value, Serializer &ser, stream_interface &dest, const System &) {
-    return ser.serialize_unsigned(static_cast<std::uintmax_t>(value), upd::width<width>, dest);
+  constexpr void encode(unit_t, Serializer &ser, stream_interface &dest, const System &) const {
+    return ser.serialize_unsigned(static_cast<std::uintmax_t>(field_value), upd::width<width>, dest);
   }
 
   [[nodiscard]] constexpr static auto length() noexcept(release) { return Width; }

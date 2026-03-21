@@ -1,5 +1,7 @@
 #pragma once
 
+#include <type_traits>
+
 namespace upd::detail {
 
 template<template<typename...> typename, typename>
@@ -22,6 +24,6 @@ concept instance_of_variadic =
     requires(T x) { []<template<typename...> typename TT, typename... Ts>(const TT<Ts...> &) {}(x); };
 
 template<template<typename...> typename TT, instance_of_variadic Args>
-using instantiate_variadic = typename detail::instantiate_variadic<TT, Args>::type;
+using instantiate_variadic = typename detail::instantiate_variadic<TT, std::remove_cvref_t<Args>>::type;
 
 } // namespace upd

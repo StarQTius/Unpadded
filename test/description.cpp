@@ -260,6 +260,17 @@ TEST_CASE("Protocol descriptors", "[descriptor]") {
     REQUIRE(res3["abc"_kw2] == abc::c);
     REQUIRE(std::get<3>(res3["alts"_kw2])["k"_kw2] == 56);
   }
+
+  SECTION("Encode and decode a constant and a checksum field") {
+    auto descr = constant2<"abc", 8>(12) | constant2<"def", 8>(88) |
+                 checksum2<"ghi", 16>([](auto acc, auto v) { return acc + v; }, all_fields);
+    descr.encode(upd::record{}, ser, st);
+
+    auto result = *descr.decode(st, ser);
+    REQUIRE(result["abc"_kw2] == 12);
+    REQUIRE(result["def"_kw2] == 88);
+    REQUIRE(result["ghi"_kw2] == 100);
+  }
 }
 
 TEST_CASE("Nested protocol descriptors", "[descriptor]") {
