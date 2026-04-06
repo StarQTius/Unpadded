@@ -8,7 +8,6 @@
 #include <format>
 #include <iosfwd>
 #include <iterator>
-#include <limits>
 #include <ranges>
 #include <tuple>
 #include <type_traits>
@@ -17,7 +16,6 @@
 
 #include "algebra/side.hpp"
 #include "algebra/variable.hpp"
-#include "concept/invocable.hpp"
 #include "constexpr.hpp"
 #include "description/serializer.hpp"
 #include "error.hpp"
@@ -42,7 +40,6 @@
 #include "safe_operation.hpp"
 #include "static_vector.hpp"
 #include "stream_interface.hpp"
-#include "template_traits.hpp"
 #include "token.hpp"
 #include "tuple/as_record.hpp"
 #include "tuple/concat.hpp"
@@ -93,19 +90,6 @@ template<auto Tag, record_like Record, typename T>
   } else {
     return UPD_FWD(x);
   }
-}
-
-template<auto Code, typename... Args>
-struct choice_t {
-  constexpr static auto code = Code;
-  constexpr static auto argument_types = typelist2<Args...>;
-
-  std::tuple<Args...> arguments;
-};
-
-template<auto Code, typename... Args>
-[[nodiscard]] constexpr auto choice(Args &&...args) -> choice_t<Code, Args...> {
-  return choice_t<Code, Args...>{.arguments = {UPD_FWD(args)...}};
 }
 
 template<name Identifier, std::size_t Width>
@@ -267,90 +251,6 @@ template<typename... WhenThens>
   return record{entry<when_thens.match, typename WhenThens::result_type>{UPD_FWD(when_thens).result}...};
 }
 
-template<typename>
-class invoker_iterator;
-
-template<typename Parent>
-  requires instance_of<std::remove_cv_t<Parent>, invoker_iterator>
-class invoker_iterator_proxy;
-
-template<typename F>
-class invoker_iterator {
-  template<typename Parent>
-    requires instance_of<std::remove_cv_t<Parent>, invoker_iterator>
-  friend class invoker_iterator_proxy;
-
-public:
-  using invocable_type = F;
-  using difference_type = std::ptrdiff_t;
-
-  constexpr explicit invoker_iterator(F *f) noexcept : m_f{f} {}
-
-  constexpr auto operator*() noexcept -> invoker_iterator_proxy<invoker_iterator> {
-    return invoker_iterator_proxy{this};
-  }
-
-  constexpr auto operator*() const noexcept -> invoker_iterator_proxy<const invoker_iterator> {
-    return invoker_iterator_proxy{this};
-  }
-
-  constexpr auto operator++() noexcept -> invoker_iterator & { return *this; }
-
-  constexpr auto operator++() const noexcept -> const invoker_iterator & { return *this; }
-
-  constexpr auto operator++(int) noexcept -> invoker_iterator & { return *this; }
-
-  constexpr auto operator++(int) const noexcept -> const invoker_iterator & { return *this; }
-
-private:
-  F *m_f;
-};
-
-template<typename Parent>
-  requires instance_of<std::remove_cv_t<Parent>, invoker_iterator>
-class invoker_iterator_proxy {
-  template<typename>
-  friend class invoker_iterator;
-
-public:
-  using invocable_type = typename Parent::invocable_type;
-
-  template<typename T>
-    requires invocable<invocable_type, T>
-  constexpr auto operator=(T &&x) const -> const invoker_iterator_proxy & {
-    UPD_INVOKE(*m_parent->m_f, UPD_FWD(x));
-    return *this;
-  }
-
-private:
-  constexpr invoker_iterator_proxy(Parent *parent) noexcept : m_parent{parent} {}
-
-  Parent *m_parent;
-};
-
-template<typename Iter, typename F>
-class transformer_iterator {
-public:
-  using difference_type = typename std::iterator_traits<Iter>::difference_type;
-  using value_type = std::remove_cvref_t<std::invoke_result_t<F, typename std::iterator_traits<Iter>::value_type>>;
-  using reference = std::invoke_result_t<F, typename std::iterator_traits<Iter>::value_type> &;
-  using pointer = decltype(&std::declval<reference>());
-  using iterator_category = std::input_iterator_tag;
-
-  constexpr explicit transformer_iterator(Iter iter, F f) noexcept : m_iter{iter}, m_f{std::move(f)} {}
-
-  [[nodiscard]] constexpr auto operator*() -> decltype(auto) { return m_f(*m_iter); }
-
-  constexpr auto operator++() -> transformer_iterator & {
-    ++m_iter;
-    return *this;
-  }
-
-private:
-  Iter m_iter;
-  F m_f;
-};
-
 } // namespace upd
 
 namespace upd::descriptor {
@@ -364,17 +264,6 @@ constexpr auto constant(T, width_t<Width>) noexcept(release);
 } // namespace upd::descriptor
 
 namespace upd {
-
-template<typename Range>
-[[nodiscard]] constexpr auto all_of(const Range &range) noexcept -> bool {
-  for (const auto &e : range) {
-    if (!e) {
-      return false;
-    }
-  }
-
-  return true;
-}
 
 enum class field_tag {
   pure_field,
@@ -574,267 +463,7 @@ namespace upd::descriptor {
 
 constexpr inline auto empty_description = description<>{};
 
-template<bool Signedness, std::size_t Width>
-struct unamed_field_t {
-  constexpr static auto is_signed = Signedness;
-  constexpr static auto width = Width;
-
-  using result_type = std::conditional_t<is_signed, std::intmax_t, std::uintmax_t>;
-
-  template<serializer Serializer>
-  constexpr void encode(result_type value, Serializer &ser, stream_interface &dest) const {
-    if constexpr (is_signed) {
-      ser.serialize_signed(value, upd::width<width>, dest);
-    } else {
-      ser.serialize_unsigned(value, upd::width<width>, dest);
-    }
-  }
-
-  template<serializer Serializer, typename Packet>
-  [[nodiscard]] constexpr auto decode(stream_interface &src, Serializer &ser, const Packet &) const
-      -> result<result_type> {
-    if constexpr (is_signed) {
-      return ser.deserialize_signed(src, upd::width<width>);
-    } else {
-      return ser.deserialize_unsigned(src, upd::width<width>);
-    }
-  }
-};
-
-template<typename Enum, std::size_t Width>
-struct unamed_enum_field_t {
-  using enum_type = Enum;
-  constexpr static auto width = Width;
-
-  using result_type = enum_type;
-  constexpr static auto is_signed = std::is_signed_v<std::underlying_type_t<enum_type>>;
-
-  template<serializer Serializer, record_like Packet>
-  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &)
-      -> result<result_type> {
-    auto retval = [&] {
-      if constexpr (is_signed) {
-        return ser.deserialize_signed(src, upd::width<width - 1>);
-      } else {
-        return ser.deserialize_unsigned(src, upd::width<width>);
-      }
-    }();
-
-    return result_type{retval};
-  }
-
-  template<serializer Serializer>
-  constexpr static void encode(result_type value, Serializer &ser, stream_interface &dest) {
-    auto underlying_value = std::to_underlying(value);
-
-    if constexpr (is_signed) {
-      ser.serialize_signed(underlying_value, upd::width<width - 1>, dest);
-    } else {
-      ser.serialize_unsigned(underlying_value, upd::width<width>, dest);
-    }
-  }
-};
-
-template<bool Signedness, std::size_t Width>
-[[nodiscard]] constexpr auto field(signedness_t<Signedness>, width_t<Width>) noexcept(release) {
-  return unamed_field_t<Signedness, Width>{};
-}
-
-template<typename Enum, std::size_t Width>
-[[nodiscard]] constexpr auto field(enumeration_t<Enum>, width_t<Width>) noexcept(release) {
-  return unamed_enum_field_t<Enum, Width>{};
-}
-
-template<name Identifier, typename Enum, std::size_t Width, typename Rule>
-struct enum_bound_t {
-  constexpr static auto identifier = Identifier;
-  constexpr static auto is_signed = std::is_signed_v<std::underlying_type_t<Enum>>;
-  constexpr static auto width = Width;
-
-  using value_type = Enum;
-
-  template<record_like Context, typename... Args>
-  [[nodiscard]] constexpr auto make_value(const Context &, Args &&...args) const -> value_type {
-    return value_type{UPD_FWD(args)...};
-  }
-  using rule_type = Rule;
-
-  rule_type rule;
-
-  template<record_like Context>
-  [[nodiscard]] constexpr static auto default_value(const Context &) noexcept(release) -> value_type {
-    return value_type{};
-  }
-
-  [[nodiscard]] constexpr static auto default_value() noexcept(release) -> value_type { return value_type{}; }
-
-  template<record_like Packet, serializer Serializer, record_like Fields>
-  [[nodiscard]] constexpr auto deduce(Packet &packet, Serializer &, const Fields &fields) const {
-    return record{entry{expr<identifier>, rule.deduce(std::as_const(packet), fields)}};
-  }
-
-  template<serializer Serializer, record_like Packet, record_like Fields>
-  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &, const Fields &)
-      -> result<value_type> {
-    auto retval = [&] {
-      if constexpr (is_signed) {
-        return ser.deserialize_signed(src, upd::width<width - 1>);
-      } else {
-        return ser.deserialize_unsigned(src, upd::width<width>);
-      }
-    }();
-
-    return static_cast<value_type>(retval);
-  }
-
-  template<serializer Serializer>
-  constexpr static void encode(value_type value, Serializer &ser, stream_interface &dest) {
-    auto integral_value = std::to_underlying(value);
-    if constexpr (is_signed) {
-      ser.serialize_signed(integral_value, upd::width<width>, dest);
-    } else {
-      ser.serialize_unsigned(integral_value, upd::width<width>, dest);
-    }
-  }
-};
-
-template<name Identifier, typename Enum, std::size_t Width, typename Rule>
-[[nodiscard]] constexpr auto bound(enumeration_t<Enum>, width_t<Width>, Rule rule) noexcept(release) {
-  auto retval = enum_bound_t<Identifier, Enum, Width, Rule>{std::move(rule)};
-
-  return description{std::move(retval)};
-}
-
-template<name Identifier, bool Signedness, std::size_t Width>
-struct bound_elsewhere_t {
-  constexpr static auto identifier = Identifier;
-  constexpr static auto is_signed = Signedness;
-  constexpr static auto width = Width;
-
-  using value_type = std::conditional_t<is_signed, std::intmax_t, std::uintmax_t>;
-
-  template<record_like Context, typename... Args>
-  [[nodiscard]] constexpr auto make_value(const Context &, Args &&...args) const -> value_type {
-    return value_type{UPD_FWD(args)...};
-  }
-
-  template<record_like Context>
-  [[nodiscard]] constexpr static auto default_value(const Context &) noexcept(release) -> value_type {
-    return value_type{};
-  }
-
-  [[nodiscard]] constexpr static auto default_value() noexcept(release) -> value_type { return value_type{}; }
-
-  template<record_like Packet, serializer Serializer, record_like Fields>
-  [[nodiscard]] constexpr static auto deduce(Packet &, Serializer &, const Fields &) noexcept(release) {
-    return record{};
-  }
-
-  template<serializer Serializer, record_like Packet, record_like Fields>
-  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &, const Fields &)
-      -> result<value_type> {
-    if constexpr (is_signed) {
-      return ser.deserialize_signed(src, upd::width<width>);
-    } else {
-      return ser.deserialize_unsigned(src, upd::width<width>);
-    }
-  }
-
-  template<serializer Serializer>
-  constexpr static void encode(value_type value, Serializer &ser, stream_interface &dest) {
-    if constexpr (is_signed) {
-      return ser.serialize_signed(value, dest);
-    } else {
-      return ser.serialize_unsigned(value, dest);
-    }
-  }
-};
-
-template<name Identifier, typename Enum, std::size_t Width>
-struct enum_bound_elsewhere_t {
-  constexpr static auto identifier = Identifier;
-  constexpr static auto is_signed = std::is_signed_v<std::underlying_type_t<Enum>>;
-  constexpr static auto width = Width;
-
-  using value_type = Enum;
-
-  template<record_like Context, typename... Args>
-  [[nodiscard]] constexpr auto make_value(const Context &, Args &&...args) const -> value_type {
-    return value_type{UPD_FWD(args)...};
-  }
-
-  template<record_like Context>
-  [[nodiscard]] constexpr static auto default_value(const Context &) noexcept(release) -> value_type {
-    return value_type{};
-  }
-
-  [[nodiscard]] constexpr static auto default_value() noexcept(release) -> value_type { return value_type{}; }
-
-  template<record_like Packet, serializer Serializer, record_like Fields>
-  [[nodiscard]] constexpr static auto deduce(Packet &, Serializer &, const Fields &) noexcept(release) {
-    return record{};
-  }
-
-  template<serializer Serializer, record_like Packet, record_like Fields>
-  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Packet &, const Fields &)
-      -> result<value_type> {
-    auto retval = [&] {
-      if constexpr (is_signed) {
-        return ser.deserialize_signed(src, upd::width<width>);
-      } else {
-        return ser.deserialize_unsigned(src, upd::width<width>);
-      }
-    }();
-
-    return static_cast<value_type>(retval);
-  }
-
-  template<serializer Serializer>
-  constexpr static void encode(value_type value, Serializer &ser, stream_interface &dest) {
-    auto integral_value = std::to_underlying(value);
-    if constexpr (is_signed) {
-      ser.serialize_signed(integral_value, upd::width<width>, dest);
-    } else {
-      ser.serialize_unsigned(integral_value, upd::width<width>, dest);
-    }
-  }
-};
-
-template<name Identifier, bool Signedness, std::size_t Width, typename Rule>
-[[nodiscard]] constexpr auto bound(signedness_t<Signedness>, width_t<Width>) noexcept(release) {
-  auto retval = bound_elsewhere_t<Identifier, Signedness, Width>{};
-
-  return description{retval};
-}
-
-template<name Identifier, typename Enum, std::size_t Width>
-[[nodiscard]] constexpr auto bound(enumeration_t<Enum>, width_t<Width>) noexcept(release) {
-  auto retval = enum_bound_elsewhere_t<Identifier, Enum, Width>{};
-
-  return description{retval};
-}
-
 } // namespace upd::descriptor
-
-namespace upd::literals {
-
-[[nodiscard]] constexpr inline auto operator""_h(const char *str, std::size_t size) noexcept -> std::size_t {
-  constexpr auto numlim = std::numeric_limits<char>{};
-  constexpr auto min = std::intmax_t{numlim.min()};
-  constexpr auto max = std::intmax_t{numlim.max()};
-
-  auto retval = std::size_t{0};
-
-  // `std::hash` cannot be invoked in constant expression, so here is the poor man's hashing function for the moment
-  for (std::size_t i = 0; i < size; ++i) {
-    retval += str[i] - min;
-    retval *= max - min;
-  }
-
-  return retval;
-}
-
-} // namespace upd::literals
 
 template<>
 struct std::formatter<upd::defval_t> {
