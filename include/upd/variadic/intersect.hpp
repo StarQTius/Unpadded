@@ -26,14 +26,14 @@ template<metavalue... Xs, metavalue... Ys>
   };
 
   auto inter_with_dup =
-      merged_view |
-      updv::filter([&]<typename T>(typebox<T>) { return !requires { merged.get_by_tag(std::decay_t<T>{}); }; }) |
-      updv::to<std::tuple>;
+      merged_view
+      | updv::filter([&]<typename T>(typebox<T>) { return !requires { merged.get_by_tag(std::decay_t<T>{}); }; })
+      | updv::to<std::tuple>;
 
-  return lhs | updv::filter([&]<typename T>(typebox<T>) {
-           return tuple_has_type_v<std::decay_t<T>, decltype(inter_with_dup)>;
-         }) |
-         updv::to<std::tuple>;
+  return lhs
+         | updv::filter(
+             [&]<typename T>(typebox<T>) { return tuple_has_type_v<std::decay_t<T>, decltype(inter_with_dup)>; })
+         | updv::to<std::tuple>;
 }
 
 } // namespace upd

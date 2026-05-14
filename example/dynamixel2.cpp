@@ -111,21 +111,23 @@ constexpr auto description = [] {
 
   using enum instruction_code;
 
-  return constant2<"header", 32>(0x00fdffff) | ufield2<"id", 8> |
-         ubound2<"length", 16>(length_of<"parameters"> / 8 + 3) | efield2<"instruction", instruction_code, 8> |
-         one_of<"parameters">(value_of<"instruction">,
-                              when<ping> = empty_description,
-                              when<read> = ufield2<"address", 16> | ufield2<"length_", 16>,
-                              when<write> = ufield2<"address", 16> | repeat<"data">(ufield2<anon, 8>),
-                              when<reg_write> = ufield2<"address", 16> | repeat<"data">(ufield2<anon, 8>),
-                              when<action> = empty_description,
-                              when<factory_reset> = efield2<anon, factory_reset_target, 8>,
-                              when<reboot> = empty_description,
-                              when<clear> = efield2<anon, clear_target, 40>,
-                              when<control_table_backup> = efield2<anon, control_table_backup_target, 40>,
-                              when<sync_read> =
-                                  ufield2<"address", 16> | ufield2<"length_", 16> | repeat<"ids">(ufield2<anon, 8>)) |
-         checksum2<"crc", 16>(accumulate_crc, all_fields);
+  return constant2<"header", 32>(0x00fdffff)
+         | ufield2<"id", 8>
+         | ubound2<"length", 16>(length_of<"parameters"> / 8 + 3)
+         | efield2<"instruction", instruction_code, 8>
+         | one_of<"parameters">(value_of<"instruction">,
+                                when<ping> = empty_description,
+                                when<read> = ufield2<"address", 16> | ufield2<"length_", 16>,
+                                when<write> = ufield2<"address", 16> | repeat<"data">(ufield2<anon, 8>),
+                                when<reg_write> = ufield2<"address", 16> | repeat<"data">(ufield2<anon, 8>),
+                                when<action> = empty_description,
+                                when<factory_reset> = efield2<anon, factory_reset_target, 8>,
+                                when<reboot> = empty_description,
+                                when<clear> = efield2<anon, clear_target, 40>,
+                                when<control_table_backup> = efield2<anon, control_table_backup_target, 40>,
+                                when<sync_read> =
+                                    ufield2<"address", 16> | ufield2<"length_", 16> | repeat<"ids">(ufield2<anon, 8>))
+         | checksum2<"crc", 16>(accumulate_crc, all_fields);
 }();
 
 constexpr auto answer_description = [] {
@@ -135,21 +137,23 @@ constexpr auto answer_description = [] {
 
   using enum instruction_code;
 
-  return constant2<"header", 32>(0x00fdffff) | ufield2<"id", 8> |
-         ubound2<"length", 16>(length_of<"parameters"> / 8 + 4) |
-         constant2<"instruction", 8>(instruction_code::status) | ufield2<"error", 8> |
-         shadow_efield2<"status_of", instruction_code, 8> |
-         one_of<"parameters">(value_of<"status_of">,
-                              when<ping> = ufield2<"model_number", 16> | ufield2<"firmware_version", 8>,
-                              when<read> = repeat<"data">(ufield2<anon, 8>),
-                              when<write> = empty_description,
-                              when<reg_write> = empty_description,
-                              when<action> = empty_description,
-                              when<factory_reset> = empty_description,
-                              when<reboot> = empty_description,
-                              when<control_table_backup> = empty_description,
-                              when<sync_read> = repeat<"data">(ufield2<anon, 8>)) |
-         checksum2<"crc", 16>(accumulate_crc, all_fields);
+  return constant2<"header", 32>(0x00fdffff)
+         | ufield2<"id", 8>
+         | ubound2<"length", 16>(length_of<"parameters"> / 8 + 4)
+         | constant2<"instruction", 8>(instruction_code::status)
+         | ufield2<"error", 8>
+         | shadow_efield2<"status_of", instruction_code, 8>
+         | one_of<"parameters">(value_of<"status_of">,
+                                when<ping> = ufield2<"model_number", 16> | ufield2<"firmware_version", 8>,
+                                when<read> = repeat<"data">(ufield2<anon, 8>),
+                                when<write> = empty_description,
+                                when<reg_write> = empty_description,
+                                when<action> = empty_description,
+                                when<factory_reset> = empty_description,
+                                when<reboot> = empty_description,
+                                when<control_table_backup> = empty_description,
+                                when<sync_read> = repeat<"data">(ufield2<anon, 8>))
+         | checksum2<"crc", 16>(accumulate_crc, all_fields);
 }();
 
 struct serializer {

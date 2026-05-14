@@ -91,11 +91,13 @@ TEST_CASE("Tuple views", "[tuple_view]") {
   }
 
   SECTION("View a tuple of entries as a record") {
-    upd::record_like auto view = t | updv::enumerate | updv::transform([](auto i_and_v) {
-                                   auto [i, v] = i_and_v;
-                                   return upd::entry{i, v};
-                                 }) |
-                                 updv::as_record;
+    upd::record_like auto view = t
+                                 | updv::enumerate
+                                 | updv::transform([](auto i_and_v) {
+                                     auto [i, v] = i_and_v;
+                                     return upd::entry{i, v};
+                                   })
+                                 | updv::as_record;
 
     REQUIRE(upd::get<0uz>(view) == 4);
     REQUIRE(upd::get<1uz>(view) == 8);

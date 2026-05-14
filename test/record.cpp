@@ -246,8 +246,10 @@ TEST_CASE("Record views", "[record_view]") {
   }
 
   SECTION("Collect a view into a regular record") {
-    upd::regular_record auto regec = rec | updv::transform([](auto, auto v) { return v + 1; }) |
-                                     updv::filter([](auto k, auto) { return k != "b"; }) | updv::to<upd::record>;
+    upd::regular_record auto regec = rec
+                                     | updv::transform([](auto, auto v) { return v + 1; })
+                                     | updv::filter([](auto k, auto) { return k != "b"; })
+                                     | updv::to<upd::record>;
 
     REQUIRE(regec["a"_kw2] == 5);
     REQUIRE(!upd::has_tag<upd::name{"b"}>(regec));
@@ -295,8 +297,9 @@ TEST_CASE("Record views", "[record_view]") {
   }
 
   SECTION("Join viewed record together") {
-    upd::record_view auto view = rec | updv::transform([](auto k, auto v) { return upd::entry{k, v}; }) |
-                                 updv::join([](auto, auto k) { return k; });
+    upd::record_view auto view = rec
+                                 | updv::transform([](auto k, auto v) { return upd::entry{k, v}; })
+                                 | updv::join([](auto, auto k) { return k; });
 
     REQUIRE(upd::get<upd::name{"a"}>(view) == upd::get<upd::name{"a"}>(rec));
     REQUIRE(upd::get<upd::name{"b"}>(view) == upd::get<upd::name{"b"}>(rec));

@@ -80,11 +80,12 @@ struct checksum_t {
                              fields | updv::filter([](auto id, auto) { return id != Identifier; }));
 
     using descr_input = typename decltype(descr)::input_type;
-    auto curated_packet = tags_of_v<descr_input> | tuple_views::filter([&]<typename Id>(typebox<const Id &>) {
-                            return !std::convertible_to<record_element_t<Id::value, descr_input>, unit_t>;
-                          }) |
-                          tuple_views::transform([&](auto id) { return entry{id, get_or<id.value>(packet, defval)}; }) |
-                          tuple_views::as_record;
+    auto curated_packet = tags_of_v<descr_input>
+                          | tuple_views::filter([&]<typename Id>(typebox<const Id &>) {
+                              return !std::convertible_to<record_element_t<Id::value, descr_input>, unit_t>;
+                            })
+                          | tuple_views::transform([&](auto id) { return entry{id, get_or<id.value>(packet, defval)}; })
+                          | tuple_views::as_record;
 
     descr.encode(curated_packet | updv::to<record>, ser, dest);
 

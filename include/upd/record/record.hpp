@@ -49,16 +49,16 @@ public:
             UPD_FWD(entries).forward()}...} {}
 
   template<typename Record>
-    requires(is_instance_of<Record, record>() &&
-             variadic::identical(std::tuple{expr<Identifiers>...}, tags_of_v<Record>))
+    requires(is_instance_of<Record, record>()
+             && variadic::identical(std::tuple{expr<Identifiers>...}, tags_of_v<Record>))
   constexpr record(Record &&other)
     requires(std::constructible_from<Ts, decltype(get<Identifiers>(UPD_FWD(other)))> && ...)
       : m_storage{lite_record_node<Identifiers, record_element_t<Identifiers, Record>>{
             get<Identifiers>(UPD_FWD(other))}...} {}
 
   template<typename Record>
-    requires(is_instance_of<Record, record>() &&
-             variadic::identical(std::tuple{expr<Identifiers>...}, tags_of_v<Record>))
+    requires(is_instance_of<Record, record>()
+             && variadic::identical(std::tuple{expr<Identifiers>...}, tags_of_v<Record>))
   constexpr record &operator=(Record && other)
     requires(std::assignable_from<Ts, decltype(get<Identifiers>(UPD_FWD(other)))> && ...)
   {

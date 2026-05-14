@@ -49,14 +49,15 @@ constexpr auto find = []<tuple_like2 Tuple>(Tuple &&t) {
 constexpr auto dynfind = []<tuple_like2 Tuple, typename T>(Tuple &&t, const T &v) {
   namespace stdr = std::ranges;
 
-  auto equal_elements = UPD_FWD(t) | transform([&]<typename U>(const U &x) {
-                          if constexpr (std::equality_comparable_with<T, U>) {
-                            return x == v;
-                          } else {
-                            return false;
-                          }
-                        }) |
-                        to<std::array>;
+  auto equal_elements = UPD_FWD(t)
+                        | transform([&]<typename U>(const U &x) {
+                            if constexpr (std::equality_comparable_with<T, U>) {
+                              return x == v;
+                            } else {
+                              return false;
+                            }
+                          })
+                        | to<std::array>;
 
   return stdr::find(equal_elements, true) - equal_elements.begin();
 };

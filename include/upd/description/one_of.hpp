@@ -110,17 +110,19 @@ struct one_of_t {
   constexpr static auto identifier = Identifier;
   constexpr static auto size = record_size_v<TaggedDescriptions>;
   constexpr static auto alternative_types =
-      decltype(tuple_views::concat(typelist2<upd::description<>>,
-                                   std::declval<TaggedDescriptions>() | record_views::values |
-                                       tuple_views::to<typelist2_t>) |
-               tuple_views::transform_type([]<typename T> -> std::remove_cvref_t<T> {}) |
-               tuple_views::transform_type([]<typename T> -> typename T::result_type {}) |
-               tuple_views::to<typelist2_t>){};
+      decltype(tuple_views::concat(
+                   typelist2<upd::description<>>,
+                   std::declval<TaggedDescriptions>() | record_views::values | tuple_views::to<typelist2_t>)
+               | tuple_views::transform_type([]<typename T> -> std::remove_cvref_t<T> {})
+               | tuple_views::transform_type([]<typename T> -> typename T::result_type {})
+               | tuple_views::to<typelist2_t>){};
   constexpr static auto subinput_types =
-      decltype(std::declval<TaggedDescriptions>() | record_views::values | tuple_views::to<typelist2_t> |
-               tuple_views::transform_type([]<typename T> -> std::remove_cvref_t<T> {}) |
-               tuple_views::transform_type([]<typename T> -> typename T::input_type {}) |
-               tuple_views::to<typelist2_t>){};
+      decltype(std::declval<TaggedDescriptions>()
+               | record_views::values
+               | tuple_views::to<typelist2_t>
+               | tuple_views::transform_type([]<typename T> -> std::remove_cvref_t<T> {})
+               | tuple_views::transform_type([]<typename T> -> typename T::input_type {})
+               | tuple_views::to<typelist2_t>){};
 
   using input_type = instantiate_variadic<deferred_caster, decltype(subinput_types)>;
   using value_type = decltype(tuple_views::apply_type(alternative_types, []<typename... Ts> -> std::variant<Ts...> {}));
@@ -174,9 +176,11 @@ struct one_of_t {
   [[nodiscard]] constexpr auto rules(const Packet &packet, const Fields &fields, Serializer &ser) const {
     namespace updv = upd::record_views;
 
-    auto rule_sys = fields | updv::filter([](auto id, const auto &) { return id != Identifier; }) | updv::values |
-                    tuple_views::transform([&](const auto &field) { return field.rules(packet, fields, ser); }) |
-                    tuple_views::join;
+    auto rule_sys = fields
+                    | updv::filter([](auto id, const auto &) { return id != Identifier; })
+                    | updv::values
+                    | tuple_views::transform([&](const auto &field) { return field.rules(packet, fields, ser); })
+                    | tuple_views::join;
 
     auto sys = tuple_views::concat(std::tuple{code_of<Identifier> = rule}, rule_sys);
     auto id = try_solve_for(code_of<Identifier>, sys);
@@ -206,10 +210,10 @@ struct one_of_t {
 
     auto make_alt = [&](const auto &id_pos_and_descr) {
       const auto &[id_pos, descr] = id_pos_and_descr;
-      auto length_rule = tuple_views::fold_left(descr.m_fields | record_views::tags |
-                                                    updv::transform([](auto id) { return length_of<id.value>; }),
-                                                0uz,
-                                                [](auto acc, auto var) { return acc + var; });
+      auto length_rule = tuple_views::fold_left(
+          descr.m_fields | record_views::tags | updv::transform([](auto id) { return length_of<id.value>; }),
+          0uz,
+          [](auto acc, auto var) { return acc + var; });
       auto make_retval = [&](auto &&alt) { return value_type{std::in_place_index<id_pos + 1>, UPD_FWD(alt)}; };
       return descr.decode(src, ser, record{}, updv::concat(sys, std::tuple{length_of<Identifier> = length_rule}))
           .transform(make_retval);
@@ -230,10 +234,10 @@ struct one_of_t {
       auto target = args.template cast_to<target_type>();
 
       if constexpr (is_instance_of<decltype(named_descr), description>()) {
-        auto length_rule = tuple_views::fold_left(named_descr.m_fields | record_views::tags |
-                                                      updv::transform([](auto id) { return length_of<id.value>; }),
-                                                  0uz,
-                                                  [](auto acc, auto var) { return acc + var; });
+        auto length_rule = tuple_views::fold_left(
+            named_descr.m_fields | record_views::tags | updv::transform([](auto id) { return length_of<id.value>; }),
+            0uz,
+            [](auto acc, auto var) { return acc + var; });
 
         named_descr.encode(target, ser, dest, updv::concat(sys, std::tuple{length_of<Identifier> = length_rule}));
       } else {

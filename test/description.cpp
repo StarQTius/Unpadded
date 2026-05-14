@@ -170,8 +170,9 @@ TEST_CASE("Protocol descriptors", "[descriptor]") {
   }
 
   SECTION("Encode and decode a checksum field") {
-    auto descr = ufield2<"abc", 16> | ufield2<"def", 16> |
-                 checksum2<"ghi", 16>([](auto acc, auto v) { return acc + v; }, all_fields);
+    auto descr = ufield2<"abc", 16>
+                 | ufield2<"def", 16>
+                 | checksum2<"ghi", 16>([](auto acc, auto v) { return acc + v; }, all_fields);
     descr.encode(("abc"_kw2 = 54, "def"_kw2 = 46), ser, st);
 
     auto result = *descr.decode(st, ser);
@@ -212,10 +213,11 @@ TEST_CASE("Protocol descriptors", "[descriptor]") {
 
   SECTION("Encode and decode a one-of field") {
     enum class abc { a, b, c };
-    auto descr = efield2<"i", abc, 16> | one_of<"alts">(upd::value_of<"i">,
-                                                        upd::when<abc::a> = constant2<"k", 8>(34),
-                                                        upd::when<abc::b> = constant2<"k", 8>(45),
-                                                        upd::when<abc::c> = constant2<"k", 8>(56));
+    auto descr = efield2<"i", abc, 16>
+                 | one_of<"alts">(upd::value_of<"i">,
+                                  upd::when<abc::a> = constant2<"k", 8>(34),
+                                  upd::when<abc::b> = constant2<"k", 8>(45),
+                                  upd::when<abc::c> = constant2<"k", 8>(56));
 
     descr.encode(("i"_kw2 = abc::a), ser, st);
     auto result = *descr.decode(st, ser);
@@ -240,10 +242,11 @@ TEST_CASE("Protocol descriptors", "[descriptor]") {
       c = 56,
     };
 
-    auto descr = shadow_efield2<"abc", abc, 16> | one_of<"alts">(upd::value_of<"abc">,
-                                                                 upd::when<abc::a> = constant2<"k", 8>(34),
-                                                                 upd::when<abc::b> = constant2<"k", 8>(45),
-                                                                 upd::when<abc::c> = constant2<"k", 8>(56));
+    auto descr = shadow_efield2<"abc", abc, 16>
+                 | one_of<"alts">(upd::value_of<"abc">,
+                                  upd::when<abc::a> = constant2<"k", 8>(34),
+                                  upd::when<abc::b> = constant2<"k", 8>(45),
+                                  upd::when<abc::c> = constant2<"k", 8>(56));
 
     descr.encode(("abc"_kw2 = abc::a), ser, st);
     auto res1 = *descr.decode(st, ser, ("abc"_kw2 = abc::a));
@@ -262,8 +265,9 @@ TEST_CASE("Protocol descriptors", "[descriptor]") {
   }
 
   SECTION("Encode and decode a constant and a checksum field") {
-    auto descr = constant2<"abc", 8>(12) | constant2<"def", 8>(88) |
-                 checksum2<"ghi", 16>([](auto acc, auto v) { return acc + v; }, all_fields);
+    auto descr = constant2<"abc", 8>(12)
+                 | constant2<"def", 8>(88)
+                 | checksum2<"ghi", 16>([](auto acc, auto v) { return acc + v; }, all_fields);
     descr.encode(upd::record{}, ser, st);
 
     auto result = *descr.decode(st, ser);
@@ -285,8 +289,9 @@ TEST_CASE("Nested protocol descriptors", "[descriptor]") {
   SECTION("Expanding repeated field in a one-of field") {
     enum class abc { a };
 
-    auto descr = ubound2<"len", 16>(upd::length_of<"param">) | efield2<"i", abc, 16> |
-                 one_of<"param">(upd::value_of<"i">, upd::when<abc::a> = repeat<"abc">(ufield2<upd::anon, 16>));
+    auto descr = ubound2<"len", 16>(upd::length_of<"param">)
+                 | efield2<"i", abc, 16>
+                 | one_of<"param">(upd::value_of<"i">, upd::when<abc::a> = repeat<"abc">(ufield2<upd::anon, 16>));
 
     descr.encode(("i"_kw2 = abc::a, "param"_kw2 = ("abc"_kw2 = std::array{4, 8, 16})), ser, st);
 

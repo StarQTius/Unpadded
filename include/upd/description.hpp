@@ -280,16 +280,18 @@ concept deducible_field = field_like<T> && serializer<Serializer> && requires(T 
 };
 
 template<typename T, typename Serializer>
-concept decodable_field = serializer<Serializer> && deducible_field<T, Serializer> &&
-                          requires(T x, Serializer ser, const record<> packet, const byte_type<Serializer> *src) {
-                            { x.decode(src, ser, packet) } -> std::same_as<typename T::value_type>;
-                          };
+concept decodable_field = serializer<Serializer>
+                          && deducible_field<T, Serializer>
+                          && requires(T x, Serializer ser, const record<> packet, const byte_type<Serializer> *src) {
+                               { x.decode(src, ser, packet) } -> std::same_as<typename T::value_type>;
+                             };
 
 template<typename T, typename Serializer>
-concept encodable_field = serializer<Serializer> && deducible_field<T, Serializer> &&
-                          requires(T x, Serializer ser, typename T::value_type value, byte_type<Serializer> *dest) {
-                            { x.encode(value, ser, dest) } -> std::same_as<void>;
-                          };
+concept encodable_field = serializer<Serializer>
+                          && deducible_field<T, Serializer>
+                          && requires(T x, Serializer ser, typename T::value_type value, byte_type<Serializer> *dest) {
+                               { x.encode(value, ser, dest) } -> std::same_as<void>;
+                             };
 
 template<field_like... Ts>
 class description {
@@ -298,18 +300,21 @@ class description {
 
 public:
   using result_type =
-      decltype(typelist2<Ts...> |
-               tuple_views::transform_type([]<typename T> -> entry<T::identifier, typename T::value_type> {}) |
-               tuple_views::as_record | record_views::instantiate<record>);
+      decltype(typelist2<Ts...>
+               | tuple_views::transform_type([]<typename T> -> entry<T::identifier, typename T::value_type> {})
+               | tuple_views::as_record
+               | record_views::instantiate<record>);
 
-  using storage_type =
-      decltype(typelist2<Ts...> | tuple_views::transform_type([]<typename T> -> entry<T::identifier, T> {}) |
-               tuple_views::as_record | record_views::instantiate<record>);
+  using storage_type = decltype(typelist2<Ts...>
+                                | tuple_views::transform_type([]<typename T> -> entry<T::identifier, T> {})
+                                | tuple_views::as_record
+                                | record_views::instantiate<record>);
 
   using input_type =
-      decltype(typelist2<Ts...> |
-               tuple_views::transform_type([]<typename T> -> entry<T::identifier, typename T::input_type> {}) |
-               tuple_views::as_record | record_views::instantiate<record>);
+      decltype(typelist2<Ts...>
+               | tuple_views::transform_type([]<typename T> -> entry<T::identifier, typename T::input_type> {})
+               | tuple_views::as_record
+               | record_views::instantiate<record>);
 
   explicit constexpr description(Ts... fields) : m_fields{entry{expr<fields.identifier>, std::move(fields)}...} {}
 
@@ -323,9 +328,10 @@ public:
   encode(const Args &args, Serializer &ser, stream_interface &dest, const System &ctx_sys = std::tuple{}) const {
     namespace updv = record_views;
 
-    auto rule_sys = m_fields | updv::values |
-                    tuple_views::transform([&](const auto &field) { return field.rules(args, m_fields, ser); }) |
-                    tuple_views::join;
+    auto rule_sys = m_fields
+                    | updv::values
+                    | tuple_views::transform([&](const auto &field) { return field.rules(args, m_fields, ser); })
+                    | tuple_views::join;
 
     auto sys = tuple_views::concat(rule_sys, ctx_sys);
 
@@ -385,8 +391,8 @@ public:
         ser.checkpoint(id.value.string);
         auto ctx_ = [&] {
           if constexpr (has_tag<id.value>(ctx)) {
-            return updv::concat(retval | updv::take_until<id.value>, entry{id, get<id.value>(ctx)}) |
-                   updv::to<upd::record>;
+            return updv::concat(retval | updv::take_until<id.value>, entry{id, get<id.value>(ctx)})
+                   | updv::to<upd::record>;
           } else {
             return retval | updv::take_until<id.value>;
           }
@@ -413,9 +419,10 @@ public:
     if (!err) {
       auto merged = updv::concat(std::as_const(retval), ctx);
       auto deduced =
-          m_fields |
-          updv::transform([&](auto, const auto &field) { return field.deduce(retval, ser, m_fields, sys); }) |
-          updv::join([](auto, auto k) { return k; }) | updv::to<record>;
+          m_fields
+          | updv::transform([&](auto, const auto &field) { return field.deduce(retval, ser, m_fields, sys); })
+          | updv::join([](auto, auto k) { return k; })
+          | updv::to<record>;
 
       updv::for_each(deduced, [&](auto id, const auto &ded) {
         const auto &actual = get<id.value>(merged);

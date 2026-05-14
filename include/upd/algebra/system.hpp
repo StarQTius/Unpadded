@@ -58,9 +58,9 @@ template<std::size_t MaxPassCount = 16, auto Varname, tuple_like2 System>
     auto lets =
         ssys | updv::filter([]<typename Eq>(typebox<Eq>) { return variadic::is_template_deductible_from<let, Eq>(); });
     auto eqs =
-        ssys |
-        updv::filter([]<typename Eq>(typebox<Eq>) { return !variadic::is_template_deductible_from<let, Eq>(); }) |
-        updv::transform([&](const auto &eq) { return eq.substitute(lets).simplify(); });
+        ssys
+        | updv::filter([]<typename Eq>(typebox<Eq>) { return !variadic::is_template_deductible_from<let, Eq>(); })
+        | updv::transform([&](const auto &eq) { return eq.substitute(lets).simplify(); });
 
     auto newsys = updv::concat(lets, eqs) | updv::to<std::tuple>;
     return try_solve_for<MaxPassCount - 1>(var, newsys);

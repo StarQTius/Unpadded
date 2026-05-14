@@ -20,10 +20,11 @@ namespace upd::tuple_views {
 
 constexpr auto visit =
     []<tuple_like2 Tuple, typename F> [[nodiscard]] (Tuple &&t, std::size_t i, F &&f) -> decltype(auto) {
-  using xxx = decltype(t | transform_type([]<typename T>
-                                            requires invocable<F, T>
-                                          -> std::invoke_result<F, T> {}) |
-                                          instantiate<typelist2_t>);
+  using xxx = decltype(t
+                       | transform_type([]<typename T>
+                                          requires invocable<F, T>
+                                        -> std::invoke_result<F, T> {})
+                                        | instantiate<typelist2_t>);
 
   using retval_type =
       decltype(apply_type(xxx{}, []<typename... Metatype> -> std::common_type_t<typename Metatype::type...> {}));
