@@ -1,7 +1,6 @@
 #pragma once
 
 #include <algorithm>
-#include <array>
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
@@ -12,7 +11,6 @@
 #include <tuple>
 #include <type_traits>
 #include <utility>
-#include <variant>
 
 #include "algebra/side.hpp"
 #include "algebra/variable.hpp"
@@ -38,7 +36,6 @@
 #include "record/universal_record.hpp"
 #include "record/values.hpp"
 #include "safe_operation.hpp"
-#include "static_vector.hpp"
 #include "stream_interface.hpp"
 #include "token.hpp"
 #include "tuple/as_record.hpp"
@@ -49,7 +46,6 @@
 #include "tuple/tuple_size.hpp"
 #include "tuple/tuple_view_adaptor.hpp"
 #include "tuple/typelist.hpp"
-#include "tuple/visit.hpp"
 #include "upd.hpp"
 #include "with_sequence.hpp"
 
@@ -90,112 +86,6 @@ template<auto Tag, record_like Record, typename T>
   } else {
     return UPD_FWD(x);
   }
-}
-
-template<name Identifier, std::size_t Width>
-[[nodiscard]] constexpr auto bitsize(std::uintmax_t, descriptor::field_t<Identifier, false, Width>) noexcept(release)
-    -> std::size_t {
-  return Width;
-}
-
-template<name Identifier, std::size_t Width>
-[[nodiscard]] constexpr auto bitsize(std::uintmax_t, descriptor::constant_t<Identifier, Width>) noexcept(release)
-    -> std::size_t {
-  return Width;
-}
-
-template<name Identifier, std::size_t Width>
-[[nodiscard]] constexpr auto bitsize(std::intmax_t, descriptor::field_t<Identifier, true, Width>) noexcept(release)
-    -> std::size_t {
-  return Width;
-}
-
-template<name Identifier, std::size_t Width, typename Rule>
-[[nodiscard]] constexpr auto bitsize(std::uintmax_t,
-                                     descriptor::bound_t<Identifier, false, Width, Rule>) noexcept(release)
-    -> std::size_t {
-  return Width;
-}
-
-template<name Identifier, std::size_t Width, typename Rule>
-[[nodiscard]] constexpr auto bitsize(std::intmax_t,
-                                     descriptor::bound_t<Identifier, true, Width, Rule>) noexcept(release)
-    -> std::size_t {
-  return Width;
-}
-
-template<std::size_t Width>
-[[nodiscard]] constexpr auto bitsize(std::uintmax_t, descriptor::anonymous_field_t<false, Width>) noexcept(release)
-    -> std::size_t {
-  return Width;
-}
-
-template<std::size_t Width>
-[[nodiscard]] constexpr auto bitsize(std::intmax_t, descriptor::anonymous_field_t<true, Width>) noexcept(release)
-    -> std::size_t {
-  return Width;
-}
-
-template<name Identifier, typename BinaryOp, std::size_t Width, typename FieldFilter>
-[[nodiscard]] constexpr auto bitsize(std::uintmax_t,
-                                     descriptor::checksum_t<Identifier, BinaryOp, Width, FieldFilter>) noexcept(release)
-    -> std::size_t {
-  return Width;
-}
-
-template<typename Enum, typename Field>
-  requires std::is_enum_v<Enum>
-[[nodiscard]] constexpr auto bitsize(Enum, const Field &field) noexcept(release) -> std::size_t {
-  return field.width;
-}
-
-template<typename... Ts, typename Field>
-[[nodiscard]] constexpr auto bitsize(const std::variant<Ts...> &sum_of_field_values,
-                                     const Field &field) noexcept(release) -> std::size_t {
-  namespace updv = upd::tuple_views;
-  auto alt_index = sum_of_field_values.index();
-  if (alt_index == 0) {
-    return 0;
-  }
-
-  auto seq = UPD_WITH_SEQUENCE(Is, sizeof...(Ts) - 1, &) { return std::tuple{expr<Is>...}; };
-  return updv::visit(seq, alt_index - 1, [&](auto i) {
-    const auto &field_value = *std::get_if<i + 1>(&sum_of_field_values);
-    const auto &alt_descr = get_ith<i>(field.tagged_descriptions);
-    return bitsize(field_value, alt_descr);
-  });
-}
-
-template<record_like NamedFieldValues, typename Description>
-[[nodiscard]] constexpr auto bitsize(const NamedFieldValues &named_field_values,
-                                     const Description &descr) noexcept(release) -> std::size_t {
-  namespace updv = upd::record_views;
-  return updv::fold_left(named_field_values, 0uz, [&](std::size_t acc, auto k, const auto &field_value) {
-    auto field_pos = updv::find_if(descr.m_fields, [&](auto id, const auto &) { return expr<id == k>; });
-    return acc + bitsize(field_value.value(), descr.m_fields[field_pos]);
-  });
-}
-
-template<typename... Entries, typename Description>
-[[nodiscard]] constexpr auto bitsize(const record<Entries...> &named_field_values,
-                                     const Description &descr) noexcept(release) -> std::size_t {
-  namespace updv = record_views;
-  return updv::fold_left(named_field_values, 0uz, [&](std::size_t acc, auto k, const auto &field_value) {
-    auto field_pos = updv::find_if(descr.m_fields, [&](auto id, auto) { return expr<id == k>; });
-    return acc + bitsize(field_value, get_ith<field_pos>(descr.m_fields));
-  });
-}
-
-template<typename T, std::size_t Max, typename Field>
-[[nodiscard]] constexpr static auto bitsize(const static_vector<T, Max> &svec, const Field &field) -> std::size_t {
-  namespace stdr = std::ranges;
-  return stdr::fold_left(svec, 0uz, [&](auto acc, const auto &elem) { return acc + bitsize(elem, field.description); });
-}
-
-template<typename T, std::size_t N, typename Field>
-[[nodiscard]] constexpr static auto bitsize(const std::array<T, N> &arr, const Field &field) -> std::size_t {
-  namespace stdr = std::ranges;
-  return stdr::fold_left(arr, 0uz, [&](auto acc, const auto &elem) { return acc + bitsize(elem, field.description); });
 }
 
 enum class vartype {
@@ -449,6 +339,26 @@ public:
     return updv::fold_left(m_fields | updv::transform([](auto, const auto &field) { return field.length(); }),
                            0uz,
                            [](auto acc, auto, auto len) { return acc + len; });
+  }
+
+  template<record_like NamedFieldValues>
+  [[nodiscard]] constexpr auto bitsize(const NamedFieldValues &named_field_values) const noexcept(release)
+      -> std::size_t {
+    namespace updv = upd::record_views;
+    return updv::fold_left(named_field_values, 0uz, [&](std::size_t acc, auto k, const auto &field_value) {
+      auto field_pos = updv::find_if(m_fields, [&](auto id, const auto &) { return expr<id == k>; });
+      return acc + get_ith<field_pos>(m_fields).bitsize(field_value.value());
+    });
+  }
+
+  template<typename... Entries>
+  [[nodiscard]] constexpr auto bitsize(const record<Entries...> &named_field_values) const noexcept(release)
+      -> std::size_t {
+    namespace updv = record_views;
+    return updv::fold_left(named_field_values, 0uz, [&](std::size_t acc, auto k, const auto &field_value) {
+      auto field_pos = updv::find_if(m_fields, [&](auto id, auto) { return expr<id == k>; });
+      return acc + get_ith<field_pos>(m_fields).bitsize(field_value);
+    });
   }
 
   storage_type m_fields;

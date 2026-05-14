@@ -222,6 +222,23 @@ struct one_of_t {
     return updv::visit(tagged_descriptions | record_views::values | updv::enumerate, id_pos, make_alt);
   }
 
+  template<typename... Ts>
+  [[nodiscard]] constexpr auto bitsize(const std::variant<Ts...> &sum_of_field_values) const noexcept(release)
+      -> std::size_t {
+    namespace updv = upd::tuple_views;
+    auto alt_index = sum_of_field_values.index();
+    if (alt_index == 0) {
+      return 0;
+    }
+
+    auto seq = UPD_WITH_SEQUENCE(Is, sizeof...(Ts) - 1, &) { return std::tuple{expr<Is>...}; };
+    return updv::visit(seq, alt_index - 1, [&](auto i) {
+      const auto &field_value = *std::get_if<i + 1>(&sum_of_field_values);
+      const auto &alt_descr = upd::get_ith<i>(tagged_descriptions);
+      return alt_descr.bitsize(field_value);
+    });
+  }
+
   template<serializer Serializer, tuple_like2 System>
   constexpr void encode(const input_type &args, Serializer &ser, stream_interface &dest, const System &sys) const
       noexcept(release) {

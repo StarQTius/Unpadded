@@ -111,6 +111,11 @@ struct checksum_t {
   }
 
   [[nodiscard]] constexpr auto length() const noexcept(release) { return Width; }
+
+  template<typename V>
+  [[nodiscard]] constexpr auto bitsize(const V &) const noexcept(release) -> std::size_t {
+    return Width;
+  }
 };
 
 template<name Identifier, typename BinaryOp, std::size_t Width>

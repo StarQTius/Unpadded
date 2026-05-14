@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <expected>
@@ -60,7 +62,7 @@ struct repeat_t {
   [[nodiscard]] constexpr auto rules(const Packet &packet, const Fields &fields, Serializer &) const {
     if constexpr (has_tag_v<Identifier, Packet>) {
       return std::tuple{length_of<Identifier> = rule,
-                        length_of<Identifier> = bitsize(get<Identifier>(packet), get<Identifier>(fields))};
+                        length_of<Identifier> = get<Identifier>(fields).bitsize(get<Identifier>(packet))};
     } else {
       return std::tuple{length_of<Identifier> = rule};
     }
@@ -88,7 +90,7 @@ struct repeat_t {
         return std::unexpected{std::move(maybe_value).error()};
       }
       overflown = !retval.try_push_back(std::move(maybe_value).value());
-      i += bitsize(retval.back(), description);
+      i += description.bitsize(retval.back());
     }
 
     if (overflown) {
@@ -106,6 +108,18 @@ struct repeat_t {
   }
 
   [[nodiscard]] constexpr static auto length() noexcept(release) { return length_of<Identifier>; }
+
+  template<typename T, std::size_t M>
+  [[nodiscard]] constexpr auto bitsize(const static_vector<T, M> &svec) const -> std::size_t {
+    namespace stdr = std::ranges;
+    return stdr::fold_left(svec, 0uz, [&](auto acc, const auto &elem) { return acc + description.bitsize(elem); });
+  }
+
+  template<typename T, std::size_t N>
+  [[nodiscard]] constexpr auto bitsize(const std::array<T, N> &arr) const -> std::size_t {
+    namespace stdr = std::ranges;
+    return stdr::fold_left(arr, 0uz, [&](auto acc, const auto &elem) { return acc + description.bitsize(elem); });
+  }
 };
 
 template<name Identifier, typename Description, typename Rule>

@@ -71,6 +71,11 @@ struct enumeration_field_t {
   }
 
   [[nodiscard]] constexpr static auto length() noexcept(release) { return Width; }
+
+  template<typename V>
+  [[nodiscard]] constexpr auto bitsize(const V &) const noexcept(release) -> std::size_t {
+    return Width;
+  }
 };
 
 template<typename Enum, std::size_t Width>
@@ -111,6 +116,11 @@ struct anonymous_enumeration_field_t {
   }
 
   [[nodiscard]] constexpr static auto length() noexcept(release) { return Width; }
+
+  template<typename V>
+  [[nodiscard]] constexpr auto bitsize(const V &) const noexcept(release) -> std::size_t {
+    return Width;
+  }
 };
 
 template<name Identifier, typename Enum, std::size_t Width>

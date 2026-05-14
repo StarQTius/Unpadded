@@ -60,6 +60,11 @@ struct shadow_enumeration_field_t {
   constexpr static void encode(value_type, Serializer &, stream_interface &, const System &) {}
 
   [[nodiscard]] constexpr static auto length() noexcept(release) { return Width; }
+
+  template<typename V>
+  [[nodiscard]] constexpr auto bitsize(const V &) const noexcept(release) -> std::size_t {
+    return Width;
+  }
 };
 
 template<name Identifier, typename Enum, std::size_t Width>
