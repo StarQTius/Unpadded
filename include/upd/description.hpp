@@ -37,7 +37,6 @@
 #include "record/values.hpp"
 #include "safe_operation.hpp"
 #include "stream_interface.hpp"
-#include "token.hpp"
 #include "tuple/as_record.hpp"
 #include "tuple/concat.hpp"
 #include "tuple/join.hpp"
@@ -48,25 +47,6 @@
 #include "tuple/typelist.hpp"
 #include "upd.hpp"
 #include "with_sequence.hpp"
-
-namespace upd::descriptor {
-
-template<name, bool, std::size_t>
-struct field_t; // IWYU pragma: keep
-
-template<name, bool, std::size_t, typename>
-struct bound_t; // IWYU pragma: keep
-
-template<bool, std::size_t>
-struct anonymous_field_t; // IWYU pragma: keep
-
-template<name, std::size_t>
-struct constant_t; // IWYU pragma: keep
-
-template<name, typename, std::size_t, typename>
-struct checksum_t; // IWYU pragma: keep
-
-} // namespace upd::descriptor
 
 namespace upd {
 
@@ -142,16 +122,6 @@ template<typename... WhenThens>
 }
 
 } // namespace upd
-
-namespace upd::descriptor {
-
-template<name, bool Is_Signed, std::size_t Width>
-constexpr auto field(signedness_t<Is_Signed>, width_t<Width>) noexcept(release);
-
-template<name, typename T, std::size_t Width>
-constexpr auto constant(T, width_t<Width>) noexcept(release);
-
-} // namespace upd::descriptor
 
 namespace upd {
 
