@@ -1,6 +1,8 @@
 #pragma once
 
 #include <concepts>
+#include <source_location>
+#include <string_view>
 #include <type_traits>
 
 #include "upd.hpp"
@@ -20,5 +22,9 @@ struct typebox {
     return std::same_as<T, U>;
   }
 };
+
+template<typename T>
+constexpr auto uid =
+    [](auto) { return std::string_view{std::source_location::current().function_name()}; }(typebox<T>{});
 
 } // namespace upd

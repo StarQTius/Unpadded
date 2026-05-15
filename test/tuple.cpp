@@ -141,6 +141,18 @@ TEST_CASE("Tuple views", "[tuple_view]") {
     REQUIRE(&upd::get<0>(view) == &upd::get<0>(t));
     REQUIRE(&upd::get<1>(view) == &upd::get<1>(t));
   }
+
+  SECTION("Deduplicate types") {
+    auto t1 = std::tuple{int{}, long{}};
+    auto t2 = std::tuple{bool{}, char{}};
+
+    upd::tuple_view auto view = updv::concat(t1, t, t2) | updv::unique;
+    REQUIRE(upd::tuple_size_v<decltype(view)> == 4);
+    REQUIRE(&upd::get<0>(view) == &upd::get<0>(t1));
+    REQUIRE(&upd::get<1>(view) == &upd::get<1>(t1));
+    REQUIRE(&upd::get<2>(view) == &upd::get<1>(t));
+    REQUIRE(&upd::get<3>(view) == &upd::get<0>(t2));
+  }
 }
 
 TEST_CASE("Algorithms on records", "[tuple_algorithm]") {

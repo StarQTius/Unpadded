@@ -26,6 +26,7 @@
 #include "tuple/tuple_view.hpp"         // IWYU pragma: export
 #include "tuple/tuple_view_adaptor.hpp" // IWYU pragma: export
 #include "tuple/typelist.hpp"           // IWYU pragma: export
+#include "tuple/unique.hpp"             // IWYU pragma: export
 #include "tuple/view.hpp"               // IWYU pragma: export
 #include "tuple/visit.hpp"              // IWYU pragma: export
 #include "tuple/zip.hpp"                // IWYU pragma: export
