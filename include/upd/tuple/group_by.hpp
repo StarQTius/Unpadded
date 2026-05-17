@@ -76,16 +76,17 @@ struct upd::record_view_for<upd::tuple_views::group_by_view<Base, Identificator>
 
     auto indices_and_tags = element_types | updv::transform_type(Identificator{}) | updv::enumerate;
 
-    return std::tuple{(indices_and_tags
-                       | updv::filter([]<typename IAndExpr>(typebox<IAndExpr>) {
-                           return std::same_as<std::remove_cvref_t<typename std::remove_cvref_t<IAndExpr>::second_type>,
-                                               tuple_element_t<Is, decltype(tags)>>;
-                         })
-                       | updv::transform_type([]<typename IAndExpr> {
-                           using expression_t = typename IAndExpr::first_type;
-                           return expression_t{};
-                         })
-                       | updv::to<std::tuple>)...};
+    return std::make_tuple(
+        (indices_and_tags
+         | updv::filter([]<typename IAndExpr>(typebox<IAndExpr>) {
+             return std::same_as<std::remove_cvref_t<typename std::remove_cvref_t<IAndExpr>::second_type>,
+                                 tuple_element_t<Is, decltype(tags)>>;
+           })
+         | updv::transform_type([]<typename IAndExpr> {
+             using expression_t = typename IAndExpr::first_type;
+             return expression_t{};
+           })
+         | updv::to<std::tuple>)...);
   };
 
   template<std::size_t I, typename View>

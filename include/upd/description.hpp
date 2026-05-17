@@ -140,11 +140,7 @@ concept deducible_field = field_like<T> && serializer<Serializer> && requires(T 
 };
 
 template<typename T, typename Serializer>
-concept decodable_field = serializer<Serializer>
-                          && deducible_field<T, Serializer>
-                          && requires(T x, Serializer ser, const record<> packet, const byte_type<Serializer> *src) {
-                               { x.decode(src, ser, packet) } -> std::same_as<typename T::value_type>;
-                             };
+concept decodable_field = serializer<Serializer> && deducible_field<T, Serializer>;
 
 template<typename T, typename Serializer>
 concept encodable_field = serializer<Serializer>
@@ -206,40 +202,46 @@ public:
     encode(args, ser, dest);
   }
 
-  template<std::input_iterator InputIt,
-           serializer Serializer,
-           record_like Context = upd::record<>,
-           tuple_like2 System = std::tuple<>>
+  template<std::input_iterator InputIt, serializer Serializer, record_like Context = upd::record<>>
     requires std::convertible_to<std::iter_value_t<InputIt>, word_t>
-  [[nodiscard]] constexpr auto
-  decode(InputIt src, Serializer &ser, const Context &ctx = record{}, const System &sys = std::tuple{}) const {
+  [[nodiscard]] constexpr auto decode(InputIt src, Serializer &ser, const Context &ctx = record{}) const {
     auto null_it = static_cast<word_t *>(nullptr);
-    return decode(iterator_stream{src, null_it}, ser, ctx, sys);
+    return decode(iterator_stream{src, null_it}, ser, ctx);
   }
 
-  template<std::input_iterator InputIt,
-           serializer Serializer,
-           record_like Context = upd::record<>,
-           tuple_like2 System = std::tuple<>>
+  template<std::input_iterator InputIt, serializer Serializer, record_like Context = upd::record<>>
     requires std::same_as<std::iter_value_t<InputIt>, std::byte>
-  [[nodiscard]] constexpr auto
-  decode(InputIt src, Serializer &ser, const Context &ctx = record{}, const System &sys = std::tuple{}) const {
+  [[nodiscard]] constexpr auto decode(InputIt src, Serializer &ser, const Context &ctx = record{}) const {
     namespace stdr = std::ranges;
     namespace stdv = std::views;
 
     auto words = stdr::subrange(src, std::unreachable_sentinel) | stdv::transform(std::to_integer<word_t>);
 
     auto null_it = static_cast<word_t *>(nullptr);
-    return decode(iterator_stream{std::begin(words), null_it}, ser, ctx, sys);
+    return decode(iterator_stream{std::begin(words), null_it}, ser, ctx);
   }
 
-  template<serializer Serializer, record_like Context = upd::record<>, tuple_like2 System = std::tuple<>>
-  [[nodiscard]] constexpr auto decode(stream_interface &src,
-                                      Serializer &ser,
-                                      const Context &ctx = record{},
-                                      const System &presys = std::tuple{}) const {
+  template<serializer Serializer, record_like Context = upd::record<>>
+  [[nodiscard]] constexpr auto
+  decode(stream_interface &src, Serializer &ser, const Context &ctx = upd::record{}) const {
     namespace updv = record_views;
 
+    auto sys = ctx | updv::transform([](auto k, const auto &v) { return value_of<k.value> = v; }) | updv::values;
+
+    return decode(src, ser, sys);
+  }
+
+  template<serializer Serializer, record_like Context = upd::record<>>
+  [[nodiscard]] constexpr auto
+  decode(stream_interface &&src, Serializer &ser, const Context &ctx = upd::record{}) const {
+    return decode(src, ser, ctx);
+  }
+
+  template<serializer Serializer, tuple_like2 System>
+  [[nodiscard]] constexpr auto decode(stream_interface &src, Serializer &ser, const System &presys) const {
+    namespace updv = record_views;
+
+    auto ctx = record{};
     auto err = error{};
     auto retval =
         m_fields | updv::transform([&](auto, const auto &field) { return field.default_value(); }) | updv::to<record>;
@@ -263,7 +265,7 @@ public:
             m_fields | updv::take_until<id.value> | updv::values | tuple_views::transform([&](const auto &field) {
               return field.rules(ctx_, m_fields, ser);
             }) | tuple_views::join);
-        auto maybe_field_value = field.decode(src, ser, retval, m_fields, sys);
+        auto maybe_field_value = field.decode(src, ser, m_fields, sys);
         if (maybe_field_value) {
           get<id.value>(retval) = *maybe_field_value;
         } else {
@@ -294,14 +296,6 @@ public:
     }
 
     return result_if_no_error(std::move(retval), std::move(err));
-  }
-
-  template<serializer Serializer, record_like Context = upd::record<>, tuple_like2 System = std::tuple<>>
-  [[nodiscard]] constexpr auto decode(stream_interface &&src,
-                                      Serializer &ser,
-                                      const Context &ctx = record{},
-                                      const System &sys = std::tuple{}) const {
-    return decode(src, ser, ctx, sys);
   }
 
   [[nodiscard]] constexpr auto length() const noexcept(release) {

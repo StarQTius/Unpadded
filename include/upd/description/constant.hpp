@@ -49,9 +49,9 @@ struct constant_t {
     return std::tuple{length_of<Identifier> = Width};
   }
 
-  template<serializer Serializer, record_like Packet, record_like Fields, tuple_like2 System>
-  [[nodiscard]] constexpr static auto
-  decode(stream_interface &src, Serializer &ser, const Packet &, const Fields &, const System &) -> result<value_type> {
+  template<serializer Serializer, record_like Fields, tuple_like2 System>
+  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Fields &, const System &)
+      -> result<value_type> {
     return ser.deserialize_unsigned(src, upd::width<width>);
   }
 
@@ -98,9 +98,9 @@ struct enumeration_constant_t {
     return std::tuple{length_of<Identifier> = Width};
   }
 
-  template<serializer Serializer, record_like Packet, record_like Fields, tuple_like2 System>
-  [[nodiscard]] constexpr static auto
-  decode(stream_interface &src, Serializer &ser, const Packet &, const Fields &, const System &) -> result<value_type> {
+  template<serializer Serializer, record_like Fields, tuple_like2 System>
+  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Fields &, const System &)
+      -> result<value_type> {
     return static_cast<Enum>(ser.deserialize_unsigned(src, upd::width<width>));
   }
 

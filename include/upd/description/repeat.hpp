@@ -68,9 +68,8 @@ struct repeat_t {
     }
   }
 
-  template<serializer Serializer, record_like Packet, record_like Fields, tuple_like2 System>
-  [[nodiscard]] constexpr auto
-  decode(stream_interface &src, Serializer &ser, const Packet &, const Fields &, const System &sys) const
+  template<serializer Serializer, record_like Fields, tuple_like2 System>
+  [[nodiscard]] constexpr auto decode(stream_interface &src, Serializer &ser, const Fields &, const System &sys) const
       -> result<value_type> {
     namespace stdv = std::views;
     namespace updv = upd::tuple_views;
@@ -85,7 +84,7 @@ struct repeat_t {
     auto i = 0uz;
     auto overflown = false;
     while (!overflown && i < len) {
-      auto maybe_value = description.decode(src, ser, record{}, sys);
+      auto maybe_value = description.decode(src, ser, sys);
       if (!maybe_value) {
         return std::unexpected{std::move(maybe_value).error()};
       }

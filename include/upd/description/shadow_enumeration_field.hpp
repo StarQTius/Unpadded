@@ -41,9 +41,9 @@ struct shadow_enumeration_field_t {
     return record{};
   }
 
-  template<serializer Serializer, record_like Packet, record_like Fields, tuple_like2 System>
-  [[nodiscard]] constexpr static auto
-  decode(stream_interface &, Serializer &, const Packet &, const Fields &, const System &sys) -> result<value_type> {
+  template<serializer Serializer, record_like Fields, tuple_like2 System>
+  [[nodiscard]] constexpr static auto decode(stream_interface &, Serializer &, const Fields &, const System &sys)
+      -> result<value_type> {
     return solve_for(value_of<Identifier>, sys | tuple_views::to<std::tuple>);
   }
 

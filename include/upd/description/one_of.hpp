@@ -194,9 +194,8 @@ struct one_of_t {
     }
   }
 
-  template<serializer Serializer, record_like Packet, record_like Fields, tuple_like2 System>
-  [[nodiscard]] constexpr auto
-  decode(stream_interface &src, Serializer &ser, const Packet &, const Fields &, const System &sys) const
+  template<serializer Serializer, record_like Fields, tuple_like2 System>
+  [[nodiscard]] constexpr auto decode(stream_interface &src, Serializer &ser, const Fields &, const System &sys) const
       -> result<value_type> {
     namespace stdr = std::ranges;
     namespace updv = upd::tuple_views;
@@ -215,7 +214,7 @@ struct one_of_t {
           0uz,
           [](auto acc, auto var) { return acc + var; });
       auto make_retval = [&](auto &&alt) { return value_type{std::in_place_index<id_pos + 1>, UPD_FWD(alt)}; };
-      return descr.decode(src, ser, record{}, updv::concat(sys, std::tuple{length_of<Identifier> = length_rule}))
+      return descr.decode(src, ser, updv::concat(sys, std::tuple{length_of<Identifier> = length_rule}))
           .transform(make_retval);
     };
 

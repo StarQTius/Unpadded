@@ -58,9 +58,9 @@ struct bound_t {
     }
   };
 
-  template<serializer Serializer, record_like Packet, record_like Fields, tuple_like2 System>
-  [[nodiscard]] constexpr static auto
-  decode(stream_interface &src, Serializer &ser, const Packet &, const Fields &, const System &) -> result<value_type> {
+  template<serializer Serializer, record_like Fields, tuple_like2 System>
+  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Fields &, const System &)
+      -> result<value_type> {
     if constexpr (is_signed) {
       return ser.deserialize_signed(src, upd::width<width>);
     } else {

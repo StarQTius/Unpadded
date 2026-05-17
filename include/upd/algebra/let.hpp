@@ -19,6 +19,9 @@ struct side;
 template<auto Varname, typename Val>
   requires std::is_scalar_v<Val>
 struct let {
+  constexpr static auto varname = Varname;
+  using value_type = Val;
+
   explicit constexpr let(variable<Varname> var, Val val) : var{var}, val{val} {}
 
   explicit constexpr let(const side<variable<Varname>> &s, Val val) : var{s.expr}, val{val} {}
