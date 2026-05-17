@@ -153,6 +153,19 @@ TEST_CASE("Tuple views", "[tuple_view]") {
     REQUIRE(&upd::get<2>(view) == &upd::get<1>(t));
     REQUIRE(&upd::get<3>(view) == &upd::get<0>(t2));
   }
+
+  SECTION("Group tuple elements into subtuples") {
+    auto s = std::tuple{long{}, int{}, char{}};
+    upd::record_view auto view = updv::concat(t, s) | updv::group_by([]<typename T> -> upd::expr_t<T {}>{});
+
+    REQUIRE(upd::record_size_v<decltype(view)> == 3);
+    REQUIRE(&upd::get<0>(upd::get<int{}>(view)) == &upd::get<0>(t));
+    REQUIRE(&upd::get<1>(upd::get<int{}>(view)) == &upd::get<1>(s));
+    REQUIRE(&upd::get<0>(upd::get<char{}>(view)) == &upd::get<1>(t));
+    REQUIRE(&upd::get<1>(upd::get<char{}>(view)) == &upd::get<2>(s));
+    REQUIRE(&upd::get<0>(upd::get<long{}>(view)) == &upd::get<2>(t));
+    REQUIRE(&upd::get<1>(upd::get<long{}>(view)) == &upd::get<0>(s));
+  }
 }
 
 TEST_CASE("Algorithms on records", "[tuple_algorithm]") {

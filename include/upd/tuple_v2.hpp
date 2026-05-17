@@ -11,6 +11,7 @@
 #include "tuple/find.hpp"               // IWYU pragma: export
 #include "tuple/fold.hpp"               // IWYU pragma: export
 #include "tuple/for_each.hpp"           // IWYU pragma: export
+#include "tuple/group_by.hpp"           // IWYU pragma: export
 #include "tuple/has_type.hpp"           // IWYU pragma: export
 #include "tuple/instantiate.hpp"        // IWYU pragma: export
 #include "tuple/join.hpp"               // IWYU pragma: export

@@ -75,7 +75,9 @@ namespace upd {
 template<auto IOrTag>
 constexpr auto get = []<typename T> [[nodiscard]] (T &&x) -> decltype(auto) {
   constexpr auto is_index_like = [] {
-    if constexpr (std::integral<decltype(IOrTag)>) {
+    if constexpr (std::same_as<decltype(IOrTag), char>) {
+      return true;
+    } else if constexpr (std::integral<decltype(IOrTag)>) {
       return std::in_range<std::size_t>(IOrTag);
     } else if constexpr (std::convertible_to<decltype(IOrTag), std::size_t>) {
       return true;
