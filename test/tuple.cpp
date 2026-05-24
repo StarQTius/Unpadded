@@ -166,6 +166,14 @@ TEST_CASE("Tuple views", "[tuple_view]") {
     REQUIRE(&upd::get<0>(upd::get<long{}>(view)) == &upd::get<2>(t));
     REQUIRE(&upd::get<1>(upd::get<long{}>(view)) == &upd::get<0>(s));
   }
+
+  SECTION("Take while predicate is satisfied") {
+    upd::tuple_view auto view = t | updv::take_while([]<typename T> { return upd::expr<!std::same_as<T, long>>; });
+
+    REQUIRE(upd::tuple_size_v<decltype(view)> == 2);
+    REQUIRE(&upd::get<0>(view) == &upd::get<0>(t));
+    REQUIRE(&upd::get<1>(view) == &upd::get<1>(t));
+  }
 }
 
 TEST_CASE("Algorithms on records", "[tuple_algorithm]") {
