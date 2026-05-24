@@ -14,6 +14,7 @@ RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key 2>/dev/null | tee /etc/
 RUN echo 'deb http://apt.llvm.org/plucky/ llvm-toolchain-plucky-21 main' > /etc/apt/sources.list.d/llvm.list
 RUN git clone https://github.com/include-what-you-use/include-what-you-use
 RUN git clone https://github.com/google/bloaty
+RUN git clone https://github.com/aras-p/ClangBuildAnalyzer --branch=v1.6.0
 
 WORKDIR /
 RUN apt update
@@ -51,6 +52,13 @@ RUN --mount=type=cache,id=Unpadded_bloaty,target=/bloaty/build \
   && make install --directory build --jobs $(nproc) --ignore-errors \
   && cmake --build build --target install
 RUN ln -s /usr/local/bin/bloaty /usr/bin/bloaty
+
+WORKDIR /ClangBuildAnalyzer
+RUN --mount=type=cache,id=Unpadded_ClangBuildAnalyzer,target=/ClangBuildAnalyzer/build \
+  cmake -Bbuild -DCMAKE_CXX_COMPILER=clang++-21 \
+  && make install --directory build --jobs $(nproc) --ignore-errors \
+  && cmake --build build --target install
+RUN ln -s /usr/local/bin/ClangBuildAnalyzer /usr/bin/ClangBuildAnalyzer
 
 WORKDIR /
 RUN update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-15 0
