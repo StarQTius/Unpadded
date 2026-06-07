@@ -30,7 +30,6 @@
 #include "record/name.hpp"
 #include "record/record.hpp"
 #include "record/record_like.hpp"
-#include "record/take.hpp"
 #include "record/to.hpp"
 #include "record/transform.hpp"
 #include "record/universal_record.hpp"
@@ -40,6 +39,8 @@
 #include "tuple/as_record.hpp"
 #include "tuple/concat.hpp"
 #include "tuple/join.hpp"
+#include "tuple/take.hpp"
+#include "tuple/to.hpp"
 #include "tuple/transform.hpp"
 #include "tuple/tuple_like.hpp"
 #include "tuple/tuple_size.hpp"
@@ -172,6 +173,10 @@ public:
                | tuple_views::as_record
                | record_views::instantiate<record>);
 
+  constexpr static auto identifiers = typelist2<Ts...>
+                                      | tuple_views::transform_type([]<typename T> -> expr_t<T::identifier> {})
+                                      | tuple_views::to<std::tuple>;
+
   explicit constexpr description(Ts... fields) : m_fields{entry{expr<fields.identifier>, std::move(fields)}...} {}
 
   template<record_like Args, serializer Serializer>
@@ -241,59 +246,63 @@ public:
   [[nodiscard]] constexpr auto decode(stream_interface &src, Serializer &ser, const System &presys) const {
     namespace updv = record_views;
 
-    auto ctx = record{};
     auto err = error{};
     auto retval =
         m_fields | updv::transform([&](auto, const auto &field) { return field.default_value(); }) | updv::to<record>;
 
-    updv::for_each(ctx, [&](auto id, const auto &value) { get<id.value>(retval) = value; });
+    updv::for_each(m_fields, [&](auto id, const auto &field) {
+      ser.checkpoint(id.value.string);
 
-    if (!err) {
-      updv::for_each(m_fields, [&](auto id, const auto &field) {
-        ser.checkpoint(id.value.string);
-        auto ctx_ = [&] {
-          if constexpr (has_tag<id.value>(ctx)) {
-            return updv::concat(retval | updv::take_until<id.value>, entry{id, get<id.value>(ctx)})
-                   | updv::to<upd::record>;
-          } else {
-            return retval | updv::take_until<id.value>;
-          }
-        }();
-        auto sys = tuple_views::concat(
-            presys,
-            get<id.value>(m_fields).rules(ctx_, m_fields, ser),
-            m_fields | updv::take_until<id.value> | updv::values | tuple_views::transform([&](const auto &field) {
-              return field.rules(ctx_, m_fields, ser);
-            }) | tuple_views::join);
-        auto maybe_field_value = field.decode(src, ser, m_fields, sys);
-        if (maybe_field_value) {
-          get<id.value>(retval) = *maybe_field_value;
-        } else {
-          err = maybe_field_value.error();
-        }
-      });
+      auto known_ids = identifiers | tuple_views::take_while([&]<typename Expr> { return id != Expr{}; });
+
+      auto ctx = known_ids
+                 | tuple_views::transform([&]<auto Id>(expr_t<Id>) { return keyword2<Id>{} = get<Id>(retval); })
+                 | tuple_views::as_record
+                 | updv::to<upd::record>;
+
+      auto rules = tuple_views::concat(known_ids, std::tuple{id})
+                   | tuple_views::to<std::tuple>
+                   | tuple_views::transform([&]<auto Id>(expr_t<Id>) { return keyword2<Id>{} = get<Id>(m_fields); })
+                   | tuple_views::as_record
+                   | updv::to<upd::record>
+                   | updv::transform([&](auto, const auto &field) { return field.rules(ctx, m_fields, ser); })
+                   | updv::to<upd::record>
+                   | updv::values
+                   | tuple_views::join
+                   | tuple_views::to<std::tuple>;
+
+      auto sys = tuple_views::concat(presys, rules);
+      auto maybe_field_value = field.decode(src, ser, m_fields, sys);
+      if (maybe_field_value) {
+        get<id.value>(retval) = *maybe_field_value;
+      } else {
+        err = maybe_field_value.error();
+      }
+    });
+
+    if (err) {
+      return result_if_no_error(std::move(retval), std::move(err));
     }
 
-    auto sys = tuple_views::concat(presys, m_fields | updv::values | tuple_views::transform([&](const auto &field) {
-                                             return field.rules(retval, m_fields, ser);
-                                           }) | tuple_views::join);
+    auto rules = m_fields
+                 | updv::transform([&](auto, const auto &field) { return field.rules(retval, m_fields, ser); })
+                 | updv::values
+                 | tuple_views::join;
 
-    if (!err) {
-      auto merged = updv::concat(std::as_const(retval), ctx);
-      auto deduced =
-          m_fields
-          | updv::transform([&](auto, const auto &field) { return field.deduce(retval, ser, m_fields, sys); })
-          | updv::join([](auto, auto k) { return k; })
-          | updv::to<record>;
+    auto sys = tuple_views::concat(presys, rules);
 
-      updv::for_each(deduced, [&](auto id, const auto &ded) {
-        const auto &actual = get<id.value>(merged);
-        if (!err && safe_not_equal(actual, ded)) {
-          err = not_matching_deduction{
-              id.value.string, static_cast<std::intmax_t>(actual), static_cast<std::intmax_t>(ded)};
-        }
-      });
-    }
+    auto deduced = m_fields
+                   | updv::transform([&](auto, const auto &field) { return field.deduce(retval, ser, m_fields, sys); })
+                   | updv::join([](auto, auto k) { return k; })
+                   | updv::to<record>;
+
+    updv::for_each(deduced, [&](auto id, const auto &ded) {
+      const auto &actual = get<id.value>(retval);
+      if (!err && safe_not_equal(actual, ded)) {
+        err = not_matching_deduction{
+            id.value.string, static_cast<std::intmax_t>(actual), static_cast<std::intmax_t>(ded)};
+      }
+    });
 
     return result_if_no_error(std::move(retval), std::move(err));
   }

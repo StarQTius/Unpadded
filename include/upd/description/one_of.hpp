@@ -180,7 +180,8 @@ struct one_of_t {
                     | updv::filter([](auto id, const auto &) { return id != Identifier; })
                     | updv::values
                     | tuple_views::transform([&](const auto &field) { return field.rules(packet, fields, ser); })
-                    | tuple_views::join;
+                    | tuple_views::join
+                    | tuple_views::to<std::tuple>;
 
     auto sys = tuple_views::concat(std::tuple{code_of<Identifier> = rule}, rule_sys);
     auto id = try_solve_for(code_of<Identifier>, sys);

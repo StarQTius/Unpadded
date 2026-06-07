@@ -53,7 +53,7 @@ struct keyword2 {
   constexpr static auto identifier = Identifier;
 
   template<typename T>
-  [[nodiscard]] constexpr auto operator=(T &&x) const -> entry<identifier, T> {
+  [[nodiscard]] constexpr auto operator=(T &&x) const {
     using value_type = std::decay_t<T>;
     return entry<identifier, value_type>{UPD_FWD(x)};
   }

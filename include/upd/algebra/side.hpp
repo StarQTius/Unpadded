@@ -71,6 +71,14 @@ struct side {
     };
   }
 
+  template<typename Self>
+  [[nodiscard]] constexpr auto operator=(this Self &&self, int value) noexcept(release) {
+    return equation{
+        .lhs = UPD_FWD(self).expr,
+        .rhs = value,
+    };
+  }
+
   template<typename Self, typename T>
     requires std::is_scalar_v<T>
   [[nodiscard]] constexpr auto operator=(this Self &&self, std::reference_wrapper<T> ref) noexcept(release) {
