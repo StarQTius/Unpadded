@@ -36,11 +36,6 @@ struct shadow_enumeration_field_t {
 
   [[nodiscard]] constexpr static auto default_value() noexcept(release) -> value_type { return value_type{}; }
 
-  template<record_like Packet, serializer Serializer, record_like Fields, tuple_like2 System>
-  [[nodiscard]] constexpr static auto deduce(Packet &, Serializer &, const Fields &, const System &) noexcept(release) {
-    return record{};
-  }
-
   template<serializer Serializer, record_like Fields, tuple_like2 System>
   [[nodiscard]] constexpr static auto decode(stream_interface &, Serializer &, const Fields &, const System &sys)
       -> result<value_type> {

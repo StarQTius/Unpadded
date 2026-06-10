@@ -43,11 +43,6 @@ struct bound_t {
 
   [[nodiscard]] constexpr static auto default_value() noexcept(release) -> value_type { return value_type{}; }
 
-  template<record_like Packet, serializer Serializer, record_like Fields, tuple_like2 System>
-  [[nodiscard]] constexpr auto deduce(Packet &, Serializer &, const Fields &, const System &) const {
-    return record{};
-  }
-
   template<record_like Packet, record_like Fields, serializer Serializer>
   [[nodiscard]] constexpr auto rules(const Packet &packet, const Fields &, Serializer &) const {
     if constexpr (has_tag<Identifier>(packet)) {

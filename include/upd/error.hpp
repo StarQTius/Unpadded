@@ -17,12 +17,6 @@ namespace upd {
 
 struct no_error {};
 
-struct not_matching_deduction {
-  const char *identifier;
-  std::intmax_t actual;
-  std::intmax_t deduced;
-};
-
 struct invalid_code_in_one_of {
   const char *identifier;
   std::intmax_t code;
@@ -39,11 +33,7 @@ struct repeated_beyond_max {
   std::size_t max;
 };
 
-using error_data_types = typelist2_t<no_error,
-                                     not_matching_deduction,
-                                     invalid_code_in_one_of,
-                                     negative_repetition_count,
-                                     repeated_beyond_max>;
+using error_data_types = typelist2_t<no_error, invalid_code_in_one_of, negative_repetition_count, repeated_beyond_max>;
 
 template<typename T>
 concept error_data = has_type<T>(error_data_types{});
@@ -107,21 +97,6 @@ struct std::formatter<upd::no_error> {
   constexpr static auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
 
   static auto format(upd::no_error, std::format_context &ctx) { return std::format_to(ctx.out(), "No error"); }
-};
-
-template<>
-struct std::formatter<upd::not_matching_deduction> {
-  constexpr static auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
-
-  static auto format(const upd::not_matching_deduction &err, std::format_context &ctx) {
-    return std::format_to(ctx.out(),
-                          "'{}' field actual and deduced value do not match ('{} (0x{:x})' vs '{} (0x{:x})')",
-                          err.identifier,
-                          err.actual,
-                          err.actual,
-                          err.deduced,
-                          err.deduced);
-  }
 };
 
 template<>

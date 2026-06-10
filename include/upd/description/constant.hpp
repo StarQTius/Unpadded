@@ -39,11 +39,6 @@ struct constant_t {
 
   [[nodiscard]] constexpr auto default_value() const noexcept(release) -> value_type { return field_value; }
 
-  template<record_like Packet, serializer Serializer, record_like Fields, tuple_like2 System>
-  [[nodiscard]] constexpr static auto deduce(Packet &, Serializer &, const Fields &, const System &) noexcept(release) {
-    return record{};
-  }
-
   template<record_like Packet, record_like Fields, serializer Serializer>
   [[nodiscard]] constexpr auto rules(const Packet &, const Fields &, Serializer &) const {
     return std::tuple{length_of<Identifier> = Width};
@@ -87,11 +82,6 @@ struct enumeration_constant_t {
   }
 
   [[nodiscard]] constexpr auto default_value() const noexcept(release) -> value_type { return field_value; }
-
-  template<record_like Packet, serializer Serializer, record_like Fields, tuple_like2 System>
-  [[nodiscard]] constexpr static auto deduce(Packet &, Serializer &, const Fields &, const System &) noexcept(release) {
-    return record{};
-  }
 
   template<record_like Packet, record_like Fields, serializer Serializer>
   [[nodiscard]] constexpr auto rules(const Packet &, const Fields &, Serializer &) const {

@@ -166,12 +166,6 @@ struct one_of_t {
 
   [[nodiscard]] constexpr auto default_value() const -> value_type { return value_type{}; }
 
-  template<record_like Packet, serializer Serializer, record_like Fields, tuple_like2 System>
-  [[nodiscard]] constexpr auto deduce(const Packet &, Serializer &, const Fields &, const System &) const
-      noexcept(release) {
-    return record{};
-  }
-
   template<record_like Packet, record_like Fields, serializer Serializer>
   [[nodiscard]] constexpr auto rules(const Packet &packet, const Fields &fields, Serializer &ser) const {
     namespace updv = upd::record_views;

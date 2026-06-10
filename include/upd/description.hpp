@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <concepts>
 #include <cstddef>
-#include <cstdint>
 #include <format>
 #include <iosfwd>
 #include <iterator>
@@ -26,7 +25,6 @@
 #include "record/get_ith.hpp"
 #include "record/has_tag.hpp"
 #include "record/instantiate.hpp"
-#include "record/join.hpp"
 #include "record/name.hpp"
 #include "record/record.hpp"
 #include "record/record_like.hpp"
@@ -34,7 +32,6 @@
 #include "record/transform.hpp"
 #include "record/universal_record.hpp"
 #include "record/values.hpp"
-#include "safe_operation.hpp"
 #include "stream_interface.hpp"
 #include "tuple/as_record.hpp"
 #include "tuple/concat.hpp"
@@ -136,16 +133,11 @@ template<typename T>
 concept field_like = true;
 
 template<typename T, typename Serializer>
-concept deducible_field = field_like<T> && serializer<Serializer> && requires(T x, Serializer ser, record<> packet) {
-  { x.deduce(packet, ser) } -> std::same_as<void>;
-};
+concept decodable_field = field_like<T> && serializer<Serializer>;
 
 template<typename T, typename Serializer>
-concept decodable_field = serializer<Serializer> && deducible_field<T, Serializer>;
-
-template<typename T, typename Serializer>
-concept encodable_field = serializer<Serializer>
-                          && deducible_field<T, Serializer>
+concept encodable_field = field_like<T>
+                          && serializer<Serializer>
                           && requires(T x, Serializer ser, typename T::value_type value, byte_type<Serializer> *dest) {
                                { x.encode(value, ser, dest) } -> std::same_as<void>;
                              };
@@ -277,30 +269,6 @@ public:
         get<id.value>(retval) = *maybe_field_value;
       } else {
         err = maybe_field_value.error();
-      }
-    });
-
-    if (err) {
-      return result_if_no_error(std::move(retval), std::move(err));
-    }
-
-    auto rules = m_fields
-                 | updv::transform([&](auto, const auto &field) { return field.rules(retval, m_fields, ser); })
-                 | updv::values
-                 | tuple_views::join;
-
-    auto sys = tuple_views::concat(presys, rules);
-
-    auto deduced = m_fields
-                   | updv::transform([&](auto, const auto &field) { return field.deduce(retval, ser, m_fields, sys); })
-                   | updv::join([](auto, auto k) { return k; })
-                   | updv::to<record>;
-
-    updv::for_each(deduced, [&](auto id, const auto &ded) {
-      const auto &actual = get<id.value>(retval);
-      if (!err && safe_not_equal(actual, ded)) {
-        err = not_matching_deduction{
-            id.value.string, static_cast<std::intmax_t>(actual), static_cast<std::intmax_t>(ded)};
       }
     });
 
