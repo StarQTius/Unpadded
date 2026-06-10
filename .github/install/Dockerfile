@@ -1,34 +1,37 @@
-FROM ubuntu:plucky
+FROM alpine:3.24.0
 
 COPY entrypoint.sh* /entrypoint.sh
 
 WORKDIR /
-RUN apt update
-RUN --mount=type=cache,id=Unpadded,target=/var/cache/apt \
-  apt install -y \
+RUN --mount=type=cache,id=Unpadded,target=/var/cache/apk \
+  apk add --no-cache \
   git \
-  software-properties-common \
   wget
-RUN add-apt-repository ppa:ubuntu-toolchain-r/test
-RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key 2>/dev/null | tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
-RUN echo 'deb http://apt.llvm.org/plucky/ llvm-toolchain-plucky-21 main' > /etc/apt/sources.list.d/llvm.list
 RUN git clone https://github.com/include-what-you-use/include-what-you-use
-RUN git clone https://github.com/google/bloaty
-RUN git clone https://github.com/aras-p/ClangBuildAnalyzer --branch=v1.6.0
+RUN git clone https://github.com/aras-p/ClangBuildAnalyzer
 
 WORKDIR /
-RUN apt update
-RUN --mount=type=cache,id=Unpadded,target=/var/cache/apt \
-  apt install -y \
+RUN --mount=type=cache,id=Unpadded,target=/var/cache/apk \
+  apk add --no-cache \
+  bash \
+  bloaty \
+  build-base \
   ccache \
-  clang-21 \
-  clangd \
-  clang-format-21 \
-  clang-tidy-21 \
+  clang21 \
+  clang21-dev \
+  clang21-extra-tools \
+  clang21-static \
   cmake \
+  colordiff \
+  curl-dev \
   gdb \
-  g++-15 \
-  libclang-21-dev \
+  g++ \
+  libxml2-dev \
+  linux-headers \
+  llvm21-dev \
+  llvm21-gtest \
+  llvm21-libs \
+  llvm21-static \
   pipx \
   socat \
   sudo
@@ -44,16 +47,8 @@ RUN --mount=type=cache,id=Unpadded_iwyu,target=/include-what-you-use/build \
   && cmake --build build --target install --parallel $(nproc)
 RUN ln -s /usr/local/bin/include-what-you-use /usr/bin/iwyu
 
-WORKDIR /bloaty
-RUN git checkout 0e5a909
-RUN git submodule update --init --recursive
-RUN --mount=type=cache,id=Unpadded_bloaty,target=/bloaty/build \
-  cmake -Bbuild -DCMAKE_CXX_COMPILER=clang++-21 -DBUILD_TESTING=NO \
-  && make install --directory build --jobs $(nproc) --ignore-errors \
-  && cmake --build build --target install
-RUN ln -s /usr/local/bin/bloaty /usr/bin/bloaty
-
 WORKDIR /ClangBuildAnalyzer
+RUN git checkout 55447756ff8af2f87e4a315f2ba637b9380363ea
 RUN --mount=type=cache,id=Unpadded_ClangBuildAnalyzer,target=/ClangBuildAnalyzer/build \
   cmake -Bbuild -DCMAKE_CXX_COMPILER=clang++-21 \
   && make install --directory build --jobs $(nproc) --ignore-errors \
@@ -61,16 +56,18 @@ RUN --mount=type=cache,id=Unpadded_ClangBuildAnalyzer,target=/ClangBuildAnalyzer
 RUN ln -s /usr/local/bin/ClangBuildAnalyzer /usr/bin/ClangBuildAnalyzer
 
 WORKDIR /
-RUN update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-15 0
-RUN update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-21 0
-RUN update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-21 0
-RUN update-alternatives --install /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-21 0
-RUN echo "ubuntu ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+RUN ln -sf /usr/bin/clang++-21 /usr/bin/clang++
+RUN ln -sf /usr/lib/llvm21/bin/clang-format /usr/bin/clang-format
+RUN ln -sf /usr/lib/llvm21/bin/clang-format /usr/bin/clang-format-21
+RUN ln -sf /usr/lib/llvm21/bin/clang-tidy /usr/bin/clang-tidy
+RUN ln -sf /usr/lib/llvm21/bin/clang-tidy /usr/bin/clang-tidy-21
+RUN adduser -D -u 1000 alpine
+RUN echo "alpine ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
-USER ubuntu
-WORKDIR /home/ubuntu
+USER alpine
+WORKDIR /home/alpine
 RUN pipx ensurepath
-RUN --mount=type=cache,id=Unpadded,target=/home/ubuntu/.cache/pip,uid=1000,gid=1000 \
+RUN --mount=type=cache,id=Unpadded,target=/home/alpine/.cache/pip,uid=1000,gid=1000 \
   pipx install cmakelang
 
-ENV TERM=xterm-color
+ENV PS1='\[\033[01;32m\]\u@\h\[\033[01;34m\] \w\$\[\033[00m\] '
