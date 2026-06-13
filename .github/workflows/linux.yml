@@ -10,13 +10,14 @@ jobs:
       - uses: docker/setup-buildx-action@v4
         with:
           driver: docker-container
-      - run: |
-          docker buildx build .github/devcontainer \
-          --file ${{ github.workspace }}/.github/devcontainer/Dockerfile \
-          --output type=docker,name=devcontainer,dest=devcontainer.tar \
-          --cache-from type=gha,scope=devcontainer \
-          --cache-to type=gha,mode=max,scope=devcontainer \
-          --progress plain
+          version: latest
+      - uses: docker/build-push-action@v6
+        with:
+          context: .github/devcontainer
+          file: .github/devcontainer/Dockerfile
+          outputs: type=docker,name=devcontainer,dest=devcontainer.tar
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
       - uses: actions/upload-artifact@v7
         with:
           name: devcontainer
