@@ -1,7 +1,5 @@
 FROM alpine:3.24.0
 
-COPY entrypoint.sh* /entrypoint.sh
-
 WORKDIR /
 RUN --mount=type=cache,id=Unpadded,target=/var/cache/apk \
   apk add --no-cache \
