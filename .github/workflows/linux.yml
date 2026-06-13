@@ -32,6 +32,9 @@ jobs:
         with:
           path: build
           key: ${{ runner.os }}-check-with-clang
+      - uses: docker/setup-compose-action@v2
+        with:
+          version: latest
       - uses: actions/download-artifact@v8
         with:
           name: devcontainer
