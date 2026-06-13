@@ -1,4 +1,5 @@
-name: Build development container
+name: build-devcontainer
+run-name: Build development container
 on:
   push:
     branches:

@@ -1,13 +1,19 @@
-name: Build and run all tests with Clang
+name: check-with-clang
+run-name: Build and run all tests with Clang
 on:
-  push:
-    branches:
-      - unstable-v2
+  workflow_run:
+    workflows: ["build-devcontainer"]
+    types:
+      - completed
+
 jobs:
   check-with-clang:
     runs-on: ubuntu-latest
-    needs: build-devcontainer
     steps:
+      if: ${{ github.event.workflow_run.conclusion == "failure" }}
+        steps:
+          - run: exit 1
+      - run: echo 'The triggering workflow failed'
       - uses: actions/checkout@v6
       - uses: actions/cache@v5
         with:
