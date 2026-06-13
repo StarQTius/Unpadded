@@ -11,7 +11,8 @@ jobs:
         with:
           driver: docker-container
       - run: |
-          docker buildx build --file ${{ github.workspace }}/.github/devcontainer/Dockerfile \
+          docker buildx build .github/devcontainer \
+          --file ${{ github.workspace }}/.github/devcontainer/Dockerfile \
           --output type=docker,dest=devcontainer.tar \
           --cache-from type=gha,scope=devcontainer \
           --cache-to type=gha,mode=max,scope=devcontainer \
