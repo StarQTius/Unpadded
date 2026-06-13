@@ -1,0 +1,18 @@
+services:
+  base:
+    image: devcontainer
+    volumes:
+      - .:/home/alpine/Unpadded
+    working_dir: /home/alpine/Unpadded
+    tty: true
+
+  configure_clang:
+    extends: base
+    command: cmake --preset clang
+
+  check_full_clang:
+    extends: base
+    command: cmake \
+      --build build_clang \
+      --target check_full \
+      --parallel $(nproc)

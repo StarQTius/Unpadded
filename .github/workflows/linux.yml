@@ -36,9 +36,6 @@ jobs:
         with:
           name: devcontainer
       - run: docker load --input devcontainer.tar
-      - run: docker run devcontainer cmake --preset clang
-      - run: |
-          docker run devcontainer cmake \
-          --build build_clang \
-          --target check_full \
-          --parallel $(nproc)
+      - run: ln --symbolic .github/workflows/docker-compose.yml
+      - run: docker-compose run configure_clang
+      - run: docker-compose run check_full_clang
