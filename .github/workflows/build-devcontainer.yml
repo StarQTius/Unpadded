@@ -17,7 +17,7 @@ jobs:
           docker buildx build ${{ github.workspace }}/.github/devcontainer --tag devcontainer \
           --cache-from type=local,src=docker_cache \
           --cache-to type=local,dest=docker_cache
-      - run: docker save devcontainer --output devcontainer.tar 
+      - run: docker save devcontainer:latest --output devcontainer.tar 
       - uses: actions/upload-artifact@v7
         with:
           name: devcontainer
