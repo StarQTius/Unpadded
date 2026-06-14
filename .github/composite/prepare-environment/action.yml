@@ -12,4 +12,6 @@ runs:
       with:
         name: devcontainer
     - run: docker load --input devcontainer.tar
+      shell: bash
     - run: ln --symbolic .github/devcontainer/docker-compose.yml docker-compose.yml
+      shell: bash
