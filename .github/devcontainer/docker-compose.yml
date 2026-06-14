@@ -13,7 +13,4 @@ services:
 
   check_full_clang:
     extends: base
-    command: cmake \
-      --build build_clang \
-      --target check_full \
-      --parallel $(nproc)
+    command: cmake --build build_clang --target check_full --parallel
