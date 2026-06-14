@@ -23,9 +23,25 @@ jobs:
           name: devcontainer
           path: devcontainer.tar
 
-  check-with-clang:
+  format:
     runs-on: ubuntu-latest
     needs: build-devcontainer
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/cache@v5
+        with:
+          path: build_clang
+          key: ${{ runner.os }}-check-with-clang
+      - uses: docker/setup-compose-action@v2
+        with:
+          version: latest
+      - uses: ./.github/composite/load-devcontainer
+      - run: docker compose run configure_clang
+      - run: docker compose run clang_format
+
+  check-with-clang:
+    runs-on: ubuntu-latest
+    needs: format
     steps:
       - uses: actions/checkout@v6
       - uses: actions/cache@v5
@@ -41,7 +57,7 @@ jobs:
 
   check-with-gcc:
     runs-on: ubuntu-latest
-    needs: build-devcontainer
+    needs: format
     steps:
       - uses: actions/checkout@v6
       - uses: actions/cache@v5
@@ -51,3 +67,35 @@ jobs:
       - uses: ./.github/composite/load-devcontainer
       - run: docker compose run configure_gcc
       - run: docker compose run check_full_gcc
+
+  iwyu:
+    runs-on: ubuntu-latest
+    needs: check-with-clang
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/cache@v5
+        with:
+          path: build_clang
+          key: ${{ runner.os }}-check-with-clang
+      - uses: docker/setup-compose-action@v2
+        with:
+          version: latest
+      - uses: ./.github/composite/load-devcontainer
+      - run: docker compose run configure_clang
+      - run: docker compose run iwyu
+
+  lint:
+    runs-on: ubuntu-latest
+    needs: check-with-clang
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/cache@v5
+        with:
+          path: build_clang
+          key: ${{ runner.os }}-check-with-clang
+      - uses: docker/setup-compose-action@v2
+        with:
+          version: latest
+      - uses: ./.github/composite/load-devcontainer
+      - run: docker compose run configure_clang
+      - run: docker compose run clang_tidy

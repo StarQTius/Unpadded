@@ -22,3 +22,15 @@ services:
   check_full_gcc:
     extends: base
     command: cmake --build build_gcc --target check_full --parallel
+
+  format:
+    extends: base
+    command: cmake --build build_gcc --target clang_format --parallel
+
+  iwyu:
+    extends: base
+    command: cmake --build build_gcc --target iwyu --parallel
+
+  lint:
+    extends: base
+    command: cmake --build build_gcc --target clang_tidy --parallel
