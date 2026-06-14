@@ -14,3 +14,11 @@ services:
   check_full_clang:
     extends: base
     command: cmake --build build_clang --target check_full --parallel
+
+  configure_gcc:
+    extends: base
+    command: cmake --preset gcc
+
+  check_full_gcc:
+    extends: base
+    command: cmake --build build_gcc --target check_full --parallel

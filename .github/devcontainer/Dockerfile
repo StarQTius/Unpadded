@@ -23,7 +23,7 @@ RUN --mount=type=cache,id=Unpadded,target=/var/cache/apk \
   colordiff \
   curl-dev \
   gdb \
-  g++ \
+  gcc=15.2.0-r5 \
   libxml2-dev \
   linux-headers \
   llvm21-dev \

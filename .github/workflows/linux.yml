@@ -42,3 +42,23 @@ jobs:
       - run: ln --symbolic .github/devcontainer/docker-compose.yml .
       - run: docker compose run configure_clang
       - run: docker compose run check_full_clang
+
+  check-with-gcc:
+    runs-on: ubuntu-latest
+    needs: build-devcontainer
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/cache@v5
+        with:
+          path: build
+          key: ${{ runner.os }}-check-with-gcc
+      - uses: docker/setup-compose-action@v2
+        with:
+          version: latest
+      - uses: actions/download-artifact@v8
+        with:
+          name: devcontainer
+      - run: docker load --input devcontainer.tar
+      - run: ln --symbolic .github/devcontainer/docker-compose.yml .
+      - run: docker compose run configure_gcc
+      - run: docker compose run check_full_gcc
