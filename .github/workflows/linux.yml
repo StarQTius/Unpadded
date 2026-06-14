@@ -35,11 +35,7 @@ jobs:
       - uses: docker/setup-compose-action@v2
         with:
           version: latest
-      - uses: actions/download-artifact@v8
-        with:
-          name: devcontainer
-      - run: docker load --input devcontainer.tar
-      - run: ln --symbolic .github/devcontainer/docker-compose.yml .
+      - uses: .github/composite/load-devcontainer
       - run: docker compose run configure_clang
       - run: docker compose run check_full_clang
 
@@ -52,13 +48,6 @@ jobs:
         with:
           path: build_gcc
           key: ${{ runner.os }}-check-with-gcc
-      - uses: docker/setup-compose-action@v2
-        with:
-          version: latest
-      - uses: actions/download-artifact@v8
-        with:
-          name: devcontainer
-      - run: docker load --input devcontainer.tar
-      - run: ln --symbolic .github/devcontainer/docker-compose.yml .
+      - uses: .github/composite/load-devcontainer
       - run: docker compose run configure_gcc
       - run: docker compose run check_full_gcc
