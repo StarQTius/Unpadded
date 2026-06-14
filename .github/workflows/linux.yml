@@ -30,7 +30,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/cache@v5
         with:
-          path: build
+          path: build_clang
           key: ${{ runner.os }}-check-with-clang
       - uses: docker/setup-compose-action@v2
         with:
@@ -50,7 +50,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/cache@v5
         with:
-          path: build
+          path: build_gcc
           key: ${{ runner.os }}-check-with-gcc
       - uses: docker/setup-compose-action@v2
         with:
