@@ -1,7 +1,7 @@
 services:
   base:
     image: devcontainer
-    user: "${USER}"
+    user: "${UID}:${GID}"
     volumes:
       - .:/home/alpine/Unpadded
     working_dir: /home/alpine/Unpadded
