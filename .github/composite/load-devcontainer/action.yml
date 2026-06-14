@@ -1,0 +1,12 @@
+runs:
+  using: composite
+
+steps:
+  - uses: docker/setup-compose-action@v2
+    with:
+      version: latest
+  - uses: actions/download-artifact@v4
+    with:
+      name: devcontainer
+  - run: docker load --input devcontainer.tar
+  - run: ln --symbolic .github/devcontainer/docker-compose.yml docker-compose.yml

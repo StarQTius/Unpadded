@@ -35,7 +35,7 @@ jobs:
       - uses: docker/setup-compose-action@v2
         with:
           version: latest
-      - uses: .github/composite/load-devcontainer
+      - uses: ./.github/composite/load-devcontainer
       - run: docker compose run configure_clang
       - run: docker compose run check_full_clang
 
@@ -48,6 +48,6 @@ jobs:
         with:
           path: build_gcc
           key: ${{ runner.os }}-check-with-gcc
-      - uses: .github/composite/load-devcontainer
+      - uses: ./.github/composite/load-devcontainer
       - run: docker compose run configure_gcc
       - run: docker compose run check_full_gcc
