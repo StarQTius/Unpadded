@@ -243,6 +243,10 @@ public:
         m_fields | updv::transform([&](auto, const auto &field) { return field.default_value(); }) | updv::to<record>;
 
     updv::for_each(m_fields, [&](auto id, const auto &field) {
+      if (err) {
+        return;
+      }
+
       ser.checkpoint(id.value.string);
 
       auto known_ids = identifiers | tuple_views::take_while([&]<typename Expr> { return id != Expr{}; });
@@ -265,11 +269,12 @@ public:
 
       auto sys = tuple_views::concat(presys, rules);
       auto maybe_field_value = field.decode(src, ser, m_fields, sys);
-      if (maybe_field_value) {
-        get<id.value>(retval) = *maybe_field_value;
-      } else {
+      if (!maybe_field_value) {
         err = maybe_field_value.error();
+        return;
       }
+
+      get<id.value>(retval) = *maybe_field_value;
     });
 
     return result_if_no_error(std::move(retval), std::move(err));

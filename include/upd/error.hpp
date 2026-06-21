@@ -15,25 +15,41 @@
 
 namespace upd {
 
-struct no_error {};
+struct no_error {
+  constexpr auto operator<=>(const no_error &) const noexcept(release) = default;
+};
 
 struct invalid_code_in_one_of {
   const char *identifier;
   std::intmax_t code;
+
+  constexpr auto operator<=>(const invalid_code_in_one_of &) const noexcept(release) = default;
 };
 
 struct negative_repetition_count {
   const char *identifier;
   std::intmax_t count;
+
+  constexpr auto operator<=>(const negative_repetition_count &) const noexcept(release) = default;
 };
 
 struct repeated_beyond_max {
   const char *identifier;
   std::uintmax_t count;
   std::size_t max;
+
+  constexpr auto operator<=>(const repeated_beyond_max &) const noexcept(release) = default;
 };
 
-using error_data_types = typelist2_t<no_error, invalid_code_in_one_of, negative_repetition_count, repeated_beyond_max>;
+struct checksum_mismatch {
+  std::uintmax_t actual;
+  std::uintmax_t expected;
+
+  constexpr auto operator<=>(const checksum_mismatch &) const noexcept(release) = default;
+};
+
+using error_data_types =
+    typelist2_t<no_error, invalid_code_in_one_of, negative_repetition_count, repeated_beyond_max, checksum_mismatch>;
 
 template<typename T>
 concept error_data = has_type<T>(error_data_types{});
@@ -59,6 +75,22 @@ public:
   }
 
   [[nodiscard]] constexpr operator bool() const noexcept(release) { return !std::holds_alternative<no_error>(m_data); }
+
+  constexpr auto operator==(const error &) const -> bool = default;
+
+  constexpr auto operator<=>(const error &) const = default;
+
+  template<error_data ErrorData>
+  constexpr auto operator==(const ErrorData &rhs) const noexcept(release) -> bool {
+    const auto *ptr = std::get_if<ErrorData>(&m_data);
+    return ptr && *ptr == rhs;
+  }
+
+  template<error_data ErrorData>
+  constexpr auto operator<=>(const ErrorData &rhs) const noexcept(release) {
+    const auto *ptr = std::get_if<ErrorData>(&m_data);
+    return ptr && (*ptr <=> rhs) == 0;
+  }
 
   template<typename F>
   constexpr auto visit(F &&f) const -> decltype(auto) {
@@ -126,6 +158,15 @@ struct std::formatter<upd::repeated_beyond_max> {
   static auto format(const upd::repeated_beyond_max &err, std::format_context &ctx) {
     return std::format_to(
         ctx.out(), "Field repeated {} time in '{}', beyond the maximum limit ({})", err.count, err.identifier, err.max);
+  }
+};
+
+template<>
+struct std::formatter<upd::checksum_mismatch> {
+  constexpr static auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
+
+  static auto format(const upd::checksum_mismatch &err, std::format_context &ctx) {
+    return std::format_to(ctx.out(), "Actual checksum ({}) and expected ({}) does not match", err.actual, err.expected);
   }
 };
 

@@ -3,6 +3,7 @@
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
+#include <expected>
 #include <ranges>
 #include <tuple>
 #include <utility>
@@ -98,9 +99,19 @@ struct checksum_t {
   }
 
   template<serializer Serializer, record_like Fields, tuple_like2 System>
-  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Fields &, const System &)
+  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Fields &, const System &sys)
       -> result<value_type> {
-    return ser.deserialize_unsigned(src, upd::width<width>);
+    auto actual = ser.deserialize_unsigned(src, upd::width<width>);
+    auto expected = algebra::solve_for(value_of<Identifier>, sys);
+
+    if (actual != expected) {
+      return std::unexpected{checksum_mismatch{
+          .actual = actual,
+          .expected = expected,
+      }};
+    }
+
+    return actual;
   }
 
   template<serializer Serializer, tuple_like2 System>

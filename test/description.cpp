@@ -12,6 +12,7 @@
 #include <upd/algebra.hpp>
 #include <upd/description.hpp>
 #include <upd/description_v2.hpp>
+#include <upd/error.hpp>
 #include <upd/record.hpp>
 #include <upd/static_vector.hpp>
 #include <upd/stream_interface.hpp>
@@ -273,6 +274,27 @@ TEST_CASE("Protocol descriptors", "[descriptor]") {
     REQUIRE(result["abc"_kw2] == 12);
     REQUIRE(result["def"_kw2] == 88);
     REQUIRE(result["ghi"_kw2] == 100);
+  }
+
+  SECTION("Try decode a checksum field when mismatch") {
+    auto descr = ufield2<"abc", 16>
+                 | ufield2<"def", 16>
+                 | checksum2<"ghi", 16>([](auto acc, auto v) { return acc + v; }, all_fields);
+
+    buf[0] = 54;
+    buf[1] = 0;
+    buf[2] = 46;
+    buf[3] = 0;
+    buf[4] = 101;
+    buf[5] = 0;
+
+    auto result = descr.decode(st, ser);
+    REQUIRE_FALSE(result);
+    REQUIRE(result.error()
+            == upd::checksum_mismatch{
+                .actual = 101,
+                .expected = 100,
+            });
   }
 }
 
