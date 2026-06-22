@@ -6,7 +6,8 @@ runs:
         path: |
           build_gcc
           build_clang
-        key: ${{ runner.os }}-${{ github.job }}
+        key: ${{ runner.os }}-${{ github.job }}-${{ github.sha }}
+        restore-keys: ${{ runner.os }}-${{ github.job }} 
     - uses: docker/setup-compose-action@v2
       with:
         version: latest
