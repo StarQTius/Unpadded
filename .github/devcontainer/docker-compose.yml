@@ -19,6 +19,10 @@ services:
     extends: base
     command: cmake --preset gcc
 
+  report_build_time:
+    extends: base
+    command: bash 'ClangBuildAnalyzer --all build_clang capture.bin >/dev/null 2>/dev/null && ClangBuildAnalyzer --analyze capture.bin'
+  
   check_full_gcc:
     extends: base
     command: cmake --build build_gcc --target check_full --parallel
