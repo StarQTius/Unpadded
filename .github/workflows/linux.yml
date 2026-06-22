@@ -40,6 +40,8 @@ jobs:
       - uses: ./.github/composite/prepare-environment
       - run: docker compose run configure_clang
       - run: docker compose run check_full_clang
+      - run: ClangBuildAnalyzer --all build_clang capture.bin
+      - run: ClangBuildAnalyzer --analyze capture.bin >> $GITHUB_STEP_SUMMARY
 
   check-with-gcc:
     runs-on: ubuntu-latest
