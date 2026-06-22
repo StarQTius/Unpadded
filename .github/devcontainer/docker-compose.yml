@@ -21,7 +21,7 @@ services:
 
   report_build_time:
     extends: base
-    command: bash 'ClangBuildAnalyzer --all build_clang capture.bin >/dev/null 2>/dev/null && ClangBuildAnalyzer --analyze capture.bin'
+    command: bash -c 'ClangBuildAnalyzer --all build_clang capture.bin && ClangBuildAnalyzer --analyze capture.bin'
   
   check_full_gcc:
     extends: base
