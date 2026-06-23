@@ -10,6 +10,9 @@ services:
       VERBOSE: "1"
       CMAKE_CXX_COMPILER_LAUNCHER: "ccache"
       CCACHE_DIR: "/home/alpine/Unpadded/.ccache"
+      CCACHE_COMPRESS: "true"
+      CCACHE_COMPRESSLEVEL: "6"
+      CCACHE_MAXSIZE: "1G"
 
   configure_clang:
     extends: base
@@ -30,6 +33,10 @@ services:
   check_full_gcc:
     extends: base
     command: cmake --build build_gcc --target check_full --parallel
+
+  print_ccache_stats:
+    extends: base
+    command: ccache --print-stats && ccache --show-stats
 
   format:
     extends: base

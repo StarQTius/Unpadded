@@ -19,3 +19,5 @@ runs:
       shell: bash
     - run: ln --symbolic .github/devcontainer/docker-compose.yml docker-compose.yml
       shell: bash
+    - run: find .ccache build_clang/ build_gcc/ || true
+      shell: bash

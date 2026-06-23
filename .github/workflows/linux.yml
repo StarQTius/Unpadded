@@ -40,6 +40,7 @@ jobs:
       - uses: ./.github/composite/prepare-environment
       - run: docker compose run configure_clang
       - run: docker compose run check_full_clang
+      - run: docker compose run print_ccache_stats
       - run: docker compose run report_build_time | tee "$GITHUB_STEP_SUMMARY"
 
   check-with-gcc:
@@ -50,6 +51,7 @@ jobs:
       - uses: ./.github/composite/prepare-environment
       - run: docker compose run configure_gcc
       - run: docker compose run check_full_gcc
+      - run: docker compose run print_ccache_stats
 
   iwyu:
     runs-on: ubuntu-latest
