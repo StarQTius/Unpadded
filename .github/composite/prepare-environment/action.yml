@@ -6,6 +6,7 @@ runs:
         path: |
           build_gcc
           build_clang
+          .ccache
         key: ${{ runner.os }}-${{ github.job }}-${{ github.sha }}
         restore-keys: ${{ runner.os }}-${{ github.job }} 
     - uses: docker/setup-compose-action@v2

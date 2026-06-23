@@ -8,6 +8,8 @@ services:
     tty: true
     environment:
       VERBOSE: "1"
+      CMAKE_CXX_COMPILER_LAUNCHER: "ccache"
+      CCACHE_DIR: "/home/alpine/Unpadded/.ccache"
 
   configure_clang:
     extends: base
