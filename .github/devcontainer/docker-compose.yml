@@ -6,6 +6,8 @@ services:
       - .:/home/alpine/Unpadded
     working_dir: /home/alpine/Unpadded
     tty: true
+    environment:
+      VERBOSE: "1"
 
   configure_clang:
     extends: base
