@@ -19,5 +19,11 @@ runs:
       shell: bash
     - run: ln --symbolic .github/devcontainer/docker-compose.yml docker-compose.yml
       shell: bash
-    - run: find .ccache build_clang/ build_gcc/ || true
+    - run: sudo apt install --assume-yes git-restore-mtime
+      shell: bash
+    - run: git config set --global alias.whatchanged 'log --raw --no-merges'
+      shell: bash
+    - run: git restore-mtime
+      shell: bash
+    - run: find -printf "%Tc %p\n" || true
       shell: bash

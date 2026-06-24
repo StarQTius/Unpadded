@@ -14,7 +14,6 @@ RUN --mount=type=cache,id=Unpadded,target=/var/cache/apk \
   bash \
   bloaty \
   build-base \
-  ccache \
   clang21 \
   clang21-dev \
   clang21-extra-tools \
@@ -22,8 +21,8 @@ RUN --mount=type=cache,id=Unpadded,target=/var/cache/apk \
   cmake \
   colordiff \
   curl-dev \
-  gdb \
   gcc=15.2.0-r5 \
+  gdb \
   libxml2-dev \
   linux-headers \
   llvm21-dev \
