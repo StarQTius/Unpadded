@@ -28,6 +28,8 @@ jobs:
     needs: build-devcontainer
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - uses: ./.github/composite/prepare-environment
       - run: docker compose run configure_clang
       - run: docker compose run format
@@ -37,6 +39,8 @@ jobs:
     needs: format
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - uses: ./.github/composite/prepare-environment
       - run: docker compose run configure_clang
       - run: docker compose run check_full_clang
@@ -47,6 +51,8 @@ jobs:
     needs: format
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - uses: ./.github/composite/prepare-environment
       - run: docker compose run configure_gcc
       - run: docker compose run check_full_gcc
@@ -56,6 +62,8 @@ jobs:
     needs: check-with-clang
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - uses: ./.github/composite/prepare-environment
       - run: docker compose run configure_clang
       - run: docker compose run iwyu
@@ -65,6 +73,8 @@ jobs:
     needs: check-with-clang
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - uses: ./.github/composite/prepare-environment
       - run: docker compose run configure_clang
       - run: docker compose run lint

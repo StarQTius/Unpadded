@@ -1,6 +1,11 @@
+name: "Prepare Environment"
+description: "Build and upload development container"
 runs:
   using: composite
   steps:
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
     - uses: actions/cache@v5
       with:
         path: |
