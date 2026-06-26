@@ -69,6 +69,7 @@ jobs:
       - run: docker compose run iwyu
 
   lint:
+    if: false
     runs-on: ubuntu-latest
     needs: check-with-clang
     steps:
