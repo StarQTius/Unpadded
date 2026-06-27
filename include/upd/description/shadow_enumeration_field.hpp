@@ -4,6 +4,7 @@
 #include <tuple>
 #include <type_traits>
 
+#include "../constexpr.hpp"
 #include "../description.hpp"
 #include "../error.hpp"
 #include "../record.hpp"
@@ -11,6 +12,7 @@
 #include "../tuple/to.hpp"
 #include "../tuple/tuple_like.hpp"
 #include "../upd.hpp"
+#include "codec_info.hpp"
 #include "serializer.hpp"
 
 namespace upd::descriptor {
@@ -42,9 +44,9 @@ struct shadow_enumeration_field_t {
     return solve_for(value_of<Identifier>, sys | tuple_views::to<std::tuple>);
   }
 
-  template<record_like Packet, record_like Fields, serializer Serializer>
-  [[nodiscard]] constexpr auto rules(const Packet &packet, const Fields &, Serializer &) const {
-    if constexpr (has_tag<Identifier>(packet)) {
+  template<record_like Packet, record_like Fields, serializer Serializer, codec_info CodecInfo>
+  [[nodiscard]] constexpr auto rules(const Packet &packet, const Fields &, Serializer &, expr_t<CodecInfo>) const {
+    if constexpr (has_tag<Identifier>(packet) && CodecInfo.operation == codec_operation::encoding) {
       return std::tuple{value_of<Identifier> = get<Identifier>(packet), length_of<Identifier> = Width};
     } else {
       return std::tuple{length_of<Identifier> = Width};

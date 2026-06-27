@@ -6,6 +6,7 @@
 #include <type_traits>
 
 #include "../algebra/system.hpp"
+#include "../constexpr.hpp"
 #include "../description.hpp"
 #include "../error.hpp"
 #include "../record.hpp"
@@ -13,6 +14,7 @@
 #include "../token.hpp"
 #include "../tuple/tuple_like.hpp"
 #include "../upd.hpp"
+#include "codec_info.hpp"
 #include "serializer.hpp"
 
 namespace upd::descriptor {
@@ -39,8 +41,8 @@ struct constant_t {
 
   [[nodiscard]] constexpr auto default_value() const noexcept(release) -> value_type { return field_value; }
 
-  template<record_like Packet, record_like Fields, serializer Serializer>
-  [[nodiscard]] constexpr auto rules(const Packet &, const Fields &, Serializer &) const {
+  template<record_like Packet, record_like Fields, serializer Serializer, codec_info CodecInfo>
+  [[nodiscard]] constexpr auto rules(const Packet &, const Fields &, Serializer &, expr_t<CodecInfo>) const {
     return std::tuple{length_of<Identifier> = Width};
   }
 
@@ -83,8 +85,8 @@ struct enumeration_constant_t {
 
   [[nodiscard]] constexpr auto default_value() const noexcept(release) -> value_type { return field_value; }
 
-  template<record_like Packet, record_like Fields, serializer Serializer>
-  [[nodiscard]] constexpr auto rules(const Packet &, const Fields &, Serializer &) const {
+  template<record_like Packet, record_like Fields, serializer Serializer, codec_info CodecInfo>
+  [[nodiscard]] constexpr auto rules(const Packet &, const Fields &, Serializer &, expr_t<CodecInfo>) const {
     return std::tuple{length_of<Identifier> = Width};
   }
 

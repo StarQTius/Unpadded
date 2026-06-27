@@ -14,6 +14,7 @@
 #include "algebra/side.hpp"
 #include "algebra/variable.hpp"
 #include "constexpr.hpp"
+#include "description/codec_info.hpp"
 #include "description/serializer.hpp"
 #include "error.hpp"
 #include "get.hpp"
@@ -181,10 +182,15 @@ public:
   encode(const Args &args, Serializer &ser, stream_interface &dest, const System &ctx_sys = std::tuple{}) const {
     namespace updv = record_views;
 
-    auto rule_sys = m_fields
-                    | updv::values
-                    | tuple_views::transform([&](const auto &field) { return field.rules(args, m_fields, ser); })
-                    | tuple_views::join;
+    constexpr auto cdinf = codec_info{
+        .operation = codec_operation::encoding,
+    };
+
+    auto rule_sys =
+        m_fields
+        | updv::values
+        | tuple_views::transform([&](const auto &field) { return field.rules(args, m_fields, ser, expr<cdinf>); })
+        | tuple_views::join;
 
     auto sys = tuple_views::concat(rule_sys, ctx_sys);
 
@@ -238,6 +244,10 @@ public:
   [[nodiscard]] constexpr auto decode(stream_interface &src, Serializer &ser, const System &presys) const {
     namespace updv = record_views;
 
+    constexpr auto cdinf = codec_info{
+        .operation = codec_operation::decoding,
+    };
+
     auto err = error{};
     auto retval =
         m_fields | updv::transform([&](auto, const auto &field) { return field.default_value(); }) | updv::to<record>;
@@ -256,16 +266,17 @@ public:
                  | tuple_views::as_record
                  | updv::to<upd::record>;
 
-      auto rules = tuple_views::concat(known_ids, std::tuple{id})
-                   | tuple_views::to<std::tuple>
-                   | tuple_views::transform([&]<auto Id>(expr_t<Id>) { return keyword2<Id>{} = get<Id>(m_fields); })
-                   | tuple_views::as_record
-                   | updv::to<upd::record>
-                   | updv::transform([&](auto, const auto &field) { return field.rules(ctx, m_fields, ser); })
-                   | updv::to<upd::record>
-                   | updv::values
-                   | tuple_views::join
-                   | tuple_views::to<std::tuple>;
+      auto rules =
+          tuple_views::concat(known_ids, std::tuple{id})
+          | tuple_views::to<std::tuple>
+          | tuple_views::transform([&]<auto Id>(expr_t<Id>) { return keyword2<Id>{} = get<Id>(m_fields); })
+          | tuple_views::as_record
+          | updv::to<upd::record>
+          | updv::transform([&](auto, const auto &field) { return field.rules(ctx, m_fields, ser, expr<cdinf>); })
+          | updv::to<upd::record>
+          | updv::values
+          | tuple_views::join
+          | tuple_views::to<std::tuple>;
 
       auto sys = tuple_views::concat(presys, rules);
       auto maybe_field_value = field.decode(src, ser, m_fields, sys);

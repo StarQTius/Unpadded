@@ -22,6 +22,7 @@
 #include "../tuple/tuple_like.hpp"
 #include "../type_traits.hpp"
 #include "../upd.hpp"
+#include "codec_info.hpp"
 #include "serializer.hpp"
 
 namespace upd::descriptor {
@@ -93,8 +94,9 @@ struct checksum_t {
     return dest.acc;
   }
 
-  template<record_like Packet, record_like Fields, serializer Serializer>
-  [[nodiscard]] constexpr auto rules(const Packet &packet, const Fields &fields, Serializer &ser) const {
+  template<record_like Packet, record_like Fields, serializer Serializer, codec_info CodecInfo>
+  [[nodiscard]] constexpr auto
+  rules(const Packet &packet, const Fields &fields, Serializer &ser, expr_t<CodecInfo>) const {
     return std::tuple{value_of<Identifier> = compute(packet, ser, fields), length_of<Identifier> = Width};
   }
 

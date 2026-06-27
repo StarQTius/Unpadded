@@ -10,6 +10,7 @@
 #include <type_traits>
 #include <utility>
 
+#include "../constexpr.hpp"
 #include "../description.hpp"
 #include "../error.hpp"
 #include "../record.hpp"
@@ -18,6 +19,7 @@
 #include "../tuple/to.hpp"
 #include "../tuple/tuple_like.hpp"
 #include "../upd.hpp"
+#include "codec_info.hpp"
 #include "serializer.hpp"
 
 namespace upd {
@@ -53,8 +55,9 @@ struct repeat_t {
 
   [[nodiscard]] constexpr static auto default_value() -> value_type { return value_type{}; }
 
-  template<record_like Packet, record_like Fields, serializer Serializer>
-  [[nodiscard]] constexpr auto rules(const Packet &packet, const Fields &fields, Serializer &) const {
+  template<record_like Packet, record_like Fields, serializer Serializer, codec_info CodecInfo>
+  [[nodiscard]] constexpr auto
+  rules(const Packet &packet, const Fields &fields, Serializer &, expr_t<CodecInfo>) const {
     if constexpr (has_tag_v<Identifier, Packet>) {
       return std::tuple{length_of<Identifier> = rule,
                         length_of<Identifier> = get<Identifier>(fields).bitsize(get<Identifier>(packet))};

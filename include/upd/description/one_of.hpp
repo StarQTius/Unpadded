@@ -33,6 +33,7 @@
 #include "../type_traits.hpp"
 #include "../upd.hpp"
 #include "../with_sequence.hpp"
+#include "codec_info.hpp"
 #include "serializer.hpp"
 
 namespace upd {
@@ -166,16 +167,18 @@ struct one_of_t {
 
   [[nodiscard]] constexpr auto default_value() const -> value_type { return value_type{}; }
 
-  template<record_like Packet, record_like Fields, serializer Serializer>
-  [[nodiscard]] constexpr auto rules(const Packet &packet, const Fields &fields, Serializer &ser) const {
+  template<record_like Packet, record_like Fields, serializer Serializer, codec_info CodecInfo>
+  [[nodiscard]] constexpr auto
+  rules(const Packet &packet, const Fields &fields, Serializer &ser, expr_t<CodecInfo>) const {
     namespace updv = upd::record_views;
 
-    auto rule_sys = fields
-                    | updv::filter([](auto id, const auto &) { return id != Identifier; })
-                    | updv::values
-                    | tuple_views::transform([&](const auto &field) { return field.rules(packet, fields, ser); })
-                    | tuple_views::join
-                    | tuple_views::to<std::tuple>;
+    auto rule_sys =
+        fields
+        | updv::filter([](auto id, const auto &) { return id != Identifier; })
+        | updv::values
+        | tuple_views::transform([&](const auto &field) { return field.rules(packet, fields, ser, expr<CodecInfo>); })
+        | tuple_views::join
+        | tuple_views::to<std::tuple>;
 
     auto sys = tuple_views::concat(std::tuple{code_of<Identifier> = rule}, rule_sys);
     auto id = try_solve_for(code_of<Identifier>, sys);

@@ -8,13 +8,10 @@
 #include "../constexpr.hpp"
 #include "../get.hpp"
 #include "../record/record.hpp"
-#include "../record/transform.hpp"
-#include "../record/values.hpp"
 #include "../static_assert.hpp"
 #include "../tuple/concat.hpp"
 #include "../tuple/filter.hpp"
 #include "../tuple/find.hpp"
-#include "../tuple/group_by.hpp"
 #include "../tuple/to.hpp"
 #include "../tuple/transform.hpp"
 #include "../tuple/tuple_like.hpp"
@@ -64,9 +61,6 @@ template<std::size_t MaxPassCount = 16, auto Varname, tuple_like2 System>
         ssys
         | updv::filter([]<typename Eq>(typebox<Eq>) { return variadic::is_template_deductible_from<let, Eq>(); })
         | updv::transform([](const auto &eq) { return let{eq}; })
-        | updv::group_by([]<typename Let> -> expr_t<Let::varname> {})
-        | record_views::transform([](auto, auto gr) { return upd::get<0>(gr); })
-        | record_views::values
         | updv::transform([](auto lt) { return side{variable<lt.varname>{}} = lt.val; })
         | updv::to<std::tuple>;
     auto eqs =

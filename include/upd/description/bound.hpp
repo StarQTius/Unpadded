@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "../algebra/system.hpp"
+#include "../constexpr.hpp"
 #include "../description.hpp"
 #include "../error.hpp"
 #include "../record.hpp"
@@ -15,6 +16,7 @@
 #include "../tuple/to.hpp"
 #include "../tuple/tuple_like.hpp"
 #include "../upd.hpp"
+#include "codec_info.hpp"
 #include "serializer.hpp"
 
 namespace upd::descriptor {
@@ -43,8 +45,8 @@ struct bound_t {
 
   [[nodiscard]] constexpr static auto default_value() noexcept(release) -> value_type { return value_type{}; }
 
-  template<record_like Packet, record_like Fields, serializer Serializer>
-  [[nodiscard]] constexpr auto rules(const Packet &packet, const Fields &, Serializer &) const {
+  template<record_like Packet, record_like Fields, serializer Serializer, codec_info CodecInfo>
+  [[nodiscard]] constexpr auto rules(const Packet &packet, const Fields &, Serializer &, expr_t<CodecInfo>) const {
     if constexpr (has_tag<Identifier>(packet)) {
       return std::tuple{
           value_of<Identifier> = get<Identifier>(packet), value_of<Identifier> = rule, length_of<Identifier> = Width};
