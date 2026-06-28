@@ -27,11 +27,6 @@ struct enumeration_field_t {
   using value_type = Enum;
   using input_type = Enum;
 
-  template<tuple_like2 System, typename... Args>
-  [[nodiscard]] constexpr auto make_value(const System &, Args &&...args) const -> value_type {
-    return value_type{UPD_FWD(args)...};
-  }
-
   template<tuple_like2 System>
   [[nodiscard]] constexpr static auto default_value(const System &) noexcept(release) -> value_type {
     return value_type{};

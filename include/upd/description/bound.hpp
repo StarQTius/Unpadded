@@ -29,14 +29,9 @@ struct bound_t {
 
   using value_type = std::conditional_t<is_signed, std::intmax_t, std::uintmax_t>;
   using input_type = unit_t;
-
-  template<tuple_like2 System, typename... Args>
-  [[nodiscard]] constexpr auto make_value(const System &, Args &&...args) const -> value_type {
-    return value_type{UPD_FWD(args)...};
-  }
   using rule_type = Rule;
 
-  rule_type rule;
+  Rule rule;
 
   template<tuple_like2 System>
   [[nodiscard]] constexpr static auto default_value(const System &) noexcept(release) -> value_type {

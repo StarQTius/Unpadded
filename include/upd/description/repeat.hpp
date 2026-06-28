@@ -37,11 +37,6 @@ struct repeat_t {
 
   using value_type = static_vector<typename Description::result_type, Max>;
   using input_type = value_type;
-
-  template<tuple_like2 System, typename... Args>
-  [[nodiscard]] constexpr auto make_value(const System &, Args &&...args) const -> value_type {
-    return value_type{UPD_FWD(args)...};
-  }
   using description_type = Description;
   using rule_type = Rule;
 
