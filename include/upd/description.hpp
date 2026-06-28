@@ -291,23 +291,6 @@ public:
     return result_if_no_error(std::move(retval), std::move(err));
   }
 
-  [[nodiscard]] constexpr auto length() const noexcept(release) {
-    namespace updv = upd::record_views;
-    return updv::fold_left(m_fields | updv::transform([](auto, const auto &field) { return field.length(); }),
-                           0uz,
-                           [](auto acc, auto, auto len) { return acc + len; });
-  }
-
-  template<record_like NamedFieldValues>
-  [[nodiscard]] constexpr auto bitsize(const NamedFieldValues &named_field_values) const noexcept(release)
-      -> std::size_t {
-    namespace updv = upd::record_views;
-    return updv::fold_left(named_field_values, 0uz, [&](std::size_t acc, auto k, const auto &field_value) {
-      auto field_pos = updv::find_if(m_fields, [&](auto id, const auto &) { return expr<id == k>; });
-      return acc + get_ith<field_pos>(m_fields).bitsize(field_value.value());
-    });
-  }
-
   template<typename... Entries>
   [[nodiscard]] constexpr auto bitsize(const record<Entries...> &named_field_values) const noexcept(release)
       -> std::size_t {

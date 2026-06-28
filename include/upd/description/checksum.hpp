@@ -4,10 +4,10 @@
 #include <cstddef>
 #include <cstdint>
 #include <expected>
-#include <ranges>
 #include <tuple>
 #include <utility>
 
+#include "../accumulator_stream.hpp"
 #include "../algebra/system.hpp"
 #include "../constexpr.hpp"
 #include "../description.hpp"
@@ -54,29 +54,11 @@ struct checksum_t {
 
   [[nodiscard]] constexpr auto default_value() const noexcept(release) -> value_type { return init; }
 
-  template<record_like Packet, serializer Serializer, record_like Fields>
-  [[nodiscard]] constexpr auto compute(Packet &packet, Serializer &ser, const Fields &fields) const {
+  template<record_like Packet, record_like Fields, serializer Serializer, codec_info CodecInfo>
+  [[nodiscard]] constexpr auto
+  rules(const Packet &packet, const Fields &fields, Serializer &ser, expr_t<CodecInfo>) const {
     using namespace upd::literals;
     namespace updv = upd::record_views;
-
-    struct stream_t : stream_interface {
-      stream_t(const BinaryOp *op, value_type acc) : op{op}, acc{acc} {}
-
-      auto read(std::size_t, word_t *) -> stream_error_t override { return 1; }
-
-      auto write(const word_t *src, std::size_t size) -> stream_error_t override {
-        namespace stdr = std::ranges;
-
-        for (auto w : stdr::subrange{src, src + size}) {
-          acc = UPD_INVOKE(*op, acc, static_cast<value_type>(w));
-        }
-
-        return 0;
-      }
-
-      const BinaryOp *op;
-      value_type acc;
-    } dest{&op, init};
 
     auto descr = updv::apply([](const auto &...es) { return description{es.value...}; },
                              fields | updv::filter([](auto id, auto) { return id != Identifier; }));
@@ -89,15 +71,16 @@ struct checksum_t {
                           | tuple_views::transform([&](auto id) { return entry{id, get_or<id.value>(packet, defval)}; })
                           | tuple_views::as_record;
 
+    auto dest = accumulator_stream{&op, init};
     descr.encode(curated_packet | updv::to<record>, ser, dest);
 
-    return dest.acc;
+    return std::tuple{value_of<Identifier> = dest.acc, length_of<Identifier> = Width};
   }
 
-  template<record_like Packet, record_like Fields, serializer Serializer, codec_info CodecInfo>
-  [[nodiscard]] constexpr auto
-  rules(const Packet &packet, const Fields &fields, Serializer &ser, expr_t<CodecInfo>) const {
-    return std::tuple{value_of<Identifier> = compute(packet, ser, fields), length_of<Identifier> = Width};
+  template<serializer Serializer, tuple_like2 System>
+  constexpr static void encode(unit_t, Serializer &ser, stream_interface &dest, const System &sys) {
+    auto value = algebra::solve_for(value_of<Identifier>, sys);
+    return ser.serialize_unsigned(value, upd::width<width>, dest);
   }
 
   template<serializer Serializer, record_like Fields, tuple_like2 System>
@@ -115,14 +98,6 @@ struct checksum_t {
 
     return actual;
   }
-
-  template<serializer Serializer, tuple_like2 System>
-  constexpr static void encode(unit_t, Serializer &ser, stream_interface &dest, const System &sys) {
-    auto value = algebra::solve_for(value_of<Identifier>, sys);
-    return ser.serialize_unsigned(value, upd::width<width>, dest);
-  }
-
-  [[nodiscard]] constexpr auto length() const noexcept(release) { return Width; }
 
   template<typename V>
   [[nodiscard]] constexpr auto bitsize(const V &) const noexcept(release) -> std::size_t {

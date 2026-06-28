@@ -48,16 +48,6 @@ struct field_t {
     }
   }
 
-  template<serializer Serializer, record_like Fields, tuple_like2 System>
-  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Fields &, const System &)
-      -> result<value_type> {
-    if constexpr (is_signed) {
-      return ser.deserialize_signed(src, upd::width<width>);
-    } else {
-      return ser.deserialize_unsigned(src, upd::width<width>);
-    }
-  }
-
   template<serializer Serializer, tuple_like2 System = std::tuple<>>
   constexpr static void
   encode(value_type value, Serializer &ser, stream_interface &dest, const System & = std::tuple{}) {
@@ -68,7 +58,15 @@ struct field_t {
     }
   }
 
-  [[nodiscard]] constexpr static auto length() noexcept(release) { return Width; }
+  template<serializer Serializer, record_like Fields, tuple_like2 System>
+  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Fields &, const System &)
+      -> result<value_type> {
+    if constexpr (is_signed) {
+      return ser.deserialize_signed(src, upd::width<width>);
+    } else {
+      return ser.deserialize_unsigned(src, upd::width<width>);
+    }
+  }
 
   template<typename V>
   [[nodiscard]] constexpr auto bitsize(const V &) const noexcept(release) -> std::size_t {
@@ -94,22 +92,15 @@ struct anonymous_field_t {
     }
   }
 
-  template<serializer Serializer>
-  [[nodiscard]] constexpr auto decode(stream_interface &src, Serializer &ser) const -> result<result_type> {
+  template<serializer Serializer, tuple_like2 System>
+  [[nodiscard]] constexpr auto decode(stream_interface &src, Serializer &ser, const System &) const
+      -> result<result_type> {
     if constexpr (is_signed) {
       return ser.deserialize_signed(src, upd::width<width>);
     } else {
       return ser.deserialize_unsigned(src, upd::width<width>);
     }
   }
-
-  template<serializer Serializer, tuple_like2 System>
-  [[nodiscard]] constexpr auto decode(stream_interface &src, Serializer &ser, const System &) const
-      -> result<result_type> {
-    return decode(src, ser);
-  }
-
-  [[nodiscard]] constexpr static auto length() noexcept(release) { return Width; }
 
   template<typename V>
   [[nodiscard]] constexpr auto bitsize(const V &) const noexcept(release) -> std::size_t {

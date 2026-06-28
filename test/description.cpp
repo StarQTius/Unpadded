@@ -6,6 +6,7 @@
 #include <limits>
 #include <ranges>
 #include <string_view>
+#include <tuple>
 #include <variant>
 
 #include <catch2/catch_test_macros.hpp>
@@ -129,15 +130,15 @@ TEST_CASE("Protocol descriptors", "[descriptor]") {
   SECTION("Encode then decode an anonymous unsigned field") {
     auto descr = ufield2<upd::anon, 16>;
     descr.encode(42, ser, st);
-    REQUIRE(*descr.decode(st, ser) == 42);
+    REQUIRE(*descr.decode(st, ser, std::tuple{}) == 42);
   }
 
   SECTION("Encode then decode an anonymous signed field") {
     auto descr = field2<upd::anon, 15>;
     descr.encode(42, ser, st);
-    REQUIRE(*descr.decode(st, ser) == 42);
+    REQUIRE(*descr.decode(st, ser, std::tuple{}) == 42);
     descr.encode(-8, ser, st);
-    REQUIRE(*descr.decode(st, ser) == -8);
+    REQUIRE(*descr.decode(st, ser, std::tuple{}) == -8);
   }
 
   SECTION("Encode then decode unsigned field") {

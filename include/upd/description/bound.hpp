@@ -55,16 +55,6 @@ struct bound_t {
     }
   };
 
-  template<serializer Serializer, record_like Fields, tuple_like2 System>
-  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Fields &, const System &)
-      -> result<value_type> {
-    if constexpr (is_signed) {
-      return ser.deserialize_signed(src, upd::width<width>);
-    } else {
-      return ser.deserialize_unsigned(src, upd::width<width>);
-    }
-  }
-
   template<serializer Serializer, tuple_like2 System>
   constexpr static void encode(unit_t, Serializer &ser, stream_interface &dest, const System &sys) {
     auto value = algebra::solve_for(value_of<Identifier>, sys | tuple_views::to<std::tuple>);
@@ -75,7 +65,15 @@ struct bound_t {
     }
   }
 
-  [[nodiscard]] constexpr static auto length() noexcept(release) { return Width; }
+  template<serializer Serializer, record_like Fields, tuple_like2 System>
+  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Fields &, const System &)
+      -> result<value_type> {
+    if constexpr (is_signed) {
+      return ser.deserialize_signed(src, upd::width<width>);
+    } else {
+      return ser.deserialize_unsigned(src, upd::width<width>);
+    }
+  }
 
   template<typename V>
   [[nodiscard]] constexpr auto bitsize(const V &) const noexcept(release) -> std::size_t {

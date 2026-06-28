@@ -1,0 +1,58 @@
+#pragma once
+
+#include <concepts>
+#include <tuple>
+#include <type_traits>
+#include <variant>
+
+#include "is_instance_of.hpp"
+#include "record.hpp"
+#include "static_assert.hpp"
+#include "tuple/find.hpp"
+#include "type_traits.hpp"
+#include "upd.hpp"
+
+namespace upd {
+
+template<typename... Targets>
+class deferred_caster {
+  template<typename Orig, typename Target>
+  static auto caster(const void *orig) noexcept(release) -> Target {
+    const auto &o = *reinterpret_cast<const Orig *>(orig);
+    auto cast_alt = []<typename T>(const T &alt) -> Target {
+      if constexpr (std::constructible_from<Target, T>) {
+        return Target{alt};
+      } else {
+        UPD_ASSERT(false);
+      }
+    };
+
+    if constexpr (std::constructible_from<Target, Orig>) {
+      return Target{o};
+    } else if constexpr (is_instance_of<Orig, std::variant>()) {
+      return std::visit(cast_alt, o);
+    } else {
+      UPD_ASSERT(false);
+    }
+  }
+
+public:
+  template<typename T>
+  constexpr deferred_caster(const T &orig) noexcept(release) : m_orig{&orig}, m_casters{caster<T, Targets>...} {}
+
+  template<typename Target>
+  [[nodiscard]] constexpr auto cast_to() const noexcept(release) {
+    using namespace tuple_views;
+
+    auto i = find_if(m_casters, []<typename F>(typebox<F>) { return std::is_invocable_r_v<Target, F, const void *>; });
+    UPD_STATIC_ASSERT(i < sizeof...(Targets), "Cannot cast to target type `{}`", typebox<Target>{});
+
+    return UPD_INVOKE(get<i>(m_casters), m_orig);
+  }
+
+private:
+  const void *m_orig;
+  std::tuple<Targets (*)(const void *)...> m_casters;
+};
+
+} // namespace upd

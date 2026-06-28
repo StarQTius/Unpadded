@@ -66,6 +66,13 @@ struct repeat_t {
     }
   }
 
+  template<serializer Serializer, tuple_like2 System>
+  constexpr void encode(const value_type &value, Serializer &ser, stream_interface &dest, const System &) const {
+    for (const auto &element : value) {
+      description.encode(element, ser, dest);
+    }
+  }
+
   template<serializer Serializer, record_like Fields, tuple_like2 System>
   [[nodiscard]] constexpr auto decode(stream_interface &src, Serializer &ser, const Fields &, const System &sys) const
       -> result<value_type> {
@@ -96,15 +103,6 @@ struct repeat_t {
 
     return retval;
   }
-
-  template<serializer Serializer, tuple_like2 System>
-  constexpr void encode(const value_type &value, Serializer &ser, stream_interface &dest, const System &) const {
-    for (const auto &element : value) {
-      description.encode(element, ser, dest);
-    }
-  }
-
-  [[nodiscard]] constexpr static auto length() noexcept(release) { return length_of<Identifier>; }
 
   template<typename T, std::size_t M>
   [[nodiscard]] constexpr auto bitsize(const static_vector<T, M> &svec) const -> std::size_t {

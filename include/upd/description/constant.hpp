@@ -46,18 +46,16 @@ struct constant_t {
     return std::tuple{length_of<Identifier> = Width};
   }
 
-  template<serializer Serializer, record_like Fields, tuple_like2 System>
-  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Fields &, const System &)
-      -> result<value_type> {
-    return ser.deserialize_unsigned(src, upd::width<width>);
-  }
-
   template<serializer Serializer, tuple_like2 System>
   constexpr void encode(unit_t, Serializer &ser, stream_interface &dest, const System &) const noexcept(release) {
     return ser.serialize_unsigned(field_value, upd::width<width>, dest);
   }
 
-  [[nodiscard]] constexpr static auto length() noexcept(release) { return Width; }
+  template<serializer Serializer, record_like Fields, tuple_like2 System>
+  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Fields &, const System &)
+      -> result<value_type> {
+    return ser.deserialize_unsigned(src, upd::width<width>);
+  }
 
   template<typename V>
   [[nodiscard]] constexpr auto bitsize(const V &) const noexcept(release) -> std::size_t {
@@ -90,18 +88,16 @@ struct enumeration_constant_t {
     return std::tuple{length_of<Identifier> = Width};
   }
 
-  template<serializer Serializer, record_like Fields, tuple_like2 System>
-  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Fields &, const System &)
-      -> result<value_type> {
-    return static_cast<Enum>(ser.deserialize_unsigned(src, upd::width<width>));
-  }
-
   template<serializer Serializer, tuple_like2 System>
   constexpr void encode(unit_t, Serializer &ser, stream_interface &dest, const System &) const {
     return ser.serialize_unsigned(static_cast<std::uintmax_t>(field_value), upd::width<width>, dest);
   }
 
-  [[nodiscard]] constexpr static auto length() noexcept(release) { return Width; }
+  template<serializer Serializer, record_like Fields, tuple_like2 System>
+  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Fields &, const System &)
+      -> result<value_type> {
+    return static_cast<Enum>(ser.deserialize_unsigned(src, upd::width<width>));
+  }
 
   template<typename V>
   [[nodiscard]] constexpr auto bitsize(const V &) const noexcept(release) -> std::size_t {

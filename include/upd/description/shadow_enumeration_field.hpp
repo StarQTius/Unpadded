@@ -38,12 +38,6 @@ struct shadow_enumeration_field_t {
 
   [[nodiscard]] constexpr static auto default_value() noexcept(release) -> value_type { return value_type{}; }
 
-  template<serializer Serializer, record_like Fields, tuple_like2 System>
-  [[nodiscard]] constexpr static auto decode(stream_interface &, Serializer &, const Fields &, const System &sys)
-      -> result<value_type> {
-    return solve_for(value_of<Identifier>, sys | tuple_views::to<std::tuple>);
-  }
-
   template<record_like Packet, record_like Fields, serializer Serializer, codec_info CodecInfo>
   [[nodiscard]] constexpr auto rules(const Packet &packet, const Fields &, Serializer &, expr_t<CodecInfo>) const {
     if constexpr (has_tag<Identifier>(packet) && CodecInfo.operation == codec_operation::encoding) {
@@ -56,7 +50,11 @@ struct shadow_enumeration_field_t {
   template<serializer Serializer, tuple_like2 System>
   constexpr static void encode(value_type, Serializer &, stream_interface &, const System &) {}
 
-  [[nodiscard]] constexpr static auto length() noexcept(release) { return Width; }
+  template<serializer Serializer, record_like Fields, tuple_like2 System>
+  [[nodiscard]] constexpr static auto decode(stream_interface &, Serializer &, const Fields &, const System &sys)
+      -> result<value_type> {
+    return solve_for(value_of<Identifier>, sys | tuple_views::to<std::tuple>);
+  }
 
   template<typename V>
   [[nodiscard]] constexpr auto bitsize(const V &) const noexcept(release) -> std::size_t {

@@ -39,16 +39,6 @@ struct enumeration_field_t {
 
   [[nodiscard]] constexpr static auto default_value() noexcept(release) -> value_type { return value_type{}; }
 
-  template<serializer Serializer, record_like Fields, tuple_like2 System>
-  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Fields &, const System &)
-      -> result<value_type> {
-    if constexpr (is_signed) {
-      return static_cast<value_type>(ser.deserialize_signed(src, upd::width<width - 1>));
-    } else {
-      return static_cast<value_type>(ser.deserialize_unsigned(src, upd::width<width>));
-    }
-  }
-
   template<record_like Packet, record_like Fields, serializer Serializer, codec_info CodecInfo>
   [[nodiscard]] constexpr auto rules(const Packet &packet, const Fields &, Serializer &, expr_t<CodecInfo>) const {
     if constexpr (has_tag<Identifier>(packet)) {
@@ -67,7 +57,15 @@ struct enumeration_field_t {
     }
   }
 
-  [[nodiscard]] constexpr static auto length() noexcept(release) { return Width; }
+  template<serializer Serializer, record_like Fields, tuple_like2 System>
+  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Fields &, const System &)
+      -> result<value_type> {
+    if constexpr (is_signed) {
+      return static_cast<value_type>(ser.deserialize_signed(src, upd::width<width - 1>));
+    } else {
+      return static_cast<value_type>(ser.deserialize_unsigned(src, upd::width<width>));
+    }
+  }
 
   template<typename V>
   [[nodiscard]] constexpr auto bitsize(const V &) const noexcept(release) -> std::size_t {
@@ -90,6 +88,15 @@ struct anonymous_enumeration_field_t {
   }
 
   template<serializer Serializer, tuple_like2 System>
+  constexpr static void encode(Enum value, Serializer &ser, stream_interface &dest, const System &) {
+    if constexpr (is_signed) {
+      ser.serialize_signed(static_cast<std::intmax_t>(value), upd::width<width - 1>, dest);
+    } else {
+      ser.serialize_unsigned(static_cast<std::uintmax_t>(value), upd::width<width>, dest);
+    }
+  }
+
+  template<serializer Serializer, tuple_like2 System>
   [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const System &)
       -> result<result_type> {
     auto retval = [&] {
@@ -102,17 +109,6 @@ struct anonymous_enumeration_field_t {
 
     return result_type{retval};
   }
-
-  template<serializer Serializer, tuple_like2 System>
-  constexpr static void encode(Enum value, Serializer &ser, stream_interface &dest, const System &) {
-    if constexpr (is_signed) {
-      ser.serialize_signed(static_cast<std::intmax_t>(value), upd::width<width - 1>, dest);
-    } else {
-      ser.serialize_unsigned(static_cast<std::uintmax_t>(value), upd::width<width>, dest);
-    }
-  }
-
-  [[nodiscard]] constexpr static auto length() noexcept(release) { return Width; }
 
   template<typename V>
   [[nodiscard]] constexpr auto bitsize(const V &) const noexcept(release) -> std::size_t {
