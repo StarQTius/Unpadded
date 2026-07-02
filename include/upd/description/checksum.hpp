@@ -42,13 +42,6 @@ struct checksum_t {
   value_type init;
   FieldFilter identifier_filter;
 
-  template<tuple_like2 System>
-  [[nodiscard]] constexpr auto default_value(const System &) const noexcept(release) -> value_type {
-    return init;
-  }
-
-  [[nodiscard]] constexpr auto default_value() const noexcept(release) -> value_type { return init; }
-
   template<record_like Packet, record_like Fields, serializer Serializer, codec_info CodecInfo>
   [[nodiscard]] constexpr auto
   rules(const Packet &packet, const Fields &fields, Serializer &ser, expr_t<CodecInfo>) const {

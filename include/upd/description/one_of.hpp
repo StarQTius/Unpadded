@@ -67,25 +67,6 @@ struct one_of_t {
   Rule rule;
   TaggedDescriptions tagged_descriptions;
 
-  template<tuple_like2 System>
-  [[nodiscard]] constexpr auto default_value(const System &sys) const -> value_type {
-    namespace updv = upd::tuple_views;
-
-    auto seq = UPD_WITH_SEQUENCE(Is, size) { return std::tuple{expr<Is>...}; };
-    auto code = solve_for(code_of<Identifier>, sys | updv::to<std::tuple>);
-    auto i = updv::dynfind(tags_of_v<TaggedDescriptions>, code);
-
-    return updv::visit(seq, i, [&](auto i) -> value_type {
-      if constexpr (std::constructible_from<value_type, std::in_place_index_t<i + 1>>) {
-        return value_type{std::in_place_index<i + 1>};
-      } else {
-        UPD_ASSERT(false);
-      }
-    });
-  }
-
-  [[nodiscard]] constexpr auto default_value() const -> value_type { return value_type{}; }
-
   template<record_like Packet, record_like Fields, serializer Serializer, codec_info CodecInfo>
   [[nodiscard]] constexpr auto
   rules(const Packet &packet, const Fields &fields, Serializer &ser, expr_t<CodecInfo>) const {

@@ -249,8 +249,7 @@ public:
     };
 
     auto err = error{};
-    auto retval =
-        m_fields | updv::transform([&](auto, const auto &field) { return field.default_value(); }) | updv::to<record>;
+    auto retval = result_type{};
 
     updv::for_each(m_fields, [&](auto id, const auto &field) {
       if (err) {

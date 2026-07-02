@@ -27,13 +27,6 @@ struct field_t {
   using value_type = std::conditional_t<is_signed, std::intmax_t, std::uintmax_t>;
   using input_type = value_type;
 
-  template<tuple_like2 System>
-  [[nodiscard]] constexpr static auto default_value(const System &) noexcept(release) -> value_type {
-    return value_type{};
-  }
-
-  [[nodiscard]] constexpr static auto default_value() noexcept(release) -> value_type { return value_type{}; }
-
   template<record_like Packet, record_like Fields, serializer Serializer, codec_info CodecInfo>
   [[nodiscard]] constexpr auto rules(const Packet &packet, const Fields &, Serializer &, expr_t<CodecInfo>) const {
     if constexpr (has_tag<Identifier>(packet)) {

@@ -29,13 +29,6 @@ struct constant_t {
 
   value_type field_value;
 
-  template<tuple_like2 System>
-  [[nodiscard]] constexpr auto default_value(const System &) const noexcept(release) -> value_type {
-    return field_value;
-  }
-
-  [[nodiscard]] constexpr auto default_value() const noexcept(release) -> value_type { return field_value; }
-
   template<record_like Packet, record_like Fields, serializer Serializer, codec_info CodecInfo>
   [[nodiscard]] constexpr auto rules(const Packet &, const Fields &, Serializer &, expr_t<CodecInfo>) const {
     return std::tuple{length_of<Identifier> = Width};
@@ -65,13 +58,6 @@ struct enumeration_constant_t {
 
   using value_type = Enum;
   using input_type = unit_t;
-
-  template<tuple_like2 System>
-  [[nodiscard]] constexpr auto default_value(const System &) const noexcept(release) -> value_type {
-    return field_value;
-  }
-
-  [[nodiscard]] constexpr auto default_value() const noexcept(release) -> value_type { return field_value; }
 
   template<record_like Packet, record_like Fields, serializer Serializer, codec_info CodecInfo>
   [[nodiscard]] constexpr auto rules(const Packet &, const Fields &, Serializer &, expr_t<CodecInfo>) const {

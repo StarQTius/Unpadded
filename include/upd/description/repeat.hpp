@@ -43,13 +43,6 @@ struct repeat_t {
   Description description;
   Rule rule;
 
-  template<tuple_like2 System>
-  [[nodiscard]] constexpr static auto default_value(const System &) -> value_type {
-    return value_type{};
-  }
-
-  [[nodiscard]] constexpr static auto default_value() -> value_type { return value_type{}; }
-
   template<record_like Packet, record_like Fields, serializer Serializer, codec_info CodecInfo>
   [[nodiscard]] constexpr auto
   rules(const Packet &packet, const Fields &fields, Serializer &, expr_t<CodecInfo>) const {
