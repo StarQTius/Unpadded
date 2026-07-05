@@ -2,11 +2,11 @@
 
 #include <tuple>
 
-#include "../constexpr.hpp"
 #include "../record/lite_record.hpp"
-#include "../type_traits.hpp"
 #include "../upd.hpp"
-#include "../with_sequence.hpp"
+#include "../utility/constexpr.hpp"
+#include "../utility/type_traits.hpp"
+#include "../utility/with_sequence.hpp"
 
 namespace upd::variadic {
 

@@ -4,14 +4,14 @@
 #include <tuple>
 #include <type_traits>
 
-#include "../constexpr.hpp"
 #include "../description.hpp"
 #include "../error.hpp"
 #include "../record.hpp"
-#include "../stream_interface.hpp"
+#include "../stream/stream_interface.hpp"
 #include "../tuple/to.hpp"
 #include "../tuple/tuple_like.hpp"
 #include "../upd.hpp"
+#include "../utility/constexpr.hpp"
 #include "codec_info.hpp"
 #include "serializer.hpp"
 

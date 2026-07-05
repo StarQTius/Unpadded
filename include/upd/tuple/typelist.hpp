@@ -4,11 +4,11 @@
 #include <tuple>
 #include <variant>
 
-#include "../collector_of.hpp"
 #include "../detail/fail_unless_discarded.hpp"
 #include "../upd.hpp"
+#include "../utility/collector_of.hpp"
+#include "../utility/with_sequence.hpp"
 #include "../variadic/template_box.hpp"
-#include "../with_sequence.hpp"
 #include "tuple_element.hpp"
 #include "tuple_like.hpp"
 #include "tuple_size.hpp"

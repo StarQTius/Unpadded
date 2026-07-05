@@ -3,8 +3,8 @@
 #include <concepts>
 #include <tuple>
 
-#include "../is_instance_of.hpp"
 #include "../upd.hpp"
+#include "../utility/is_instance_of.hpp"
 #include "record_like.hpp"
 #include "record_view_adaptor.hpp"
 

@@ -5,13 +5,13 @@
 #include <tuple>
 #include <utility>
 
-#include "../always_false.hpp"
-#include "../constexpr.hpp"
-#include "../is_instance_of.hpp"
-#include "../static_assert.hpp"
-#include "../type_traits.hpp"
 #include "../upd.hpp"
-#include "../with_sequence.hpp"
+#include "../utility/always_false.hpp"
+#include "../utility/constexpr.hpp"
+#include "../utility/is_instance_of.hpp"
+#include "../utility/static_assert.hpp"
+#include "../utility/type_traits.hpp"
+#include "../utility/with_sequence.hpp"
 #include "record_element.hpp"
 #include "record_size.hpp"
 #include "record_tag.hpp"

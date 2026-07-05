@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../collector_of.hpp"
-#include "../constexpr.hpp"
+#include "../utility/collector_of.hpp"
+#include "../utility/constexpr.hpp"
 #include "../variadic/template_box.hpp"
 #include "record_like.hpp"
 

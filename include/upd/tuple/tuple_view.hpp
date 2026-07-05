@@ -4,10 +4,10 @@
 #include <cstddef>
 #include <utility>
 
-#include "../get.hpp"
-#include "../implementation_of.hpp"
 #include "../upd.hpp"
-#include "../variadic_concept.hpp"
+#include "../utility/get.hpp"
+#include "../utility/implementation_of.hpp"
+#include "../utility/variadic_concept.hpp"
 #include "tuple_element.hpp"
 #include "tuple_like.hpp"
 #include "tuple_size.hpp"

@@ -6,11 +6,11 @@
 #include <type_traits>
 #include <utility>
 
-#include "../get.hpp"
-#include "../implementation_of.hpp"
 #include "../upd.hpp"
-#include "../variadic_concept.hpp"
-#include "../with_sequence.hpp"
+#include "../utility/get.hpp"
+#include "../utility/implementation_of.hpp"
+#include "../utility/variadic_concept.hpp"
+#include "../utility/with_sequence.hpp"
 #include "tuple_size.hpp"
 
 namespace upd {

@@ -9,17 +9,13 @@
 #include <variant>
 
 #include "../algebra/system.hpp"
-#include "../constexpr.hpp"
-#include "../counting_stream.hpp"
-#include "../deferred_caster.hpp"
 #include "../description.hpp"
 #include "../error.hpp"
-#include "../is_instance_of.hpp"
 #include "../record.hpp"
 #include "../record/tags.hpp"
 #include "../record/tags_of.hpp"
-#include "../stream_interface.hpp"
-#include "../template_traits.hpp"
+#include "../stream/counting_stream.hpp"
+#include "../stream/stream_interface.hpp"
 #include "../tuple/apply.hpp"
 #include "../tuple/concat.hpp"
 #include "../tuple/enumerate.hpp"
@@ -32,8 +28,11 @@
 #include "../tuple/typelist.hpp"
 #include "../tuple/visit.hpp"
 #include "../upd.hpp"
-#include "../with_sequence.hpp"
-#include "codec_info.hpp"
+#include "../utility/constexpr.hpp"
+#include "../utility/deferred_caster.hpp"
+#include "../utility/is_instance_of.hpp"
+#include "../utility/template_traits.hpp"
+#include "../utility/with_sequence.hpp"
 #include "serializer.hpp"
 
 namespace upd::descriptor {

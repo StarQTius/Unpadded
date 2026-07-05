@@ -3,8 +3,8 @@
 #include <concepts>
 #include <tuple>
 
-#include "../is_instance_of.hpp"
 #include "../upd.hpp"
+#include "../utility/is_instance_of.hpp"
 #include "tuple_like.hpp"
 #include "tuple_view_adaptor.hpp"
 

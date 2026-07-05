@@ -4,12 +4,12 @@
 #include <type_traits>
 
 #include "../concept/invocable.hpp"
-#include "../constexpr.hpp"
-#include "../is_convertible_to_instance_of.hpp"
 #include "../record/lite_record.hpp"
 #include "../record/name.hpp"
-#include "../static_assert.hpp"
 #include "../upd.hpp"
+#include "../utility/constexpr.hpp"
+#include "../utility/is_convertible_to_instance_of.hpp"
+#include "../utility/static_assert.hpp"
 #include "concepts.hpp"
 #include "equation.hpp"
 #include "let.hpp"

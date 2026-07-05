@@ -3,9 +3,9 @@
 #include <cstddef>
 #include <utility>
 
-#include "../constexpr.hpp"
-#include "../type_traits.hpp"
 #include "../upd.hpp"
+#include "../utility/constexpr.hpp"
+#include "../utility/type_traits.hpp"
 #include "entry.hpp"
 #include "find.hpp"
 #include "get_ith.hpp"

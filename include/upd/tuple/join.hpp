@@ -3,10 +3,10 @@
 #include <cstddef>
 #include <type_traits>
 
-#include "../get.hpp"
 #include "../upd.hpp"
+#include "../utility/get.hpp"
+#include "../utility/with_sequence.hpp"
 #include "../variadic/nested_indices.hpp"
-#include "../with_sequence.hpp"
 #include "nested_tuple.hpp"
 #include "tuple_element.hpp"
 #include "tuple_size.hpp"

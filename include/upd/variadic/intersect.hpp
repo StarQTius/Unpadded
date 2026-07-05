@@ -3,16 +3,16 @@
 #include <tuple>
 #include <type_traits>
 
-#include "../constexpr.hpp"
-#include "../get.hpp"
 #include "../record/lite_record.hpp"
 #include "../tuple/concat.hpp"
 #include "../tuple/filter.hpp"
 #include "../tuple/has_type.hpp"
 #include "../tuple/to.hpp"
-#include "../type_traits.hpp"
 #include "../upd.hpp"
-#include "../with_sequence.hpp"
+#include "../utility/constexpr.hpp"
+#include "../utility/get.hpp"
+#include "../utility/type_traits.hpp"
+#include "../utility/with_sequence.hpp"
 
 namespace upd {
 

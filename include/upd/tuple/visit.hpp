@@ -5,12 +5,12 @@
 #include <type_traits>
 
 #include "../concept/invocable.hpp"
-#include "../constexpr.hpp"
-#include "../get.hpp"
 #include "../tuple/instantiate.hpp"
 #include "../tuple/typelist.hpp"
 #include "../upd.hpp"
-#include "../with_sequence.hpp"
+#include "../utility/constexpr.hpp"
+#include "../utility/get.hpp"
+#include "../utility/with_sequence.hpp"
 #include "apply.hpp"
 #include "transform.hpp"
 #include "tuple_like.hpp"

@@ -7,21 +7,21 @@
 #include <tuple>
 #include <utility>
 
-#include "../accumulator_stream.hpp"
 #include "../algebra/system.hpp"
-#include "../constexpr.hpp"
 #include "../description.hpp"
 #include "../error.hpp"
 #include "../record.hpp"
 #include "../record/tags_of.hpp"
-#include "../stream_interface.hpp"
-#include "../token.hpp"
+#include "../stream/accumulator_stream.hpp"
+#include "../stream/stream_interface.hpp"
 #include "../tuple/as_record.hpp"
 #include "../tuple/filter.hpp"
 #include "../tuple/transform.hpp"
 #include "../tuple/tuple_like.hpp"
-#include "../type_traits.hpp"
 #include "../upd.hpp"
+#include "../utility/constexpr.hpp"
+#include "../utility/token.hpp"
+#include "../utility/type_traits.hpp"
 #include "codec_info.hpp"
 #include "serializer.hpp"
 

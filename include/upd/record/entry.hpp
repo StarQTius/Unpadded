@@ -5,9 +5,9 @@
 #include <format>
 #include <type_traits>
 
-#include "../constexpr.hpp"
-#include "../equivalent_to.hpp"
 #include "../upd.hpp"
+#include "../utility/constexpr.hpp"
+#include "../utility/equivalent_to.hpp"
 #include "name.hpp"
 #include "record_like.hpp"
 

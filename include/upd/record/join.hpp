@@ -2,10 +2,10 @@
 
 #include <cstddef>
 
-#include "../get.hpp"
 #include "../upd.hpp"
+#include "../utility/get.hpp"
+#include "../utility/with_sequence.hpp"
 #include "../variadic/nested_indices.hpp"
-#include "../with_sequence.hpp"
 #include "entry.hpp"
 #include "ith_record_element.hpp"
 #include "nested_record.hpp"

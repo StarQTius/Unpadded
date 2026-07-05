@@ -3,10 +3,10 @@
 #include <concepts>
 #include <type_traits>
 
-#include "../constexpr.hpp"
-#include "../equivalent_to.hpp"
-#include "../type_traits.hpp"
 #include "../upd.hpp"
+#include "../utility/constexpr.hpp"
+#include "../utility/equivalent_to.hpp"
+#include "../utility/type_traits.hpp"
 #include "enumerate.hpp"
 #include "filter.hpp"
 #include "get_ith.hpp"

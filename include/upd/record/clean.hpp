@@ -2,11 +2,11 @@
 
 #include <cstddef>
 
-#include "../get.hpp"
-#include "../type_traits.hpp"
 #include "../upd.hpp"
+#include "../utility/get.hpp"
+#include "../utility/type_traits.hpp"
+#include "../utility/with_sequence.hpp"
 #include "../variadic/clean_occurences_of.hpp"
-#include "../with_sequence.hpp"
 #include "entry.hpp"
 #include "ith_record_element.hpp"
 #include "record_like.hpp"

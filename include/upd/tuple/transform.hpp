@@ -5,9 +5,9 @@
 #include <utility>
 
 #include "../detail/fail_unless_discarded.hpp"
-#include "../get.hpp"
-#include "../type_traits.hpp"
 #include "../upd.hpp"
+#include "../utility/get.hpp"
+#include "../utility/type_traits.hpp"
 #include "tuple_element.hpp"
 #include "tuple_like.hpp"
 #include "tuple_size.hpp"

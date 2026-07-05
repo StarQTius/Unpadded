@@ -6,15 +6,15 @@
 #include <tuple>
 #include <type_traits>
 
-#include "../collector_of.hpp"
-#include "../constexpr.hpp"
-#include "../get.hpp"
-#include "../is_instance_of.hpp"
 #include "../tuple/for_each.hpp"
 #include "../upd.hpp"
+#include "../utility/collector_of.hpp"
+#include "../utility/constexpr.hpp"
+#include "../utility/get.hpp"
+#include "../utility/is_instance_of.hpp"
+#include "../utility/with_sequence.hpp"
 #include "../variadic/identical.hpp"
 #include "../variadic/template_box.hpp"
-#include "../with_sequence.hpp"
 #include "apply.hpp"
 #include "as_tuple.hpp"
 #include "entry.hpp"

@@ -3,9 +3,8 @@
 #include <cstddef>
 #include <ranges>
 
-#include "accumulator_stream.hpp"
+#include "../upd.hpp"
 #include "stream_interface.hpp"
-#include "upd.hpp"
 
 namespace upd {
 

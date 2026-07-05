@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../constexpr.hpp"
 #include "../upd.hpp"
+#include "../utility/constexpr.hpp"
+#include "../utility/with_sequence.hpp"
 #include "../variadic/folder.hpp"
-#include "../with_sequence.hpp"
 #include "get_ith_entry.hpp"
 #include "record_like.hpp"
 #include "record_size.hpp"

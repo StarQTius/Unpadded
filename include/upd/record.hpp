@@ -1,6 +1,5 @@
 #pragma once
 
-#include "get.hpp"                        // IWYU pragma: export
 #include "record/apply.hpp"               // IWYU pragma: export
 #include "record/as_tuple.hpp"            // IWYU pragma: export
 #include "record/chain.hpp"               // IWYU pragma: export
@@ -14,6 +13,7 @@
 #include "record/for_each.hpp"            // IWYU pragma: export
 #include "record/get_ith.hpp"             // IWYU pragma: export
 #include "record/get_ith_entry.hpp"       // IWYU pragma: export
+#include "record/get_or.hpp"              // IWYU pragma: export
 #include "record/has_tag.hpp"             // IWYU pragma: export
 #include "record/has_type.hpp"            // IWYU pragma: export
 #include "record/instantiate.hpp"         // IWYU pragma: export
@@ -38,3 +38,4 @@
 #include "record/values.hpp"              // IWYU pragma: export
 #include "record/view.hpp"                // IWYU pragma: export
 #include "record/zip.hpp"                 // IWYU pragma: export
+#include "utility/get.hpp"                // IWYU pragma: export

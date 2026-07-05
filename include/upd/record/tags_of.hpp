@@ -2,8 +2,8 @@
 
 #include <tuple>
 
-#include "../constexpr.hpp"
-#include "../with_sequence.hpp"
+#include "../utility/constexpr.hpp"
+#include "../utility/with_sequence.hpp"
 #include "record_like.hpp"
 #include "record_size.hpp"
 #include "record_tag.hpp"

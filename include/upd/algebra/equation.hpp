@@ -2,16 +2,16 @@
 
 #include <format>
 
-#include "../constexpr.hpp"
-#include "../get.hpp"
-#include "../is_convertible_to_instance_of.hpp"
 #include "../record/lite_record.hpp"
-#include "../static_assert.hpp"
 #include "../tuple/apply.hpp"
 #include "../tuple/concat.hpp"
 #include "../tuple/tuple_like.hpp"
 #include "../tuple/tuple_size.hpp"
 #include "../upd.hpp"
+#include "../utility/constexpr.hpp"
+#include "../utility/get.hpp"
+#include "../utility/is_convertible_to_instance_of.hpp"
+#include "../utility/static_assert.hpp"
 #include "concepts.hpp"
 #include "let.hpp"
 #include "variable.hpp"

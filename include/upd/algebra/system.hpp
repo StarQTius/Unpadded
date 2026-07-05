@@ -4,11 +4,7 @@
 #include <tuple>
 #include <type_traits>
 
-#include "../always_false.hpp"
-#include "../constexpr.hpp"
-#include "../get.hpp"
 #include "../record/record.hpp"
-#include "../static_assert.hpp"
 #include "../tuple/concat.hpp"
 #include "../tuple/filter.hpp"
 #include "../tuple/find.hpp"
@@ -16,8 +12,12 @@
 #include "../tuple/transform.hpp"
 #include "../tuple/tuple_like.hpp"
 #include "../tuple/tuple_size.hpp"
-#include "../type_traits.hpp"
 #include "../upd.hpp"
+#include "../utility/always_false.hpp"
+#include "../utility/constexpr.hpp"
+#include "../utility/get.hpp"
+#include "../utility/static_assert.hpp"
+#include "../utility/type_traits.hpp"
 #include "../variadic/is_template_deductible_from.hpp"
 #include "let.hpp"
 #include "side.hpp"

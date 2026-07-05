@@ -5,10 +5,10 @@
 #include <type_traits>
 
 #include "../record/record_like.hpp"
-#include "../static_assert.hpp"
 #include "../tuple/concat.hpp"
 #include "../tuple/to.hpp"
 #include "../upd.hpp"
+#include "../utility/static_assert.hpp"
 #include "concepts.hpp"
 #include "side.hpp"
 

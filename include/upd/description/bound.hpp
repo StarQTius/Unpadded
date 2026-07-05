@@ -7,15 +7,15 @@
 #include <utility>
 
 #include "../algebra/system.hpp"
-#include "../constexpr.hpp"
 #include "../description.hpp"
 #include "../error.hpp"
 #include "../record.hpp"
-#include "../stream_interface.hpp"
-#include "../token.hpp"
+#include "../stream/stream_interface.hpp"
 #include "../tuple/to.hpp"
 #include "../tuple/tuple_like.hpp"
 #include "../upd.hpp"
+#include "../utility/constexpr.hpp"
+#include "../utility/token.hpp"
 #include "codec_info.hpp"
 #include "serializer.hpp"
 

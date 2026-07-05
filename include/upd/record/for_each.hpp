@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../constexpr.hpp"
 #include "../upd.hpp"
-#include "../with_sequence.hpp"
+#include "../utility/constexpr.hpp"
+#include "../utility/with_sequence.hpp"
 #include "get_ith.hpp"
 #include "record_like.hpp"
 #include "record_size.hpp"

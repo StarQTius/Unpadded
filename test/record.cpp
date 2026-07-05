@@ -5,12 +5,12 @@
 
 #include "utility.hpp"
 #include <catch2/catch_test_macros.hpp>
-#include <upd/constexpr.hpp>
-#include <upd/equivalent_to.hpp>
 #include <upd/record.hpp>
-#include <upd/tuple_v2.hpp>
-#include <upd/type_traits.hpp>
+#include <upd/tuple.hpp>
 #include <upd/upd.hpp>
+#include <upd/utility/constexpr.hpp>
+#include <upd/utility/equivalent_to.hpp>
+#include <upd/utility/type_traits.hpp>
 
 TEST_CASE("Lite record basic functionalities", "[lite_record]") {
   upd::record_like auto rec = upd::lite_record{upd::lite_record_node{upd::expr<upd::name{"a"}>, int{4}},

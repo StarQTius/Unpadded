@@ -6,13 +6,13 @@
 #include <type_traits>
 #include <utility>
 
+#include "../record/lite_record.hpp"
+#include "../record/record_size.hpp"
+#include "../record/record_tag.hpp"
+#include "../upd.hpp"
+#include "../variadic/position_of.hpp"
 #include "implementation_of.hpp"
-#include "record/lite_record.hpp"
-#include "record/record_size.hpp"
-#include "record/record_tag.hpp"
 #include "static_assert.hpp"
-#include "upd.hpp"
-#include "variadic/position_of.hpp"
 #include "with_sequence.hpp"
 
 namespace upd {

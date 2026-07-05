@@ -5,11 +5,11 @@
 
 #include "utility.hpp"
 #include <catch2/catch_test_macros.hpp>
-#include <upd/constexpr.hpp>
 #include <upd/record.hpp>
-#include <upd/tuple_v2.hpp>
-#include <upd/type_traits.hpp>
+#include <upd/tuple.hpp>
 #include <upd/upd.hpp>
+#include <upd/utility/constexpr.hpp>
+#include <upd/utility/type_traits.hpp>
 #include <upd/variadic/intersect.hpp>
 
 TEST_CASE("Typelist basic functionalities", "[typelist]") {

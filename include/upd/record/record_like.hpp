@@ -4,10 +4,10 @@
 #include <cstddef>
 #include <type_traits>
 
-#include "../get.hpp"
-#include "../implementation_of.hpp"
 #include "../upd.hpp"
-#include "../variadic_concept.hpp"
+#include "../utility/get.hpp"
+#include "../utility/implementation_of.hpp"
+#include "../utility/variadic_concept.hpp"
 #include "record_element.hpp"
 #include "record_size.hpp"
 #include "record_tag.hpp"

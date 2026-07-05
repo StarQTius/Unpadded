@@ -7,9 +7,6 @@
 #include <type_traits>
 #include <variant>
 
-#include "../collector_of.hpp"
-#include "../constexpr.hpp"
-#include "../get.hpp"
 #include "../record/entry.hpp"
 #include "../record/record_view.hpp"
 #include "../record/record_view_adaptor.hpp"
@@ -17,10 +14,13 @@
 #include "../tuple/to.hpp"
 #include "../tuple/transform.hpp"
 #include "../tuple/typelist.hpp"
-#include "../type_traits.hpp"
 #include "../upd.hpp"
+#include "../utility/collector_of.hpp"
+#include "../utility/constexpr.hpp"
+#include "../utility/get.hpp"
+#include "../utility/type_traits.hpp"
+#include "../utility/with_sequence.hpp"
 #include "../variadic/template_box.hpp"
-#include "../with_sequence.hpp"
 #include "enumerate.hpp"
 #include "tuple_element.hpp"
 #include "tuple_like.hpp"

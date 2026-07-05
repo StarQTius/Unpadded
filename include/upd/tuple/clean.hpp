@@ -2,11 +2,11 @@
 
 #include <cstddef>
 
-#include "../get.hpp"
-#include "../type_traits.hpp"
 #include "../upd.hpp"
+#include "../utility/get.hpp"
+#include "../utility/type_traits.hpp"
+#include "../utility/with_sequence.hpp"
 #include "../variadic/clean_occurences_of.hpp"
-#include "../with_sequence.hpp"
 #include "tuple_element.hpp"
 #include "tuple_like.hpp"
 #include "tuple_size.hpp"

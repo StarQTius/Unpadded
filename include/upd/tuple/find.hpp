@@ -5,10 +5,10 @@
 #include <ranges>
 #include <type_traits>
 
-#include "../constexpr.hpp"
-#include "../get.hpp"
-#include "../type_traits.hpp"
 #include "../upd.hpp"
+#include "../utility/constexpr.hpp"
+#include "../utility/get.hpp"
+#include "../utility/type_traits.hpp"
 #include "enumerate.hpp"
 #include "filter.hpp"
 #include "to.hpp"
