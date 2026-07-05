@@ -29,20 +29,30 @@ class deferred_caster {
 
     if constexpr (std::constructible_from<Target, Orig>) {
       return Target{o};
-    } else if constexpr (is_instance_of<Orig, std::variant>()) {
-      return std::visit(cast_alt, o);
-    } else {
-      UPD_ASSERT(false);
     }
+
+    if constexpr (is_instance_of<Orig, std::variant>()) {
+      return std::visit(cast_alt, o);
+    }
+
+    if constexpr (std::is_null_pointer_v<Orig> && std::default_initializable<Target>) {
+      return Target{};
+    }
+
+    UPD_ASSERT(false);
   }
 
 public:
+  constexpr deferred_caster() noexcept(release) : deferred_caster{nullptr} {}
+
   template<typename T>
   constexpr deferred_caster(const T &orig) noexcept(release) : m_orig{&orig}, m_casters{caster<T, Targets>...} {}
 
   template<typename Target>
   [[nodiscard]] constexpr auto cast_to() const noexcept(release) {
     using namespace tuple_views;
+
+    UPD_ASSERT(m_orig);
 
     auto i = find_if(m_casters, []<typename F>(typebox<F>) { return std::is_invocable_r_v<Target, F, const void *>; });
     UPD_STATIC_ASSERT(i < sizeof...(Targets), "Cannot cast to target type `{}`", typebox<Target>{});

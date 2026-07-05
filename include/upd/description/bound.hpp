@@ -35,7 +35,7 @@ struct bound_t {
 
   template<record_like Packet, record_like Fields, serializer Serializer, codec_info CodecInfo>
   [[nodiscard]] constexpr auto rules(const Packet &packet, const Fields &, Serializer &, expr_t<CodecInfo>) const {
-    if constexpr (has_tag<Identifier>(packet)) {
+    if constexpr (CodecInfo.operation == codec_operation::decoding && has_tag<Identifier>(packet)) {
       return std::tuple{
           value_of<Identifier> = get<Identifier>(packet), value_of<Identifier> = rule, length_of<Identifier> = Width};
     } else {

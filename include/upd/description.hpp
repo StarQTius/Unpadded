@@ -49,14 +49,8 @@
 
 namespace upd {
 
-struct defval_t {
-  template<std::default_initializable T>
-  [[nodiscard]] constexpr operator T() const noexcept(release) {
-    return T{};
-  }
-};
-
-constexpr auto defval = defval_t{};
+constexpr struct defval_t {
+} defval;
 
 template<auto Tag, record_like Record, typename T>
 [[nodiscard]] constexpr auto get_or(Record &&rec, T &&x) -> decltype(auto) {
@@ -178,8 +172,22 @@ public:
   }
 
   template<record_like Args, serializer Serializer, tuple_like2 System = std::tuple<>>
+  constexpr void encode(const Args &args, Serializer &ser, stream_interface &dest) const {
+    using namespace upd::record_views;
+
+    auto input = input_type{};
+    for_each(args, [&](auto id, const auto &value) { get<id.value>(input) = value; });
+    encode(input, ser, dest);
+  }
+
+  template<record_like Args, serializer Serializer>
+  constexpr void encode(const Args &args, Serializer &ser, stream_interface &&dest) const {
+    encode(args, ser, dest);
+  }
+
+  template<serializer Serializer, tuple_like2 System = std::tuple<>>
   constexpr void
-  encode(const Args &args, Serializer &ser, stream_interface &dest, const System &ctx_sys = std::tuple{}) const {
+  encode(const input_type &input, Serializer &ser, stream_interface &dest, const System &ctx_sys = std::tuple{}) const {
     namespace updv = record_views;
 
     constexpr auto cdinf = codec_info{
@@ -189,20 +197,17 @@ public:
     auto rule_sys =
         m_fields
         | updv::values
-        | tuple_views::transform([&](const auto &field) { return field.rules(args, m_fields, ser, expr<cdinf>); })
+        | tuple_views::transform([&](const auto &field) { return field.rules(input, m_fields, ser, expr<cdinf>); })
         | tuple_views::join;
 
     auto sys = tuple_views::concat(rule_sys, ctx_sys);
 
     updv::for_each(m_fields, [&](auto id, const auto &field) {
-      ser.checkpoint(id.value.string);
-      field.encode(get_or<id.value>(args, defval), ser, dest, sys);
-    });
-  }
+      using subinput_type = typename std::remove_cvref_t<decltype(field)>::input_type;
 
-  template<record_like Args, serializer Serializer>
-  constexpr void encode(const Args &args, Serializer &ser, stream_interface &&dest) const {
-    encode(args, ser, dest);
+      ser.checkpoint(id.value.string);
+      field.encode(get_or<id.value>(input, subinput_type{}), ser, dest, sys);
+    });
   }
 
   template<std::input_iterator InputIt, serializer Serializer, record_like Context = upd::record<>>

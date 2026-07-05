@@ -36,7 +36,7 @@ struct checksum_t {
   constexpr static auto width = Width;
 
   using value_type = std::uintmax_t;
-  using input_type = std::uintmax_t;
+  using input_type = unit_t;
 
   BinaryOp op;
   value_type init;
@@ -56,7 +56,10 @@ struct checksum_t {
                           | tuple_views::filter([&]<typename Id>(typebox<const Id &>) {
                               return !std::convertible_to<record_element_t<Id::value, descr_input>, unit_t>;
                             })
-                          | tuple_views::transform([&](auto id) { return entry{id, get_or<id.value>(packet, defval)}; })
+                          | tuple_views::transform([&](auto id) {
+                              using subinput_type = typename record_element_t<id.value, Fields>::input_type;
+                              return entry{id, get_or<id.value>(packet, subinput_type{})};
+                            })
                           | tuple_views::as_record;
 
     auto dest = accumulator_stream{&op, init};

@@ -87,7 +87,7 @@ struct one_of_t {
       return std::tuple{code_of<Identifier> = rule};
     } else {
       auto cnt_stream = counting_stream{};
-      encode(get_or<Identifier>(packet, defval), ser, cnt_stream, sys);
+      encode(get_or<Identifier>(packet, input_type{}), ser, cnt_stream, sys);
       return std::tuple{code_of<Identifier> = rule, length_of<Identifier> = cnt_stream.written() * ser.bytewidth};
     }
   }
