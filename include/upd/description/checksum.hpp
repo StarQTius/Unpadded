@@ -2,7 +2,6 @@
 
 #include <concepts>
 #include <cstddef>
-#include <cstdint>
 #include <expected>
 #include <tuple>
 #include <utility>
@@ -23,7 +22,6 @@
 #include "../utility/token.hpp"
 #include "../utility/type_traits.hpp"
 #include "codec_info.hpp"
-#include "serializer.hpp"
 
 namespace upd::descriptor {
 
@@ -35,16 +33,15 @@ struct checksum_t {
   constexpr static auto identifier = Identifier;
   constexpr static auto width = Width;
 
-  using value_type = std::uintmax_t;
+  using value_type = uword_t;
   using input_type = unit_t;
 
   BinaryOp op;
   value_type init;
   FieldFilter identifier_filter;
 
-  template<record_like Packet, record_like Fields, serializer Serializer, codec_info CodecInfo>
-  [[nodiscard]] constexpr auto
-  rules(const Packet &packet, const Fields &fields, Serializer &ser, expr_t<CodecInfo>) const {
+  template<record_like Packet, record_like Fields, codec_info CodecInfo>
+  [[nodiscard]] constexpr auto rules(const Packet &packet, const Fields &fields, expr_t<CodecInfo>) const {
     using namespace upd::literals;
     namespace updv = upd::record_views;
 
@@ -63,23 +60,26 @@ struct checksum_t {
                           | tuple_views::as_record;
 
     auto dest = accumulator_stream{&op, init};
-    descr.encode(curated_packet | updv::to<record>, ser, dest);
+    descr.encode(curated_packet | updv::to<record>, dest);
 
     return std::tuple{value_of<Identifier> = dest.acc, length_of<Identifier> = Width};
   }
 
-  template<serializer Serializer, tuple_like2 System>
-  constexpr static void encode(unit_t, Serializer &ser, stream_interface &dest, const System &sys) {
+  template<tuple_like2 System>
+  constexpr static void encode(unit_t, stream_interface &dest, const System &sys) {
     auto value = algebra::solve_for(value_of<Identifier>, sys);
-    return ser.serialize_unsigned(value, upd::width<width>, dest);
+    return (void)dest.write_unsigned(value, width);
   }
 
-  template<serializer Serializer, record_like Fields, tuple_like2 System>
-  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Fields &, const System &sys)
+  template<record_like Fields, tuple_like2 System>
+  [[nodiscard]] constexpr static auto decode(stream_interface &src, const Fields &, const System &sys)
       -> result<value_type> {
-    auto actual = ser.deserialize_unsigned(src, upd::width<width>);
-    auto expected = algebra::solve_for(value_of<Identifier>, sys);
+    auto actual = uword_t{};
+    if (auto err = src.read_unsigned(width, &actual); err) {
+      return std::unexpected(found_lite_error{err});
+    }
 
+    auto expected = algebra::solve_for(value_of<Identifier>, sys);
     if (actual != expected) {
       return std::unexpected{checksum_mismatch{
           .actual = actual,
@@ -97,8 +97,7 @@ struct checksum_t {
 };
 
 template<name Identifier, typename BinaryOp, std::size_t Width>
-[[nodiscard]] constexpr auto
-checksum(BinaryOp op, std::uintmax_t init, width_t<Width>, all_fields_t) noexcept(release) {
+[[nodiscard]] constexpr auto checksum(BinaryOp op, uword_t init, width_t<Width>, all_fields_t) noexcept(release) {
   auto is_not_this_field = [](auto id) { return expr<id != Identifier>; };
 
   auto retval =

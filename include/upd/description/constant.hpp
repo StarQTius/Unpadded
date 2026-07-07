@@ -1,9 +1,10 @@
 #pragma once
 
 #include <cstddef>
-#include <cstdint>
+#include <expected>
 #include <tuple>
 #include <type_traits>
+#include <utility>
 
 #include "../algebra/system.hpp"
 #include "../description.hpp"
@@ -15,7 +16,6 @@
 #include "../utility/constexpr.hpp"
 #include "../utility/token.hpp"
 #include "codec_info.hpp"
-#include "serializer.hpp"
 
 namespace upd::descriptor {
 
@@ -24,25 +24,30 @@ struct constant_t {
   constexpr static auto identifier = Identifier;
   constexpr static auto width = Width;
 
-  using value_type = std::uintmax_t;
+  using value_type = uword_t;
   using input_type = unit_t;
 
   value_type field_value;
 
-  template<record_like Packet, record_like Fields, serializer Serializer, codec_info CodecInfo>
-  [[nodiscard]] constexpr auto rules(const Packet &, const Fields &, Serializer &, expr_t<CodecInfo>) const {
+  template<record_like Packet, record_like Fields, codec_info CodecInfo>
+  [[nodiscard]] constexpr auto rules(const Packet &, const Fields &, expr_t<CodecInfo>) const {
     return std::tuple{length_of<Identifier> = Width};
   }
 
-  template<serializer Serializer, tuple_like2 System>
-  constexpr void encode(unit_t, Serializer &ser, stream_interface &dest, const System &) const noexcept(release) {
-    return ser.serialize_unsigned(field_value, upd::width<width>, dest);
+  template<tuple_like2 System>
+  constexpr void encode(unit_t, stream_interface &dest, const System &) const noexcept(release) {
+    (void)dest.write_unsigned(field_value, width);
   }
 
-  template<serializer Serializer, record_like Fields, tuple_like2 System>
-  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Fields &, const System &)
+  template<record_like Fields, tuple_like2 System>
+  [[nodiscard]] constexpr static auto decode(stream_interface &src, const Fields &, const System &)
       -> result<value_type> {
-    return ser.deserialize_unsigned(src, upd::width<width>);
+    auto retval = value_type{};
+    if (auto err = src.read_unsigned(width, &retval); err) {
+      return std::unexpected(found_lite_error{err});
+    }
+
+    return retval;
   }
 
   template<typename V>
@@ -59,20 +64,25 @@ struct enumeration_constant_t {
   using value_type = Enum;
   using input_type = unit_t;
 
-  template<record_like Packet, record_like Fields, serializer Serializer, codec_info CodecInfo>
-  [[nodiscard]] constexpr auto rules(const Packet &, const Fields &, Serializer &, expr_t<CodecInfo>) const {
+  template<record_like Packet, record_like Fields, codec_info CodecInfo>
+  [[nodiscard]] constexpr auto rules(const Packet &, const Fields &, expr_t<CodecInfo>) const {
     return std::tuple{length_of<Identifier> = Width};
   }
 
-  template<serializer Serializer, tuple_like2 System>
-  constexpr void encode(unit_t, Serializer &ser, stream_interface &dest, const System &) const {
-    return ser.serialize_unsigned(static_cast<std::uintmax_t>(field_value), upd::width<width>, dest);
+  template<tuple_like2 System>
+  constexpr void encode(unit_t, stream_interface &dest, const System &) const {
+    (void)dest.write_unsigned(std::to_underlying(field_value), width);
   }
 
-  template<serializer Serializer, record_like Fields, tuple_like2 System>
-  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Fields &, const System &)
+  template<record_like Fields, tuple_like2 System>
+  [[nodiscard]] constexpr static auto decode(stream_interface &src, const Fields &, const System &)
       -> result<value_type> {
-    return static_cast<Enum>(ser.deserialize_unsigned(src, upd::width<width>));
+    auto retval = uword_t{};
+    if (auto err = src.read_unsigned(width, &retval); err) {
+      return std::unexpected(found_lite_error{err});
+    }
+
+    return static_cast<Enum>(retval);
   }
 
   template<typename V>
@@ -90,7 +100,7 @@ template<name Identifier, typename T, std::size_t Width>
 }
 
 template<name Identifier, std::size_t Width>
-[[nodiscard]] constexpr auto constant2(std::uintmax_t n) noexcept(release) {
+[[nodiscard]] constexpr auto constant2(uword_t n) noexcept(release) {
   auto retval = constant_t<Identifier, Width>{n};
   return description{retval};
 }

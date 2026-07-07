@@ -15,6 +15,8 @@
 
 namespace upd {
 
+using lite_error_t = std::intptr_t;
+
 struct no_error {
   constexpr auto operator<=>(const no_error &) const noexcept(release) = default;
 };
@@ -48,8 +50,18 @@ struct checksum_mismatch {
   constexpr auto operator<=>(const checksum_mismatch &) const noexcept(release) = default;
 };
 
-using error_data_types =
-    typelist2_t<no_error, invalid_code_in_one_of, negative_repetition_count, repeated_beyond_max, checksum_mismatch>;
+struct found_lite_error {
+  lite_error_t code;
+
+  constexpr auto operator<=>(const found_lite_error &) const noexcept(release) = default;
+};
+
+using error_data_types = typelist2_t<no_error,
+                                     invalid_code_in_one_of,
+                                     negative_repetition_count,
+                                     repeated_beyond_max,
+                                     checksum_mismatch,
+                                     found_lite_error>;
 
 template<typename T>
 concept error_data = has_type<T>(error_data_types{});
@@ -171,6 +183,15 @@ struct std::formatter<upd::checksum_mismatch> {
 };
 
 template<>
+struct std::formatter<upd::found_lite_error> {
+  constexpr static auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
+
+  static auto format(const upd::found_lite_error &err, std::format_context &ctx) {
+    return std::format_to(ctx.out(), "Found lite error code {}", err.code);
+  }
+};
+
+template<>
 struct std::formatter<upd::error> {
   constexpr static auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
 
@@ -180,3 +201,12 @@ struct std::formatter<upd::error> {
     return err.visit(format_error_data);
   }
 };
+
+namespace upd::lite_error {
+
+constexpr auto none = lite_error_t{0};
+constexpr auto buffer_too_small = lite_error_t{-1};
+constexpr auto not_a_multiple = lite_error_t{-2};
+constexpr auto not_implemented = lite_error_t{-3};
+
+} // namespace upd::lite_error

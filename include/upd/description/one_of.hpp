@@ -33,7 +33,6 @@
 #include "../utility/is_instance_of.hpp"
 #include "../utility/template_traits.hpp"
 #include "../utility/with_sequence.hpp"
-#include "serializer.hpp"
 
 namespace upd::descriptor {
 
@@ -66,16 +65,15 @@ struct one_of_t {
   Rule rule;
   TaggedDescriptions tagged_descriptions;
 
-  template<record_like Packet, record_like Fields, serializer Serializer, codec_info CodecInfo>
-  [[nodiscard]] constexpr auto
-  rules(const Packet &packet, const Fields &fields, Serializer &ser, expr_t<CodecInfo>) const {
+  template<record_like Packet, record_like Fields, codec_info CodecInfo>
+  [[nodiscard]] constexpr auto rules(const Packet &packet, const Fields &fields, expr_t<CodecInfo>) const {
     namespace updv = upd::record_views;
 
     auto rule_sys =
         fields
         | updv::filter([](auto id, const auto &) { return id != Identifier; })
         | updv::values
-        | tuple_views::transform([&](const auto &field) { return field.rules(packet, fields, ser, expr<CodecInfo>); })
+        | tuple_views::transform([&](const auto &field) { return field.rules(packet, fields, expr<CodecInfo>); })
         | tuple_views::join
         | tuple_views::to<std::tuple>;
 
@@ -86,14 +84,13 @@ struct one_of_t {
       return std::tuple{code_of<Identifier> = rule};
     } else {
       auto cnt_stream = counting_stream{};
-      encode(get_or<Identifier>(packet, input_type{}), ser, cnt_stream, sys);
-      return std::tuple{code_of<Identifier> = rule, length_of<Identifier> = cnt_stream.written() * ser.bytewidth};
+      encode(get_or<Identifier>(packet, input_type{}), cnt_stream, sys);
+      return std::tuple{code_of<Identifier> = rule, length_of<Identifier> = cnt_stream.written()};
     }
   }
 
-  template<serializer Serializer, tuple_like2 System>
-  constexpr void encode(const input_type &args, Serializer &ser, stream_interface &dest, const System &sys) const
-      noexcept(release) {
+  template<tuple_like2 System>
+  constexpr void encode(const input_type &args, stream_interface &dest, const System &sys) const noexcept(release) {
     namespace updv = upd::tuple_views;
 
     auto code = solve_for(code_of<Identifier>, sys | updv::to<std::tuple>);
@@ -108,17 +105,17 @@ struct one_of_t {
             0uz,
             [](auto acc, auto var) { return acc + var; });
 
-        named_descr.encode(target, ser, dest, updv::concat(sys, std::tuple{length_of<Identifier> = length_rule}));
+        named_descr.encode(target, dest, updv::concat(sys, std::tuple{length_of<Identifier> = length_rule}));
       } else {
-        named_descr.encode(target, ser, dest, sys);
+        named_descr.encode(target, dest, sys);
       }
     };
 
     return updv::visit(tagged_descriptions | record_views::values, i, encode_alt);
   }
 
-  template<serializer Serializer, record_like Fields, tuple_like2 System>
-  [[nodiscard]] constexpr auto decode(stream_interface &src, Serializer &ser, const Fields &, const System &sys) const
+  template<record_like Fields, tuple_like2 System>
+  [[nodiscard]] constexpr auto decode(stream_interface &src, const Fields &, const System &sys) const
       -> result<value_type> {
     namespace stdr = std::ranges;
     namespace updv = upd::tuple_views;
@@ -137,7 +134,7 @@ struct one_of_t {
           0uz,
           [](auto acc, auto var) { return acc + var; });
       auto make_retval = [&](auto &&alt) { return value_type{std::in_place_index<id_pos + 1>, UPD_FWD(alt)}; };
-      return descr.decode(src, ser, updv::concat(sys, std::tuple{length_of<Identifier> = length_rule}))
+      return descr.decode(src, updv::concat(sys, std::tuple{length_of<Identifier> = length_rule}))
           .transform(make_retval);
     };
 

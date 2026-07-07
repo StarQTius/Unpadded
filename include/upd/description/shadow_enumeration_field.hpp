@@ -13,7 +13,6 @@
 #include "../upd.hpp"
 #include "../utility/constexpr.hpp"
 #include "codec_info.hpp"
-#include "serializer.hpp"
 
 namespace upd::descriptor {
 
@@ -26,8 +25,8 @@ struct shadow_enumeration_field_t {
   using value_type = Enum;
   using input_type = Enum;
 
-  template<record_like Packet, record_like Fields, serializer Serializer, codec_info CodecInfo>
-  [[nodiscard]] constexpr auto rules(const Packet &packet, const Fields &, Serializer &, expr_t<CodecInfo>) const {
+  template<record_like Packet, record_like Fields, codec_info CodecInfo>
+  [[nodiscard]] constexpr auto rules(const Packet &packet, const Fields &, expr_t<CodecInfo>) const {
     if constexpr (has_tag<Identifier>(packet) && CodecInfo.operation == codec_operation::encoding) {
       return std::tuple{value_of<Identifier> = get<Identifier>(packet), length_of<Identifier> = Width};
     } else {
@@ -35,11 +34,11 @@ struct shadow_enumeration_field_t {
     }
   }
 
-  template<serializer Serializer, tuple_like2 System>
-  constexpr static void encode(value_type, Serializer &, stream_interface &, const System &) {}
+  template<tuple_like2 System>
+  constexpr static void encode(value_type, stream_interface &, const System &) {}
 
-  template<serializer Serializer, record_like Fields, tuple_like2 System>
-  [[nodiscard]] constexpr static auto decode(stream_interface &, Serializer &, const Fields &, const System &sys)
+  template<record_like Fields, tuple_like2 System>
+  [[nodiscard]] constexpr static auto decode(stream_interface &, const Fields &, const System &sys)
       -> result<value_type> {
     return solve_for(value_of<Identifier>, sys | tuple_views::to<std::tuple>);
   }

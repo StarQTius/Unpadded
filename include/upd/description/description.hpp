@@ -11,7 +11,6 @@
 #include <utility>
 
 #include "../description/codec_info.hpp"
-#include "../description/serializer.hpp"
 #include "../error.hpp"
 #include "../record/concat.hpp"
 #include "../record/entry.hpp"
@@ -27,6 +26,8 @@
 #include "../record/to.hpp"
 #include "../record/transform.hpp"
 #include "../record/values.hpp"
+#include "../stream/iterator_stream.hpp"
+#include "../stream/standard_stream.hpp"
 #include "../stream/stream_interface.hpp"
 #include "../tuple/as_record.hpp"
 #include "../tuple/concat.hpp"
@@ -48,16 +49,6 @@ namespace upd {
 
 template<typename T>
 concept field_like = true;
-
-template<typename T, typename Serializer>
-concept decodable_field = field_like<T> && serializer<Serializer>;
-
-template<typename T, typename Serializer>
-concept encodable_field = field_like<T>
-                          && serializer<Serializer>
-                          && requires(T x, Serializer ser, typename T::value_type value, byte_type<Serializer> *dest) {
-                               { x.encode(value, ser, dest) } -> std::same_as<void>;
-                             };
 
 template<field_like... Ts>
 class description {
@@ -88,28 +79,27 @@ public:
 
   explicit constexpr description(Ts... fields) : m_fields{entry{expr<fields.identifier>, std::move(fields)}...} {}
 
-  template<record_like Args, serializer Serializer>
-  constexpr void encode(const Args &args, Serializer &ser, std::ostream &dest, const char *sep) const {
-    encode(args, ser, standard_stream{nullptr, &dest, sep});
+  template<record_like Args>
+  constexpr void encode(const Args &args, std::ostream &dest, const char *sep) const {
+    encode(args, standard_stream{nullptr, &dest, sep});
   }
 
-  template<record_like Args, serializer Serializer, tuple_like2 System = std::tuple<>>
-  constexpr void encode(const Args &args, Serializer &ser, stream_interface &dest) const {
+  template<record_like Args, tuple_like2 System = std::tuple<>>
+  constexpr void encode(const Args &args, stream_interface &dest) const {
     using namespace upd::record_views;
 
     auto input = input_type{};
     for_each(args, [&](auto id, const auto &value) { get<id.value>(input) = value; });
-    encode(input, ser, dest);
+    encode(input, dest);
   }
 
-  template<record_like Args, serializer Serializer>
-  constexpr void encode(const Args &args, Serializer &ser, stream_interface &&dest) const {
-    encode(args, ser, dest);
+  template<record_like Args>
+  constexpr void encode(const Args &args, stream_interface &&dest) const {
+    encode(args, dest);
   }
 
-  template<serializer Serializer, tuple_like2 System = std::tuple<>>
-  constexpr void
-  encode(const input_type &input, Serializer &ser, stream_interface &dest, const System &ctx_sys = std::tuple{}) const {
+  template<tuple_like2 System = std::tuple<>>
+  constexpr void encode(const input_type &input, stream_interface &dest, const System &ctx_sys = std::tuple{}) const {
     namespace updv = record_views;
 
     constexpr auto cdinf = codec_info{
@@ -119,7 +109,7 @@ public:
     auto rule_sys =
         m_fields
         | updv::values
-        | tuple_views::transform([&](const auto &field) { return field.rules(input, m_fields, ser, expr<cdinf>); })
+        | tuple_views::transform([&](const auto &field) { return field.rules(input, m_fields, expr<cdinf>); })
         | tuple_views::join;
 
     auto sys = tuple_views::concat(rule_sys, ctx_sys);
@@ -127,48 +117,45 @@ public:
     updv::for_each(m_fields, [&](auto id, const auto &field) {
       using subinput_type = typename std::remove_cvref_t<decltype(field)>::input_type;
 
-      ser.checkpoint(id.value.string);
-      field.encode(get_or<id.value>(input, subinput_type{}), ser, dest, sys);
+      field.encode(get_or<id.value>(input, subinput_type{}), dest, sys);
     });
   }
 
-  template<std::input_iterator InputIt, serializer Serializer, record_like Context = upd::record<>>
-    requires std::convertible_to<std::iter_value_t<InputIt>, word_t>
-  [[nodiscard]] constexpr auto decode(InputIt src, Serializer &ser, const Context &ctx = record{}) const {
-    auto null_it = static_cast<word_t *>(nullptr);
-    return decode(iterator_stream{src, null_it}, ser, ctx);
+  template<std::input_iterator InputIt, record_like Context = upd::record<>>
+    requires std::convertible_to<std::iter_value_t<InputIt>, char>
+  [[nodiscard]] constexpr auto decode(InputIt src, const Context &ctx = record{}) const {
+    auto null_it = static_cast<char *>(nullptr);
+    return decode(iterator_stream{src, null_it}, ctx);
   }
 
-  template<std::input_iterator InputIt, serializer Serializer, record_like Context = upd::record<>>
+  template<std::input_iterator InputIt, record_like Context = upd::record<>>
     requires std::same_as<std::iter_value_t<InputIt>, std::byte>
-  [[nodiscard]] constexpr auto decode(InputIt src, Serializer &ser, const Context &ctx = record{}) const {
+  [[nodiscard]] constexpr auto decode(InputIt src, const Context &ctx = record{}) const {
     namespace stdr = std::ranges;
     namespace stdv = std::views;
 
-    auto words = stdr::subrange(src, std::unreachable_sentinel) | stdv::transform(std::to_integer<word_t>);
+    auto words = stdr::subrange(src, std::unreachable_sentinel) | stdv::transform(std::to_integer<char>);
 
-    auto null_it = static_cast<word_t *>(nullptr);
-    return decode(iterator_stream{std::begin(words), null_it}, ser, ctx);
+    auto null_it = static_cast<char *>(nullptr);
+    return decode(iterator_stream{std::begin(words), null_it}, ctx);
   }
 
-  template<serializer Serializer, record_like Context = upd::record<>>
-  [[nodiscard]] constexpr auto
-  decode(stream_interface &src, Serializer &ser, const Context &ctx = upd::record{}) const {
+  template<record_like Context = upd::record<>>
+  [[nodiscard]] constexpr auto decode(stream_interface &src, const Context &ctx = upd::record{}) const {
     namespace updv = record_views;
 
     auto sys = ctx | updv::transform([](auto k, const auto &v) { return value_of<k.value> = v; }) | updv::values;
 
-    return decode(src, ser, sys);
+    return decode(src, sys);
   }
 
-  template<serializer Serializer, record_like Context = upd::record<>>
-  [[nodiscard]] constexpr auto
-  decode(stream_interface &&src, Serializer &ser, const Context &ctx = upd::record{}) const {
-    return decode(src, ser, ctx);
+  template<record_like Context = upd::record<>>
+  [[nodiscard]] constexpr auto decode(stream_interface &&src, const Context &ctx = upd::record{}) const {
+    return decode(src, ctx);
   }
 
-  template<serializer Serializer, tuple_like2 System>
-  [[nodiscard]] constexpr auto decode(stream_interface &src, Serializer &ser, const System &presys) const {
+  template<tuple_like2 System>
+  [[nodiscard]] constexpr auto decode(stream_interface &src, const System &presys) const {
     namespace updv = record_views;
 
     constexpr auto cdinf = codec_info{
@@ -183,8 +170,6 @@ public:
         return;
       }
 
-      ser.checkpoint(id.value.string);
-
       auto known_ids = identifiers | tuple_views::take_while([&]<typename Expr> { return id != Expr{}; });
 
       auto ctx = known_ids
@@ -192,20 +177,19 @@ public:
                  | tuple_views::as_record
                  | updv::to<upd::record>;
 
-      auto rules =
-          tuple_views::concat(known_ids, std::tuple{id})
-          | tuple_views::to<std::tuple>
-          | tuple_views::transform([&]<auto Id>(expr_t<Id>) { return keyword2<Id>{} = get<Id>(m_fields); })
-          | tuple_views::as_record
-          | updv::to<upd::record>
-          | updv::transform([&](auto, const auto &field) { return field.rules(ctx, m_fields, ser, expr<cdinf>); })
-          | updv::to<upd::record>
-          | updv::values
-          | tuple_views::join
-          | tuple_views::to<std::tuple>;
+      auto rules = tuple_views::concat(known_ids, std::tuple{id})
+                   | tuple_views::to<std::tuple>
+                   | tuple_views::transform([&]<auto Id>(expr_t<Id>) { return keyword2<Id>{} = get<Id>(m_fields); })
+                   | tuple_views::as_record
+                   | updv::to<upd::record>
+                   | updv::transform([&](auto, const auto &field) { return field.rules(ctx, m_fields, expr<cdinf>); })
+                   | updv::to<upd::record>
+                   | updv::values
+                   | tuple_views::join
+                   | tuple_views::to<std::tuple>;
 
       auto sys = tuple_views::concat(presys, rules);
-      auto maybe_field_value = field.decode(src, ser, m_fields, sys);
+      auto maybe_field_value = field.decode(src, m_fields, sys);
       if (!maybe_field_value) {
         err = maybe_field_value.error();
         return;

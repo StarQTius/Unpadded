@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstddef>
-#include <cstdint>
+#include <expected>
 #include <tuple>
 #include <type_traits>
 
@@ -14,7 +14,6 @@
 #include "../utility/constexpr.hpp"
 #include "../utility/token.hpp"
 #include "codec_info.hpp"
-#include "serializer.hpp"
 
 namespace upd::descriptor {
 
@@ -24,11 +23,11 @@ struct field_t {
   constexpr static auto is_signed = Signedness;
   constexpr static auto width = Width;
 
-  using value_type = std::conditional_t<is_signed, std::intmax_t, std::uintmax_t>;
+  using value_type = std::conditional_t<is_signed, word_t, uword_t>;
   using input_type = value_type;
 
-  template<record_like Packet, record_like Fields, serializer Serializer, codec_info CodecInfo>
-  [[nodiscard]] constexpr auto rules(const Packet &packet, const Fields &, Serializer &, expr_t<CodecInfo>) const {
+  template<record_like Packet, record_like Fields, codec_info CodecInfo>
+  [[nodiscard]] constexpr auto rules(const Packet &packet, const Fields &, expr_t<CodecInfo>) const {
     if constexpr (has_tag<Identifier>(packet)) {
       return std::tuple{value_of<Identifier> = get<Identifier>(packet), length_of<Identifier> = Width};
     } else {
@@ -36,24 +35,31 @@ struct field_t {
     }
   }
 
-  template<serializer Serializer, tuple_like2 System = std::tuple<>>
-  constexpr static void
-  encode(value_type value, Serializer &ser, stream_interface &dest, const System & = std::tuple{}) {
+  template<tuple_like2 System = std::tuple<>>
+  constexpr static void encode(value_type value, stream_interface &dest, const System & = std::tuple{}) {
     if constexpr (is_signed) {
-      return ser.serialize_signed(value, upd::width<width>, dest);
+      (void)dest.write_signed(value, width);
     } else {
-      return ser.serialize_unsigned(value, upd::width<width>, dest);
+      (void)dest.write_unsigned(value, width);
     }
   }
 
-  template<serializer Serializer, record_like Fields, tuple_like2 System>
-  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Fields &, const System &)
+  template<record_like Fields, tuple_like2 System>
+  [[nodiscard]] constexpr static auto decode(stream_interface &src, const Fields &, const System &)
       -> result<value_type> {
+    auto err = lite_error::none;
+    auto retval = uword_t{};
     if constexpr (is_signed) {
-      return ser.deserialize_signed(src, upd::width<width>);
+      err = src.read_signed(width, &retval);
     } else {
-      return ser.deserialize_unsigned(src, upd::width<width>);
+      err = src.read_unsigned(width, &retval);
     }
+
+    if (err) {
+      return std::unexpected(found_lite_error{err});
+    }
+
+    return retval;
   }
 
   template<typename V>
@@ -67,27 +73,33 @@ struct anonymous_field_t {
   constexpr static auto is_signed = Signedness;
   constexpr static auto width = Width;
 
-  using result_type = std::conditional_t<is_signed, std::intmax_t, std::uintmax_t>;
+  using result_type = std::conditional_t<is_signed, word_t, uword_t>;
   using input_type = result_type;
 
-  template<serializer Serializer, tuple_like2 System = std::tuple<>>
-  constexpr void
-  encode(result_type value, Serializer &ser, stream_interface &dest, const System & = std::tuple{}) const {
+  template<tuple_like2 System = std::tuple<>>
+  constexpr void encode(result_type value, stream_interface &dest, const System & = std::tuple{}) const {
     if constexpr (is_signed) {
-      ser.serialize_signed(value, upd::width<width>, dest);
+      (void)dest.write_signed(value, width);
     } else {
-      ser.serialize_unsigned(value, upd::width<width>, dest);
+      (void)dest.write_unsigned(value, width);
     }
   }
 
-  template<serializer Serializer, tuple_like2 System>
-  [[nodiscard]] constexpr auto decode(stream_interface &src, Serializer &ser, const System &) const
-      -> result<result_type> {
+  template<tuple_like2 System>
+  [[nodiscard]] constexpr auto decode(stream_interface &src, const System &) const -> result<result_type> {
+    auto err = lite_error::none;
+    auto retval = uword_t{};
     if constexpr (is_signed) {
-      return ser.deserialize_signed(src, upd::width<width>);
+      err = src.read_signed(width, &retval);
     } else {
-      return ser.deserialize_unsigned(src, upd::width<width>);
+      err = src.read_unsigned(width, &retval);
     }
+
+    if (err) {
+      return std::unexpected(found_lite_error{err});
+    }
+
+    return retval;
   }
 
   template<typename V>

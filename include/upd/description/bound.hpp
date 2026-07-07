@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstddef>
-#include <cstdint>
+#include <expected>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -17,7 +17,6 @@
 #include "../utility/constexpr.hpp"
 #include "../utility/token.hpp"
 #include "codec_info.hpp"
-#include "serializer.hpp"
 
 namespace upd::descriptor {
 
@@ -27,14 +26,14 @@ struct bound_t {
   constexpr static auto is_signed = Signedness;
   constexpr static auto width = Width;
 
-  using value_type = std::conditional_t<is_signed, std::intmax_t, std::uintmax_t>;
+  using value_type = std::conditional_t<is_signed, word_t, uword_t>;
   using input_type = unit_t;
   using rule_type = Rule;
 
   Rule rule;
 
-  template<record_like Packet, record_like Fields, serializer Serializer, codec_info CodecInfo>
-  [[nodiscard]] constexpr auto rules(const Packet &packet, const Fields &, Serializer &, expr_t<CodecInfo>) const {
+  template<record_like Packet, record_like Fields, codec_info CodecInfo>
+  [[nodiscard]] constexpr auto rules(const Packet &packet, const Fields &, expr_t<CodecInfo>) const {
     if constexpr (CodecInfo.operation == codec_operation::decoding && has_tag<Identifier>(packet)) {
       return std::tuple{
           value_of<Identifier> = get<Identifier>(packet), value_of<Identifier> = rule, length_of<Identifier> = Width};
@@ -43,24 +42,32 @@ struct bound_t {
     }
   };
 
-  template<serializer Serializer, tuple_like2 System>
-  constexpr static void encode(unit_t, Serializer &ser, stream_interface &dest, const System &sys) {
+  template<tuple_like2 System>
+  constexpr static void encode(unit_t, stream_interface &dest, const System &sys) {
     auto value = algebra::solve_for(value_of<Identifier>, sys | tuple_views::to<std::tuple>);
     if constexpr (is_signed) {
-      return ser.serialize_signed(value, upd::width<width>, dest);
+      (void)dest.write_signed(value, width);
     } else {
-      return ser.serialize_unsigned(value, upd::width<width>, dest);
+      (void)dest.write_unsigned(value, width);
     }
   }
 
-  template<serializer Serializer, record_like Fields, tuple_like2 System>
-  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Fields &, const System &)
+  template<record_like Fields, tuple_like2 System>
+  [[nodiscard]] constexpr static auto decode(stream_interface &src, const Fields &, const System &)
       -> result<value_type> {
+    auto err = lite_error_t{};
+    auto retval = uword_t{};
     if constexpr (is_signed) {
-      return ser.deserialize_signed(src, upd::width<width>);
+      err = src.read_signed(width, &retval);
     } else {
-      return ser.deserialize_unsigned(src, upd::width<width>);
+      err = src.read_unsigned(width, &retval);
     }
+
+    if (err) {
+      return std::unexpected(found_lite_error{err});
+    }
+
+    return retval;
   }
 
   template<typename V>

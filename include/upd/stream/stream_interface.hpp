@@ -1,81 +1,116 @@
 #pragma once
 
-#include <algorithm>
-#include <concepts>
+#include <array>
 #include <cstddef>
 #include <cstdint>
-#include <iosfwd>
-#include <istream>
 #include <iterator>
+#include <limits>
 #include <ranges>
+#include <type_traits>
 
-#include "../upd.hpp"
+#include "../error.hpp"
+#include <limits.h>
 
 namespace upd {
 
-using word_t = std::uintmax_t;
-using stream_error_t = std::intptr_t;
+using uword_t = std::uintmax_t;
+using word_t = std::make_signed_t<uword_t>;
+
+constexpr auto max_bitsize = std::numeric_limits<uword_t>::digits;
 
 struct stream_interface {
-  [[nodiscard]] virtual auto read(std::size_t, word_t *) -> stream_error_t = 0;
-  [[nodiscard]] virtual auto write(const word_t *, std::size_t) -> stream_error_t = 0;
-};
+  [[nodiscard]] virtual auto read(std::size_t, char *) -> lite_error_t = 0;
 
-template<std::input_iterator InputIt, typename OutputIt>
-  requires std::output_iterator<OutputIt, word_t> && std::convertible_to<std::iter_value_t<InputIt>, word_t>
-class iterator_stream : public stream_interface {
-public:
-  constexpr explicit iterator_stream(InputIt in, OutputIt out) : m_in{in}, m_out{out} {}
+  [[nodiscard]] virtual auto write(const char *, std::size_t) -> lite_error_t = 0;
 
-  auto read(std::size_t count, word_t *dest) -> stream_error_t override {
-    std::copy_n(m_in, count, dest);
-    std::advance(m_in, count);
-    return 0;
-  }
+  [[nodiscard]] virtual auto read_signed(std::size_t bitsize, uword_t *dest) -> lite_error_t {
+    using namespace std::views;
 
-  auto write(const word_t *src, std::size_t size) -> stream_error_t override {
-    m_out = std::copy_n(src, size, m_out);
-    return 0;
-  }
-
-private:
-  InputIt m_in;
-  OutputIt m_out;
-};
-
-class standard_stream : public stream_interface {
-public:
-  constexpr explicit standard_stream(std::istream *in, std::ostream *out, const char *sep)
-      : m_in{in}, m_out{out}, m_sep{sep} {}
-
-  auto read(std::size_t count, word_t *dest) -> stream_error_t override {
-    UPD_ASSERT(m_in);
-
-    std::generate_n(dest, count, [this] {
-      auto w = word_t{};
-      *m_in >> w;
-      return w;
-    });
-
-    return 0;
-  }
-
-  auto write(const word_t *src, std::size_t size) -> stream_error_t override {
-    namespace stdr = std::ranges;
-
-    UPD_ASSERT(m_out);
-
-    for (auto w : stdr::subrange{src, src + size}) {
-      *m_out << w << m_sep;
+    if (bitsize > max_bitsize) {
+      return lite_error::buffer_too_small;
     }
 
-    return 0;
+    auto retval = uword_t{0};
+    auto buf = std::array<char, max_bitsize / CHAR_BIT>{};
+    if (auto err = read(bitsize, buf.data()); err) {
+      return err;
+    }
+
+    auto bytecount = (bitsize / CHAR_BIT) + (bitsize % CHAR_BIT > 0);
+    for (unsigned char b : buf | take(bytecount) | reverse) {
+      retval <<= CHAR_BIT;
+      retval |= b;
+    }
+
+    auto mask = uword_t{1} << (bitsize - 1);
+    *dest = (retval ^ mask) - mask;
+    return lite_error::none;
   }
 
-private:
-  std::istream *m_in;
-  std::ostream *m_out;
-  const char *m_sep;
+  [[nodiscard]] virtual auto write_signed(uword_t src, std::size_t bitcount) -> lite_error_t {
+    using namespace std::views;
+
+    if (bitcount > max_bitsize) {
+      return lite_error::buffer_too_small;
+    }
+
+    auto buf = std::array<char, max_bitsize / CHAR_BIT>{};
+    auto bytecount = (bitcount / CHAR_BIT) + (bitcount % CHAR_BIT > 0);
+    for (auto &b : buf | take(bytecount)) {
+      b = src & UCHAR_MAX;
+      src >>= CHAR_BIT;
+    }
+
+    if (auto err = write(buf.data(), bitcount); err) {
+      return err;
+    }
+
+    return lite_error::none;
+  }
+
+  [[nodiscard]] virtual auto read_unsigned(std::size_t bitsize, uword_t *dest) -> lite_error_t {
+    using namespace std::views;
+
+    if (bitsize > max_bitsize) {
+      return lite_error::buffer_too_small;
+    }
+
+    auto retval = uword_t{0};
+    auto buf = std::array<char, max_bitsize / CHAR_BIT>{};
+    if (auto err = read(bitsize, buf.data()); err) {
+      return err;
+    }
+
+    auto bytecount = (bitsize / CHAR_BIT) + (bitsize % CHAR_BIT > 0);
+    for (unsigned char b : buf | take(bytecount) | reverse) {
+      retval <<= CHAR_BIT;
+      retval |= b;
+    }
+
+    *dest = retval;
+    return lite_error::none;
+  }
+
+  [[nodiscard]] virtual auto write_unsigned(uword_t src, std::size_t bitcount) -> lite_error_t {
+    using namespace std::views;
+
+    if (bitcount > max_bitsize) {
+      return lite_error::buffer_too_small;
+    }
+
+    auto buf = std::array<char, max_bitsize / CHAR_BIT>{};
+    auto bytecount = (bitcount / CHAR_BIT) + (bitcount % CHAR_BIT > 0);
+    for (auto &b : buf | take(bytecount)) {
+      b = src & UCHAR_MAX;
+      src >>= CHAR_BIT;
+    }
+
+    if (auto err = write(buf.data(), bitcount); err) {
+      return err;
+    }
+
+    return lite_error::none;
+  }
 };
 
 } // namespace upd

@@ -1,34 +1,28 @@
-#include <algorithm>
 #include <array>
-#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <format>
 #include <iostream>
-#include <limits>
 #include <print>
-#include <ranges>
-#include <string_view>
 #include <type_traits>
 #include <utility>
+
+namespace std {
+
+// Small hack to force `std::cout` to print `char` as integer
+auto operator<<(ostream &os, char b) -> ostream & { return os << +static_cast<unsigned char>(b); }
+
+} // namespace std
 
 #include <upd/algebra.hpp>
 #include <upd/description.hpp>
 #include <upd/error.hpp>
 #include <upd/record.hpp>
-#include <upd/stream.hpp>
 #include <upd/tuple.hpp>
-#include <upd/utility/token.hpp>
 #include <upd/utility/when_then.hpp>
 
 #define BITMASK(N) ((1u << N) - 1u)
 #define NTH_BIT(N) (1u << N)
-
-namespace std {
-
-auto operator<<(ostream &os, byte b) -> ostream & { return os << static_cast<int>(b); }
-
-} // namespace std
 
 using crc = std::uint16_t;
 
@@ -156,71 +150,6 @@ constexpr auto answer_description = [] {
          | checksum2<"crc", 16>(accumulate_crc, all_fields);
 }();
 
-struct serializer {
-  using byte_type = std::byte;
-
-  constexpr static auto bytewidth = std::numeric_limits<unsigned char>::digits;
-
-  template<std::size_t Bitsize>
-  void serialize_unsigned(std::uintmax_t value, upd::width_t<Bitsize>, upd::stream_interface &dest) {
-    namespace stdr = std::ranges;
-
-    static_assert(Bitsize % bytewidth == 0);
-
-    auto buf = std::array<upd::word_t, Bitsize / bytewidth>{};
-    stdr::generate(buf, [&] {
-      auto byte = value & BITMASK(bytewidth);
-      value >>= bytewidth;
-      return static_cast<upd::word_t>(byte);
-    });
-
-    (void)dest.write(buf.data(), buf.size());
-  }
-
-  template<std::size_t Bitsize>
-  void serialize_signed(std::intmax_t value, upd::width_t<Bitsize>, upd::stream_interface &dest) {
-    static_assert((Bitsize + 1) % bytewidth == 0);
-
-    auto signbit = std::signbit(value);
-    auto abs = static_cast<std::uintmax_t>(std::abs(value));
-
-    if (signbit) {
-      abs = ~abs + 1;
-    }
-
-    serialize_unsigned(value, upd::width<Bitsize + 1>, dest);
-  }
-
-  template<std::size_t Bitsize>
-  auto deserialize_unsigned(upd::stream_interface &src, upd::width_t<Bitsize>) -> std::uintmax_t {
-    namespace stdr = std::ranges;
-    namespace stdv = std::views;
-
-    static_assert(Bitsize % bytewidth == 0);
-
-    auto retval = std::uintmax_t{0};
-    auto buf = std::array<upd::word_t, Bitsize / bytewidth>{};
-    (void)src.read(buf.size(), buf.data());
-    for (auto w : stdv::reverse(buf)) {
-      retval <<= bytewidth;
-      retval |= w;
-    }
-
-    return retval;
-  }
-
-  template<std::size_t Bitsize>
-  auto deserialize_signed(upd::stream_interface &src, upd::width_t<Bitsize>) -> std::intmax_t {
-    auto raw = deserialize_unsigned(src, upd::width<Bitsize + 1>);
-    auto sign = ((raw & NTH_BIT(Bitsize)) != 0);
-    auto abs = static_cast<std::intmax_t>((sign) ? ~raw + 1 : raw);
-
-    return (sign) ? -abs : abs;
-  }
-
-  void checkpoint(std::string_view) {}
-};
-
 template<std::size_t N>
 struct bytearray : std::array<std::byte, N> {
   template<typename... Bytes>
@@ -267,20 +196,17 @@ auto ping_example() -> upd::error {
   using namespace upd::literals;
   using namespace upd::record_operators;
 
-  auto ser = serializer{};
   std::cout << std::hex;
-
   std::println("Ping: example 1");
   description.encode(("id"_kw2 = 1, "instruction"_kw2 = instruction_code::ping, "parameters"_kw2 = upd::record{}),
-                     ser,
+
                      std::cout,
                      " ");
   std::println("");
   std::println("");
 
   auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x07, 0x00, 0x55, 0x00, 0x06, 0x04, 0x26, 0x65, 0x5d};
-  auto answer1 =
-      answer_description.decode(answer1_seq.begin(), ser, upd::record{"status_of"_kw2 = instruction_code::ping});
+  auto answer1 = answer_description.decode(answer1_seq.begin(), upd::record{"status_of"_kw2 = instruction_code::ping});
   if (!answer1) {
     return answer1.error();
   }
@@ -294,8 +220,7 @@ auto ping_example() -> upd::error {
   std::println("");
 
   auto answer2_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x02, 0x07, 0x00, 0x55, 0x00, 0x06, 0x04, 0x26, 0x6f, 0x6d};
-  auto answer2 =
-      answer_description.decode(answer2_seq.begin(), ser, upd::record{"status_of"_kw2 = instruction_code::ping});
+  auto answer2 = answer_description.decode(answer2_seq.begin(), upd::record{"status_of"_kw2 = instruction_code::ping});
   if (!answer2) {
     return answer2.error();
   }
@@ -315,14 +240,12 @@ auto read_example() -> upd::error {
   using namespace upd::literals;
   using namespace upd::record_operators;
 
-  auto ser = serializer{};
   std::cout << std::hex;
-
   std::println("Read: example");
   description.encode(("id"_kw2 = 1,
                       "instruction"_kw2 = instruction_code::read,
                       "parameters"_kw2 = ("address"_kw2 = 0x84, "length_"_kw2 = 4)),
-                     ser,
+
                      std::cout,
                      " ");
   std::println("");
@@ -330,8 +253,7 @@ auto read_example() -> upd::error {
 
   auto answer1_seq =
       bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x08, 0x00, 0x55, 0x00, 0xa6, 0x00, 0x00, 0x00, 0x8c, 0xc0};
-  auto answer1 =
-      answer_description.decode(answer1_seq.begin(), ser, upd::record{"status_of"_kw2 = instruction_code::read});
+  auto answer1 = answer_description.decode(answer1_seq.begin(), upd::record{"status_of"_kw2 = instruction_code::read});
   if (!answer1) {
     return answer1.error();
   }
@@ -351,23 +273,20 @@ auto write_example() -> upd::error {
   using namespace upd::literals;
   using namespace upd::record_operators;
 
-  auto ser = serializer{};
   std::cout << std::hex;
-
   std::println("Write: example");
   description.encode(
       ("id"_kw2 = 1,
        "instruction"_kw2 = instruction_code::write,
        "parameters"_kw2 = ("address"_kw2 = 0x74, "data"_kw2 = std::array<std::uint8_t, 4>{0x0, 0x2, 0x0, 0x0})),
-      ser,
+
       std::cout,
       " ");
   std::println("");
   std::println("");
 
   auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04, 0x00, 0x55, 0x00, 0xa1, 0x0c};
-  auto answer1 =
-      answer_description.decode(answer1_seq.begin(), ser, upd::record{"status_of"_kw2 = instruction_code::write});
+  auto answer1 = answer_description.decode(answer1_seq.begin(), upd::record{"status_of"_kw2 = instruction_code::write});
   if (!answer1) {
     return answer1.error();
   }
@@ -387,15 +306,13 @@ auto reg_write_example() -> upd::error {
   using namespace upd::literals;
   using namespace upd::record_operators;
 
-  auto ser = serializer{};
   std::cout << std::hex;
-
   std::println("Reg Write: example");
   description.encode(
       ("id"_kw2 = 1,
        "instruction"_kw2 = instruction_code::reg_write,
        "parameters"_kw2 = ("address"_kw2 = 0x68, "data"_kw2 = std::array<std::uint8_t, 4>{0xc8, 0x0, 0x0, 0x0})),
-      ser,
+
       std::cout,
       " ");
   std::println("");
@@ -403,7 +320,7 @@ auto reg_write_example() -> upd::error {
 
   auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04, 0x00, 0x55, 0x00, 0xa1, 0x0c};
   auto answer1 =
-      answer_description.decode(answer1_seq.begin(), ser, upd::record{"status_of"_kw2 = instruction_code::reg_write});
+      answer_description.decode(answer1_seq.begin(), upd::record{"status_of"_kw2 = instruction_code::reg_write});
   if (!answer1) {
     return answer1.error();
   }
@@ -423,12 +340,10 @@ auto action_example() -> upd::error {
   using namespace upd::literals;
   using namespace upd::record_operators;
 
-  auto ser = serializer{};
   std::cout << std::hex;
-
   std::println("Action: example");
   description.encode(("id"_kw2 = 1, "instruction"_kw2 = instruction_code::action, "parameters"_kw2 = upd::record{}),
-                     ser,
+
                      std::cout,
                      " ");
   std::println("");
@@ -436,7 +351,7 @@ auto action_example() -> upd::error {
 
   auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04, 0x00, 0x55, 0x00, 0xa1, 0x0c};
   auto answer1 =
-      answer_description.decode(answer1_seq.begin(), ser, upd::record{"status_of"_kw2 = instruction_code::reg_write});
+      answer_description.decode(answer1_seq.begin(), upd::record{"status_of"_kw2 = instruction_code::reg_write});
   if (!answer1) {
     return answer1.error();
   }
@@ -456,14 +371,12 @@ auto factory_reset_example() -> upd::error {
   using namespace upd::literals;
   using namespace upd::record_operators;
 
-  auto ser = serializer{};
   std::cout << std::hex;
-
   std::println("Action: example");
   description.encode(("id"_kw2 = 1,
                       "instruction"_kw2 = instruction_code::factory_reset,
                       "parameters"_kw2 = factory_reset_target::all_but_id),
-                     ser,
+
                      std::cout,
                      " ");
   std::println("");
@@ -471,7 +384,7 @@ auto factory_reset_example() -> upd::error {
 
   auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04, 0x00, 0x55, 0x00, 0xa1, 0x0c};
   auto answer1 =
-      answer_description.decode(answer1_seq.begin(), ser, upd::record{"status_of"_kw2 = instruction_code::reg_write});
+      answer_description.decode(answer1_seq.begin(), upd::record{"status_of"_kw2 = instruction_code::reg_write});
   if (!answer1) {
     return answer1.error();
   }
@@ -491,12 +404,10 @@ auto reboot_example() -> upd::error {
   using namespace upd::literals;
   using namespace upd::record_operators;
 
-  auto ser = serializer{};
   std::cout << std::hex;
-
   std::println("Reboot: example");
   description.encode(("id"_kw2 = 1, "instruction"_kw2 = instruction_code::reboot, "parameters"_kw2 = upd::record{}),
-                     ser,
+
                      std::cout,
                      " ");
   std::println("");
@@ -504,7 +415,7 @@ auto reboot_example() -> upd::error {
 
   auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04, 0x00, 0x55, 0x00, 0xa1, 0x0c};
   auto answer1 =
-      answer_description.decode(answer1_seq.begin(), ser, upd::record{"status_of"_kw2 = instruction_code::reg_write});
+      answer_description.decode(answer1_seq.begin(), upd::record{"status_of"_kw2 = instruction_code::reg_write});
   if (!answer1) {
     return answer1.error();
   }
@@ -524,13 +435,11 @@ auto clear_example() -> upd::error {
   using namespace upd::literals;
   using namespace upd::record_operators;
 
-  auto ser = serializer{};
   std::cout << std::hex;
-
   std::println("Clear: example");
   description.encode(
       ("id"_kw2 = 1, "instruction"_kw2 = instruction_code::clear, "parameters"_kw2 = clear_target::present_position),
-      ser,
+
       std::cout,
       " ");
   std::println("");
@@ -538,7 +447,7 @@ auto clear_example() -> upd::error {
 
   auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04, 0x00, 0x55, 0x00, 0xa1, 0x0c};
   auto answer1 =
-      answer_description.decode(answer1_seq.begin(), ser, upd::record{"status_of"_kw2 = instruction_code::reg_write});
+      answer_description.decode(answer1_seq.begin(), upd::record{"status_of"_kw2 = instruction_code::reg_write});
   if (!answer1) {
     return answer1.error();
   }
@@ -558,14 +467,12 @@ auto control_table_backup_example() -> upd::error {
   using namespace upd::literals;
   using namespace upd::record_operators;
 
-  auto ser = serializer{};
   std::cout << std::hex;
-
   std::println("Control Table Backup: example");
   description.encode(("id"_kw2 = 1,
                       "instruction"_kw2 = instruction_code::control_table_backup,
                       "parameters"_kw2 = (control_table_backup_target::store_current)),
-                     ser,
+
                      std::cout,
                      " ");
   std::println("");
@@ -573,7 +480,7 @@ auto control_table_backup_example() -> upd::error {
 
   auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04, 0x00, 0x55, 0x00, 0xa1, 0x0c};
   auto answer1 =
-      answer_description.decode(answer1_seq.begin(), ser, upd::record{"status_of"_kw2 = instruction_code::reg_write});
+      answer_description.decode(answer1_seq.begin(), upd::record{"status_of"_kw2 = instruction_code::reg_write});
   if (!answer1) {
     return answer1.error();
   }
@@ -593,15 +500,13 @@ auto sync_read_example() -> upd::error {
   using namespace upd::literals;
   using namespace upd::record_operators;
 
-  auto ser = serializer{};
   std::cout << std::hex;
-
   std::println("Sync Read: example");
   description.encode(
       ("id"_kw2 = 0xfe,
        "instruction"_kw2 = instruction_code::sync_read,
        "parameters"_kw2 = ("address"_kw2 = 0x84, "length_"_kw2 = 0x4, "ids"_kw2 = std::array<std::uint8_t, 2>{1, 2})),
-      ser,
+
       std::cout,
       " ");
   std::println("");
@@ -610,7 +515,7 @@ auto sync_read_example() -> upd::error {
   auto answer1_seq =
       bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x08, 0x00, 0x55, 0x00, 0xa6, 0x00, 0x00, 0x00, 0x8c, 0xc0};
   auto answer1 =
-      answer_description.decode(answer1_seq.begin(), ser, upd::record{"status_of"_kw2 = instruction_code::sync_read});
+      answer_description.decode(answer1_seq.begin(), upd::record{"status_of"_kw2 = instruction_code::sync_read});
   if (!answer1) {
     return answer1.error();
   }
@@ -626,7 +531,7 @@ auto sync_read_example() -> upd::error {
   auto answer2_seq =
       bytearray{0xff, 0xff, 0xfd, 0x00, 0x02, 0x08, 0x00, 0x55, 0x00, 0x1f, 0x08, 0x00, 0x00, 0xba, 0xbe};
   auto answer2 =
-      answer_description.decode(answer2_seq.begin(), ser, upd::record{"status_of"_kw2 = instruction_code::sync_read});
+      answer_description.decode(answer2_seq.begin(), upd::record{"status_of"_kw2 = instruction_code::sync_read});
   if (!answer2) {
     return answer2.error();
   }

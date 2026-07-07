@@ -2,6 +2,7 @@
 
 #include <cstddef>
 
+#include "../error.hpp"
 #include "../upd.hpp"
 #include "stream_interface.hpp"
 
@@ -11,14 +12,14 @@ class counting_stream : public stream_interface {
 public:
   counting_stream() = default;
 
-  [[nodiscard]] auto read(std::size_t count, word_t *) noexcept(release) -> stream_error_t override {
-    m_read += count;
-    return 0;
+  [[nodiscard]] auto read(std::size_t bitcount, char *) noexcept(release) -> lite_error_t override {
+    m_read += bitcount;
+    return lite_error::none;
   }
 
-  [[nodiscard]] auto write(const word_t *, std::size_t size) noexcept(release) -> stream_error_t override {
-    m_written += size;
-    return 0;
+  [[nodiscard]] auto write(const char *, std::size_t bitsize) noexcept(release) -> lite_error_t override {
+    m_written += bitsize;
+    return lite_error::none;
   }
 
   [[nodiscard]] constexpr auto read() const noexcept(release) -> std::size_t { return m_read; }

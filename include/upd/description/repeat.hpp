@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
-#include <cstdint>
 #include <expected>
 #include <ranges>
 #include <tuple>
@@ -20,7 +19,6 @@
 #include "../utility/constexpr.hpp"
 #include "../utility/static_vector.hpp"
 #include "codec_info.hpp"
-#include "serializer.hpp"
 
 namespace upd {
 
@@ -43,9 +41,8 @@ struct repeat_t {
   Description description;
   Rule rule;
 
-  template<record_like Packet, record_like Fields, serializer Serializer, codec_info CodecInfo>
-  [[nodiscard]] constexpr auto
-  rules(const Packet &packet, const Fields &fields, Serializer &, expr_t<CodecInfo>) const {
+  template<record_like Packet, record_like Fields, codec_info CodecInfo>
+  [[nodiscard]] constexpr auto rules(const Packet &packet, const Fields &fields, expr_t<CodecInfo>) const {
     if constexpr (has_tag_v<Identifier, Packet>) {
       return std::tuple{length_of<Identifier> = rule,
                         length_of<Identifier> = get<Identifier>(fields).bitsize(get<Identifier>(packet))};
@@ -54,22 +51,22 @@ struct repeat_t {
     }
   }
 
-  template<serializer Serializer, tuple_like2 System>
-  constexpr void encode(const value_type &value, Serializer &ser, stream_interface &dest, const System &) const {
+  template<tuple_like2 System>
+  constexpr void encode(const value_type &value, stream_interface &dest, const System &) const {
     for (const auto &element : value) {
-      description.encode(element, ser, dest);
+      description.encode(element, dest);
     }
   }
 
-  template<serializer Serializer, record_like Fields, tuple_like2 System>
-  [[nodiscard]] constexpr auto decode(stream_interface &src, Serializer &ser, const Fields &, const System &sys) const
+  template<record_like Fields, tuple_like2 System>
+  [[nodiscard]] constexpr auto decode(stream_interface &src, const Fields &, const System &sys) const
       -> result<value_type> {
     namespace stdv = std::views;
     namespace updv = upd::tuple_views;
 
     auto len = solve_for(length_of<Identifier>, sys | updv::to<std::tuple>);
     if (len < 0) {
-      return std::unexpected{negative_repetition_count{identifier.string, static_cast<std::intmax_t>(len)}};
+      return std::unexpected{negative_repetition_count{identifier.string, static_cast<word_t>(len)}};
     }
 
     auto retval = static_vector<typename Description::result_type, Max>{};
@@ -77,7 +74,7 @@ struct repeat_t {
     auto i = 0uz;
     auto overflown = false;
     while (!overflown && i < len) {
-      auto maybe_value = description.decode(src, ser, sys);
+      auto maybe_value = description.decode(src, sys);
       if (!maybe_value) {
         return std::unexpected{std::move(maybe_value).error()};
       }
@@ -86,7 +83,7 @@ struct repeat_t {
     }
 
     if (overflown) {
-      return std::unexpected{repeated_beyond_max{identifier.string, static_cast<std::uintmax_t>(len), Max}};
+      return std::unexpected{repeated_beyond_max{identifier.string, static_cast<uword_t>(len), Max}};
     }
 
     return retval;

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstddef>
-#include <cstdint>
+#include <expected>
 #include <tuple>
 #include <type_traits>
 
@@ -12,9 +12,7 @@
 #include "../tuple/tuple_like.hpp"
 #include "../upd.hpp"
 #include "../utility/constexpr.hpp"
-#include "../utility/token.hpp"
 #include "codec_info.hpp"
-#include "serializer.hpp"
 
 namespace upd::descriptor {
 
@@ -27,8 +25,8 @@ struct enumeration_field_t {
   using value_type = Enum;
   using input_type = Enum;
 
-  template<record_like Packet, record_like Fields, serializer Serializer, codec_info CodecInfo>
-  [[nodiscard]] constexpr auto rules(const Packet &packet, const Fields &, Serializer &, expr_t<CodecInfo>) const {
+  template<record_like Packet, record_like Fields, codec_info CodecInfo>
+  [[nodiscard]] constexpr auto rules(const Packet &packet, const Fields &, expr_t<CodecInfo>) const {
     if constexpr (has_tag<Identifier>(packet)) {
       return std::tuple{value_of<Identifier> = get<Identifier>(packet), length_of<Identifier> = Width};
     } else {
@@ -36,23 +34,32 @@ struct enumeration_field_t {
     }
   }
 
-  template<serializer Serializer, tuple_like2 System>
-  constexpr static void encode(Enum value, Serializer &ser, stream_interface &dest, const System &) {
+  template<tuple_like2 System>
+  constexpr static void encode(Enum value, stream_interface &dest, const System &) {
     if constexpr (is_signed) {
-      return ser.serialize_signed(static_cast<std::intmax_t>(value), upd::width<width - 1>, dest);
+      (void)dest.write_signed(static_cast<word_t>(value), width);
     } else {
-      return ser.serialize_unsigned(static_cast<std::uintmax_t>(value), upd::width<width>, dest);
+      (void)dest.write_unsigned(static_cast<uword_t>(value), width);
     }
   }
 
-  template<serializer Serializer, record_like Fields, tuple_like2 System>
-  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const Fields &, const System &)
+  template<record_like Fields, tuple_like2 System>
+  [[nodiscard]] constexpr static auto decode(stream_interface &src, const Fields &, const System &)
       -> result<value_type> {
+    auto err = lite_error::none;
+    auto raw = uword_t{};
     if constexpr (is_signed) {
-      return static_cast<value_type>(ser.deserialize_signed(src, upd::width<width - 1>));
+      err = src.read_signed(width, &raw);
     } else {
-      return static_cast<value_type>(ser.deserialize_unsigned(src, upd::width<width>));
+      err = src.read_unsigned(width, &raw);
     }
+
+    auto retval = static_cast<value_type>(raw);
+    if (err) {
+      return std::unexpected(found_lite_error{err});
+    }
+
+    return retval;
   }
 
   template<typename V>
@@ -70,32 +77,36 @@ struct anonymous_enumeration_field_t {
   using input_type = enum_type;
   constexpr static auto is_signed = std::is_signed_v<std::underlying_type_t<enum_type>>;
 
-  template<record_like Fields, serializer Serializer, codec_info CodecInfo>
-  [[nodiscard]] constexpr auto rules(Enum, const Fields &, Serializer &, expr_t<CodecInfo>) const {
+  template<record_like Fields, codec_info CodecInfo>
+  [[nodiscard]] constexpr auto rules(Enum, const Fields &, expr_t<CodecInfo>) const {
     return std::tuple{};
   }
 
-  template<serializer Serializer, tuple_like2 System>
-  constexpr static void encode(Enum value, Serializer &ser, stream_interface &dest, const System &) {
+  template<tuple_like2 System>
+  constexpr static void encode(Enum value, stream_interface &dest, const System &) {
     if constexpr (is_signed) {
-      ser.serialize_signed(static_cast<std::intmax_t>(value), upd::width<width - 1>, dest);
+      (void)dest.write_signed(static_cast<word_t>(value), width);
     } else {
-      ser.serialize_unsigned(static_cast<std::uintmax_t>(value), upd::width<width>, dest);
+      (void)dest.write_unsigned(static_cast<uword_t>(value), width);
     }
   }
 
-  template<serializer Serializer, tuple_like2 System>
-  [[nodiscard]] constexpr static auto decode(stream_interface &src, Serializer &ser, const System &)
-      -> result<result_type> {
-    auto retval = [&] {
-      if constexpr (is_signed) {
-        return ser.deserialize_signed(src, upd::width<width - 1>);
-      } else {
-        return ser.deserialize_unsigned(src, upd::width<width>);
-      }
-    }();
+  template<tuple_like2 System>
+  [[nodiscard]] constexpr static auto decode(stream_interface &src, const System &) -> result<result_type> {
+    auto err = lite_error::none;
+    auto raw = uword_t{};
+    if constexpr (is_signed) {
+      err = src.read_signed(width, &raw);
+    } else {
+      err = src.read_unsigned(width, &raw);
+    }
 
-    return result_type{retval};
+    auto retval = static_cast<result_type>(raw);
+    if (err) {
+      return std::unexpected(found_lite_error{err});
+    }
+
+    return retval;
   }
 
   template<typename V>
