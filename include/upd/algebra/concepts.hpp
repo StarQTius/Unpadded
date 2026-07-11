@@ -17,7 +17,8 @@ struct depends_on;
 
 template<typename T, record_like Lets>
   requires std::is_scalar_v<T>
-[[nodiscard]] constexpr auto substitute(T value, const Lets &) noexcept(release) -> T {
+[[nodiscard]] constexpr auto
+substitute(T value, const Lets &) noexcept(release) -> T {
   return value;
 }
 
@@ -35,7 +36,8 @@ struct depends_on<T, Varname> {
 
 template<typename T, record_like Lets>
   requires std::is_scalar_v<T>
-[[nodiscard]] constexpr auto substitute(std::reference_wrapper<T> ref, const Lets &) noexcept(release) {
+[[nodiscard]] constexpr auto
+substitute(std::reference_wrapper<T> ref, const Lets &) noexcept(release) {
   return ref;
 }
 
@@ -46,7 +48,8 @@ struct depends_on<std::reference_wrapper<T>, Varname> {
 };
 
 template<invocable F, record_like Lets>
-[[nodiscard]] constexpr auto substitute(const F &f, const Lets &) noexcept(release) {
+[[nodiscard]] constexpr auto
+substitute(const F &f, const Lets &) noexcept(release) {
   return UPD_INVOKE(f);
 }
 

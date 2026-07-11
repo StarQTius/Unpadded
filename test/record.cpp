@@ -13,9 +13,10 @@
 #include <upd/utility/type_traits.hpp>
 
 TEST_CASE("Lite record basic functionalities", "[lite_record]") {
-  upd::record_like auto rec = upd::lite_record{upd::lite_record_node{upd::expr<upd::name{"a"}>, int{4}},
-                                               upd::lite_record_node{upd::expr<upd::name{"b"}>, char{8}},
-                                               upd::lite_record_node{upd::expr<upd::name{"c"}>, false}};
+  upd::record_like auto rec = upd::lite_record{
+      upd::lite_record_node{upd::expr<upd::name{"a"}>, int{4}},
+      upd::lite_record_node{upd::expr<upd::name{"b"}>, char{8}},
+      upd::lite_record_node{upd::expr<upd::name{"c"}>, false}};
 
   SECTION("Get elements from their tag") {
     REQUIRE(rec.get_by_tag(upd::expr<upd::name{"a"}>) == 4);
@@ -24,15 +25,20 @@ TEST_CASE("Lite record basic functionalities", "[lite_record]") {
   }
 
   SECTION("Get element types from their tag") {
-    REQUIRE(rec.get_type_by_tag(upd::expr<upd::name{"a"}>) == upd::typebox<int>{});
-    REQUIRE(rec.get_type_by_tag(upd::expr<upd::name{"b"}>) == upd::typebox<char>{});
-    REQUIRE(rec.get_type_by_tag(upd::expr<upd::name{"c"}>) == upd::typebox<bool>{});
+    REQUIRE(rec.get_type_by_tag(upd::expr<upd::name{"a"}>)
+            == upd::typebox<int>{});
+    REQUIRE(rec.get_type_by_tag(upd::expr<upd::name{"b"}>)
+            == upd::typebox<char>{});
+    REQUIRE(rec.get_type_by_tag(upd::expr<upd::name{"c"}>)
+            == upd::typebox<bool>{});
   }
 
   SECTION("Find tags from their element type") {
     REQUIRE(rec.find_by_type(upd::typebox<int>{}) == upd::expr<upd::name{"a"}>);
-    REQUIRE(rec.find_by_type(upd::typebox<char>{}) == upd::expr<upd::name{"b"}>);
-    REQUIRE(rec.find_by_type(upd::typebox<bool>{}) == upd::expr<upd::name{"c"}>);
+    REQUIRE(rec.find_by_type(upd::typebox<char>{})
+            == upd::expr<upd::name{"b"}>);
+    REQUIRE(rec.find_by_type(upd::typebox<bool>{})
+            == upd::expr<upd::name{"c"}>);
   }
 
   SECTION("Check if record has a tag") {
@@ -67,7 +73,8 @@ TEST_CASE("Lite record basic functionalities", "[lite_record]") {
     auto &&lv = rec.get_by_tag(upd::expr<upd::name{"a"}>);
     auto &&cst_lv = std::as_const(rec).get_by_tag(upd::expr<upd::name{"a"}>);
     auto &&rv = std::move(rec).get_by_tag(upd::expr<upd::name{"a"}>);
-    auto &&cst_rv = std::move(std::as_const(rec)).get_by_tag(upd::expr<upd::name{"a"}>);
+    auto &&cst_rv =
+        std::move(std::as_const(rec)).get_by_tag(upd::expr<upd::name{"a"}>);
 
     REQUIRE(std::same_as<decltype(lv), int &>);
     REQUIRE(std::same_as<decltype(cst_lv), const int &>);
@@ -111,7 +118,8 @@ TEST_CASE("Babelian lite record", "[universal_record]") {
 TEST_CASE("Record basic functionalities", "[record]") {
   using namespace upd::literals;
 
-  upd::record_like auto rec = upd::record{"a"_kw2 = int{4}, "b"_kw2 = char{8}, "c"_kw2 = false};
+  upd::record_like auto rec =
+      upd::record{"a"_kw2 = int{4}, "b"_kw2 = char{8}, "c"_kw2 = false};
 
   SECTION("Access elements when record is qualified") {
     auto &&lv = rec["a"_kw2];
@@ -134,7 +142,8 @@ TEST_CASE("Record basic functionalities", "[record]") {
   }
 
   SECTION("Convert to another record") {
-    upd::record_like auto rec_ = upd::record{"a"_kw2 = int{}, "b"_kw2 = int{}, "c"_kw2 = int{}};
+    upd::record_like auto rec_ =
+        upd::record{"a"_kw2 = int{}, "b"_kw2 = int{}, "c"_kw2 = int{}};
     rec_ = rec;
 
     REQUIRE(rec_ == rec);
@@ -146,10 +155,12 @@ TEST_CASE("Record views", "[record_view]") {
   namespace updv = upd::record_views;
   using namespace upd::literals;
 
-  upd::record_like auto rec = upd::record{"a"_kw2 = int{4}, "b"_kw2 = char{8}, "c"_kw2 = long{67}};
+  upd::record_like auto rec =
+      upd::record{"a"_kw2 = int{4}, "b"_kw2 = char{8}, "c"_kw2 = long{67}};
 
   SECTION("Transform element of a record") {
-    upd::record_view auto view = rec | updv::transform([](auto, auto x) { return x + 1; });
+    upd::record_view auto view =
+        rec | updv::transform([](auto, auto x) { return x + 1; });
     REQUIRE(upd::get<upd::name{"a"}>(view) == 5);
     REQUIRE(upd::get<upd::name{"b"}>(view) == 9);
     REQUIRE(upd::get<upd::name{"c"}>(view) == 68);
@@ -166,7 +177,8 @@ TEST_CASE("Record views", "[record_view]") {
 
   SECTION("Transform element by substituting references for them") {
     auto x = 0;
-    upd::record_view auto view = rec | updv::transform([&](auto, auto) -> auto && { return x; });
+    upd::record_view auto view =
+        rec | updv::transform([&](auto, auto) -> auto && { return x; });
 
     REQUIRE(&upd::get<upd::name{"a"}>(view) == &x);
     REQUIRE(&upd::get<upd::name{"b"}>(view) == &x);
@@ -176,7 +188,8 @@ TEST_CASE("Record views", "[record_view]") {
   SECTION("Transform element according to their tag") {
     using namespace std::literals;
 
-    upd::record_view auto view = rec | updv::transform([&](auto k, auto) { return k.value.string; });
+    upd::record_view auto view =
+        rec | updv::transform([&](auto k, auto) { return k.value.string; });
 
     REQUIRE(upd::get<upd::name{"a"}>(view) == "a"sv);
     REQUIRE(upd::get<upd::name{"b"}>(view) == "b"sv);
@@ -184,9 +197,13 @@ TEST_CASE("Record views", "[record_view]") {
   }
 
   SECTION("Filter element from a record") {
-    upd::record_view auto view = rec | updv::filter([]<auto Id, typename T>(upd::auto_constant<Id>, upd::typebox<T>) {
-                                   return !upd::equivalent_to<Id, upd::name{"b"}> && !std::same_as<T, int &>;
-                                 });
+    upd::record_view auto view =
+        rec
+        | updv::filter(
+            []<auto Id, typename T>(upd::auto_constant<Id>, upd::typebox<T>) {
+              return !upd::equivalent_to<Id, upd::name{"b"}>
+                     && !std::same_as<T, int &>;
+            });
 
     REQUIRE(!has_tag<upd::name{"a"}>(view));
     REQUIRE(!has_tag<upd::name{"b"}>(view));
@@ -205,7 +222,9 @@ TEST_CASE("Record views", "[record_view]") {
                                                          "4"_kw2 = 4,
                                                      }};
 
-    auto view = nested_rec | updv::join([](auto pk, auto k) { return upd::name{{pk.string[0], k.string[0], 0}}; });
+    auto view = nested_rec | updv::join([](auto pk, auto k) {
+                  return upd::name{{pk.string[0], k.string[0], 0}};
+                });
 
     REQUIRE(upd::get<upd::name{"a1"}>(view) == 1);
     REQUIRE(upd::get<upd::name{"a2"}>(view) == 2);
@@ -233,23 +252,29 @@ TEST_CASE("Record views", "[record_view]") {
   }
 
   SECTION("Zip two records together") {
-    upd::record_like auto rec_ = upd::record{"a"_kw2 = bool{true}, "b"_kw2 = unsigned{9}, "z"_kw2 = bool{false}};
+    upd::record_like auto rec_ = upd::record{
+        "a"_kw2 = bool{true}, "b"_kw2 = unsigned{9}, "z"_kw2 = bool{false}};
 
     auto view = updv::zip(rec, rec_);
 
-    REQUIRE(&upd::get<upd::name{"a"}>(view).first == &upd::get<upd::name{"a"}>(rec));
-    REQUIRE(&upd::get<upd::name{"a"}>(view).second == &upd::get<upd::name{"a"}>(rec_));
-    REQUIRE(&upd::get<upd::name{"b"}>(view).first == &upd::get<upd::name{"b"}>(rec));
-    REQUIRE(&upd::get<upd::name{"b"}>(view).second == &upd::get<upd::name{"b"}>(rec_));
+    REQUIRE(&upd::get<upd::name{"a"}>(view).first
+            == &upd::get<upd::name{"a"}>(rec));
+    REQUIRE(&upd::get<upd::name{"a"}>(view).second
+            == &upd::get<upd::name{"a"}>(rec_));
+    REQUIRE(&upd::get<upd::name{"b"}>(view).first
+            == &upd::get<upd::name{"b"}>(rec));
+    REQUIRE(&upd::get<upd::name{"b"}>(view).second
+            == &upd::get<upd::name{"b"}>(rec_));
     REQUIRE(!upd::has_tag<upd::name{"c"}>(view));
     REQUIRE(!upd::has_tag<upd::name{"z"}>(view));
   }
 
   SECTION("Collect a view into a regular record") {
-    upd::regular_record auto regec = rec
-                                     | updv::transform([](auto, auto v) { return v + 1; })
-                                     | updv::filter([](auto k, auto) { return k != "b"; })
-                                     | updv::to<upd::record>;
+    upd::regular_record auto regec =
+        rec
+        | updv::transform([](auto, auto v) { return v + 1; })
+        | updv::filter([](auto k, auto) { return k != "b"; })
+        | updv::to<upd::record>;
 
     REQUIRE(regec["a"_kw2] == 5);
     REQUIRE(!upd::has_tag<upd::name{"b"}>(regec));
@@ -258,7 +283,9 @@ TEST_CASE("Record views", "[record_view]") {
 
   SECTION("Instantiate a record template") {
     using record_type =
-        decltype(rec | updv::transform([](auto, auto &x) { return &x; }) | updv::instantiate<upd::record>);
+        decltype(rec
+                 | updv::transform([](auto, auto &x) { return &x; })
+                 | updv::instantiate<upd::record>);
     REQUIRE(std::same_as<record_type,
                          upd::record<upd::entry<upd::name{"a"}, int *>,
                                      upd::entry<upd::name{"b"}, char *>,
@@ -297,9 +324,10 @@ TEST_CASE("Record views", "[record_view]") {
   }
 
   SECTION("Join viewed record together") {
-    upd::record_view auto view = rec
-                                 | updv::transform([](auto k, auto v) { return upd::entry{k, v}; })
-                                 | updv::join([](auto, auto k) { return k; });
+    upd::record_view auto view =
+        rec
+        | updv::transform([](auto k, auto v) { return upd::entry{k, v}; })
+        | updv::join([](auto, auto k) { return k; });
 
     REQUIRE(upd::get<upd::name{"a"}>(view) == upd::get<upd::name{"a"}>(rec));
     REQUIRE(upd::get<upd::name{"b"}>(view) == upd::get<upd::name{"b"}>(rec));
@@ -325,14 +353,16 @@ TEST_CASE("Algorithms on records", "[record_algorithm]") {
   namespace updv = upd::record_views;
   using namespace upd::literals;
 
-  upd::record_like auto rec = upd::record{"a"_kw2 = int{4}, "b"_kw2 = char{8}, "c"_kw2 = long{67}};
+  upd::record_like auto rec =
+      upd::record{"a"_kw2 = int{4}, "b"_kw2 = char{8}, "c"_kw2 = long{67}};
 
   SECTION("Left-fold record content") {
     using namespace std::literals;
 
-    auto res = updv::fold_left(rec, std::pair{""s, 0}, [](auto acc, auto k, auto v) {
-      return std::pair{acc.first + k.value.string, acc.second + v};
-    });
+    auto res =
+        updv::fold_left(rec, std::pair{""s, 0}, [](auto acc, auto k, auto v) {
+          return std::pair{acc.first + k.value.string, acc.second + v};
+        });
 
     REQUIRE(res == std::pair{"abc", 79});
   }
@@ -340,27 +370,33 @@ TEST_CASE("Algorithms on records", "[record_algorithm]") {
   SECTION("Right-fold record content") {
     using namespace std::literals;
 
-    auto res = updv::fold_right(rec, std::pair{""s, 0}, [](auto k, auto v, auto acc) {
-      return std::pair{acc.first + k.value.string, acc.second + v};
-    });
+    auto res =
+        updv::fold_right(rec, std::pair{""s, 0}, [](auto k, auto v, auto acc) {
+          return std::pair{acc.first + k.value.string, acc.second + v};
+        });
 
     REQUIRE(res == std::pair{"cba", 79});
   }
 
   SECTION("Find the first value matching a predicate") {
-    auto i = updv::find_if(rec, []<typename T>(auto, upd::typebox<T>) { return std::same_as<T, long &>; });
+    auto i = updv::find_if(rec, []<typename T>(auto, upd::typebox<T>) {
+      return std::same_as<T, long &>;
+    });
 
     REQUIRE(i == 2);
   }
 
   SECTION("Find by a predicate that matches no value") {
-    auto i = updv::find_if(rec, []<typename T>(auto, upd::typebox<T>) { return std::same_as<T, void>; });
+    auto i = updv::find_if(rec, []<typename T>(auto, upd::typebox<T>) {
+      return std::same_as<T, void>;
+    });
 
     REQUIRE(i == 3);
   }
 
   SECTION("Loop over elements") {
-    updv::for_each(rec, [&](auto k, auto v) { REQUIRE(upd::get<k.value>(rec) == v); });
+    updv::for_each(
+        rec, [&](auto k, auto v) { REQUIRE(upd::get<k.value>(rec) == v); });
   }
 
   SECTION("Find the first value of given type") {
@@ -383,17 +419,21 @@ TEST_CASE("Record view handling references", "[record_view]") {
   auto lv = 12;
   auto xv = 23;
   upd::record_like auto rec = upd::record{
-      upd::entry<upd::name{"l"}, int &>{lv}, upd::entry<upd::name{"x"}, int &&>{std::move(xv)}, "pr"_kw2 = 34};
+      upd::entry<upd::name{"l"}, int &>{lv},
+      upd::entry<upd::name{"x"}, int &&>{std::move(xv)}, "pr"_kw2 = 34};
 
   SECTION("Pass references through transform") {
-    upd::record_view auto lview = rec | updv::transform([](auto, auto &&v) -> auto && { return UPD_FWD(v); });
+    upd::record_view auto lview =
+        rec
+        | updv::transform([](auto, auto &&v) -> auto && { return UPD_FWD(v); });
 
     REQUIRE_SAME(upd::get<upd::name{"l"}>(lview), (lv));
     REQUIRE_SAME(upd::get<upd::name{"x"}>(lview), (xv));
     REQUIRE_SAME(upd::get<upd::name{"pr"}>(lview), rec["pr"_kw2]);
 
     upd::record_view auto rview =
-        std::move(rec) | updv::transform([](auto, auto &&v) -> auto && { return UPD_FWD(v); });
+        std::move(rec)
+        | updv::transform([](auto, auto &&v) -> auto && { return UPD_FWD(v); });
 
     REQUIRE_SAME(upd::get<upd::name{"l"}>(rview), (lv));
     REQUIRE_SAME(upd::get<upd::name{"x"}>(rview), std::move(xv));
@@ -415,13 +455,15 @@ TEST_CASE("Record view handling references", "[record_view]") {
   }
 
   SECTION("Pass references through filter") {
-    upd::record_view auto lview = rec | updv::filter([](auto, auto) { return true; });
+    upd::record_view auto lview =
+        rec | updv::filter([](auto, auto) { return true; });
 
     REQUIRE_SAME(upd::get<upd::name{"l"}>(lview), (lv));
     REQUIRE_SAME(upd::get<upd::name{"x"}>(lview), (xv));
     REQUIRE_SAME(upd::get<upd::name{"pr"}>(lview), rec["pr"_kw2]);
 
-    upd::record_view auto rview = std::move(rec) | updv::filter([](auto, auto) { return true; });
+    upd::record_view auto rview =
+        std::move(rec) | updv::filter([](auto, auto) { return true; });
 
     REQUIRE_SAME(upd::get<upd::name{"l"}>(rview), (lv));
     REQUIRE_SAME(upd::get<upd::name{"x"}>(rview), std::move(xv));
@@ -439,19 +481,24 @@ TEST_CASE("Record view handling references", "[record_view]") {
 
     REQUIRE_SAME(upd::get<upd::name{"l"}>(rview).second, (lv));
     REQUIRE_SAME(upd::get<upd::name{"x"}>(rview).second, std::move(xv));
-    REQUIRE_SAME(upd::get<upd::name{"pr"}>(rview).second, std::move(rec)["pr"_kw2]);
+    REQUIRE_SAME(upd::get<upd::name{"pr"}>(rview).second,
+                 std::move(rec)["pr"_kw2]);
   }
 
   SECTION("Pass references through join") {
-    upd::nested_record auto nested_rec = upd::record{"a"_kw2 = std::move(rec),
-                                                     upd::entry<upd::name{"b"}, decltype(rec) &>{rec},
-                                                     upd::entry<upd::name{"c"}, decltype(rec) &&>{std::move(rec)}};
+    upd::nested_record auto nested_rec = upd::record{
+        "a"_kw2 = std::move(rec),
+        upd::entry<upd::name{"b"}, decltype(rec) &>{rec},
+        upd::entry<upd::name{"c"}, decltype(rec) &&>{std::move(rec)}};
 
-    auto lview = nested_rec | updv::join([](auto pk, auto k) { return upd::name{{pk.string[0], k.string[0], 0}}; });
+    auto lview = nested_rec | updv::join([](auto pk, auto k) {
+                   return upd::name{{pk.string[0], k.string[0], 0}};
+                 });
 
     REQUIRE_SAME(upd::get<upd::name{"al"}>(lview), (lv));
     REQUIRE_SAME(upd::get<upd::name{"ax"}>(lview), (xv));
-    REQUIRE_SAME(upd::get<upd::name{"ap"}>(lview), nested_rec["a"_kw2]["pr"_kw2]);
+    REQUIRE_SAME(upd::get<upd::name{"ap"}>(lview),
+                 nested_rec["a"_kw2]["pr"_kw2]);
     REQUIRE_SAME(upd::get<upd::name{"bl"}>(lview), (lv));
     REQUIRE_SAME(upd::get<upd::name{"bx"}>(lview), (xv));
     REQUIRE_SAME(upd::get<upd::name{"bp"}>(lview), rec["pr"_kw2]);
@@ -459,12 +506,14 @@ TEST_CASE("Record view handling references", "[record_view]") {
     REQUIRE_SAME(upd::get<upd::name{"cx"}>(lview), (xv));
     REQUIRE_SAME(upd::get<upd::name{"cp"}>(lview), rec["pr"_kw2]);
 
-    auto rview =
-        std::move(nested_rec) | updv::join([](auto pk, auto k) { return upd::name{{pk.string[0], k.string[0], 0}}; });
+    auto rview = std::move(nested_rec) | updv::join([](auto pk, auto k) {
+                   return upd::name{{pk.string[0], k.string[0], 0}};
+                 });
 
     REQUIRE_SAME(upd::get<upd::name{"al"}>(rview), (lv));
     REQUIRE_SAME(upd::get<upd::name{"ax"}>(rview), std::move(xv));
-    REQUIRE_SAME(upd::get<upd::name{"ap"}>(rview), std::move(nested_rec)["a"_kw2]["pr"_kw2]);
+    REQUIRE_SAME(upd::get<upd::name{"ap"}>(rview),
+                 std::move(nested_rec)["a"_kw2]["pr"_kw2]);
     REQUIRE_SAME(upd::get<upd::name{"bl"}>(rview), (lv));
     REQUIRE_SAME(upd::get<upd::name{"bx"}>(rview), (xv));
     REQUIRE_SAME(upd::get<upd::name{"bp"}>(rview), rec["pr"_kw2]);
@@ -495,6 +544,7 @@ TEST_CASE("Record view handling references", "[record_view]") {
     REQUIRE_SAME(upd::get<upd::name{"x"}>(view).first, (xv));
     REQUIRE_SAME(upd::get<upd::name{"x"}>(view).second, std::move(xv));
     REQUIRE_SAME(upd::get<upd::name{"pr"}>(view).first, rec["pr"_kw2]);
-    REQUIRE_SAME(upd::get<upd::name{"pr"}>(view).second, std::move(rec)["pr"_kw2]);
+    REQUIRE_SAME(upd::get<upd::name{"pr"}>(view).second,
+                 std::move(rec)["pr"_kw2]);
   }
 }

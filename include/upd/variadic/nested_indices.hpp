@@ -23,7 +23,8 @@ struct nested_indices {
     auto i = 0zu;
     auto it = retval.begin();
     for (auto ss : subsizes) {
-      it = stdr::copy(stdv::repeat(i) | stdv::take(ss) | stdv::enumerate, it).out;
+      it = stdr::copy(stdv::repeat(i) | stdv::take(ss) | stdv::enumerate, it)
+               .out;
       ++i;
     }
 

@@ -60,13 +60,15 @@ struct upd::tuple_view_for<upd::tuple_views::transform_type_view<Base, F>> {
   using ith_arg_t = std::remove_reference_t<tuple_element_t<I, Base>>;
 
   template<std::size_t I>
-  using ith_result_t = decltype(std::declval<F>().template operator()<ith_arg_t<I>>());
+  using ith_result_t =
+      decltype(std::declval<F>().template operator()<ith_arg_t<I>>());
 
   constexpr static auto size = upd::tuple_size_v<Base>;
 
   template<std::size_t I, typename View>
   [[nodiscard]] constexpr static auto get(const View &) -> ith_result_t<I> {
-    detail::fail_unless_discarded("This function cannot be called in evaluated context");
+    detail::fail_unless_discarded(
+        "This function cannot be called in evaluated context");
   }
 
   template<std::size_t I, typename View>

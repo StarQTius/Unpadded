@@ -32,7 +32,8 @@ template<upd::record_like Base, upd::metavalue Metatag>
 struct upd::record_view_for<upd::record_views::take_until_view<Base, Metatag>> {
   using base_type = Base;
 
-  constexpr static auto size = decltype(record_views::find_tag<Metatag::value>(std::declval<Base>()))::value;
+  constexpr static auto size = decltype(record_views::find_tag<Metatag::value>(
+      std::declval<Base>()))::value;
 
   template<std::size_t I, typename View>
   [[nodiscard]] constexpr static auto get_ith(View &&view) -> decltype(auto) {

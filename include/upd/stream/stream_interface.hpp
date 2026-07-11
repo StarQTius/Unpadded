@@ -1,15 +1,16 @@
 #pragma once
 
-#include <array>
+#include <algorithm>
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
+#include <iosfwd>
+#include <istream>
 #include <iterator>
-#include <limits>
 #include <ranges>
-#include <type_traits>
 
 #include "../error.hpp"
-#include <limits.h>
+#include "../upd.hpp"
 
 namespace upd {
 
@@ -21,9 +22,11 @@ constexpr auto max_bitsize = std::numeric_limits<uword_t>::digits;
 struct stream_interface {
   [[nodiscard]] virtual auto read(std::size_t, char *) -> lite_error_t = 0;
 
-  [[nodiscard]] virtual auto write(const char *, std::size_t) -> lite_error_t = 0;
+  [[nodiscard]] virtual auto
+  write(const char *, std::size_t) -> lite_error_t = 0;
 
-  [[nodiscard]] virtual auto read_signed(std::size_t bitsize, uword_t *dest) -> lite_error_t {
+  [[nodiscard]] virtual auto
+  read_signed(std::size_t bitsize, uword_t *dest) -> lite_error_t {
     using namespace std::views;
 
     if (bitsize > max_bitsize) {
@@ -47,7 +50,8 @@ struct stream_interface {
     return lite_error::none;
   }
 
-  [[nodiscard]] virtual auto write_signed(uword_t src, std::size_t bitcount) -> lite_error_t {
+  [[nodiscard]] virtual auto
+  write_signed(uword_t src, std::size_t bitcount) -> lite_error_t {
     using namespace std::views;
 
     if (bitcount > max_bitsize) {
@@ -68,7 +72,8 @@ struct stream_interface {
     return lite_error::none;
   }
 
-  [[nodiscard]] virtual auto read_unsigned(std::size_t bitsize, uword_t *dest) -> lite_error_t {
+  [[nodiscard]] virtual auto
+  read_unsigned(std::size_t bitsize, uword_t *dest) -> lite_error_t {
     using namespace std::views;
 
     if (bitsize > max_bitsize) {
@@ -91,7 +96,8 @@ struct stream_interface {
     return lite_error::none;
   }
 
-  [[nodiscard]] virtual auto write_unsigned(uword_t src, std::size_t bitcount) -> lite_error_t {
+  [[nodiscard]] virtual auto
+  write_unsigned(uword_t src, std::size_t bitcount) -> lite_error_t {
     using namespace std::views;
 
     if (bitcount > max_bitsize) {

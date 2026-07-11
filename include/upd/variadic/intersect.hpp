@@ -17,7 +17,8 @@
 namespace upd {
 
 template<metavalue... Xs, metavalue... Ys>
-[[nodiscard]] constexpr auto intersect(std::tuple<Xs...> lhs, std::tuple<Ys...> rhs) noexcept(release) {
+[[nodiscard]] constexpr auto
+intersect(std::tuple<Xs...> lhs, std::tuple<Ys...> rhs) noexcept(release) {
   namespace updv = upd::tuple_views;
 
   auto merged_view = updv::concat(lhs, rhs);
@@ -27,12 +28,15 @@ template<metavalue... Xs, metavalue... Ys>
 
   auto inter_with_dup =
       merged_view
-      | updv::filter([&]<typename T>(typebox<T>) { return !requires { merged.get_by_tag(std::decay_t<T>{}); }; })
+      | updv::filter([&]<typename T>(typebox<T>) {
+          return !requires { merged.get_by_tag(std::decay_t<T>{}); };
+        })
       | updv::to<std::tuple>;
 
   return lhs
-         | updv::filter(
-             [&]<typename T>(typebox<T>) { return tuple_has_type_v<std::decay_t<T>, decltype(inter_with_dup)>; })
+         | updv::filter([&]<typename T>(typebox<T>) {
+             return tuple_has_type_v<std::decay_t<T>, decltype(inter_with_dup)>;
+           })
          | updv::to<std::tuple>;
 }
 

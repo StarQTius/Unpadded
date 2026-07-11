@@ -33,10 +33,12 @@ template<upd::tuple_like2 Base>
 struct upd::tuple_view_for<upd::tuple_views::unique_view<Base>> {
   using base_type = Base;
 
-  constexpr static auto addrs_and_size = UPD_WITH_SEQUENCE(Is, tuple_size_v<Base>) {
+  constexpr static auto addrs_and_size =
+      UPD_WITH_SEQUENCE(Is, tuple_size_v<Base>) {
     namespace stdr = std::ranges;
 
-    auto retval = std::array{std::pair{uid<std::tuple_element_t<Is, Base>>, Is}...};
+    auto retval =
+        std::array{std::pair{uid<std::tuple_element_t<Is, Base>>, Is}...};
     stdr::sort(retval);
 
     auto remainder = stdr::unique(retval, std::equal_to{}, upd::get<0>);

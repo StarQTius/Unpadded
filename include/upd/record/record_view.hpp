@@ -20,13 +20,18 @@
 namespace upd {
 
 template<typename View, std::size_t I>
-concept ith_record_element_viewer = requires(View view, record_tag<I, View> tag, record_element<tag.value, View> elem) {
-  { get<tag.value>(UPD_FWD(view)) } -> std::same_as<typename decltype(elem)::type>;
+concept ith_record_element_viewer = requires(
+    View view, record_tag<I, View> tag, record_element<tag.value, View> elem) {
+  {
+    get<tag.value>(UPD_FWD(view))
+  } -> std::same_as<typename decltype(elem)::type>;
 };
 
 template<typename Record>
 concept record_view =
-    record_like<Record> && UPD_ALL_OF_CONCEPT(ith_record_element_viewer, Record, record_size<Record>::value);
+    record_like<Record>
+    && UPD_ALL_OF_CONCEPT(
+        ith_record_element_viewer, Record, record_size<Record>::value);
 
 template<typename>
 struct record_view_for; // IWYU pragma: keep
@@ -41,7 +46,8 @@ struct upd::record_like_for<Record> {
   constexpr static auto size = impl_type::size;
 
   template<std::size_t I>
-  using ith_entry_type = decltype(impl_type::template get_ith<I>(std::declval<Record>()));
+  using ith_entry_type =
+      decltype(impl_type::template get_ith<I>(std::declval<Record>()));
 
   template<std::size_t I>
   constexpr static auto tag = ith_entry_type<I>::identifier;
@@ -56,8 +62,10 @@ struct upd::record_like_for<Record> {
   using element_type = typename ith_entry_type<tag_index<Tag>>::value_type;
 
   template<std::size_t I, typename Self>
-  [[nodiscard]] constexpr static auto get_ith(Self &&self) noexcept(release) -> decltype(auto) {
-    using retval_type = decltype(impl_type::template get_ith<I>(UPD_FWD(self)).value);
+  [[nodiscard]] constexpr static auto
+  get_ith(Self &&self) noexcept(release) -> decltype(auto) {
+    using retval_type =
+        decltype(impl_type::template get_ith<I>(UPD_FWD(self)).value);
 
     if constexpr (std::is_reference_v<retval_type>) {
       return UPD_FWD(impl_type::template get_ith<I>(UPD_FWD(self)).value);

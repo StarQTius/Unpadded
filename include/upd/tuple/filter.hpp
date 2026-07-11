@@ -42,8 +42,11 @@ template<upd::tuple_like2 Base, typename Pred>
 struct upd::tuple_view_for<upd::tuple_views::filter_view<Base, Pred>> {
   using base_type = Base;
 
-  constexpr static auto indices_to_keep = UPD_WITH_SEQUENCE(Is, tuple_size_v<Base>) {
-    return clean_occurences_of_v<expr_t<false>, std::invoke_result_t<Pred, typebox<tuple_element_t<Is, Base> &&>>...>;
+  constexpr static auto indices_to_keep =
+      UPD_WITH_SEQUENCE(Is, tuple_size_v<Base>) {
+    return clean_occurences_of_v<
+        expr_t<false>,
+        std::invoke_result_t<Pred, typebox<tuple_element_t<Is, Base> &&>>...>;
   };
 
   constexpr static auto size = indices_to_keep.size();

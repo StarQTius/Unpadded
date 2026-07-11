@@ -35,7 +35,8 @@ constexpr auto find_if = []<tuple_like2 Tuple>(Tuple &&t, auto &&pred) {
 template<typename T>
 constexpr auto find = []<tuple_like2 Tuple>(Tuple &&t) {
   auto p = []<typename IAndTypebox>(typebox<IAndTypebox>) {
-    return std::same_as<typename std::remove_cvref_t<IAndTypebox>::second_type, T>;
+    return std::same_as<typename std::remove_cvref_t<IAndTypebox>::second_type,
+                        T>;
   };
   auto vw = UPD_FWD(t) | enumerate | filter(p);
 
@@ -46,7 +47,8 @@ constexpr auto find = []<tuple_like2 Tuple>(Tuple &&t) {
   }
 };
 
-constexpr auto dynfind = []<tuple_like2 Tuple, typename T>(Tuple &&t, const T &v) {
+constexpr auto dynfind = []<tuple_like2 Tuple, typename T>(Tuple &&t,
+                                                           const T &v) {
   namespace stdr = std::ranges;
 
   auto equal_elements = UPD_FWD(t)

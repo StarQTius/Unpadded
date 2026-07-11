@@ -1,4 +1,11 @@
+#include <algorithm>
 #include <array>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <limits>
+#include <ranges>
+#include <string_view>
 #include <tuple>
 #include <variant>
 
@@ -10,6 +17,7 @@
 #include <upd/stream.hpp>
 #include <upd/tuple.hpp>
 #include <upd/utility/static_vector.hpp>
+#include <upd/utility/token.hpp>
 #include <upd/utility/when_then.hpp>
 
 TEST_CASE("Protocol descriptors", "[descriptor]") {
@@ -65,13 +73,15 @@ TEST_CASE("Protocol descriptors", "[descriptor]") {
   }
 
   SECTION("Encode then decode unsigned field") {
-    auto descr = ufield2<"def", 16> | ubound2<"abc", 16>(upd::value_of<"def"> * 3);
+    auto descr =
+        ufield2<"def", 16> | ubound2<"abc", 16>(upd::value_of<"def"> * 3);
     descr.encode(("def"_kw2 = 10), st);
     REQUIRE((*descr.decode(st))["abc"_kw2] == 30);
   }
 
   SECTION("Encode then decode signed field") {
-    auto descr = field2<"def", 16> | bound2<"abc", 16>(upd::value_of<"def"> - 10);
+    auto descr =
+        field2<"def", 16> | bound2<"abc", 16>(upd::value_of<"def"> - 10);
     descr.encode(("def"_kw2 = 5), st);
     REQUIRE((*descr.decode(st))["abc"_kw2] == -5);
     descr.encode(("def"_kw2 = 18), st);
@@ -79,11 +89,13 @@ TEST_CASE("Protocol descriptors", "[descriptor]") {
   }
 
   SECTION("Encode and decode a repeated field") {
-    auto descr = ufield2<"len", 16> | repeat<"abc">(ufield2<"def", 16>, upd::value_of<"len">);
-    descr.encode(
-        ("len"_kw2 = 3 * 16,
-         "abc"_kw2 = std::array{upd::record{"def"_kw2 = 4}, upd::record{"def"_kw2 = 8}, upd::record{"def"_kw2 = 16}}),
-        st);
+    auto descr = ufield2<"len", 16>
+                 | repeat<"abc">(ufield2<"def", 16>, upd::value_of<"len">);
+    descr.encode(("len"_kw2 = 3 * 16,
+                  "abc"_kw2 = std::array{upd::record{"def"_kw2 = 4},
+                                         upd::record{"def"_kw2 = 8},
+                                         upd::record{"def"_kw2 = 16}}),
+                 st);
 
     auto result = *descr.decode(st);
     REQUIRE(result["len"_kw2] == 3 * 16);
@@ -95,7 +107,8 @@ TEST_CASE("Protocol descriptors", "[descriptor]") {
   SECTION("Encode and decode a checksum field") {
     auto descr = ufield2<"abc", 16>
                  | ufield2<"def", 16>
-                 | checksum2<"ghi", 16>([](auto acc, auto v) { return acc + v; }, all_fields);
+                 | checksum2<"ghi", 16>(
+                     [](auto acc, auto v) { return acc + v; }, all_fields);
     descr.encode(("abc"_kw2 = 54, "def"_kw2 = 46), st);
 
     auto result = *descr.decode(st);
@@ -123,7 +136,8 @@ TEST_CASE("Protocol descriptors", "[descriptor]") {
   }
 
   SECTION("Encode and decode an expanding repeated field") {
-    auto descr = ubound2<"len", 16>(upd::length_of<"abc">) | repeat<"abc">(ufield2<upd::anon, 16>);
+    auto descr = ubound2<"len", 16>(upd::length_of<"abc">)
+                 | repeat<"abc">(ufield2<upd::anon, 16>);
     descr.encode(("abc"_kw2 = std::array{4, 8, 16}), st);
 
     auto result = *descr.decode(st);
@@ -190,7 +204,8 @@ TEST_CASE("Protocol descriptors", "[descriptor]") {
   SECTION("Encode and decode a constant and a checksum field") {
     auto descr = constant2<"abc", 8>(12)
                  | constant2<"def", 8>(88)
-                 | checksum2<"ghi", 16>([](auto acc, auto v) { return acc + v; }, all_fields);
+                 | checksum2<"ghi", 16>(
+                     [](auto acc, auto v) { return acc + v; }, all_fields);
     descr.encode(upd::record{}, st);
 
     auto result = *descr.decode(st);
@@ -202,7 +217,8 @@ TEST_CASE("Protocol descriptors", "[descriptor]") {
   SECTION("Try decode a checksum field when mismatch") {
     auto descr = ufield2<"abc", 16>
                  | ufield2<"def", 16>
-                 | checksum2<"ghi", 16>([](auto acc, auto v) { return acc + v; }, all_fields);
+                 | checksum2<"ghi", 16>(
+                     [](auto acc, auto v) { return acc + v; }, all_fields);
 
     buf[0] = 54;
     buf[1] = 0;
@@ -234,9 +250,13 @@ TEST_CASE("Nested protocol descriptors", "[descriptor]") {
 
     auto descr = ubound2<"len", 16>(upd::length_of<"param">)
                  | efield2<"i", abc, 16>
-                 | one_of<"param">(upd::value_of<"i">, upd::when<abc::a> = repeat<"abc">(ufield2<upd::anon, 16>));
+                 | one_of<"param">(upd::value_of<"i">,
+                                   upd::when<abc::a> =
+                                       repeat<"abc">(ufield2<upd::anon, 16>));
 
-    descr.encode(("i"_kw2 = abc::a, "param"_kw2 = ("abc"_kw2 = std::array{4, 8, 16})), st);
+    descr.encode(
+        ("i"_kw2 = abc::a, "param"_kw2 = ("abc"_kw2 = std::array{4, 8, 16})),
+        st);
 
     auto result = *descr.decode(st);
     REQUIRE(result["len"_kw2] == 3 * 16);

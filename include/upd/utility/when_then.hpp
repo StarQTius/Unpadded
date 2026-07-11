@@ -33,7 +33,8 @@ constexpr auto when = when_t<Match>{};
 
 template<typename... WhenThens>
 [[nodiscard]] constexpr auto aggregate_when_thens(WhenThens &&...when_thens) {
-  return record{entry<when_thens.match, typename WhenThens::result_type>{UPD_FWD(when_thens).result}...};
+  return record{entry<when_thens.match, typename WhenThens::result_type>{
+      UPD_FWD(when_thens).result}...};
 }
 
 } // namespace upd

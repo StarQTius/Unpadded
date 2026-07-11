@@ -28,7 +28,8 @@ struct concat_view {
 template<record_like... Bases>
 concat_view(Bases &&...) -> concat_view<Bases...>;
 
-constexpr auto concat = []<record_like... Bases> [[nodiscard]] (Bases &&...bases) noexcept(release) {
+constexpr auto concat = []<record_like... Bases> [[nodiscard]] (
+                            Bases &&...bases) noexcept(release) {
   auto ensure_view = [](auto &&rec) { return view_t{UPD_FWD(rec)}; };
   return concat_view{ensure_view(UPD_FWD(bases))...};
 };
@@ -46,7 +47,8 @@ struct upd::record_view_for<upd::record_views::concat_view<Bases...>> {
     constexpr auto j = ni.first;
 
     decltype(auto) value = upd::get_ith<j>(get<i>(UPD_FWD(view).bases));
-    constexpr auto identifier = record_tag_v<j, tuple_element_t<i, std::tuple<Bases...>>>;
+    constexpr auto identifier =
+        record_tag_v<j, tuple_element_t<i, std::tuple<Bases...>>>;
     return entry<identifier, decltype(value)>{UPD_FWD(value)};
   }
 };

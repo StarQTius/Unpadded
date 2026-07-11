@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstddef>
-#include <expected>
+#include <cstdint>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -30,17 +30,20 @@ struct constant_t {
   value_type field_value;
 
   template<record_like Packet, record_like Fields, codec_info CodecInfo>
-  [[nodiscard]] constexpr auto rules(const Packet &, const Fields &, expr_t<CodecInfo>) const {
+  [[nodiscard]] constexpr auto
+  rules(const Packet &, const Fields &, expr_t<CodecInfo>) const {
     return std::tuple{length_of<Identifier> = Width};
   }
 
   template<tuple_like2 System>
-  constexpr void encode(unit_t, stream_interface &dest, const System &) const noexcept(release) {
+  constexpr void encode(unit_t, stream_interface &dest, const System &) const
+      noexcept(release) {
     (void)dest.write_unsigned(field_value, width);
   }
 
   template<record_like Fields, tuple_like2 System>
-  [[nodiscard]] constexpr static auto decode(stream_interface &src, const Fields &, const System &)
+  [[nodiscard]] constexpr static auto
+  decode(stream_interface &src, const Fields &, const System &)
       -> result<value_type> {
     auto retval = value_type{};
     if (auto err = src.read_unsigned(width, &retval); err) {
@@ -51,7 +54,8 @@ struct constant_t {
   }
 
   template<typename V>
-  [[nodiscard]] constexpr auto bitsize(const V &) const noexcept(release) -> std::size_t {
+  [[nodiscard]] constexpr auto
+  bitsize(const V &) const noexcept(release) -> std::size_t {
     return Width;
   }
 };
@@ -65,7 +69,8 @@ struct enumeration_constant_t {
   using input_type = unit_t;
 
   template<record_like Packet, record_like Fields, codec_info CodecInfo>
-  [[nodiscard]] constexpr auto rules(const Packet &, const Fields &, expr_t<CodecInfo>) const {
+  [[nodiscard]] constexpr auto
+  rules(const Packet &, const Fields &, expr_t<CodecInfo>) const {
     return std::tuple{length_of<Identifier> = Width};
   }
 
@@ -75,7 +80,8 @@ struct enumeration_constant_t {
   }
 
   template<record_like Fields, tuple_like2 System>
-  [[nodiscard]] constexpr static auto decode(stream_interface &src, const Fields &, const System &)
+  [[nodiscard]] constexpr static auto
+  decode(stream_interface &src, const Fields &, const System &)
       -> result<value_type> {
     auto retval = uword_t{};
     if (auto err = src.read_unsigned(width, &retval); err) {
@@ -86,7 +92,8 @@ struct enumeration_constant_t {
   }
 
   template<typename V>
-  [[nodiscard]] constexpr auto bitsize(const V &) const noexcept(release) -> std::size_t {
+  [[nodiscard]] constexpr auto
+  bitsize(const V &) const noexcept(release) -> std::size_t {
     return Width;
   }
 

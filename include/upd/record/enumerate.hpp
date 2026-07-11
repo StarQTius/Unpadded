@@ -39,6 +39,7 @@ struct upd::record_view_for<upd::record_views::enumerate_view<Base>> {
     constexpr auto tag = record_tag_v<I, Base>;
     using type = decltype(upd::get_ith<I>(UPD_FWD(view).base));
     using pair_type = std::pair<auto_constant<I>, type>;
-    return entry{expr<tag>, pair_type{expr<I>, upd::get_ith<I>(UPD_FWD(view).base)}};
+    return entry{expr<tag>,
+                 pair_type{expr<I>, upd::get_ith<I>(UPD_FWD(view).base)}};
   }
 };

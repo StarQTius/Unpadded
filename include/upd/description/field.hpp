@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstddef>
-#include <expected>
+#include <cstdint>
 #include <tuple>
 #include <type_traits>
 
@@ -27,16 +27,20 @@ struct field_t {
   using input_type = value_type;
 
   template<record_like Packet, record_like Fields, codec_info CodecInfo>
-  [[nodiscard]] constexpr auto rules(const Packet &packet, const Fields &, expr_t<CodecInfo>) const {
+  [[nodiscard]] constexpr auto
+  rules(const Packet &packet, const Fields &, expr_t<CodecInfo>) const {
     if constexpr (has_tag<Identifier>(packet)) {
-      return std::tuple{value_of<Identifier> = get<Identifier>(packet), length_of<Identifier> = Width};
+      return std::tuple{value_of<Identifier> = get<Identifier>(packet),
+                        length_of<Identifier> = Width};
     } else {
       return std::tuple{length_of<Identifier> = Width};
     }
   }
 
   template<tuple_like2 System = std::tuple<>>
-  constexpr static void encode(value_type value, stream_interface &dest, const System & = std::tuple{}) {
+  constexpr static void encode(value_type value,
+                               stream_interface &dest,
+                               const System & = std::tuple{}) {
     if constexpr (is_signed) {
       (void)dest.write_signed(value, width);
     } else {
@@ -45,7 +49,8 @@ struct field_t {
   }
 
   template<record_like Fields, tuple_like2 System>
-  [[nodiscard]] constexpr static auto decode(stream_interface &src, const Fields &, const System &)
+  [[nodiscard]] constexpr static auto
+  decode(stream_interface &src, const Fields &, const System &)
       -> result<value_type> {
     auto err = lite_error::none;
     auto retval = uword_t{};
@@ -63,7 +68,8 @@ struct field_t {
   }
 
   template<typename V>
-  [[nodiscard]] constexpr auto bitsize(const V &) const noexcept(release) -> std::size_t {
+  [[nodiscard]] constexpr auto
+  bitsize(const V &) const noexcept(release) -> std::size_t {
     return Width;
   }
 };
@@ -77,7 +83,9 @@ struct anonymous_field_t {
   using input_type = result_type;
 
   template<tuple_like2 System = std::tuple<>>
-  constexpr void encode(result_type value, stream_interface &dest, const System & = std::tuple{}) const {
+  constexpr void encode(result_type value,
+                        stream_interface &dest,
+                        const System & = std::tuple{}) const {
     if constexpr (is_signed) {
       (void)dest.write_signed(value, width);
     } else {
@@ -86,7 +94,8 @@ struct anonymous_field_t {
   }
 
   template<tuple_like2 System>
-  [[nodiscard]] constexpr auto decode(stream_interface &src, const System &) const -> result<result_type> {
+  [[nodiscard]] constexpr auto
+  decode(stream_interface &src, const System &) const -> result<result_type> {
     auto err = lite_error::none;
     auto retval = uword_t{};
     if constexpr (is_signed) {
@@ -103,13 +112,15 @@ struct anonymous_field_t {
   }
 
   template<typename V>
-  [[nodiscard]] constexpr auto bitsize(const V &) const noexcept(release) -> std::size_t {
+  [[nodiscard]] constexpr auto
+  bitsize(const V &) const noexcept(release) -> std::size_t {
     return Width;
   }
 };
 
 template<name Identifier, bool Signedness, std::size_t Width>
-[[nodiscard]] constexpr auto field(signedness_t<Signedness>, width_t<Width>) noexcept(release) {
+[[nodiscard]] constexpr auto
+field(signedness_t<Signedness>, width_t<Width>) noexcept(release) {
   field_like auto retval = field_t<Identifier, Signedness, Width>{};
 
   return description{retval};

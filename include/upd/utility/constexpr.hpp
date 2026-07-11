@@ -33,242 +33,283 @@ struct auto_constant {
 
   template<auto... Args>
     requires invocable<value_type, decltype(Args)...>
-  [[nodiscard]] constexpr static auto operator()(auto_constant<Args>...) noexcept(release) {
+  [[nodiscard]] constexpr static auto
+  operator()(auto_constant<Args>...) noexcept(release) {
     return expr<UPD_INVOKE(value, Args...)>;
   }
 
   template<typename... Args>
     requires invocable<value_type, Args...>
-  [[nodiscard]] constexpr static auto operator()(Args &&...args) -> decltype(auto) {
+  [[nodiscard]] constexpr static auto
+  operator()(Args &&...args) -> decltype(auto) {
     return UPD_INVOKE(value, UPD_FWD(args)...);
   }
 
   template<auto... Args>
     requires requires { value[Args...]; }
-  [[nodiscard]] constexpr static auto operator[](auto_constant<Args>...) noexcept(release) {
+  [[nodiscard]] constexpr static auto
+  operator[](auto_constant<Args>...) noexcept(release) {
     return expr<value[Args...]>;
   }
 
   template<typename... Args>
     requires requires { value[std::declval<Args>()...]; }
-  [[nodiscard]] constexpr static auto operator[](Args &&...args) -> decltype(auto) {
+  [[nodiscard]] constexpr static auto
+  operator[](Args &&...args) -> decltype(auto) {
     return value[UPD_FWD(args)...];
   }
 };
 
 template<auto LhsValue, auto RhsValue>
   requires requires { LhsValue == RhsValue; }
-[[nodiscard]] constexpr auto operator==(auto_constant<LhsValue>, auto_constant<RhsValue>) noexcept(release) {
+[[nodiscard]] constexpr auto
+operator==(auto_constant<LhsValue>, auto_constant<RhsValue>) noexcept(release) {
   return expr<LhsValue == RhsValue>;
 }
 
 template<auto LhsValue, typename Rhs>
   requires requires { LhsValue == std::declval<Rhs>(); }
-[[nodiscard]] constexpr auto operator==(auto_constant<LhsValue>, Rhs &&rhs) -> bool {
+[[nodiscard]] constexpr auto
+operator==(auto_constant<LhsValue>, Rhs &&rhs) -> bool {
   return LhsValue == UPD_FWD(rhs);
 }
 
 template<auto LhsValue, auto RhsValue>
   requires requires { LhsValue != RhsValue; }
-[[nodiscard]] constexpr auto operator!=(auto_constant<LhsValue>, auto_constant<RhsValue>) noexcept(release) {
+[[nodiscard]] constexpr auto
+operator!=(auto_constant<LhsValue>, auto_constant<RhsValue>) noexcept(release) {
   return expr<LhsValue != RhsValue>;
 }
 
 template<auto LhsValue, typename Rhs>
   requires requires { LhsValue != std::declval<Rhs>(); }
-[[nodiscard]] constexpr auto operator!=(auto_constant<LhsValue>, Rhs &&rhs) -> decltype(auto) {
+[[nodiscard]] constexpr auto
+operator!=(auto_constant<LhsValue>, Rhs &&rhs) -> decltype(auto) {
   return LhsValue != UPD_FWD(rhs);
 }
 
 template<auto LhsValue, auto RhsValue>
   requires requires { LhsValue <=> RhsValue; }
-[[nodiscard]] constexpr auto operator<=>(auto_constant<LhsValue>, auto_constant<RhsValue>) noexcept(release) {
+[[nodiscard]] constexpr auto
+operator<=>(auto_constant<LhsValue>,
+            auto_constant<RhsValue>) noexcept(release) {
   return expr<LhsValue <=> RhsValue>;
 }
 
 template<auto LhsValue, typename Rhs>
   requires requires { LhsValue <=> std::declval<Rhs>(); }
-[[nodiscard]] constexpr auto operator<=>(auto_constant<LhsValue>, Rhs &&rhs) -> decltype(auto) {
+[[nodiscard]] constexpr auto
+operator<=>(auto_constant<LhsValue>, Rhs &&rhs) -> decltype(auto) {
   return LhsValue <=> UPD_FWD(rhs);
 }
 
 template<auto LhsValue, auto RhsValue>
   requires requires { LhsValue + RhsValue; }
-[[nodiscard]] constexpr auto operator+(auto_constant<LhsValue>, auto_constant<RhsValue>) noexcept(release) {
+[[nodiscard]] constexpr auto
+operator+(auto_constant<LhsValue>, auto_constant<RhsValue>) noexcept(release) {
   return expr<LhsValue + RhsValue>;
 }
 
 template<auto LhsValue, typename Rhs>
   requires requires { LhsValue + std::declval<Rhs>(); }
-[[nodiscard]] constexpr auto operator+(auto_constant<LhsValue>, Rhs &&rhs) -> decltype(auto) {
+[[nodiscard]] constexpr auto
+operator+(auto_constant<LhsValue>, Rhs &&rhs) -> decltype(auto) {
   return LhsValue + UPD_FWD(rhs);
 }
 
 template<typename Lhs, auto RhsValue>
   requires requires { std::declval<Lhs>() + RhsValue; }
-[[nodiscard]] constexpr auto operator+(Lhs &&lhs, auto_constant<RhsValue>) -> decltype(auto) {
+[[nodiscard]] constexpr auto
+operator+(Lhs &&lhs, auto_constant<RhsValue>) -> decltype(auto) {
   return UPD_FWD(lhs) + RhsValue;
 }
 
 template<auto LhsValue, auto RhsValue>
   requires requires { LhsValue - RhsValue; }
-[[nodiscard]] constexpr auto operator-(auto_constant<LhsValue>, auto_constant<RhsValue>) noexcept(release) {
+[[nodiscard]] constexpr auto
+operator-(auto_constant<LhsValue>, auto_constant<RhsValue>) noexcept(release) {
   return expr<LhsValue - RhsValue>;
 }
 
 template<auto LhsValue, typename Rhs>
   requires requires { LhsValue - std::declval<Rhs>(); }
-[[nodiscard]] constexpr auto operator-(auto_constant<LhsValue>, Rhs &&rhs) -> decltype(auto) {
+[[nodiscard]] constexpr auto
+operator-(auto_constant<LhsValue>, Rhs &&rhs) -> decltype(auto) {
   return LhsValue - UPD_FWD(rhs);
 }
 
 template<typename Lhs, auto RhsValue>
   requires requires { std::declval<Lhs>() - RhsValue; }
-[[nodiscard]] constexpr auto operator-(Lhs &&lhs, auto_constant<RhsValue>) -> decltype(auto) {
+[[nodiscard]] constexpr auto
+operator-(Lhs &&lhs, auto_constant<RhsValue>) -> decltype(auto) {
   return UPD_FWD(lhs) - RhsValue;
 }
 
 template<auto LhsValue, auto RhsValue>
   requires requires { LhsValue * RhsValue; }
-[[nodiscard]] constexpr auto operator*(auto_constant<LhsValue>, auto_constant<RhsValue>) noexcept(release) {
+[[nodiscard]] constexpr auto
+operator*(auto_constant<LhsValue>, auto_constant<RhsValue>) noexcept(release) {
   return expr<LhsValue * RhsValue>;
 }
 
 template<auto LhsValue, typename Rhs>
   requires requires { LhsValue * std::declval<Rhs>(); }
-[[nodiscard]] constexpr auto operator*(auto_constant<LhsValue>, Rhs &&rhs) -> decltype(auto) {
+[[nodiscard]] constexpr auto
+operator*(auto_constant<LhsValue>, Rhs &&rhs) -> decltype(auto) {
   return LhsValue * UPD_FWD(rhs);
 }
 
 template<typename Lhs, auto RhsValue>
   requires requires { std::declval<Lhs>() * RhsValue; }
-[[nodiscard]] constexpr auto operator*(Lhs &&lhs, auto_constant<RhsValue>) -> decltype(auto) {
+[[nodiscard]] constexpr auto
+operator*(Lhs &&lhs, auto_constant<RhsValue>) -> decltype(auto) {
   return UPD_FWD(lhs) * RhsValue;
 }
 
 template<auto LhsValue, auto RhsValue>
   requires requires { LhsValue / RhsValue; }
-[[nodiscard]] constexpr auto operator/(auto_constant<LhsValue>, auto_constant<RhsValue>) noexcept(release) {
+[[nodiscard]] constexpr auto
+operator/(auto_constant<LhsValue>, auto_constant<RhsValue>) noexcept(release) {
   return expr<LhsValue / RhsValue>;
 }
 
 template<auto LhsValue, typename Rhs>
   requires requires { LhsValue / std::declval<Rhs>(); }
-[[nodiscard]] constexpr auto operator/(auto_constant<LhsValue>, Rhs &&rhs) -> decltype(auto) {
+[[nodiscard]] constexpr auto
+operator/(auto_constant<LhsValue>, Rhs &&rhs) -> decltype(auto) {
   return LhsValue / UPD_FWD(rhs);
 }
 
 template<typename Lhs, auto RhsValue>
   requires requires { std::declval<Lhs>() / RhsValue; }
-[[nodiscard]] constexpr auto operator/(Lhs &&lhs, auto_constant<RhsValue>) -> decltype(auto) {
+[[nodiscard]] constexpr auto
+operator/(Lhs &&lhs, auto_constant<RhsValue>) -> decltype(auto) {
   return UPD_FWD(lhs) / RhsValue;
 }
 
 template<auto LhsValue, auto RhsValue>
   requires requires { LhsValue % RhsValue; }
-[[nodiscard]] constexpr auto operator%(auto_constant<LhsValue>, auto_constant<RhsValue>) noexcept(release) {
+[[nodiscard]] constexpr auto
+operator%(auto_constant<LhsValue>, auto_constant<RhsValue>) noexcept(release) {
   return expr<LhsValue % RhsValue>;
 }
 
 template<auto LhsValue, typename Rhs>
   requires requires { LhsValue % std::declval<Rhs>(); }
-[[nodiscard]] constexpr auto operator%(auto_constant<LhsValue>, Rhs &&rhs) -> decltype(auto) {
+[[nodiscard]] constexpr auto
+operator%(auto_constant<LhsValue>, Rhs &&rhs) -> decltype(auto) {
   return LhsValue % UPD_FWD(rhs);
 }
 
 template<typename Lhs, auto RhsValue>
   requires requires { std::declval<Lhs>() % RhsValue; }
-[[nodiscard]] constexpr auto operator%(Lhs &&lhs, auto_constant<RhsValue>) -> decltype(auto) {
+[[nodiscard]] constexpr auto
+operator%(Lhs &&lhs, auto_constant<RhsValue>) -> decltype(auto) {
   return UPD_FWD(lhs) % RhsValue;
 }
 
 template<auto LhsValue, auto RhsValue>
   requires requires { LhsValue ^ RhsValue; }
-[[nodiscard]] constexpr auto operator^(auto_constant<LhsValue>, auto_constant<RhsValue>) noexcept(release) {
+[[nodiscard]] constexpr auto
+operator^(auto_constant<LhsValue>, auto_constant<RhsValue>) noexcept(release) {
   return expr<LhsValue ^ RhsValue>;
 }
 
 template<auto LhsValue, typename Rhs>
   requires requires { LhsValue ^ std::declval<Rhs>(); }
-[[nodiscard]] constexpr auto operator^(auto_constant<LhsValue>, Rhs &&rhs) -> decltype(auto) {
+[[nodiscard]] constexpr auto
+operator^(auto_constant<LhsValue>, Rhs &&rhs) -> decltype(auto) {
   return LhsValue ^ UPD_FWD(rhs);
 }
 
 template<typename Lhs, auto RhsValue>
   requires requires { std::declval<Lhs>() ^ RhsValue; }
-[[nodiscard]] constexpr auto operator^(Lhs &&lhs, auto_constant<RhsValue>) -> decltype(auto) {
+[[nodiscard]] constexpr auto
+operator^(Lhs &&lhs, auto_constant<RhsValue>) -> decltype(auto) {
   return UPD_FWD(lhs) ^ RhsValue;
 }
 
 template<auto LhsValue, auto RhsValue>
   requires requires { LhsValue & RhsValue; }
-[[nodiscard]] constexpr auto operator&(auto_constant<LhsValue>, auto_constant<RhsValue>) noexcept(release) {
+[[nodiscard]] constexpr auto
+operator&(auto_constant<LhsValue>, auto_constant<RhsValue>) noexcept(release) {
   return expr<LhsValue & RhsValue>;
 }
 
 template<auto LhsValue, typename Rhs>
   requires requires { LhsValue & std::declval<Rhs>(); }
-[[nodiscard]] constexpr auto operator&(auto_constant<LhsValue>, Rhs &&rhs) -> decltype(auto) {
+[[nodiscard]] constexpr auto
+operator&(auto_constant<LhsValue>, Rhs &&rhs) -> decltype(auto) {
   return LhsValue & UPD_FWD(rhs);
 }
 
 template<typename Lhs, auto RhsValue>
   requires requires { std::declval<Lhs>() & RhsValue; }
-[[nodiscard]] constexpr auto operator&(Lhs &&lhs, auto_constant<RhsValue>) -> decltype(auto) {
+[[nodiscard]] constexpr auto
+operator&(Lhs &&lhs, auto_constant<RhsValue>) -> decltype(auto) {
   return UPD_FWD(lhs) & RhsValue;
 }
 
 template<auto LhsValue, auto RhsValue>
   requires requires { LhsValue | RhsValue; }
-[[nodiscard]] constexpr auto operator|(auto_constant<LhsValue>, auto_constant<RhsValue>) noexcept(release) {
+[[nodiscard]] constexpr auto
+operator|(auto_constant<LhsValue>, auto_constant<RhsValue>) noexcept(release) {
   return expr<LhsValue | RhsValue>;
 }
 
 template<auto LhsValue, typename Rhs>
   requires requires { LhsValue | std::declval<Rhs>(); }
-[[nodiscard]] constexpr auto operator|(auto_constant<LhsValue>, Rhs &&rhs) -> decltype(auto) {
+[[nodiscard]] constexpr auto
+operator|(auto_constant<LhsValue>, Rhs &&rhs) -> decltype(auto) {
   return LhsValue | UPD_FWD(rhs);
 }
 
 template<typename Lhs, auto RhsValue>
   requires requires { std::declval<Lhs>() | RhsValue; }
-[[nodiscard]] constexpr auto operator|(Lhs &&lhs, auto_constant<RhsValue>) -> decltype(auto) {
+[[nodiscard]] constexpr auto
+operator|(Lhs &&lhs, auto_constant<RhsValue>) -> decltype(auto) {
   return UPD_FWD(lhs) | RhsValue;
 }
 
 template<auto LhsValue, auto RhsValue>
   requires requires { LhsValue && RhsValue; }
-[[nodiscard]] constexpr auto operator&&(auto_constant<LhsValue>, auto_constant<RhsValue>) noexcept(release) {
+[[nodiscard]] constexpr auto
+operator&&(auto_constant<LhsValue>, auto_constant<RhsValue>) noexcept(release) {
   return expr < LhsValue && RhsValue > ;
 }
 
 template<auto LhsValue, typename Rhs>
   requires requires { LhsValue && std::declval<Rhs>(); }
-[[nodiscard]] constexpr auto operator&&(auto_constant<LhsValue>, Rhs &&rhs) -> decltype(auto) {
+[[nodiscard]] constexpr auto
+operator&&(auto_constant<LhsValue>, Rhs &&rhs) -> decltype(auto) {
   return LhsValue && UPD_FWD(rhs);
 }
 
 template<typename Lhs, auto RhsValue>
   requires requires { std::declval<Lhs>() && RhsValue; }
-[[nodiscard]] constexpr auto operator&&(Lhs &&lhs, auto_constant<RhsValue>) -> decltype(auto) {
+[[nodiscard]] constexpr auto
+operator&&(Lhs &&lhs, auto_constant<RhsValue>) -> decltype(auto) {
   return UPD_FWD(lhs) && RhsValue;
 }
 
 template<auto LhsValue, auto RhsValue>
   requires requires { LhsValue || RhsValue; }
-[[nodiscard]] constexpr auto operator||(auto_constant<LhsValue>, auto_constant<RhsValue>) noexcept(release) {
+[[nodiscard]] constexpr auto
+operator||(auto_constant<LhsValue>, auto_constant<RhsValue>) noexcept(release) {
   return expr < LhsValue || RhsValue > ;
 }
 
 template<auto LhsValue, typename Rhs>
   requires requires { LhsValue || std::declval<Rhs>(); }
-[[nodiscard]] constexpr auto operator||(auto_constant<LhsValue>, Rhs &&rhs) -> decltype(auto) {
+[[nodiscard]] constexpr auto
+operator||(auto_constant<LhsValue>, Rhs &&rhs) -> decltype(auto) {
   return LhsValue || UPD_FWD(rhs);
 }
 
 template<typename Lhs, auto RhsValue>
   requires requires { std::declval<Lhs>() || RhsValue; }
-[[nodiscard]] constexpr auto operator||(Lhs &&lhs, auto_constant<RhsValue>) -> decltype(auto) {
+[[nodiscard]] constexpr auto
+operator||(Lhs &&lhs, auto_constant<RhsValue>) -> decltype(auto) {
   return UPD_FWD(lhs) || RhsValue;
 }
 

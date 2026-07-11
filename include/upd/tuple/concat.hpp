@@ -24,7 +24,8 @@ struct concat_view {
 template<tuple_like2... Bases>
 concat_view(Bases &&...) -> concat_view<Bases...>;
 
-constexpr auto concat = []<tuple_like2... Bases> [[nodiscard]] (Bases &&...bases) noexcept(release) {
+constexpr auto concat = []<tuple_like2... Bases> [[nodiscard]] (
+                            Bases &&...bases) noexcept(release) {
   auto ensure_view = [](auto &&rec) { return view_t{UPD_FWD(rec)}; };
   return concat_view{ensure_view(UPD_FWD(bases))...};
 };

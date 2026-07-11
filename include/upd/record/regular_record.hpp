@@ -15,12 +15,18 @@
 namespace upd {
 
 template<typename View, std::size_t I>
-concept ith_record_element_owner = requires(View view, record_tag<I, View> tag, record_element<tag.value, View> elem) {
-  { get<tag.value>(UPD_FWD(view)) } -> std::same_as<transfert_reference_t<typename decltype(elem)::type &&, View &&>>;
+concept ith_record_element_owner = requires(
+    View view, record_tag<I, View> tag, record_element<tag.value, View> elem) {
+  {
+    get<tag.value>(UPD_FWD(view))
+  } -> std::same_as<
+      transfert_reference_t<typename decltype(elem)::type &&, View &&>>;
 };
 
 template<typename Record>
 concept regular_record =
-    record_like<Record> && UPD_ALL_OF_CONCEPT(ith_record_element_owner, Record, record_size<Record>::value);
+    record_like<Record>
+    && UPD_ALL_OF_CONCEPT(
+        ith_record_element_owner, Record, record_size<Record>::value);
 
 } // namespace upd

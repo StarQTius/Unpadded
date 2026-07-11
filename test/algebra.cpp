@@ -59,7 +59,8 @@ TEST_CASE("Independent equation side", "[algebra][side]") {
   }
 
   SECTION("Solve integer linear expression with several variables") {
-    auto result = ("x"_var / 2 + "y"_var / 3 + 7).calculate("x"_var = 6, "y"_var = 9);
+    auto result =
+        ("x"_var / 2 + "y"_var / 3 + 7).calculate("x"_var = 6, "y"_var = 9);
     REQUIRE(result == 13);
   }
 
@@ -126,7 +127,8 @@ TEST_CASE("Triangular system", "[algebra][system]") {
   using namespace upd::algebra::literals;
   namespace updv = upd::tuple_views;
 
-  auto sys = std::tuple{"x"_var = 15, "y"_var = "x"_var / 3 - 2, "z"_var = "x"_var / 5 + "y"_var + 3};
+  auto sys = std::tuple{"x"_var = 15, "y"_var = "x"_var / 3 - 2,
+                        "z"_var = "x"_var / 5 + "y"_var + 3};
 
   SECTION("Solve a triangular system") {
     auto x = solve_for("x"_var, updv::concat(sys));

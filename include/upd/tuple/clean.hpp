@@ -34,7 +34,8 @@ template<upd::tuple_like2 Base, typename T>
 struct upd::tuple_view_for<upd::tuple_views::clean_view<Base, T>> {
   using base_type = Base;
 
-  constexpr static auto indices_to_keep = UPD_WITH_SEQUENCE(Is, tuple_size_v<Base>) {
+  constexpr static auto indices_to_keep =
+      UPD_WITH_SEQUENCE(Is, tuple_size_v<Base>) {
     return clean_occurences_of_v<T, tuple_element_t<Is, Base>...>;
   };
 

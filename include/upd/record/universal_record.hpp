@@ -18,12 +18,14 @@ struct universal_record {
 };
 
 template<auto Tag, typename T>
-[[nodiscard]] constexpr auto has_tag(const universal_record<T> &) noexcept(release) -> bool {
+[[nodiscard]] constexpr auto
+has_tag(const universal_record<T> &) noexcept(release) -> bool {
   return true;
 }
 
 template<typename U, typename T>
-[[nodiscard]] constexpr auto has_type(const universal_record<T> &) noexcept(release) -> bool {
+[[nodiscard]] constexpr auto
+has_type(const universal_record<T> &) noexcept(release) -> bool {
   return std::same_as<T, U>;
 }
 
@@ -34,7 +36,8 @@ struct upd::record_like_for<upd::universal_record<T>> {
   constexpr static auto size = 0zu;
 
   template<std::size_t I, typename Record>
-  [[nodiscard]] constexpr static auto get_ith(const Record &rec) noexcept(release) -> const auto & {
+  [[nodiscard]] constexpr static auto
+  get_ith(const Record &rec) noexcept(release) -> const auto & {
     return UPD_FWD(rec).value;
   }
 };

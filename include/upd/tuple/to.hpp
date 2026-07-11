@@ -21,7 +21,8 @@ void to(to_t, auto_constant<template_box<Tuple>>) {}
 
 template<tuple_like2 View, auto TemplateBox>
   requires collector_of<TemplateBox, View>
-[[nodiscard]] constexpr auto operator|(View &&view, void (&)(to_t, auto_constant<TemplateBox>)) {
+[[nodiscard]] constexpr auto
+operator|(View &&view, void (&)(to_t, auto_constant<TemplateBox>)) {
   return collect<TemplateBox>(UPD_FWD(view));
 }
 

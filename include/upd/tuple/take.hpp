@@ -61,13 +61,15 @@ struct upd::tuple_view_for<upd::tuple_views::take_while_view<Base, Pred>> {
   using ith_arg_t = std::remove_reference_t<tuple_element_t<I, Base>>;
 
   template<std::size_t I>
-  using ith_result_t = decltype(std::declval<Pred>().template operator()<ith_arg_t<I>>());
+  using ith_result_t =
+      decltype(std::declval<Pred>().template operator()<ith_arg_t<I>>());
 
   constexpr static auto size = UPD_WITH_SEQUENCE(Is, tuple_size_v<Base>) {
     namespace stdv = std::views;
 
     constexpr auto truth_table = std::array{ith_result_t<Is>::value...};
-    return std::ranges::count(truth_table | stdv::take_while(std::identity{}), true);
+    return std::ranges::count(truth_table | stdv::take_while(std::identity{}),
+                              true);
   };
 
   template<std::size_t I, typename View>

@@ -23,22 +23,28 @@ struct varname {
 };
 
 template<name Identifier>
-constexpr auto value_of = upd::algebra::side{upd::algebra::variable<varname{vartype::value, Identifier}>{}};
+constexpr auto value_of = upd::algebra::side{
+    upd::algebra::variable<varname{vartype::value, Identifier}>{}};
 
 template<name Identifier>
-constexpr auto length_of = upd::algebra::side{upd::algebra::variable<varname{vartype::length, Identifier}>{}};
+constexpr auto length_of = upd::algebra::side{
+    upd::algebra::variable<varname{vartype::length, Identifier}>{}};
 
 template<name Identifier>
-constexpr auto count_of = upd::algebra::side{upd::algebra::variable<varname{vartype::count, Identifier}>{}};
+constexpr auto count_of = upd::algebra::side{
+    upd::algebra::variable<varname{vartype::count, Identifier}>{}};
 
 template<name Identifier>
-constexpr auto code_of = upd::algebra::side{upd::algebra::variable<varname{vartype::code, Identifier}>{}};
+constexpr auto code_of = upd::algebra::side{
+    upd::algebra::variable<varname{vartype::code, Identifier}>{}};
 
 } // namespace upd
 
 template<std::size_t N>
 struct std::formatter<upd::varname<N>> {
-  constexpr static auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
+  constexpr static auto parse(std::format_parse_context &ctx) {
+    return ctx.begin();
+  }
 
   static auto format(upd::varname<N> vn, std::format_context &ctx) {
     auto it = ctx.out();

@@ -26,7 +26,8 @@ struct zip_view {
 template<record_like Lhs, record_like Rhs>
 zip_view(Lhs &&, Rhs &&) -> zip_view<Lhs, Rhs>;
 
-constexpr auto zip = []<record_like Lhs, record_like Rhs>(Lhs &&lhs, Rhs &&rhs) {
+constexpr auto zip = []<record_like Lhs, record_like Rhs>(Lhs &&lhs,
+                                                          Rhs &&rhs) {
   auto ensure_view = [](auto &&rec) { return view_t{UPD_FWD(rec)}; };
   return zip_view{ensure_view(UPD_FWD(lhs)), ensure_view(UPD_FWD(rhs))};
 };
@@ -48,6 +49,7 @@ struct upd::record_view_for<upd::record_views::zip_view<Lhs, Rhs>> {
     using lhs_value_type = decltype(get<tag>(UPD_FWD(view).lhs));
     using rhs_value_type = decltype(get<tag>(UPD_FWD(view).rhs));
     using value_type = std::pair<lhs_value_type, rhs_value_type>;
-    return entry{expr<tag>, value_type{get<tag>(UPD_FWD(view).lhs), get<tag>(UPD_FWD(view).rhs)}};
+    return entry{expr<tag>, value_type{get<tag>(UPD_FWD(view).lhs),
+                                       get<tag>(UPD_FWD(view).rhs)}};
   }
 };

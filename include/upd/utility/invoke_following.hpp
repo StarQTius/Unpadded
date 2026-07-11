@@ -10,7 +10,8 @@ namespace upd {
 template<typename... Args>
 struct invoke_following {
 public:
-  constexpr explicit invoke_following(Args... args) : m_args{UPD_FWD(args)...} {}
+  constexpr explicit invoke_following(Args... args)
+      : m_args{UPD_FWD(args)...} {}
 
   template<typename F>
   constexpr auto operator|(F &&f) -> decltype(auto) {

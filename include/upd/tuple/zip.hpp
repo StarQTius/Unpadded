@@ -23,7 +23,8 @@ struct zip_view {
 template<tuple_like2 Lhs, tuple_like2 Rhs>
 zip_view(Lhs &&, Rhs &&) -> zip_view<Lhs, Rhs>;
 
-constexpr auto zip = []<tuple_like2 Lhs, tuple_like2 Rhs>(Lhs &&lhs, Rhs &&rhs) {
+constexpr auto zip = []<tuple_like2 Lhs, tuple_like2 Rhs>(Lhs &&lhs,
+                                                          Rhs &&rhs) {
   auto ensure_view = [](auto &&rec) { return view_t{UPD_FWD(rec)}; };
   return zip_view{ensure_view(UPD_FWD(lhs)), ensure_view(UPD_FWD(rhs))};
 };
@@ -42,6 +43,7 @@ struct upd::tuple_view_for<upd::tuple_views::zip_view<Lhs, Rhs>> {
     using lhs_value_type = decltype(upd::get<I>(UPD_FWD(view).lhs));
     using rhs_value_type = decltype(upd::get<I>(UPD_FWD(view).rhs));
     using value_type = std::pair<lhs_value_type, rhs_value_type>;
-    return value_type{upd::get<I>(UPD_FWD(view).lhs), upd::get<I>(UPD_FWD(view).rhs)};
+    return value_type{upd::get<I>(UPD_FWD(view).lhs),
+                      upd::get<I>(UPD_FWD(view).rhs)};
   }
 };

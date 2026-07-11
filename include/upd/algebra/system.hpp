@@ -29,44 +29,59 @@ constexpr struct unit_t {
 } unit;
 
 template<typename T>
-[[nodiscard]] constexpr auto operator==(unit_t, const T &) noexcept(release) -> bool {
+[[nodiscard]] constexpr auto
+operator==(unit_t, const T &) noexcept(release) -> bool {
   return false;
 }
 
 template<typename T>
-[[nodiscard]] constexpr auto operator==(const T &, unit_t) noexcept(release) -> bool {
+[[nodiscard]] constexpr auto
+operator==(const T &, unit_t) noexcept(release) -> bool {
   return false;
 }
 
-[[nodiscard]] constexpr inline auto operator==(unit_t, unit_t) noexcept(release) -> bool { return true; }
+[[nodiscard]] constexpr inline auto
+operator==(unit_t, unit_t) noexcept(release) -> bool {
+  return true;
+}
 
 } // namespace upd
 
 namespace upd::algebra {
 
 template<std::size_t MaxPassCount = 16, auto Varname, tuple_like2 System>
-[[nodiscard]] constexpr auto try_solve_for(side<variable<Varname>> var, const System &sys) noexcept(release) {
+[[nodiscard]] constexpr auto
+try_solve_for(side<variable<Varname>> var,
+              const System &sys) noexcept(release) {
   namespace updv = upd::tuple_views;
 
   auto solpos = updv::find_if(sys, [&]<typename Eq>(typebox<Eq>) {
     using eq_type = std::remove_cvref_t<Eq>;
-    return variadic::is_template_deductible_from<let, eq_type>() && eq_type::depends_on(var.expr);
+    return variadic::is_template_deductible_from<let, eq_type>()
+           && eq_type::depends_on(var.expr);
   });
 
   if constexpr (solpos < tuple_size_v<decltype(sys)>) {
     return get<solpos>(sys).rhs;
   } else if constexpr (MaxPassCount > 0) {
-    auto ssys = sys | updv::transform([&](const auto &eq) { return eq.simplify(); });
-    auto lets =
-        ssys
-        | updv::filter([]<typename Eq>(typebox<Eq>) { return variadic::is_template_deductible_from<let, Eq>(); })
-        | updv::transform([](const auto &eq) { return let{eq}; })
-        | updv::transform([](auto lt) { return side{variable<lt.varname>{}} = lt.val; })
-        | updv::to<std::tuple>;
-    auto eqs =
-        ssys
-        | updv::filter([]<typename Eq>(typebox<Eq>) { return !variadic::is_template_deductible_from<let, Eq>(); })
-        | updv::transform([&](const auto &eq) { return eq.substitute(lets).simplify(); });
+    auto ssys =
+        sys | updv::transform([&](const auto &eq) { return eq.simplify(); });
+    auto lets = ssys
+                | updv::filter([]<typename Eq>(typebox<Eq>) {
+                    return variadic::is_template_deductible_from<let, Eq>();
+                  })
+                | updv::transform([](const auto &eq) { return let{eq}; })
+                | updv::transform([](auto lt) {
+                    return side{variable<lt.varname>{}} = lt.val;
+                  })
+                | updv::to<std::tuple>;
+    auto eqs = ssys
+               | updv::filter([]<typename Eq>(typebox<Eq>) {
+                   return !variadic::is_template_deductible_from<let, Eq>();
+                 })
+               | updv::transform([&](const auto &eq) {
+                   return eq.substitute(lets).simplify();
+                 });
 
     auto newsys = updv::concat(lets, eqs) | updv::to<std::tuple>;
     return try_solve_for<MaxPassCount - 1>(var, newsys);
@@ -76,7 +91,8 @@ template<std::size_t MaxPassCount = 16, auto Varname, tuple_like2 System>
 }
 
 template<std::size_t MaxPassCount = 16, auto Varname, tuple_like2 System>
-[[nodiscard]] constexpr auto solve_for(side<variable<Varname>> var, const System &sys) noexcept(release) {
+[[nodiscard]] constexpr auto
+solve_for(side<variable<Varname>> var, const System &sys) noexcept(release) {
   auto retval = try_solve_for<MaxPassCount>(var, sys);
   if constexpr (retval != unit) {
     return retval;

@@ -8,19 +8,21 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#define REQUIRE_TYPE(VALUE, ...)                                                                                       \
-  do {                                                                                                                 \
-    if constexpr (!std::same_as<decltype(VALUE), __VA_ARGS__>) {                                                       \
-      FAIL(std::format("{} != {}", identifier_of<decltype(VALUE)>(), identifier_of<__VA_ARGS__>()));                   \
-    }                                                                                                                  \
+#define REQUIRE_TYPE(VALUE, ...)                                               \
+  do {                                                                         \
+    if constexpr (!std::same_as<decltype(VALUE), __VA_ARGS__>) {               \
+      FAIL(std::format("{} != {}", identifier_of<decltype(VALUE)>(),           \
+                       identifier_of<__VA_ARGS__>()));                         \
+    }                                                                          \
   } while (false)
 
-#define REQUIRE_SAME(LHS, RHS)                                                                                         \
-  do {                                                                                                                 \
-    if constexpr (!std::same_as<decltype(LHS), decltype(RHS)>) {                                                       \
-      FAIL(std::format("{} != {}", identifier_of<decltype(LHS)>(), identifier_of<decltype(RHS)>()));                   \
-    }                                                                                                                  \
-    REQUIRE(address_of(LHS) == address_of(RHS));                                                                       \
+#define REQUIRE_SAME(LHS, RHS)                                                 \
+  do {                                                                         \
+    if constexpr (!std::same_as<decltype(LHS), decltype(RHS)>) {               \
+      FAIL(std::format("{} != {}", identifier_of<decltype(LHS)>(),             \
+                       identifier_of<decltype(RHS)>()));                       \
+    }                                                                          \
+    REQUIRE(address_of(LHS) == address_of(RHS));                               \
   } while (false)
 
 template<typename T>

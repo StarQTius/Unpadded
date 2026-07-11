@@ -28,7 +28,8 @@ TEST_CASE("Tuple views", "[tuple_view]") {
   upd::regular_tuple auto t = std::tuple{int{4}, char{8}, long{67}};
 
   SECTION("Transform element of a tuple") {
-    upd::tuple_view auto view = t | updv::transform([](auto x) { return x + 1; });
+    upd::tuple_view auto view =
+        t | updv::transform([](auto x) { return x + 1; });
     REQUIRE(upd::get<0>(view) == 5);
     REQUIRE(upd::get<1>(view) == 9);
     REQUIRE(upd::get<2>(view) == 68);
@@ -51,7 +52,10 @@ TEST_CASE("Tuple views", "[tuple_view]") {
   }
 
   SECTION("Filter elements of a tuple") {
-    upd::tuple_view auto view = t | updv::filter([]<typename T>(upd::typebox<T>) { return !std::same_as<T, char &>; });
+    upd::tuple_view auto view =
+        t | updv::filter([]<typename T>(upd::typebox<T>) {
+          return !std::same_as<T, char &>;
+        });
     REQUIRE(&upd::get<0>(view) == &upd::get<0>(t));
     REQUIRE(&upd::get<1>(view) == &upd::get<2>(t));
   }
@@ -84,7 +88,8 @@ TEST_CASE("Tuple views", "[tuple_view]") {
   }
 
   SECTION("Transform element types") {
-    upd::tuple_view auto view = t | updv::transform_type([]<typename T> -> T * {});
+    upd::tuple_view auto view =
+        t | updv::transform_type([]<typename T> -> T * {});
     REQUIRE_TYPE(upd::get<0>(view), int *);
     REQUIRE_TYPE(upd::get<1>(view), char *);
     REQUIRE_TYPE(upd::get<2>(view), long *);
@@ -105,7 +110,9 @@ TEST_CASE("Tuple views", "[tuple_view]") {
   }
 
   SECTION("Instantiate a tuple template") {
-    using tuple_type = decltype(t | updv::transform_type([]<typename T> -> T * {}) | updv::instantiate<std::tuple>);
+    using tuple_type = decltype(t
+                                | updv::transform_type([]<typename T> -> T * {})
+                                | updv::instantiate<std::tuple>);
     REQUIRE(std::same_as<tuple_type, std::tuple<int *, char *, long *>>);
   }
 
@@ -121,7 +128,8 @@ TEST_CASE("Tuple views", "[tuple_view]") {
   }
 
   SECTION("Join viewed tuples together") {
-    upd::tuple_view auto view = t | updv::transform([](auto x) { return std::tuple{x}; }) | updv::join;
+    upd::tuple_view auto view =
+        t | updv::transform([](auto x) { return std::tuple{x}; }) | updv::join;
 
     REQUIRE(upd::get<0>(view) == upd::get<0>(t));
     REQUIRE(upd::get<1>(view) == upd::get<1>(t));
@@ -156,7 +164,9 @@ TEST_CASE("Tuple views", "[tuple_view]") {
 
   SECTION("Group tuple elements into subtuples") {
     auto s = std::tuple{long{}, int{}, char{}};
-    upd::record_view auto view = updv::concat(t, s) | updv::group_by([]<typename T> -> upd::expr_t<T {}>{});
+    upd::record_view auto view =
+        updv::concat(t, s)
+        | updv::group_by([]<typename T> -> upd::expr_t<T {}>{});
 
     REQUIRE(upd::record_size_v<decltype(view)> == 3);
     REQUIRE(&upd::get<0>(upd::get<int{}>(view)) == &upd::get<0>(t));
@@ -168,7 +178,9 @@ TEST_CASE("Tuple views", "[tuple_view]") {
   }
 
   SECTION("Take while predicate is satisfied") {
-    upd::tuple_view auto view = t | updv::take_while([]<typename T> { return upd::expr<!std::same_as<T, long>>; });
+    upd::tuple_view auto view = t | updv::take_while([]<typename T> {
+                                  return upd::expr<!std::same_as<T, long>>;
+                                });
 
     REQUIRE(upd::tuple_size_v<decltype(view)> == 2);
     REQUIRE(&upd::get<0>(view) == &upd::get<0>(t));
@@ -182,25 +194,29 @@ TEST_CASE("Algorithms on records", "[tuple_algorithm]") {
   upd::regular_tuple auto t = std::tuple{int{4}, char{8}, long{67}};
 
   SECTION("Find element in a tuple") {
-    auto i = updv::find_if(t, []<typename T>(upd::typebox<T>) { return std::same_as<T, long &>; });
+    auto i = updv::find_if(
+        t, []<typename T>(upd::typebox<T>) { return std::same_as<T, long &>; });
     REQUIRE(i == 2);
   }
 
   SECTION("Left-fold tuple content") {
-    auto res = updv::fold_left(t, 0, [i = 0](auto acc, auto v) mutable { return (acc + v) * i++; });
+    auto res = updv::fold_left(
+        t, 0, [i = 0](auto acc, auto v) mutable { return (acc + v) * i++; });
 
     REQUIRE(res == ((4 * 0 + 8) * 1 + 67) * 2);
   }
 
   SECTION("Right-fold tuple content") {
-    auto res = updv::fold_right(t, 0, [i = 0](auto v, auto acc) mutable { return (acc + i++) * v; });
+    auto res = updv::fold_right(
+        t, 0, [i = 0](auto v, auto acc) mutable { return (acc + i++) * v; });
 
     REQUIRE(res == ((0 * 67 + 1) * 8 + 2) * 4);
   }
 
   SECTION("Get intersection of metavalue set") {
-    auto inter = upd::intersect(std::tuple{upd::expr<0>, upd::expr<1>, upd::expr<2>, upd::expr<3>},
-                                std::tuple{upd::expr<4>, upd::expr<2>, upd::expr<1>, upd::expr<3>});
+    auto inter = upd::intersect(
+        std::tuple{upd::expr<0>, upd::expr<1>, upd::expr<2>, upd::expr<3>},
+        std::tuple{upd::expr<4>, upd::expr<2>, upd::expr<1>, upd::expr<3>});
 
     REQUIRE(!upd::has_type<upd::expr_t<0>>(inter));
     REQUIRE(upd::has_type<upd::expr_t<1>>(inter));
@@ -224,7 +240,8 @@ TEST_CASE("Algorithms on records", "[tuple_algorithm]") {
   }
 
   SECTION("Apply a metafunction to content type") {
-    using result_type = decltype(updv::apply_type(t, []<typename... Ts> -> upd::typelist2_t<Ts...> {}));
+    using result_type = decltype(updv::apply_type(
+        t, []<typename... Ts> -> upd::typelist2_t<Ts...> {}));
     REQUIRE(std::same_as<result_type, upd::typelist2_t<int, char, long>>);
   }
 
@@ -247,13 +264,16 @@ TEST_CASE("Tuple view handling references", "[tuple_view]") {
   auto t = std::tuple<int &, int &&, int>{lv, std::move(xv), 34};
 
   SECTION("Pass references through transform") {
-    upd::tuple_view auto lview = t | updv::transform([](auto &&v) -> auto && { return UPD_FWD(v); });
+    upd::tuple_view auto lview =
+        t | updv::transform([](auto &&v) -> auto && { return UPD_FWD(v); });
 
     REQUIRE_SAME(upd::get<0>(lview), (lv));
     REQUIRE_SAME(upd::get<1>(lview), (xv));
     REQUIRE_SAME(upd::get<2>(lview), upd::get<2>(t));
 
-    upd::tuple_view auto rview = std::move(t) | updv::transform([](auto &&v) -> auto && { return UPD_FWD(v); });
+    upd::tuple_view auto rview =
+        std::move(t)
+        | updv::transform([](auto &&v) -> auto && { return UPD_FWD(v); });
 
     REQUIRE_SAME(upd::get<0>(rview), (lv));
     REQUIRE_SAME(upd::get<1>(rview), std::move(xv));
@@ -281,7 +301,8 @@ TEST_CASE("Tuple view handling references", "[tuple_view]") {
     REQUIRE_SAME(upd::get<1>(lview), (xv));
     REQUIRE_SAME(upd::get<2>(lview), upd::get<2>(t));
 
-    upd::tuple_view auto rview = std::move(t) | updv::filter([](auto) { return true; });
+    upd::tuple_view auto rview =
+        std::move(t) | updv::filter([](auto) { return true; });
 
     REQUIRE_SAME(upd::get<0>(rview), (lv));
     REQUIRE_SAME(upd::get<1>(rview), std::move(xv));

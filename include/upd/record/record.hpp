@@ -33,7 +33,8 @@ class record;
 
 template<auto... Identifiers, typename... Ts>
 class record<entry<Identifiers, Ts>...> {
-  friend struct upd::record_like_for<upd::record<upd::entry<Identifiers, Ts>...>>;
+  friend struct upd::record_like_for<
+      upd::record<upd::entry<Identifiers, Ts>...>>;
 
   using storage_type = lite_record<lite_record_node<Identifiers, Ts>...>;
 
@@ -43,31 +44,43 @@ public:
   = default;
 
   template<typename... Entries>
-    requires(sizeof...(Ts) == sizeof...(Entries) && (is_instance_of<Entries, entry>() && ...))
+    requires(sizeof...(Ts)
+             == sizeof...(Entries)
+             && (is_instance_of<Entries, entry>() && ...))
   constexpr explicit record(Entries &&...entries)
-      : m_storage{lite_record_node<Identifiers, typename std::remove_cvref_t<Entries>::value_type>{
-            UPD_FWD(entries).forward()}...} {}
+      : m_storage{
+            lite_record_node<Identifiers,
+                             typename std::remove_cvref_t<Entries>::value_type>{
+                UPD_FWD(entries).forward()}...} {}
 
   template<typename Record>
     requires(is_instance_of<Record, record>()
-             && variadic::identical(std::tuple{expr<Identifiers>...}, tags_of_v<Record>))
+             && variadic::identical(std::tuple{expr<Identifiers>...},
+                                    tags_of_v<Record>))
   constexpr record(Record &&other)
-    requires(std::constructible_from<Ts, decltype(get<Identifiers>(UPD_FWD(other)))> && ...)
-      : m_storage{lite_record_node<Identifiers, record_element_t<Identifiers, Record>>{
+    requires(
+        std::constructible_from<Ts, decltype(get<Identifiers>(UPD_FWD(other)))>
+        && ...)
+      : m_storage{lite_record_node<Identifiers,
+                                   record_element_t<Identifiers, Record>>{
             get<Identifiers>(UPD_FWD(other))}...} {}
 
   template<typename Record>
     requires(is_instance_of<Record, record>()
-             && variadic::identical(std::tuple{expr<Identifiers>...}, tags_of_v<Record>))
+             && variadic::identical(std::tuple{expr<Identifiers>...},
+                                    tags_of_v<Record>))
   constexpr record &operator=(Record && other)
-    requires(std::assignable_from<Ts, decltype(get<Identifiers>(UPD_FWD(other)))> && ...)
+    requires(
+        std::assignable_from<Ts, decltype(get<Identifiers>(UPD_FWD(other)))>
+        && ...)
   {
     ((void)(get<Identifiers>(*this) = get<Identifiers>(UPD_FWD(other))), ...);
     return *this;
   }
 
   template<typename Self, auto Id>
-  [[nodiscard]] constexpr auto operator[](this Self &&self, keyword2<Id>) noexcept(release) -> auto && {
+  [[nodiscard]] constexpr auto
+  operator[](this Self &&self, keyword2<Id>) noexcept(release) -> auto && {
     return UPD_FWD(self).m_storage.get_by_tag(expr<Id>);
   }
 
@@ -80,7 +93,9 @@ template<typename... Entries>
 explicit record(Entries...) -> record<Entries...>;
 
 template<typename... Es, typename... Fs>
-[[nodiscard]] constexpr auto operator==(const record<Es...> &lhs, const record<Fs...> &rhs) noexcept(release) -> bool {
+[[nodiscard]] constexpr auto
+operator==(const record<Es...> &lhs, const record<Fs...> &rhs) noexcept(release)
+    -> bool {
   auto lhs_tags = std::tuple{expr<Es::identifier>...};
   auto rhs_tags = std::tuple{expr<Fs::identifier>...};
   if constexpr (variadic::identical(lhs_tags, rhs_tags)) {
@@ -104,7 +119,9 @@ template<typename Record, typename Entry>
   requires(is_instance_of<Record, record>() && is_instance_of<Entry, entry>())
 [[nodiscard]] constexpr auto operator,(Record &&rec, Entry &&ent) {
   return UPD_WITH_SEQUENCE(Is, record_size_v<Record>, &) {
-    return record{entry{expr<record_tag_v<Is, Record>>, get_ith<Is>(UPD_FWD(rec))}..., UPD_FWD(ent)};
+    return record{
+        entry{expr<record_tag_v<Is, Record>>, get_ith<Is>(UPD_FWD(rec))}...,
+        UPD_FWD(ent)};
   };
 }
 
@@ -120,10 +137,13 @@ struct upd::record_like_for<upd::record<upd::entry<Identifiers, Ts>...>> {
   constexpr static auto tag = std::get<I>(std::tuple{Identifiers...});
 
   template<auto Id>
-  using element_type = typename decltype(record_type::storage_type::get_type_by_tag(expr<Id>))::type;
+  using element_type =
+      typename decltype(record_type::storage_type::get_type_by_tag(
+          expr<Id>))::type;
 
   template<std::size_t I, typename Record>
-  [[nodiscard]] constexpr static auto get_ith(Record &&rec) noexcept(release) -> auto && {
+  [[nodiscard]] constexpr static auto
+  get_ith(Record &&rec) noexcept(release) -> auto && {
     return UPD_FWD(rec)[keyword2<tag<I>>{}];
   }
 };
@@ -134,7 +154,9 @@ struct upd::collector_for<upd::template_box<upd::record>> {
   [[nodiscard]] constexpr static auto collect(View &&view) {
     namespace updv = upd::record_views;
 
-    return updv::apply([](auto &&...entries) { return record{UPD_FWD(entries)...}; }, UPD_FWD(view));
+    return updv::apply(
+        [](auto &&...entries) { return record{UPD_FWD(entries)...}; },
+        UPD_FWD(view));
   }
 };
 
@@ -142,9 +164,12 @@ template<typename... Entries>
 struct std::formatter<upd::record<Entries...>> {
   consteval formatter() noexcept(upd::release) = default;
 
-  [[nodiscard]] constexpr static auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
+  [[nodiscard]] constexpr static auto parse(std::format_parse_context &ctx) {
+    return ctx.begin();
+  }
 
-  [[nodiscard]] constexpr static auto format(const upd::record<Entries...> &rec, std::format_context &ctx) {
+  [[nodiscard]] constexpr static auto
+  format(const upd::record<Entries...> &rec, std::format_context &ctx) {
     namespace updv = upd::record_views;
 
     auto it = ctx.out();

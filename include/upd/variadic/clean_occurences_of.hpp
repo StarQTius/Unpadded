@@ -11,8 +11,10 @@ namespace upd {
 
 template<typename Cleanme, typename... Ts>
 struct clean_occurences_of {
-  constexpr static auto keeps_element = std::array<bool, sizeof...(Ts)>{!std::same_as<Ts, Cleanme>...};
-  constexpr static auto kept_element_count = std::ranges::fold_left(keeps_element, 0uz, std::plus<std::size_t>{});
+  constexpr static auto keeps_element =
+      std::array<bool, sizeof...(Ts)>{!std::same_as<Ts, Cleanme>...};
+  constexpr static auto kept_element_count =
+      std::ranges::fold_left(keeps_element, 0uz, std::plus<std::size_t>{});
   constexpr static auto value = [] {
     namespace stdv = std::views;
 
@@ -31,6 +33,7 @@ struct clean_occurences_of {
 };
 
 template<typename Cleanme, typename... Ts>
-constexpr auto clean_occurences_of_v = clean_occurences_of<Cleanme, Ts...>::value;
+constexpr auto clean_occurences_of_v =
+    clean_occurences_of<Cleanme, Ts...>::value;
 
 } // namespace upd

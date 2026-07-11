@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <expected>
 #include <ranges>
 #include <tuple>
@@ -42,31 +43,37 @@ struct repeat_t {
   Rule rule;
 
   template<record_like Packet, record_like Fields, codec_info CodecInfo>
-  [[nodiscard]] constexpr auto rules(const Packet &packet, const Fields &fields, expr_t<CodecInfo>) const {
+  [[nodiscard]] constexpr auto
+  rules(const Packet &packet, const Fields &fields, expr_t<CodecInfo>) const {
     if constexpr (has_tag_v<Identifier, Packet>) {
       return std::tuple{length_of<Identifier> = rule,
-                        length_of<Identifier> = get<Identifier>(fields).bitsize(get<Identifier>(packet))};
+                        length_of<Identifier> = get<Identifier>(fields).bitsize(
+                            get<Identifier>(packet))};
     } else {
       return std::tuple{length_of<Identifier> = rule};
     }
   }
 
   template<tuple_like2 System>
-  constexpr void encode(const value_type &value, stream_interface &dest, const System &) const {
+  constexpr void encode(const value_type &value,
+                        stream_interface &dest,
+                        const System &) const {
     for (const auto &element : value) {
       description.encode(element, dest);
     }
   }
 
   template<record_like Fields, tuple_like2 System>
-  [[nodiscard]] constexpr auto decode(stream_interface &src, const Fields &, const System &sys) const
+  [[nodiscard]] constexpr auto
+  decode(stream_interface &src, const Fields &, const System &sys) const
       -> result<value_type> {
     namespace stdv = std::views;
     namespace updv = upd::tuple_views;
 
     auto len = solve_for(length_of<Identifier>, sys | updv::to<std::tuple>);
     if (len < 0) {
-      return std::unexpected{negative_repetition_count{identifier.string, static_cast<word_t>(len)}};
+      return std::unexpected{negative_repetition_count{
+          identifier.string, static_cast<word_t>(len)}};
     }
 
     auto retval = static_vector<typename Description::result_type, Max>{};
@@ -83,22 +90,29 @@ struct repeat_t {
     }
 
     if (overflown) {
-      return std::unexpected{repeated_beyond_max{identifier.string, static_cast<uword_t>(len), Max}};
+      return std::unexpected{repeated_beyond_max{
+          identifier.string, static_cast<uword_t>(len), Max}};
     }
 
     return retval;
   }
 
   template<typename T, std::size_t M>
-  [[nodiscard]] constexpr auto bitsize(const static_vector<T, M> &svec) const -> std::size_t {
+  [[nodiscard]] constexpr auto
+  bitsize(const static_vector<T, M> &svec) const -> std::size_t {
     namespace stdr = std::ranges;
-    return stdr::fold_left(svec, 0uz, [&](auto acc, const auto &elem) { return acc + description.bitsize(elem); });
+    return stdr::fold_left(svec, 0uz, [&](auto acc, const auto &elem) {
+      return acc + description.bitsize(elem);
+    });
   }
 
   template<typename T, std::size_t N>
-  [[nodiscard]] constexpr auto bitsize(const std::array<T, N> &arr) const -> std::size_t {
+  [[nodiscard]] constexpr auto
+  bitsize(const std::array<T, N> &arr) const -> std::size_t {
     namespace stdr = std::ranges;
-    return stdr::fold_left(arr, 0uz, [&](auto acc, const auto &elem) { return acc + description.bitsize(elem); });
+    return stdr::fold_left(arr, 0uz, [&](auto acc, const auto &elem) {
+      return acc + description.bitsize(elem);
+    });
   }
 };
 
@@ -107,10 +121,11 @@ template<name Identifier, typename Description, typename Rule>
   using description_type = std::remove_cvref_t<Description>;
   using rule_type = std::remove_cvref_t<Rule>;
 
-  auto retval = repeat_t<Identifier, description_type, rule_type, max_repetition>{
-      .description = UPD_FWD(descr),
-      .rule = UPD_FWD(rule),
-  };
+  auto retval =
+      repeat_t<Identifier, description_type, rule_type, max_repetition>{
+          .description = UPD_FWD(descr),
+          .rule = UPD_FWD(rule),
+      };
 
   return description{std::move(retval)};
 }

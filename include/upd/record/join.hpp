@@ -53,6 +53,7 @@ struct upd::record_view_for<upd::record_views::join_view<Base, Joiner>> {
     constexpr auto joined_tag = UPD_INVOKE(view.joiner, tag, subtag);
 
     using value_type = decltype(get<subtag>(get<tag>(UPD_FWD(view).base)));
-    return entry<joined_tag, value_type>{get<subtag>(get<tag>(UPD_FWD(view).base))};
+    return entry<joined_tag, value_type>{
+        get<subtag>(get<tag>(UPD_FWD(view).base))};
   }
 };

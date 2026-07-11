@@ -1,20 +1,27 @@
 #pragma once
 
 #include <algorithm>
+#include <bit>
 #include <climits>
+#include <concepts>
 #include <cstddef>
+#include <cstdint>
 #include <iosfwd>
 #include <istream>
+#include <iterator>
 #include <ranges>
 
 #include "../error.hpp"
+#include "../upd.hpp"
 #include "stream_interface.hpp"
 
 namespace upd {
 
 class standard_stream : public stream_interface {
 public:
-  constexpr explicit standard_stream(std::istream *in, std::ostream *out, const char *sep)
+  constexpr explicit standard_stream(std::istream *in,
+                                     std::ostream *out,
+                                     const char *sep)
       : m_in{in}, m_out{out}, m_sep{sep} {}
 
   auto read(std::size_t bitcount, char *dest) -> lite_error_t override {

@@ -36,7 +36,9 @@ struct upd::record_view_for<upd::record_views::transform_view<Base, F>> {
   template<std::size_t I, typename View>
   [[nodiscard]] constexpr static auto get_ith(View &&view) -> decltype(auto) {
     constexpr auto tag = record_tag_v<I, Base>;
-    using type = decltype(UPD_INVOKE(view.f, expr<tag>, upd::get_ith<I>(UPD_FWD(view).base)));
-    return entry<tag, type>{UPD_INVOKE(view.f, expr<tag>, upd::get_ith<I>(UPD_FWD(view).base))};
+    using type = decltype(UPD_INVOKE(view.f, expr<tag>,
+                                     upd::get_ith<I>(UPD_FWD(view).base)));
+    return entry<tag, type>{
+        UPD_INVOKE(view.f, expr<tag>, upd::get_ith<I>(UPD_FWD(view).base))};
   }
 };

@@ -18,13 +18,15 @@ struct typebox {
   using unqualified_type = std::remove_cvref_t<T>;
 
   template<typename U>
-  [[nodiscard]] constexpr auto operator==(typebox<U>) noexcept(release) -> bool {
+  [[nodiscard]] constexpr auto
+  operator==(typebox<U>) noexcept(release) -> bool {
     return std::same_as<T, U>;
   }
 };
 
 template<typename T>
-constexpr auto uid =
-    [](auto) { return std::string_view{std::source_location::current().function_name()}; }(typebox<T>{});
+constexpr auto uid = [](auto) {
+  return std::string_view{std::source_location::current().function_name()};
+}(typebox<T>{});
 
 } // namespace upd

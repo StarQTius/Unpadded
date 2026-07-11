@@ -1,16 +1,23 @@
+#include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <format>
 #include <iostream>
+#include <limits>
 #include <print>
+#include <ranges>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 
 namespace std {
 
 // Small hack to force `std::cout` to print `char` as integer
-auto operator<<(ostream &os, char b) -> ostream & { return os << +static_cast<unsigned char>(b); }
+auto operator<<(ostream &os, char b) -> ostream & {
+  return os << +static_cast<unsigned char>(b);
+}
 
 } // namespace std
 
@@ -18,7 +25,9 @@ auto operator<<(ostream &os, char b) -> ostream & { return os << +static_cast<un
 #include <upd/description.hpp>
 #include <upd/error.hpp>
 #include <upd/record.hpp>
+#include <upd/stream.hpp>
 #include <upd/tuple.hpp>
+#include <upd/utility/token.hpp>
 #include <upd/utility/when_then.hpp>
 
 #define BITMASK(N) ((1u << N) - 1u)
@@ -28,24 +37,34 @@ using crc = std::uint16_t;
 
 constexpr auto accumulate_crc(crc acc, std::uint8_t byte) noexcept -> crc {
   constexpr auto crc_table = std::array{
-      0x0000, 0x8005, 0x800f, 0x000a, 0x801b, 0x001e, 0x0014, 0x8011, 0x8033, 0x0036, 0x003c, 0x8039, 0x0028, 0x802d,
-      0x8027, 0x0022, 0x8063, 0x0066, 0x006c, 0x8069, 0x0078, 0x807d, 0x8077, 0x0072, 0x0050, 0x8055, 0x805f, 0x005a,
-      0x804b, 0x004e, 0x0044, 0x8041, 0x80c3, 0x00c6, 0x00cc, 0x80c9, 0x00d8, 0x80dd, 0x80d7, 0x00d2, 0x00f0, 0x80f5,
-      0x80ff, 0x00fa, 0x80eb, 0x00ee, 0x00e4, 0x80e1, 0x00a0, 0x80a5, 0x80af, 0x00aa, 0x80bb, 0x00be, 0x00b4, 0x80b1,
-      0x8093, 0x0096, 0x009c, 0x8099, 0x0088, 0x808d, 0x8087, 0x0082, 0x8183, 0x0186, 0x018c, 0x8189, 0x0198, 0x819d,
-      0x8197, 0x0192, 0x01b0, 0x81b5, 0x81bf, 0x01ba, 0x81ab, 0x01ae, 0x01a4, 0x81a1, 0x01e0, 0x81e5, 0x81ef, 0x01ea,
-      0x81fb, 0x01fe, 0x01f4, 0x81f1, 0x81d3, 0x01d6, 0x01dc, 0x81d9, 0x01c8, 0x81cd, 0x81c7, 0x01c2, 0x0140, 0x8145,
-      0x814f, 0x014a, 0x815b, 0x015e, 0x0154, 0x8151, 0x8173, 0x0176, 0x017c, 0x8179, 0x0168, 0x816d, 0x8167, 0x0162,
-      0x8123, 0x0126, 0x012c, 0x8129, 0x0138, 0x813d, 0x8137, 0x0132, 0x0110, 0x8115, 0x811f, 0x011a, 0x810b, 0x010e,
-      0x0104, 0x8101, 0x8303, 0x0306, 0x030c, 0x8309, 0x0318, 0x831d, 0x8317, 0x0312, 0x0330, 0x8335, 0x833f, 0x033a,
-      0x832b, 0x032e, 0x0324, 0x8321, 0x0360, 0x8365, 0x836f, 0x036a, 0x837b, 0x037e, 0x0374, 0x8371, 0x8353, 0x0356,
-      0x035c, 0x8359, 0x0348, 0x834d, 0x8347, 0x0342, 0x03c0, 0x83c5, 0x83cf, 0x03ca, 0x83db, 0x03de, 0x03d4, 0x83d1,
-      0x83f3, 0x03f6, 0x03fc, 0x83f9, 0x03e8, 0x83ed, 0x83e7, 0x03e2, 0x83a3, 0x03a6, 0x03ac, 0x83a9, 0x03b8, 0x83bd,
-      0x83b7, 0x03b2, 0x0390, 0x8395, 0x839f, 0x039a, 0x838b, 0x038e, 0x0384, 0x8381, 0x0280, 0x8285, 0x828f, 0x028a,
-      0x829b, 0x029e, 0x0294, 0x8291, 0x82b3, 0x02b6, 0x02bc, 0x82b9, 0x02a8, 0x82ad, 0x82a7, 0x02a2, 0x82e3, 0x02e6,
-      0x02ec, 0x82e9, 0x02f8, 0x82fd, 0x82f7, 0x02f2, 0x02d0, 0x82d5, 0x82df, 0x02da, 0x82cb, 0x02ce, 0x02c4, 0x82c1,
-      0x8243, 0x0246, 0x024c, 0x8249, 0x0258, 0x825d, 0x8257, 0x0252, 0x0270, 0x8275, 0x827f, 0x027a, 0x826b, 0x026e,
-      0x0264, 0x8261, 0x0220, 0x8225, 0x822f, 0x022a, 0x823b, 0x023e, 0x0234, 0x8231, 0x8213, 0x0216, 0x021c, 0x8219,
+      0x0000, 0x8005, 0x800f, 0x000a, 0x801b, 0x001e, 0x0014, 0x8011, 0x8033,
+      0x0036, 0x003c, 0x8039, 0x0028, 0x802d, 0x8027, 0x0022, 0x8063, 0x0066,
+      0x006c, 0x8069, 0x0078, 0x807d, 0x8077, 0x0072, 0x0050, 0x8055, 0x805f,
+      0x005a, 0x804b, 0x004e, 0x0044, 0x8041, 0x80c3, 0x00c6, 0x00cc, 0x80c9,
+      0x00d8, 0x80dd, 0x80d7, 0x00d2, 0x00f0, 0x80f5, 0x80ff, 0x00fa, 0x80eb,
+      0x00ee, 0x00e4, 0x80e1, 0x00a0, 0x80a5, 0x80af, 0x00aa, 0x80bb, 0x00be,
+      0x00b4, 0x80b1, 0x8093, 0x0096, 0x009c, 0x8099, 0x0088, 0x808d, 0x8087,
+      0x0082, 0x8183, 0x0186, 0x018c, 0x8189, 0x0198, 0x819d, 0x8197, 0x0192,
+      0x01b0, 0x81b5, 0x81bf, 0x01ba, 0x81ab, 0x01ae, 0x01a4, 0x81a1, 0x01e0,
+      0x81e5, 0x81ef, 0x01ea, 0x81fb, 0x01fe, 0x01f4, 0x81f1, 0x81d3, 0x01d6,
+      0x01dc, 0x81d9, 0x01c8, 0x81cd, 0x81c7, 0x01c2, 0x0140, 0x8145, 0x814f,
+      0x014a, 0x815b, 0x015e, 0x0154, 0x8151, 0x8173, 0x0176, 0x017c, 0x8179,
+      0x0168, 0x816d, 0x8167, 0x0162, 0x8123, 0x0126, 0x012c, 0x8129, 0x0138,
+      0x813d, 0x8137, 0x0132, 0x0110, 0x8115, 0x811f, 0x011a, 0x810b, 0x010e,
+      0x0104, 0x8101, 0x8303, 0x0306, 0x030c, 0x8309, 0x0318, 0x831d, 0x8317,
+      0x0312, 0x0330, 0x8335, 0x833f, 0x033a, 0x832b, 0x032e, 0x0324, 0x8321,
+      0x0360, 0x8365, 0x836f, 0x036a, 0x837b, 0x037e, 0x0374, 0x8371, 0x8353,
+      0x0356, 0x035c, 0x8359, 0x0348, 0x834d, 0x8347, 0x0342, 0x03c0, 0x83c5,
+      0x83cf, 0x03ca, 0x83db, 0x03de, 0x03d4, 0x83d1, 0x83f3, 0x03f6, 0x03fc,
+      0x83f9, 0x03e8, 0x83ed, 0x83e7, 0x03e2, 0x83a3, 0x03a6, 0x03ac, 0x83a9,
+      0x03b8, 0x83bd, 0x83b7, 0x03b2, 0x0390, 0x8395, 0x839f, 0x039a, 0x838b,
+      0x038e, 0x0384, 0x8381, 0x0280, 0x8285, 0x828f, 0x028a, 0x829b, 0x029e,
+      0x0294, 0x8291, 0x82b3, 0x02b6, 0x02bc, 0x82b9, 0x02a8, 0x82ad, 0x82a7,
+      0x02a2, 0x82e3, 0x02e6, 0x02ec, 0x82e9, 0x02f8, 0x82fd, 0x82f7, 0x02f2,
+      0x02d0, 0x82d5, 0x82df, 0x02da, 0x82cb, 0x02ce, 0x02c4, 0x82c1, 0x8243,
+      0x0246, 0x024c, 0x8249, 0x0258, 0x825d, 0x8257, 0x0252, 0x0270, 0x8275,
+      0x827f, 0x027a, 0x826b, 0x026e, 0x0264, 0x8261, 0x0220, 0x8225, 0x822f,
+      0x022a, 0x823b, 0x023e, 0x0234, 0x8231, 0x8213, 0x0216, 0x021c, 0x8219,
       0x0208, 0x820d, 0x8207, 0x0202};
 
   auto i = ((acc >> 8) ^ byte) & 0xff;
@@ -90,7 +109,9 @@ struct std::formatter<instruction_code> {
 
   consteval formatter() noexcept = default;
 
-  constexpr auto parse(std::format_parse_context &ctx) { return underlying_formatter.parse(ctx); }
+  constexpr auto parse(std::format_parse_context &ctx) {
+    return underlying_formatter.parse(ctx);
+  }
 
   auto format(instruction_code code, std::format_context &ctx) const {
     auto underlying_value = std::to_underlying(code);
@@ -109,18 +130,22 @@ constexpr auto description = [] {
          | ufield2<"id", 8>
          | ubound2<"length", 16>(length_of<"parameters"> / 8 + 3)
          | efield2<"instruction", instruction_code, 8>
-         | one_of<"parameters">(value_of<"instruction">,
-                                when<ping> = empty_description,
-                                when<read> = ufield2<"address", 16> | ufield2<"length_", 16>,
-                                when<write> = ufield2<"address", 16> | repeat<"data">(ufield2<anon, 8>),
-                                when<reg_write> = ufield2<"address", 16> | repeat<"data">(ufield2<anon, 8>),
-                                when<action> = empty_description,
-                                when<factory_reset> = efield2<anon, factory_reset_target, 8>,
-                                when<reboot> = empty_description,
-                                when<clear> = efield2<anon, clear_target, 40>,
-                                when<control_table_backup> = efield2<anon, control_table_backup_target, 40>,
-                                when<sync_read> =
-                                    ufield2<"address", 16> | ufield2<"length_", 16> | repeat<"ids">(ufield2<anon, 8>))
+         | one_of<"parameters">(
+             value_of<"instruction">, when<ping> = empty_description,
+             when<read> = ufield2<"address", 16> | ufield2<"length_", 16>,
+             when<write> =
+                 ufield2<"address", 16> | repeat<"data">(ufield2<anon, 8>),
+             when<reg_write> =
+                 ufield2<"address", 16> | repeat<"data">(ufield2<anon, 8>),
+             when<action> = empty_description,
+             when<factory_reset> = efield2<anon, factory_reset_target, 8>,
+             when<reboot> = empty_description,
+             when<clear> = efield2<anon, clear_target, 40>,
+             when<control_table_backup> =
+                 efield2<anon, control_table_backup_target, 40>,
+             when<sync_read> = ufield2<"address", 16>
+                               | ufield2<"length_", 16>
+                               | repeat<"ids">(ufield2<anon, 8>))
          | checksum2<"crc", 16>(accumulate_crc, all_fields);
 }();
 
@@ -138,7 +163,8 @@ constexpr auto answer_description = [] {
          | ufield2<"error", 8>
          | shadow_efield2<"status_of", instruction_code, 8>
          | one_of<"parameters">(value_of<"status_of">,
-                                when<ping> = ufield2<"model_number", 16> | ufield2<"firmware_version", 8>,
+                                when<ping> = ufield2<"model_number", 16>
+                                             | ufield2<"firmware_version", 8>,
                                 when<read> = repeat<"data">(ufield2<anon, 8>),
                                 when<write> = empty_description,
                                 when<reg_write> = empty_description,
@@ -146,18 +172,10 @@ constexpr auto answer_description = [] {
                                 when<factory_reset> = empty_description,
                                 when<reboot> = empty_description,
                                 when<control_table_backup> = empty_description,
-                                when<sync_read> = repeat<"data">(ufield2<anon, 8>))
+                                when<sync_read> =
+                                    repeat<"data">(ufield2<anon, 8>))
          | checksum2<"crc", 16>(accumulate_crc, all_fields);
 }();
-
-template<std::size_t N>
-struct bytearray : std::array<std::byte, N> {
-  template<typename... Bytes>
-  explicit bytearray(Bytes... bytes) noexcept : std::array<std::byte, N>{static_cast<std::byte>(bytes)...} {}
-};
-
-template<typename... Bytes>
-explicit bytearray(Bytes...) noexcept -> bytearray<sizeof...(Bytes)>;
 
 auto ping_example() -> upd::error;
 auto read_example() -> upd::error;
@@ -172,15 +190,9 @@ auto sync_read_example() -> upd::error;
 
 auto main() -> int {
   auto examples = std::array{
-      ping_example,
-      read_example,
-      write_example,
-      reg_write_example,
-      action_example,
-      factory_reset_example,
-      reboot_example,
-      clear_example,
-      control_table_backup_example,
+      ping_example,      read_example,   write_example,
+      reg_write_example, action_example, factory_reset_example,
+      reboot_example,    clear_example,  control_table_backup_example,
       sync_read_example,
   };
 
@@ -198,15 +210,18 @@ auto ping_example() -> upd::error {
 
   std::cout << std::hex;
   std::println("Ping: example 1");
-  description.encode(("id"_kw2 = 1, "instruction"_kw2 = instruction_code::ping, "parameters"_kw2 = upd::record{}),
+  description.encode(("id"_kw2 = 1, "instruction"_kw2 = instruction_code::ping,
+                      "parameters"_kw2 = upd::record{}),
 
-                     std::cout,
-                     " ");
+                     std::cout, " ");
   std::println("");
   std::println("");
 
-  auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x07, 0x00, 0x55, 0x00, 0x06, 0x04, 0x26, 0x65, 0x5d};
-  auto answer1 = answer_description.decode(answer1_seq.begin(), upd::record{"status_of"_kw2 = instruction_code::ping});
+  auto answer1_seq = std::array{0xff, 0xff, 0xfd, 0x00, 0x01, 0x07, 0x00,
+                                0x55, 0x00, 0x06, 0x04, 0x26, 0x65, 0x5d};
+  auto answer1 = answer_description.decode(
+      answer1_seq.begin(),
+      upd::record{"status_of"_kw2 = instruction_code::ping});
   if (!answer1) {
     return answer1.error();
   }
@@ -219,8 +234,11 @@ auto ping_example() -> upd::error {
   std::println("- parameters: {}", (*answer1)["parameters"_kw2]);
   std::println("");
 
-  auto answer2_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x02, 0x07, 0x00, 0x55, 0x00, 0x06, 0x04, 0x26, 0x6f, 0x6d};
-  auto answer2 = answer_description.decode(answer2_seq.begin(), upd::record{"status_of"_kw2 = instruction_code::ping});
+  auto answer2_seq = std::array{0xff, 0xff, 0xfd, 0x00, 0x02, 0x07, 0x00,
+                                0x55, 0x00, 0x06, 0x04, 0x26, 0x6f, 0x6d};
+  auto answer2 = answer_description.decode(
+      answer2_seq.begin(),
+      upd::record{"status_of"_kw2 = instruction_code::ping});
   if (!answer2) {
     return answer2.error();
   }
@@ -242,18 +260,20 @@ auto read_example() -> upd::error {
 
   std::cout << std::hex;
   std::println("Read: example");
-  description.encode(("id"_kw2 = 1,
-                      "instruction"_kw2 = instruction_code::read,
-                      "parameters"_kw2 = ("address"_kw2 = 0x84, "length_"_kw2 = 4)),
+  description.encode(
+      ("id"_kw2 = 1, "instruction"_kw2 = instruction_code::read,
+       "parameters"_kw2 = ("address"_kw2 = 0x84, "length_"_kw2 = 4)),
 
-                     std::cout,
-                     " ");
+      std::cout, " ");
   std::println("");
   std::println("");
 
-  auto answer1_seq =
-      bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x08, 0x00, 0x55, 0x00, 0xa6, 0x00, 0x00, 0x00, 0x8c, 0xc0};
-  auto answer1 = answer_description.decode(answer1_seq.begin(), upd::record{"status_of"_kw2 = instruction_code::read});
+  auto answer2_seq = std::array{0xff, 0xff, 0xfd, 0x00, 0x02, 0x07, 0x00,
+                                0x55, 0x00, 0x06, 0x04, 0x26, 0x6f, 0x6d};
+
+  auto answer1 = answer_description.decode(
+      answer1_seq.begin(),
+      upd::record{"status_of"_kw2 = instruction_code::read});
   if (!answer1) {
     return answer1.error();
   }
@@ -276,17 +296,20 @@ auto write_example() -> upd::error {
   std::cout << std::hex;
   std::println("Write: example");
   description.encode(
-      ("id"_kw2 = 1,
-       "instruction"_kw2 = instruction_code::write,
-       "parameters"_kw2 = ("address"_kw2 = 0x74, "data"_kw2 = std::array<std::uint8_t, 4>{0x0, 0x2, 0x0, 0x0})),
+      ("id"_kw2 = 1, "instruction"_kw2 = instruction_code::write,
+       "parameters"_kw2 =
+           ("address"_kw2 = 0x74,
+            "data"_kw2 = std::array<std::uint8_t, 4>{0x0, 0x2, 0x0, 0x0})),
 
-      std::cout,
-      " ");
+      std::cout, " ");
   std::println("");
   std::println("");
 
-  auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04, 0x00, 0x55, 0x00, 0xa1, 0x0c};
-  auto answer1 = answer_description.decode(answer1_seq.begin(), upd::record{"status_of"_kw2 = instruction_code::write});
+  auto answer1_seq = std::array{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04,
+                                0x00, 0x55, 0x00, 0xa1, 0x0c};
+  auto answer1 = answer_description.decode(
+      answer1_seq.begin(),
+      upd::record{"status_of"_kw2 = instruction_code::write});
   if (!answer1) {
     return answer1.error();
   }
@@ -309,18 +332,20 @@ auto reg_write_example() -> upd::error {
   std::cout << std::hex;
   std::println("Reg Write: example");
   description.encode(
-      ("id"_kw2 = 1,
-       "instruction"_kw2 = instruction_code::reg_write,
-       "parameters"_kw2 = ("address"_kw2 = 0x68, "data"_kw2 = std::array<std::uint8_t, 4>{0xc8, 0x0, 0x0, 0x0})),
+      ("id"_kw2 = 1, "instruction"_kw2 = instruction_code::reg_write,
+       "parameters"_kw2 =
+           ("address"_kw2 = 0x68,
+            "data"_kw2 = std::array<std::uint8_t, 4>{0xc8, 0x0, 0x0, 0x0})),
 
-      std::cout,
-      " ");
+      std::cout, " ");
   std::println("");
   std::println("");
 
-  auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04, 0x00, 0x55, 0x00, 0xa1, 0x0c};
-  auto answer1 =
-      answer_description.decode(answer1_seq.begin(), upd::record{"status_of"_kw2 = instruction_code::reg_write});
+  auto answer1_seq = std::array{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04,
+                                0x00, 0x55, 0x00, 0xa1, 0x0c};
+  auto answer1 = answer_description.decode(
+      answer1_seq.begin(),
+      upd::record{"status_of"_kw2 = instruction_code::reg_write});
   if (!answer1) {
     return answer1.error();
   }
@@ -342,16 +367,19 @@ auto action_example() -> upd::error {
 
   std::cout << std::hex;
   std::println("Action: example");
-  description.encode(("id"_kw2 = 1, "instruction"_kw2 = instruction_code::action, "parameters"_kw2 = upd::record{}),
+  description.encode(("id"_kw2 = 1,
+                      "instruction"_kw2 = instruction_code::action,
+                      "parameters"_kw2 = upd::record{}),
 
-                     std::cout,
-                     " ");
+                     std::cout, " ");
   std::println("");
   std::println("");
 
-  auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04, 0x00, 0x55, 0x00, 0xa1, 0x0c};
-  auto answer1 =
-      answer_description.decode(answer1_seq.begin(), upd::record{"status_of"_kw2 = instruction_code::reg_write});
+  auto answer1_seq = std::array{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04,
+                                0x00, 0x55, 0x00, 0xa1, 0x0c};
+  auto answer1 = answer_description.decode(
+      answer1_seq.begin(),
+      upd::record{"status_of"_kw2 = instruction_code::reg_write});
   if (!answer1) {
     return answer1.error();
   }
@@ -377,14 +405,15 @@ auto factory_reset_example() -> upd::error {
                       "instruction"_kw2 = instruction_code::factory_reset,
                       "parameters"_kw2 = factory_reset_target::all_but_id),
 
-                     std::cout,
-                     " ");
+                     std::cout, " ");
   std::println("");
   std::println("");
 
-  auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04, 0x00, 0x55, 0x00, 0xa1, 0x0c};
-  auto answer1 =
-      answer_description.decode(answer1_seq.begin(), upd::record{"status_of"_kw2 = instruction_code::reg_write});
+  auto answer1_seq = std::array{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04,
+                                0x00, 0x55, 0x00, 0xa1, 0x0c};
+  auto answer1 = answer_description.decode(
+      answer1_seq.begin(),
+      upd::record{"status_of"_kw2 = instruction_code::reg_write});
   if (!answer1) {
     return answer1.error();
   }
@@ -406,16 +435,19 @@ auto reboot_example() -> upd::error {
 
   std::cout << std::hex;
   std::println("Reboot: example");
-  description.encode(("id"_kw2 = 1, "instruction"_kw2 = instruction_code::reboot, "parameters"_kw2 = upd::record{}),
+  description.encode(("id"_kw2 = 1,
+                      "instruction"_kw2 = instruction_code::reboot,
+                      "parameters"_kw2 = upd::record{}),
 
-                     std::cout,
-                     " ");
+                     std::cout, " ");
   std::println("");
   std::println("");
 
-  auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04, 0x00, 0x55, 0x00, 0xa1, 0x0c};
-  auto answer1 =
-      answer_description.decode(answer1_seq.begin(), upd::record{"status_of"_kw2 = instruction_code::reg_write});
+  auto answer1_seq = std::array{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04,
+                                0x00, 0x55, 0x00, 0xa1, 0x0c};
+  auto answer1 = answer_description.decode(
+      answer1_seq.begin(),
+      upd::record{"status_of"_kw2 = instruction_code::reg_write});
   if (!answer1) {
     return answer1.error();
   }
@@ -437,17 +469,18 @@ auto clear_example() -> upd::error {
 
   std::cout << std::hex;
   std::println("Clear: example");
-  description.encode(
-      ("id"_kw2 = 1, "instruction"_kw2 = instruction_code::clear, "parameters"_kw2 = clear_target::present_position),
+  description.encode(("id"_kw2 = 1, "instruction"_kw2 = instruction_code::clear,
+                      "parameters"_kw2 = clear_target::present_position),
 
-      std::cout,
-      " ");
+                     std::cout, " ");
   std::println("");
   std::println("");
 
-  auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04, 0x00, 0x55, 0x00, 0xa1, 0x0c};
-  auto answer1 =
-      answer_description.decode(answer1_seq.begin(), upd::record{"status_of"_kw2 = instruction_code::reg_write});
+  auto answer1_seq = std::array{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04,
+                                0x00, 0x55, 0x00, 0xa1, 0x0c};
+  auto answer1 = answer_description.decode(
+      answer1_seq.begin(),
+      upd::record{"status_of"_kw2 = instruction_code::reg_write});
   if (!answer1) {
     return answer1.error();
   }
@@ -469,18 +502,19 @@ auto control_table_backup_example() -> upd::error {
 
   std::cout << std::hex;
   std::println("Control Table Backup: example");
-  description.encode(("id"_kw2 = 1,
-                      "instruction"_kw2 = instruction_code::control_table_backup,
-                      "parameters"_kw2 = (control_table_backup_target::store_current)),
+  description.encode(
+      ("id"_kw2 = 1, "instruction"_kw2 = instruction_code::control_table_backup,
+       "parameters"_kw2 = (control_table_backup_target::store_current)),
 
-                     std::cout,
-                     " ");
+      std::cout, " ");
   std::println("");
   std::println("");
 
-  auto answer1_seq = bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04, 0x00, 0x55, 0x00, 0xa1, 0x0c};
-  auto answer1 =
-      answer_description.decode(answer1_seq.begin(), upd::record{"status_of"_kw2 = instruction_code::reg_write});
+  auto answer1_seq = std::array{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04,
+                                0x00, 0x55, 0x00, 0xa1, 0x0c};
+  auto answer1 = answer_description.decode(
+      answer1_seq.begin(),
+      upd::record{"status_of"_kw2 = instruction_code::reg_write});
   if (!answer1) {
     return answer1.error();
   }
@@ -503,19 +537,19 @@ auto sync_read_example() -> upd::error {
   std::cout << std::hex;
   std::println("Sync Read: example");
   description.encode(
-      ("id"_kw2 = 0xfe,
-       "instruction"_kw2 = instruction_code::sync_read,
-       "parameters"_kw2 = ("address"_kw2 = 0x84, "length_"_kw2 = 0x4, "ids"_kw2 = std::array<std::uint8_t, 2>{1, 2})),
+      ("id"_kw2 = 0xfe, "instruction"_kw2 = instruction_code::sync_read,
+       "parameters"_kw2 = ("address"_kw2 = 0x84, "length_"_kw2 = 0x4,
+                           "ids"_kw2 = std::array<std::uint8_t, 2>{1, 2})),
 
-      std::cout,
-      " ");
+      std::cout, " ");
   std::println("");
   std::println("");
 
-  auto answer1_seq =
-      bytearray{0xff, 0xff, 0xfd, 0x00, 0x01, 0x08, 0x00, 0x55, 0x00, 0xa6, 0x00, 0x00, 0x00, 0x8c, 0xc0};
-  auto answer1 =
-      answer_description.decode(answer1_seq.begin(), upd::record{"status_of"_kw2 = instruction_code::sync_read});
+  auto answer1_seq = std::array{0xff, 0xff, 0xfd, 0x00, 0x01, 0x08, 0x00, 0x55,
+                                0x00, 0xa6, 0x00, 0x00, 0x00, 0x8c, 0xc0};
+  auto answer1 = answer_description.decode(
+      answer1_seq.begin(),
+      upd::record{"status_of"_kw2 = instruction_code::sync_read});
   if (!answer1) {
     return answer1.error();
   }
@@ -528,10 +562,11 @@ auto sync_read_example() -> upd::error {
   std::println("- parameters: {}", (*answer1)["parameters"_kw2]);
   std::println("");
 
-  auto answer2_seq =
-      bytearray{0xff, 0xff, 0xfd, 0x00, 0x02, 0x08, 0x00, 0x55, 0x00, 0x1f, 0x08, 0x00, 0x00, 0xba, 0xbe};
-  auto answer2 =
-      answer_description.decode(answer2_seq.begin(), upd::record{"status_of"_kw2 = instruction_code::sync_read});
+  auto answer2_seq = std::array{0xff, 0xff, 0xfd, 0x00, 0x02, 0x08, 0x00, 0x55,
+                                0x00, 0x1f, 0x08, 0x00, 0x00, 0xba, 0xbe};
+  auto answer2 = answer_description.decode(
+      answer2_seq.begin(),
+      upd::record{"status_of"_kw2 = instruction_code::sync_read});
   if (!answer2) {
     return answer2.error();
   }

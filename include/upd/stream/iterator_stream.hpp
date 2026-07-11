@@ -3,19 +3,25 @@
 #include <algorithm>
 #include <concepts>
 #include <cstddef>
+#include <cstdint>
+#include <iosfwd>
+#include <istream>
 #include <iterator>
+#include <ranges>
 
 #include "../error.hpp"
+#include "../upd.hpp"
 #include "stream_interface.hpp"
-#include <limits.h>
 
 namespace upd {
 
 template<std::input_iterator InputIt, typename OutputIt>
-  requires std::output_iterator<OutputIt, char> && std::convertible_to<std::iter_value_t<InputIt>, char>
+  requires std::output_iterator<OutputIt, char>
+           && std::convertible_to<std::iter_value_t<InputIt>, char>
 class iterator_stream : public stream_interface {
 public:
-  constexpr explicit iterator_stream(InputIt in, OutputIt out) : m_in{in}, m_out{out} {}
+  constexpr explicit iterator_stream(InputIt in, OutputIt out)
+      : m_in{in}, m_out{out} {}
 
   auto read(std::size_t bitcount, char *dest) -> lite_error_t override {
     if (bitcount % CHAR_BIT != 0) {

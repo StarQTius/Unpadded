@@ -30,7 +30,8 @@ public:
 
   template<typename U, std::size_t N>
     requires std::convertible_to<U, T>
-  constexpr static_vector(const upd::static_vector<U, N> &other) : static_vector{} {
+  constexpr static_vector(const upd::static_vector<U, N> &other)
+      : static_vector{} {
     for (const auto &val : other) {
       push_back(val);
     }
@@ -50,11 +51,13 @@ public:
     return reinterpret_cast<value_type &&>(m_content[i]);
   }
 
-  constexpr auto operator[](std::size_t i) const & noexcept(release) -> const auto & {
+  constexpr auto
+  operator[](std::size_t i) const & noexcept(release) -> const auto & {
     return reinterpret_cast<const value_type &>(m_content[i]);
   }
 
-  constexpr auto operator[](std::size_t i) const && noexcept(release) -> const auto && {
+  constexpr auto
+  operator[](std::size_t i) const && noexcept(release) -> const auto && {
     return reinterpret_cast<const value_type &&>(m_content[i]);
   }
 
@@ -62,7 +65,8 @@ public:
     return reinterpret_cast<value_type *>(m_content.begin());
   }
 
-  [[nodiscard]] constexpr auto begin() const noexcept(release) -> const value_type * {
+  [[nodiscard]] constexpr auto
+  begin() const noexcept(release) -> const value_type * {
     return reinterpret_cast<const value_type *>(m_content.begin());
   }
 
@@ -70,7 +74,8 @@ public:
     return reinterpret_cast<value_type *>(m_content.begin()) + m_size;
   }
 
-  [[nodiscard]] constexpr auto end() const noexcept(release) -> const value_type * {
+  [[nodiscard]] constexpr auto
+  end() const noexcept(release) -> const value_type * {
     return reinterpret_cast<const value_type *>(m_content.begin()) + m_size;
   }
 
@@ -79,7 +84,8 @@ public:
     return reinterpret_cast<value_type &>(m_content.front());
   }
 
-  [[nodiscard]] constexpr auto front() const noexcept(release) -> const value_type & {
+  [[nodiscard]] constexpr auto
+  front() const noexcept(release) -> const value_type & {
     UPD_ASSERT(m_size > 0);
     return reinterpret_cast<const value_type &>(m_content.front());
   }
@@ -89,20 +95,25 @@ public:
     return reinterpret_cast<value_type &>(m_content[m_size - 1]);
   }
 
-  [[nodiscard]] constexpr auto back() const noexcept(release) -> const value_type & {
+  [[nodiscard]] constexpr auto
+  back() const noexcept(release) -> const value_type & {
     UPD_ASSERT(m_size > 0);
     return reinterpret_cast<const value_type &>(m_content[m_size - 1]);
   }
 
-  [[nodiscard]] constexpr auto size() const noexcept(release) -> std::size_t { return m_size; }
+  [[nodiscard]] constexpr auto size() const noexcept(release) -> std::size_t {
+    return m_size;
+  }
 
   template<typename U, std::size_t N>
-  [[nodiscard]] constexpr auto operator==(const static_vector<U, N> &other) const -> bool {
+  [[nodiscard]] constexpr auto
+  operator==(const static_vector<U, N> &other) const -> bool {
     if (m_size != other.m_size) {
       return false;
     }
 
-    return std::equal(m_content.begin(), m_content.begin() + m_size, other.m_content.begin());
+    return std::equal(m_content.begin(), m_content.begin() + m_size,
+                      other.m_content.begin());
   }
 
   constexpr void push_back(const T &value) {
@@ -164,9 +175,12 @@ struct std::formatter<upd::static_vector<T, Max>> {
 
   consteval formatter() noexcept = default;
 
-  constexpr auto parse(std::format_parse_context &ctx) { return element_formatter.parse(ctx); }
+  constexpr auto parse(std::format_parse_context &ctx) {
+    return element_formatter.parse(ctx);
+  }
 
-  auto format(const upd::static_vector<T, Max> &statvec, std::format_context &ctx) const {
+  auto format(const upd::static_vector<T, Max> &statvec,
+              std::format_context &ctx) const {
     auto it = ctx.out();
     it = std::format_to(it, "{{");
 

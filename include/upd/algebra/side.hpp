@@ -23,9 +23,11 @@ struct side {
 
   template<auto... Varnames, typename... Vals>
     requires(sizeof...(Varnames) == sizeof...(Vals))
-  [[nodiscard]] constexpr auto substitute(const let<Varnames, Vals> &...lets) const noexcept(release) {
+  [[nodiscard]] constexpr auto
+  substitute(const let<Varnames, Vals> &...lets) const noexcept(release) {
     using ::upd::algebra::substitute;
-    return substitute(expr, lite_record{lite_record_node{upd::expr<lets.var.name>, lets.val}...});
+    return substitute(expr, lite_record{lite_record_node{
+                                upd::expr<lets.var.name>, lets.val}...});
   }
 
   template<typename... Ts>
@@ -36,26 +38,33 @@ struct side {
 
   template<auto... Varnames, typename... Vals>
     requires(sizeof...(Varnames) == sizeof...(Vals))
-  [[nodiscard]] constexpr auto calculate(const let<Varnames, Vals> &...lets) const noexcept(release) {
+  [[nodiscard]] constexpr auto
+  calculate(const let<Varnames, Vals> &...lets) const noexcept(release) {
     using ::upd::algebra::substitute;
-    auto retval = substitute(expr, lite_record{lite_record_node{upd::expr<lets.var.name>, lets.val}...});
+    auto retval = substitute(expr, lite_record{lite_record_node{
+                                       upd::expr<lets.var.name>, lets.val}...});
 
     using retval_type = decltype(retval);
     UPD_STATIC_ASSERT(std::is_scalar_v<retval_type>,
-                      "Substitution resulted in value of type `{}` which is not an arithmetic type",
+                      "Substitution resulted in value of type `{}` which is "
+                      "not an arithmetic type",
                       typeid(retval_type));
 
     return retval;
   }
 
   template<typename... Ts>
-    requires(sizeof...(Ts) > 0 && (is_convertible_to_instance_of<Ts, let>() && ...))
-  [[nodiscard]] constexpr auto calculate(const Ts &...xs) const noexcept(release) {
+    requires(sizeof...(Ts)
+             > 0
+             && (is_convertible_to_instance_of<Ts, let>() && ...))
+  [[nodiscard]] constexpr auto
+  calculate(const Ts &...xs) const noexcept(release) {
     return calculate(let{xs}...);
   }
 
   template<typename Self, expression E>
-  [[nodiscard]] constexpr auto operator=(this Self &&self, const side<E> &s) noexcept(release) {
+  [[nodiscard]] constexpr auto
+  operator=(this Self &&self, const side<E> &s) noexcept(release) {
     return equation{
         .lhs = UPD_FWD(self).expr,
         .rhs = UPD_FWD(s).expr,
@@ -64,7 +73,8 @@ struct side {
 
   template<typename Self, typename T>
     requires std::is_scalar_v<T>
-  [[nodiscard]] constexpr auto operator=(this Self &&self, T value) noexcept(release) {
+  [[nodiscard]] constexpr auto
+  operator=(this Self &&self, T value) noexcept(release) {
     return equation{
         .lhs = UPD_FWD(self).expr,
         .rhs = value,
@@ -72,7 +82,8 @@ struct side {
   }
 
   template<typename Self>
-  [[nodiscard]] constexpr auto operator=(this Self &&self, int value) noexcept(release) {
+  [[nodiscard]] constexpr auto
+  operator=(this Self &&self, int value) noexcept(release) {
     return equation{
         .lhs = UPD_FWD(self).expr,
         .rhs = value,
@@ -81,7 +92,8 @@ struct side {
 
   template<typename Self, typename T>
     requires std::is_scalar_v<T>
-  [[nodiscard]] constexpr auto operator=(this Self &&self, std::reference_wrapper<T> ref) noexcept(release) {
+  [[nodiscard]] constexpr auto
+  operator=(this Self &&self, std::reference_wrapper<T> ref) noexcept(release) {
     return equation{
         .lhs = UPD_FWD(self).expr,
         .rhs = ref,
@@ -89,14 +101,16 @@ struct side {
   }
 
   template<typename Self, invocable F>
-  [[nodiscard]] constexpr auto operator=(this Self &&self, F &&f) noexcept(release) {
+  [[nodiscard]] constexpr auto
+  operator=(this Self &&self, F &&f) noexcept(release) {
     return equation{
         .lhs = UPD_FWD(self).expr,
         .rhs = UPD_FWD(f),
     };
   }
 
-  [[nodiscard]] constexpr auto operator==(const side &) const noexcept(release) -> bool = default;
+  [[nodiscard]] constexpr auto
+  operator==(const side &) const noexcept(release) -> bool = default;
 };
 
 } // namespace upd::algebra

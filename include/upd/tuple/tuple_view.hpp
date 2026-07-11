@@ -20,7 +20,9 @@ concept ith_tuple_element_viewer = requires(View &&view) {
 };
 
 template<typename Tuple>
-concept tuple_view = tuple_like2<Tuple> && UPD_ALL_OF_CONCEPT(ith_tuple_element_viewer, Tuple, tuple_size_v<Tuple>);
+concept tuple_view =
+    tuple_like2<Tuple>
+    && UPD_ALL_OF_CONCEPT(ith_tuple_element_viewer, Tuple, tuple_size_v<Tuple>);
 
 template<typename>
 struct tuple_view_for; // IWYU pragma: keep
@@ -35,10 +37,12 @@ struct upd::tuple_like_for<Tuple> {
   constexpr static auto size = impl_type::size;
 
   template<std::size_t I>
-  using element_type = decltype(impl_type::template get<I>(std::declval<Tuple>()));
+  using element_type =
+      decltype(impl_type::template get<I>(std::declval<Tuple>()));
 
   template<std::size_t I, typename Self>
-  [[nodiscard]] constexpr static auto get(Self &&self) noexcept(release) -> decltype(auto) {
+  [[nodiscard]] constexpr static auto
+  get(Self &&self) noexcept(release) -> decltype(auto) {
     return impl_type::template get<I>(UPD_FWD(self));
   }
 };

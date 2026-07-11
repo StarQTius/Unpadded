@@ -36,7 +36,8 @@ template<upd::record_like Base, typename T>
 struct upd::record_view_for<upd::record_views::clean_view<Base, T>> {
   using base_type = Base;
 
-  constexpr static auto indices_to_keep = UPD_WITH_SEQUENCE(Is, record_size_v<Base>) {
+  constexpr static auto indices_to_keep =
+      UPD_WITH_SEQUENCE(Is, record_size_v<Base>) {
     return clean_occurences_of_v<T, ith_record_element_t<Is, Base>...>;
   };
 

@@ -34,6 +34,7 @@ struct upd::record_view_for<upd::record_views::reverse_view<Base>> {
   template<std::size_t I, typename View>
   [[nodiscard]] constexpr static auto get_ith(View &&view) -> decltype(auto) {
     using value_type = decltype(upd::get_ith<size - I - 1>(UPD_FWD(view).base));
-    return entry<record_tag_v<size - I - 1, Base>, value_type>{upd::get_ith<size - I - 1>(UPD_FWD(view).base)};
+    return entry<record_tag_v<size - I - 1, Base>, value_type>{
+        upd::get_ith<size - I - 1>(UPD_FWD(view).base)};
   }
 };

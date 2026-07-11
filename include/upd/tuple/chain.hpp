@@ -27,7 +27,9 @@ explicit chain(ViewAdaptors...) -> chain<ViewAdaptors...>;
 template<tuple_like2 Tuple, typename ViewChain>
   requires(is_instance_of<ViewChain, chain>())
 [[nodiscard]] constexpr auto operator|(Tuple &&t, ViewChain &&chain) {
-  return std::apply([&](auto &&...adaps) { return (UPD_FWD(t) | ... | UPD_FWD(adaps)); }, UPD_FWD(chain).view_adaptors);
+  return std::apply(
+      [&](auto &&...adaps) { return (UPD_FWD(t) | ... | UPD_FWD(adaps)); },
+      UPD_FWD(chain).view_adaptors);
 }
 
 } // namespace upd::tuple_views

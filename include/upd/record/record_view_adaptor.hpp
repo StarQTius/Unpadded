@@ -13,35 +13,57 @@ namespace upd {
 
 template<template<typename...> typename View, typename... Args>
 struct record_view_adaptor_t {
-  constexpr explicit record_view_adaptor_t(std::in_place_t, Args... args) : args{UPD_FWD(args)...} {}
+  constexpr explicit record_view_adaptor_t(std::in_place_t, Args... args)
+      : args{UPD_FWD(args)...} {}
 
   std::tuple<Args...> args;
 };
 
 template<template<typename...> typename View>
 constexpr auto record_view_adaptor = [](auto &&...args) {
-  return record_view_adaptor_t<View, std::decay_t<decltype(args)>...>{std::in_place, UPD_FWD(args)...};
+  return record_view_adaptor_t<View, std::decay_t<decltype(args)>...>{
+      std::in_place, UPD_FWD(args)...};
 };
 
-template<record_like Record, template<typename...> typename View, typename... Args>
-  requires requires(Record rec, Args... args) { View{UPD_FWD(rec), UPD_FWD(args)...}; }
-[[nodiscard]] constexpr auto operator|(Record &&rec, const record_view_adaptor_t<View, Args...> &adaptor) {
+template<record_like Record,
+         template<typename...> typename View,
+         typename... Args>
+  requires requires(Record rec, Args... args) {
+    View{UPD_FWD(rec), UPD_FWD(args)...};
+  }
+[[nodiscard]] constexpr auto
+operator|(Record &&rec, const record_view_adaptor_t<View, Args...> &adaptor) {
   if constexpr (record_view<Record>) {
-    return std::apply([&](auto &&...args) { return View{UPD_FWD(rec), UPD_FWD(args)...}; }, adaptor.args);
+    return std::apply(
+        [&](auto &&...args) { return View{UPD_FWD(rec), UPD_FWD(args)...}; },
+        adaptor.args);
   } else {
-    return std::apply([&](auto &&...args) { return View{record_views::view_t{UPD_FWD(rec)}, UPD_FWD(args)...}; },
-                      adaptor.args);
+    return std::apply(
+        [&](auto &&...args) {
+          return View{record_views::view_t{UPD_FWD(rec)}, UPD_FWD(args)...};
+        },
+        adaptor.args);
   }
 }
 
-template<record_like Record, template<typename...> typename View, typename... Args>
-  requires requires(Record rec, Args... args) { View{UPD_FWD(rec), UPD_FWD(args)...}; }
-[[nodiscard]] constexpr auto operator|(Record &&rec, record_view_adaptor_t<View, Args...> &&adaptor) {
+template<record_like Record,
+         template<typename...> typename View,
+         typename... Args>
+  requires requires(Record rec, Args... args) {
+    View{UPD_FWD(rec), UPD_FWD(args)...};
+  }
+[[nodiscard]] constexpr auto
+operator|(Record &&rec, record_view_adaptor_t<View, Args...> &&adaptor) {
   if constexpr (record_view<Record>) {
-    return std::apply([&](auto &&...args) { return View{UPD_FWD(rec), UPD_FWD(args)...}; }, std::move(adaptor).args);
+    return std::apply(
+        [&](auto &&...args) { return View{UPD_FWD(rec), UPD_FWD(args)...}; },
+        std::move(adaptor).args);
   } else {
-    return std::apply([&](auto &&...args) { return View{record_views::view_t{UPD_FWD(rec)}, UPD_FWD(args)...}; },
-                      std::move(adaptor).args);
+    return std::apply(
+        [&](auto &&...args) {
+          return View{record_views::view_t{UPD_FWD(rec)}, UPD_FWD(args)...};
+        },
+        std::move(adaptor).args);
   }
 }
 

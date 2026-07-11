@@ -19,37 +19,47 @@ namespace upd::descriptor {
 template<name Identifier, typename Enum, std::size_t Width>
 struct shadow_enumeration_field_t {
   constexpr static auto identifier = Identifier;
-  constexpr static auto is_signed = std::is_signed_v<std::underlying_type_t<Enum>>;
+  constexpr static auto is_signed =
+      std::is_signed_v<std::underlying_type_t<Enum>>;
   constexpr static auto width = Width;
 
   using value_type = Enum;
   using input_type = Enum;
 
   template<record_like Packet, record_like Fields, codec_info CodecInfo>
-  [[nodiscard]] constexpr auto rules(const Packet &packet, const Fields &, expr_t<CodecInfo>) const {
-    if constexpr (has_tag<Identifier>(packet) && CodecInfo.operation == codec_operation::encoding) {
-      return std::tuple{value_of<Identifier> = get<Identifier>(packet), length_of<Identifier> = Width};
+  [[nodiscard]] constexpr auto
+  rules(const Packet &packet, const Fields &, expr_t<CodecInfo>) const {
+    if constexpr (has_tag<Identifier>(packet)
+                  && CodecInfo.operation
+                  == codec_operation::encoding) {
+      return std::tuple{value_of<Identifier> = get<Identifier>(packet),
+                        length_of<Identifier> = Width};
     } else {
       return std::tuple{length_of<Identifier> = Width};
     }
   }
 
   template<tuple_like2 System>
-  constexpr static void encode(value_type, stream_interface &, const System &) {}
+  constexpr static void encode(value_type, stream_interface &, const System &) {
+  }
 
   template<record_like Fields, tuple_like2 System>
-  [[nodiscard]] constexpr static auto decode(stream_interface &, const Fields &, const System &sys)
+  [[nodiscard]] constexpr static auto
+  decode(stream_interface &, const Fields &, const System &sys)
       -> result<value_type> {
     return solve_for(value_of<Identifier>, sys | tuple_views::to<std::tuple>);
   }
 
   template<typename V>
-  [[nodiscard]] constexpr auto bitsize(const V &) const noexcept(release) -> std::size_t {
+  [[nodiscard]] constexpr auto
+  bitsize(const V &) const noexcept(release) -> std::size_t {
     return Width;
   }
 };
 
 template<name Identifier, typename Enum, std::size_t Width>
-constexpr auto shadow_efield2 = [] { return description{shadow_enumeration_field_t<Identifier, Enum, Width>{}}; }();
+constexpr auto shadow_efield2 = [] {
+  return description{shadow_enumeration_field_t<Identifier, Enum, Width>{}};
+}();
 
 } // namespace upd::descriptor

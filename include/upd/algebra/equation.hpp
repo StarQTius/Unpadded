@@ -28,10 +28,12 @@ struct equation {
 
   template<auto... Varnames, typename... Vals>
     requires(sizeof...(Varnames) == sizeof...(Vals))
-  [[nodiscard]] constexpr auto substitute(const let<Varnames, Vals> &...lets) const noexcept(release) {
+  [[nodiscard]] constexpr auto
+  substitute(const let<Varnames, Vals> &...lets) const noexcept(release) {
     using upd::algebra::substitute;
 
-    auto letrec = lite_record{lite_record_node{upd::expr<lets.var.name>, lets.val}...};
+    auto letrec =
+        lite_record{lite_record_node{upd::expr<lets.var.name>, lets.val}...};
     return upd::algebra::equation{
         .lhs = substitute(lhs, letrec),
         .rhs = substitute(rhs, letrec),
@@ -40,34 +42,38 @@ struct equation {
 
   template<typename... Ts>
     requires(is_convertible_to_instance_of<Ts, let>() && ...)
-  [[nodiscard]] constexpr auto substitute(const Ts &...xs) const noexcept(release) {
+  [[nodiscard]] constexpr auto
+  substitute(const Ts &...xs) const noexcept(release) {
     return substitute(let{xs}...);
   }
 
-  [[nodiscard]] constexpr auto substitute() const noexcept(release) { return *this; }
+  [[nodiscard]] constexpr auto substitute() const noexcept(release) {
+    return *this;
+  }
 
   template<tuple_like2 Tuple>
-  [[nodiscard]] constexpr auto substitute(const Tuple &t) const noexcept(release) {
+  [[nodiscard]] constexpr auto
+  substitute(const Tuple &t) const noexcept(release) {
     namespace updv = upd::tuple_views;
 
-    return updv::apply(t, [&](const auto &...xs) { return substitute(let{xs}...); });
+    return updv::apply(
+        t, [&](const auto &...xs) { return substitute(let{xs}...); });
   }
 
   template<auto Varname>
     requires balanceable<Lhs, Varname> || balanceable<Rhs, Varname>
-  [[nodiscard]] constexpr auto isolate(side<variable<Varname>> var) const noexcept(release) {
-    UPD_STATIC_ASSERT((!depends_on_v<decltype(lhs), Varname> || !depends_on_v<decltype(rhs), Varname>),
-                      "{} and {} both depend on {}; Only one operand should depend on {}",
-                      lhs,
-                      rhs,
-                      var,
-                      var);
-    UPD_STATIC_ASSERT((depends_on_v<decltype(lhs), Varname> || depends_on_v<decltype(rhs), Varname>),
-                      "Neither {} and {} depends on {}; At least one of them should depend on {}",
-                      lhs,
-                      rhs,
-                      var,
-                      var);
+  [[nodiscard]] constexpr auto
+  isolate(side<variable<Varname>> var) const noexcept(release) {
+    UPD_STATIC_ASSERT(
+        (!depends_on_v<decltype(lhs), Varname>
+         || !depends_on_v<decltype(rhs), Varname>),
+        "{} and {} both depend on {}; Only one operand should depend on {}",
+        lhs, rhs, var, var);
+    UPD_STATIC_ASSERT((depends_on_v<decltype(lhs), Varname>
+                       || depends_on_v<decltype(rhs), Varname>),
+                      "Neither {} and {} depends on {}; At least one of them "
+                      "should depend on {}",
+                      lhs, rhs, var, var);
 
     if constexpr (depends_on_v<decltype(lhs), Varname>) {
       return upd::algebra::equation{
@@ -82,7 +88,8 @@ struct equation {
     }
   }
 
-  [[nodiscard]] constexpr auto simplify() const noexcept(release) -> decltype(auto) {
+  [[nodiscard]] constexpr auto
+  simplify() const noexcept(release) -> decltype(auto) {
     namespace updv = upd::tuple_views;
 
     auto deps = updv::concat(dependencies(lhs), dependencies(rhs));
@@ -97,20 +104,26 @@ struct equation {
   }
 
   template<auto Varname>
-  [[nodiscard]] consteval static auto depends_on(variable<Varname>) noexcept(release) -> bool {
-    return depends_on_v<decltype(lhs), Varname> || depends_on_v<decltype(rhs), Varname>;
+  [[nodiscard]] consteval static auto
+  depends_on(variable<Varname>) noexcept(release) -> bool {
+    return depends_on_v<decltype(lhs), Varname>
+           || depends_on_v<decltype(rhs), Varname>;
   }
 
-  [[nodiscard]] constexpr auto operator==(const equation &) const noexcept(release) -> bool = default;
+  [[nodiscard]] constexpr auto
+  operator==(const equation &) const noexcept(release) -> bool = default;
 };
 
 } // namespace upd::algebra
 
 template<upd::algebra::expression Lhs, upd::algebra::expression Rhs>
 struct std::formatter<upd::algebra::equation<Lhs, Rhs>> {
-  constexpr static auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
+  constexpr static auto parse(std::format_parse_context &ctx) {
+    return ctx.begin();
+  }
 
-  static auto format(const upd::algebra::equation<Lhs, Rhs> &eq, std::format_context &ctx) {
+  static auto
+  format(const upd::algebra::equation<Lhs, Rhs> &eq, std::format_context &ctx) {
     auto it = ctx.out();
 
     it = std::format_to(it, "{} = {}", eq.lhs, eq.rhs);

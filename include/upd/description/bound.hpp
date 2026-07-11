@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstddef>
-#include <expected>
+#include <cstdint>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -33,18 +33,25 @@ struct bound_t {
   Rule rule;
 
   template<record_like Packet, record_like Fields, codec_info CodecInfo>
-  [[nodiscard]] constexpr auto rules(const Packet &packet, const Fields &, expr_t<CodecInfo>) const {
-    if constexpr (CodecInfo.operation == codec_operation::decoding && has_tag<Identifier>(packet)) {
-      return std::tuple{
-          value_of<Identifier> = get<Identifier>(packet), value_of<Identifier> = rule, length_of<Identifier> = Width};
+  [[nodiscard]] constexpr auto
+  rules(const Packet &packet, const Fields &, expr_t<CodecInfo>) const {
+    if constexpr (CodecInfo.operation
+                  == codec_operation::decoding
+                  && has_tag<Identifier>(packet)) {
+      return std::tuple{value_of<Identifier> = get<Identifier>(packet),
+                        value_of<Identifier> = rule,
+                        length_of<Identifier> = Width};
     } else {
-      return std::tuple{value_of<Identifier> = rule, length_of<Identifier> = Width};
+      return std::tuple{value_of<Identifier> = rule,
+                        length_of<Identifier> = Width};
     }
   };
 
   template<tuple_like2 System>
-  constexpr static void encode(unit_t, stream_interface &dest, const System &sys) {
-    auto value = algebra::solve_for(value_of<Identifier>, sys | tuple_views::to<std::tuple>);
+  constexpr static void
+  encode(unit_t, stream_interface &dest, const System &sys) {
+    auto value = algebra::solve_for(value_of<Identifier>,
+                                    sys | tuple_views::to<std::tuple>);
     if constexpr (is_signed) {
       (void)dest.write_signed(value, width);
     } else {
@@ -53,7 +60,8 @@ struct bound_t {
   }
 
   template<record_like Fields, tuple_like2 System>
-  [[nodiscard]] constexpr static auto decode(stream_interface &src, const Fields &, const System &)
+  [[nodiscard]] constexpr static auto
+  decode(stream_interface &src, const Fields &, const System &)
       -> result<value_type> {
     auto err = lite_error_t{};
     auto retval = uword_t{};
@@ -71,13 +79,15 @@ struct bound_t {
   }
 
   template<typename V>
-  [[nodiscard]] constexpr auto bitsize(const V &) const noexcept(release) -> std::size_t {
+  [[nodiscard]] constexpr auto
+  bitsize(const V &) const noexcept(release) -> std::size_t {
     return Width;
   }
 };
 
 template<name Identifier, bool Signedness, std::size_t Width, typename Rule>
-[[nodiscard]] constexpr auto bound(signedness_t<Signedness>, width_t<Width>, Rule rule) noexcept(release) {
+[[nodiscard]] constexpr auto
+bound(signedness_t<Signedness>, width_t<Width>, Rule rule) noexcept(release) {
   auto retval = bound_t<Identifier, Signedness, Width, Rule>{std::move(rule)};
 
   return description{std::move(retval)};

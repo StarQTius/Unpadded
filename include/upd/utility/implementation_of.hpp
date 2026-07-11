@@ -12,7 +12,8 @@ concept implementation_of = requires {
   Traits<std::remove_cvref_t<T>>{};
 };
 
-template<template<typename...> typename TT, template<template<typename...> typename> typename Traits>
+template<template<typename...> typename TT,
+         template<template<typename...> typename> typename Traits>
 [[nodiscard]] constexpr auto is_implementation_of() noexcept(release) -> bool {
   return requires {
     typename Traits<TT>;

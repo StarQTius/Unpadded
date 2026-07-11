@@ -28,17 +28,24 @@ struct entry {
 
   template<typename U>
     requires std::constructible_from<T, U>
-  explicit constexpr entry(auto_constant<Identifier>, U &&x) : value{UPD_FWD(x)} {}
+  explicit constexpr entry(auto_constant<Identifier>, U &&x)
+      : value{UPD_FWD(x)} {}
 
-  [[nodiscard]] constexpr auto forward() & noexcept(release) -> T & { return static_cast<T &>(value); }
+  [[nodiscard]] constexpr auto forward() & noexcept(release) -> T & {
+    return static_cast<T &>(value);
+  }
 
-  [[nodiscard]] constexpr auto forward() && noexcept(release) -> T && { return static_cast<T &&>(value); }
+  [[nodiscard]] constexpr auto forward() && noexcept(release) -> T && {
+    return static_cast<T &&>(value);
+  }
 
-  [[nodiscard]] constexpr auto forward() const & noexcept(release) -> const T & {
+  [[nodiscard]] constexpr auto
+  forward() const & noexcept(release) -> const T & {
     return static_cast<const T &>(value);
   }
 
-  [[nodiscard]] constexpr auto forward() const && noexcept(release) -> const T && {
+  [[nodiscard]] constexpr auto
+  forward() const && noexcept(release) -> const T && {
     return static_cast<const T &&>(value);
   }
 
@@ -74,9 +81,12 @@ template<auto Identifier, typename T>
 struct std::formatter<upd::entry<Identifier, T>> {
   consteval formatter() noexcept(upd::release) = default;
 
-  [[nodiscard]] constexpr static auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
+  [[nodiscard]] constexpr static auto parse(std::format_parse_context &ctx) {
+    return ctx.begin();
+  }
 
-  [[nodiscard]] constexpr static auto format(const upd::entry<Identifier, T> &e, std::format_context &ctx) {
+  [[nodiscard]] constexpr static auto
+  format(const upd::entry<Identifier, T> &e, std::format_context &ctx) {
     return std::format_to(ctx.out(), "{} -> {}", Identifier, e.value);
   }
 };
@@ -95,7 +105,8 @@ struct upd::record_like_for<upd::entry<Identifier, T>> {
 
   template<std::size_t I, typename Entry>
     requires(I == 0)
-  [[nodiscard]] constexpr static auto get_ith(Entry &&ent) noexcept(release) -> auto && {
+  [[nodiscard]] constexpr static auto
+  get_ith(Entry &&ent) noexcept(release) -> auto && {
     return UPD_FWD(ent).forward();
   }
 };

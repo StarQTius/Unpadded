@@ -58,15 +58,20 @@ constexpr auto group_by = tuple_view_adaptor<group_by_view>;
 } // namespace upd::tuple_views
 
 template<upd::tuple_like2 Base, typename Identificator>
-struct upd::record_view_for<upd::tuple_views::group_by_view<Base, Identificator>> {
+struct upd::record_view_for<
+    upd::tuple_views::group_by_view<Base, Identificator>> {
   using base_type = Base;
 
-  constexpr static auto element_types = collect_result_t<template_box<typelist2_t>, Base>{};
+  constexpr static auto element_types =
+      collect_result_t<template_box<typelist2_t>, Base>{};
 
   constexpr static auto tags = UPD_WITH_SEQUENCE(Is, tuple_size_v<Base>) {
     namespace updv = upd::tuple_views;
 
-    return element_types | updv::transform_type(Identificator{}) | updv::unique | updv::to<std::tuple>;
+    return element_types
+           | updv::transform_type(Identificator{})
+           | updv::unique
+           | updv::to<std::tuple>;
   };
 
   constexpr static auto size = tuple_size_v<decltype(tags)>;
@@ -74,13 +79,16 @@ struct upd::record_view_for<upd::tuple_views::group_by_view<Base, Identificator>
   constexpr static auto indices = UPD_WITH_SEQUENCE(Is, size) {
     namespace updv = upd::tuple_views;
 
-    auto indices_and_tags = element_types | updv::transform_type(Identificator{}) | updv::enumerate;
+    auto indices_and_tags =
+        element_types | updv::transform_type(Identificator{}) | updv::enumerate;
 
     return std::make_tuple(
         (indices_and_tags
          | updv::filter([]<typename IAndExpr>(typebox<IAndExpr>) {
-             return std::same_as<std::remove_cvref_t<typename std::remove_cvref_t<IAndExpr>::second_type>,
-                                 tuple_element_t<Is, decltype(tags)>>;
+             return std::same_as<
+                 std::remove_cvref_t<
+                     typename std::remove_cvref_t<IAndExpr>::second_type>,
+                 tuple_element_t<Is, decltype(tags)>>;
            })
          | updv::transform_type([]<typename IAndExpr> {
              using expression_t = typename IAndExpr::first_type;

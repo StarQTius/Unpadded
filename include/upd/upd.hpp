@@ -14,9 +14,9 @@ namespace upd {
 constexpr auto release = false;
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define UPD_ASSERT(...)                                                                                                \
-  if (!(__VA_ARGS__)) {                                                                                                \
-    throw std::exception{};                                                                                            \
+#define UPD_ASSERT(...)                                                        \
+  if (!(__VA_ARGS__)) {                                                        \
+    throw std::exception{};                                                    \
   }
 
 #else // defined(UPD_DEBUG)
@@ -42,7 +42,8 @@ struct std::formatter<std::reference_wrapper<T>> {
   constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
 
   auto format(std::reference_wrapper<T> ref, std::format_context &ctx) const {
-    return std::format_to(ctx.out(), "[std::reference_wrapper: {}]", reinterpret_cast<const void *>(&ref.get()));
+    return std::format_to(ctx.out(), "[std::reference_wrapper: {}]",
+                          reinterpret_cast<const void *>(&ref.get()));
   }
 };
 
@@ -51,15 +52,22 @@ template<typename Enum>
 struct std::formatter<Enum> {
   constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
 
-  auto format(Enum e, std::format_context &ctx) const { return std::format_to(ctx.out(), "{}", std::to_underlying(e)); }
+  auto format(Enum e, std::format_context &ctx) const {
+    return std::format_to(ctx.out(), "{}", std::to_underlying(e));
+  }
 };
 
 template<typename... Ts>
 struct std::formatter<std::variant<Ts...>> {
-  constexpr static auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
+  constexpr static auto parse(std::format_parse_context &ctx) {
+    return ctx.begin();
+  }
 
-  static auto format(const std::variant<Ts...> &one_of_values, std::format_context &ctx) {
-    auto format_alt = [&](const auto &alt) { return std::format_to(ctx.out(), "{}", alt); };
+  static auto
+  format(const std::variant<Ts...> &one_of_values, std::format_context &ctx) {
+    auto format_alt = [&](const auto &alt) {
+      return std::format_to(ctx.out(), "{}", alt);
+    };
     return std::visit(format_alt, one_of_values);
   }
 };
@@ -68,5 +76,7 @@ template<>
 struct std::formatter<std::monostate> {
   constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
 
-  auto format(std::monostate, std::format_context &ctx) const { return std::format_to(ctx.out(), "<monostate>"); }
+  auto format(std::monostate, std::format_context &ctx) const {
+    return std::format_to(ctx.out(), "<monostate>");
+  }
 };

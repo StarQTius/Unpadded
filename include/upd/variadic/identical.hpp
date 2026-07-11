@@ -18,7 +18,9 @@
 namespace upd::variadic {
 
 template<metavalue... Xs, metavalue... Ys>
-[[nodiscard]] constexpr auto identical(std::tuple<Xs...> lhs, std::tuple<Ys...> rhs) noexcept(release) -> bool {
+[[nodiscard]] constexpr auto
+identical(std::tuple<Xs...> lhs, std::tuple<Ys...> rhs) noexcept(release)
+    -> bool {
   namespace stdr = std::ranges;
   namespace updv = upd::tuple_views;
 
@@ -27,8 +29,10 @@ template<metavalue... Xs, metavalue... Ys>
     return lite_record{lite_record_node{get<Is>(merged_view), expr<Is>}...};
   };
 
-  auto is_dup =
-      merged_view | updv::transform([&](auto x) { return !requires { merged.get_by_tag(x); }; }) | updv::to<std::array>;
+  auto is_dup = merged_view
+                | updv::transform(
+                    [&](auto x) { return !requires { merged.get_by_tag(x); }; })
+                | updv::to<std::array>;
 
   return stdr::all_of(is_dup, std::identity{});
 }

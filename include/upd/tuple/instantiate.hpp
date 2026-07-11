@@ -20,7 +20,8 @@ void instantiate(instantiate_t, auto_constant<template_box<Tuple>>) {}
 
 template<tuple_like2 View, auto TemplateBox>
   requires collector_of<TemplateBox, View>
-[[nodiscard]] constexpr auto operator|(View &&view, void (&)(instantiate_t, auto_constant<TemplateBox>))
+[[nodiscard]] constexpr auto
+operator|(View &&view, void (&)(instantiate_t, auto_constant<TemplateBox>))
     -> collect_result_t<TemplateBox, View>;
 
 } // namespace upd::tuple_views
