@@ -58,10 +58,9 @@ struct bound_t {
     }
   }
 
-  template<record_like Fields, tuple_like2 System>
+  template<tuple_like2 System>
   [[nodiscard]] constexpr static auto
-  decode(stream_interface &src, const Fields &, const System &)
-      -> result<value_type> {
+  decode(stream_interface &src, const System &) -> result<value_type> {
     auto err = lite_error_t{};
     auto retval = uword_t{};
     if constexpr (is_signed) {

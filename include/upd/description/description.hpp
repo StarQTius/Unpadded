@@ -48,17 +48,40 @@
 namespace upd {
 
 template<typename T>
-concept field_like = true;
+concept codec =
+    requires {
+      typename T::value_type;
+      typename T::input_type;
+    }
+    && requires(T x,
+                typename T::value_type v,
+                typename T::input_type in,
+                upd::record<> rec,
+                std::tuple<> t,
+                stream_interface &st) {
+         { x.rules(rec, rec, expr<codec_info{}>) } -> upd::tuple_like2;
+         { x.encode(in, st, t) } -> std::same_as<void>;
+         { v = *x.decode(st, t) };
+         { x.bitsize(v) } -> std::convertible_to<std::size_t>;
+       };
 
-template<field_like... Ts>
+template<codec... Fields>
 class description {
-  template<typename... _Ts, typename... Us>
+  template<codec... _Ts, codec... Us>
   friend constexpr auto
   operator|(description<_Ts...> lhs, description<Us...> rhs) noexcept(release);
 
 public:
   using result_type =
-      decltype(typelist2<Ts...>
+      decltype(typelist2<Fields...>
+               | tuple_views::transform_type(
+                   []<typename T> -> entry<T::identifier,
+                                           typename T::value_type> {})
+               | tuple_views::as_record
+               | record_views::instantiate<record>);
+
+  using value_type =
+      decltype(typelist2<Fields...>
                | tuple_views::transform_type(
                    []<typename T> -> entry<T::identifier,
                                            typename T::value_type> {})
@@ -66,14 +89,14 @@ public:
                | record_views::instantiate<record>);
 
   using storage_type =
-      decltype(typelist2<Ts...>
+      decltype(typelist2<Fields...>
                | tuple_views::transform_type(
                    []<typename T> -> entry<T::identifier, T> {})
                | tuple_views::as_record
                | record_views::instantiate<record>);
 
   using input_type =
-      decltype(typelist2<Ts...>
+      decltype(typelist2<Fields...>
                | tuple_views::transform_type(
                    []<typename T> -> entry<T::identifier,
                                            typename T::input_type> {})
@@ -81,12 +104,18 @@ public:
                | record_views::instantiate<record>);
 
   constexpr static auto identifiers =
-      typelist2<Ts...>
+      typelist2<Fields...>
       | tuple_views::transform_type([]<typename T> -> expr_t<T::identifier> {})
       | tuple_views::to<std::tuple>;
 
-  explicit constexpr description(Ts... fields)
+  explicit constexpr description(Fields... fields)
       : m_fields{entry{expr<fields.identifier>, std::move(fields)}...} {}
+
+  template<record_like Packet, record_like FieldRecord, codec_info CodecInfo>
+  [[nodiscard]] constexpr static auto
+  rules(const Packet &, const FieldRecord &, expr_t<CodecInfo>) {
+    return std::tuple{};
+  }
 
   template<record_like Args>
   constexpr void
@@ -222,7 +251,7 @@ public:
                    | tuple_views::to<std::tuple>;
 
       auto sys = tuple_views::concat(presys, rules);
-      auto maybe_field_value = field.decode(src, m_fields, sys);
+      auto maybe_field_value = field.decode(src, sys);
       if (!maybe_field_value) {
         err = maybe_field_value.error();
         return;
@@ -234,14 +263,11 @@ public:
     return result_if_no_error(std::move(retval), std::move(err));
   }
 
-  template<typename... Entries>
   [[nodiscard]] constexpr auto
-  bitsize(const record<Entries...> &named_field_values) const noexcept(release)
-      -> std::size_t {
+  bitsize(const value_type &packet) const noexcept(release) -> std::size_t {
     namespace updv = record_views;
     return updv::fold_left(
-        named_field_values, 0uz,
-        [&](std::size_t acc, auto k, const auto &field_value) {
+        packet, 0uz, [&](std::size_t acc, auto k, const auto &field_value) {
           auto field_pos = updv::find_if(
               m_fields, [&](auto id, auto) { return expr<id == k>; });
           return acc + get_ith<field_pos>(m_fields).bitsize(field_value);
@@ -251,9 +277,10 @@ public:
   storage_type m_fields;
 };
 
-template<typename... Ts, typename... Us>
+template<codec... Fields, codec... Us>
 [[nodiscard]] constexpr auto
-operator|(description<Ts...> lhs, description<Us...> rhs) noexcept(release) {
+operator|(description<Fields...> lhs,
+          description<Us...> rhs) noexcept(release) {
   namespace updv = record_views;
 
   auto fields = updv::concat(std::move(lhs.m_fields), std::move(rhs.m_fields))

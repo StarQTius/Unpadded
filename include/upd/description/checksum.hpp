@@ -38,8 +38,8 @@ struct checksum_t {
   using value_type = uword_t;
   using input_type = unit_t;
 
-  BinaryOp op;
   value_type init;
+  BinaryOp op;
   FieldFilter identifier_filter;
 
   template<record_like Packet, record_like Fields, codec_info CodecInfo>
@@ -80,10 +80,9 @@ struct checksum_t {
     return (void)dest.write_unsigned(value, width);
   }
 
-  template<record_like Fields, tuple_like2 System>
+  template<tuple_like2 System>
   [[nodiscard]] constexpr static auto
-  decode(stream_interface &src, const Fields &, const System &sys)
-      -> result<value_type> {
+  decode(stream_interface &src, const System &sys) -> result<value_type> {
     auto actual = uword_t{};
     if (auto err = src.read_unsigned(width, &actual); err) {
       return std::unexpected(found_lite_error{err});
@@ -100,9 +99,8 @@ struct checksum_t {
     return actual;
   }
 
-  template<typename V>
   [[nodiscard]] constexpr auto
-  bitsize(const V &) const noexcept(release) -> std::size_t {
+  bitsize(value_type) const noexcept(release) -> std::size_t {
     return Width;
   }
 };
@@ -114,7 +112,7 @@ checksum2(BinaryOp op, all_fields_t) noexcept(release) {
 
   auto retval =
       checksum_t<Identifier, BinaryOp, Width, decltype(is_not_this_field)>{
-          std::move(op), 0uz, is_not_this_field};
+          0uz, std::move(op), is_not_this_field};
 
   return description{std::move(retval)};
 }

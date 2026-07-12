@@ -60,10 +60,10 @@ struct one_of_t {
                                              typename T::input_type {})
                | tuple_views::to<typelist2_t>){};
 
-  using input_type =
-      instantiate_variadic<deferred_caster, decltype(subinput_types)>;
   using value_type = decltype(tuple_views::apply_type(
       alternative_types, []<typename... Ts> -> std::variant<Ts...> {}));
+  using input_type =
+      instantiate_variadic<deferred_caster, decltype(subinput_types)>;
   using rule_type = Rule;
   using tag_type = decltype(tuple_views::apply_type(
       tags_of_v<TaggedDescriptions>
@@ -135,10 +135,9 @@ struct one_of_t {
                        encode_alt);
   }
 
-  template<record_like Fields, tuple_like2 System>
+  template<tuple_like2 System>
   [[nodiscard]] constexpr auto
-  decode(stream_interface &src, const Fields &, const System &sys) const
-      -> result<value_type> {
+  decode(stream_interface &src, const System &sys) const -> result<value_type> {
     namespace stdr = std::ranges;
     namespace updv = upd::tuple_views;
 
@@ -171,21 +170,20 @@ struct one_of_t {
         make_alt);
   }
 
-  template<typename... Ts>
   [[nodiscard]] constexpr auto
-  bitsize(const std::variant<Ts...> &sum_of_field_values) const
-      noexcept(release) -> std::size_t {
+  bitsize(const value_type &sum_of_field_values) const noexcept(release)
+      -> std::size_t {
     namespace updv = upd::tuple_views;
     auto alt_index = sum_of_field_values.index();
     if (alt_index == 0) {
       return 0;
     }
 
-    auto seq = UPD_WITH_SEQUENCE(Is, sizeof...(Ts) - 1, &) {
+    auto seq = UPD_WITH_SEQUENCE(Is, size, &) {
       return std::tuple{expr<Is>...};
     };
-    return updv::visit(seq, alt_index - 1, [&](auto i) {
-      const auto &field_value = *std::get_if<i + 1>(&sum_of_field_values);
+    return updv::visit(seq, alt_index, [&](auto i) {
+      const auto &field_value = *std::get_if<i>(&sum_of_field_values);
       const auto &alt_descr = upd::get_ith<i>(tagged_descriptions);
       return alt_descr.bitsize(field_value);
     });

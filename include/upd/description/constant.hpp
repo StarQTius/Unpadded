@@ -40,10 +40,9 @@ struct constant_t {
     (void)dest.write_unsigned(field_value, width);
   }
 
-  template<record_like Fields, tuple_like2 System>
+  template<tuple_like2 System>
   [[nodiscard]] constexpr static auto
-  decode(stream_interface &src, const Fields &, const System &)
-      -> result<value_type> {
+  decode(stream_interface &src, const System &) -> result<value_type> {
     auto retval = value_type{};
     if (auto err = src.read_unsigned(width, &retval); err) {
       return std::unexpected(found_lite_error{err});
@@ -52,9 +51,8 @@ struct constant_t {
     return retval;
   }
 
-  template<typename V>
   [[nodiscard]] constexpr auto
-  bitsize(const V &) const noexcept(release) -> std::size_t {
+  bitsize(value_type) const noexcept(release) -> std::size_t {
     return Width;
   }
 };
@@ -78,10 +76,9 @@ struct enumeration_constant_t {
     (void)dest.write_unsigned(std::to_underlying(field_value), width);
   }
 
-  template<record_like Fields, tuple_like2 System>
+  template<tuple_like2 System>
   [[nodiscard]] constexpr static auto
-  decode(stream_interface &src, const Fields &, const System &)
-      -> result<value_type> {
+  decode(stream_interface &src, const System &) -> result<value_type> {
     auto retval = uword_t{};
     if (auto err = src.read_unsigned(width, &retval); err) {
       return std::unexpected(found_lite_error{err});
@@ -90,9 +87,8 @@ struct enumeration_constant_t {
     return static_cast<Enum>(retval);
   }
 
-  template<typename V>
   [[nodiscard]] constexpr auto
-  bitsize(const V &) const noexcept(release) -> std::size_t {
+  bitsize(value_type) const noexcept(release) -> std::size_t {
     return Width;
   }
 

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <algorithm>
-#include <array>
 #include <cstddef>
 #include <expected>
 #include <ranges>
@@ -18,7 +17,6 @@
 #include "../upd.hpp"
 #include "../utility/constexpr.hpp"
 #include "../utility/static_vector.hpp"
-#include "codec_info.hpp"
 
 namespace upd {
 
@@ -28,12 +26,12 @@ constexpr auto max_repetition = 1024;
 
 namespace upd::descriptor {
 
-template<name Identifier, typename Description, typename Rule, std::size_t Max>
+template<name Identifier, codec Description, typename Rule, std::size_t Max>
 struct repeat_t {
   constexpr static auto identifier = Identifier;
   constexpr static auto max = Max;
 
-  using value_type = static_vector<typename Description::result_type, Max>;
+  using value_type = static_vector<typename Description::value_type, Max>;
   using input_type = value_type;
   using description_type = Description;
   using rule_type = Rule;
@@ -58,14 +56,13 @@ struct repeat_t {
                         stream_interface &dest,
                         const System &) const {
     for (const auto &element : value) {
-      description.encode(element, dest);
+      description.encode(element, dest, std::tuple{});
     }
   }
 
-  template<record_like Fields, tuple_like2 System>
+  template<tuple_like2 System>
   [[nodiscard]] constexpr auto
-  decode(stream_interface &src, const Fields &, const System &sys) const
-      -> result<value_type> {
+  decode(stream_interface &src, const System &sys) const -> result<value_type> {
     namespace stdv = std::views;
     namespace updv = upd::tuple_views;
 
@@ -75,7 +72,7 @@ struct repeat_t {
           identifier.string, static_cast<word_t>(len)}};
     }
 
-    auto retval = static_vector<typename Description::result_type, Max>{};
+    auto retval = value_type{};
 
     auto i = 0uz;
     auto overflown = false;
@@ -96,20 +93,10 @@ struct repeat_t {
     return retval;
   }
 
-  template<typename T, std::size_t M>
   [[nodiscard]] constexpr auto
-  bitsize(const static_vector<T, M> &svec) const -> std::size_t {
+  bitsize(const value_type &svec) const -> std::size_t {
     namespace stdr = std::ranges;
     return stdr::fold_left(svec, 0uz, [&](auto acc, const auto &elem) {
-      return acc + description.bitsize(elem);
-    });
-  }
-
-  template<typename T, std::size_t N>
-  [[nodiscard]] constexpr auto
-  bitsize(const std::array<T, N> &arr) const -> std::size_t {
-    namespace stdr = std::ranges;
-    return stdr::fold_left(arr, 0uz, [&](auto acc, const auto &elem) {
       return acc + description.bitsize(elem);
     });
   }

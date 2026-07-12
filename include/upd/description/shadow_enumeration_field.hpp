@@ -43,16 +43,14 @@ struct shadow_enumeration_field_t {
   constexpr static void encode(value_type, stream_interface &, const System &) {
   }
 
-  template<record_like Fields, tuple_like2 System>
+  template<tuple_like2 System>
   [[nodiscard]] constexpr static auto
-  decode(stream_interface &, const Fields &, const System &sys)
-      -> result<value_type> {
+  decode(stream_interface &, const System &sys) -> result<value_type> {
     return solve_for(value_of<Identifier>, sys | tuple_views::to<std::tuple>);
   }
 
-  template<typename V>
   [[nodiscard]] constexpr auto
-  bitsize(const V &) const noexcept(release) -> std::size_t {
+  bitsize(value_type) const noexcept(release) -> std::size_t {
     return Width;
   }
 };
