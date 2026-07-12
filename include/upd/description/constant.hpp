@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstddef>
-#include <cstdint>
+#include <expected>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -14,7 +14,6 @@
 #include "../tuple/tuple_like.hpp"
 #include "../upd.hpp"
 #include "../utility/constexpr.hpp"
-#include "../utility/token.hpp"
 #include "codec_info.hpp"
 
 namespace upd::descriptor {
@@ -99,12 +98,6 @@ struct enumeration_constant_t {
 
   Enum field_value;
 };
-
-template<name Identifier, typename T, std::size_t Width>
-[[nodiscard]] constexpr auto constant(T n, width_t<Width>) noexcept(release) {
-  auto retval = constant_t<Identifier, Width>{n};
-  return description{retval};
-}
 
 template<name Identifier, std::size_t Width>
 [[nodiscard]] constexpr auto constant2(uword_t n) noexcept(release) {

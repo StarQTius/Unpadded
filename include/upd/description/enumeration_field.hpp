@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstddef>
-#include <cstdint>
+#include <expected>
 #include <tuple>
 #include <type_traits>
 
@@ -12,7 +12,6 @@
 #include "../tuple/tuple_like.hpp"
 #include "../upd.hpp"
 #include "../utility/constexpr.hpp"
-#include "../utility/token.hpp"
 #include "codec_info.hpp"
 
 namespace upd::descriptor {

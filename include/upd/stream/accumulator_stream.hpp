@@ -3,8 +3,10 @@
 #include <cstddef>
 #include <ranges>
 
+#include "../error.hpp"
 #include "../upd.hpp"
 #include "stream_interface.hpp"
+#include <limits.h>
 
 namespace upd {
 

@@ -3,15 +3,11 @@
 #include <algorithm>
 #include <concepts>
 #include <cstddef>
-#include <cstdint>
-#include <iosfwd>
-#include <istream>
 #include <iterator>
-#include <ranges>
 
 #include "../error.hpp"
-#include "../upd.hpp"
 #include "stream_interface.hpp"
+#include <limits.h>
 
 namespace upd {
 

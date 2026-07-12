@@ -2,7 +2,6 @@
 
 #include <concepts>
 #include <cstddef>
-#include <cstdint>
 #include <expected>
 #include <tuple>
 #include <utility>
@@ -20,7 +19,6 @@
 #include "../tuple/tuple_like.hpp"
 #include "../upd.hpp"
 #include "../utility/constexpr.hpp"
-#include "../utility/token.hpp"
 #include "../utility/type_traits.hpp"
 #include "codec_info.hpp"
 
@@ -108,20 +106,6 @@ struct checksum_t {
     return Width;
   }
 };
-
-template<name Identifier, typename BinaryOp, std::size_t Width>
-[[nodiscard]] constexpr auto checksum(BinaryOp op,
-                                      uword_t init,
-                                      width_t<Width>,
-                                      all_fields_t) noexcept(release) {
-  auto is_not_this_field = [](auto id) { return expr<id != Identifier>; };
-
-  auto retval =
-      checksum_t<Identifier, BinaryOp, Width, decltype(is_not_this_field)>{
-          std::move(op), init, is_not_this_field};
-
-  return description{std::move(retval)};
-}
 
 template<name Identifier, std::size_t Width, typename BinaryOp>
 [[nodiscard]] constexpr auto

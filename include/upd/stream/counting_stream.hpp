@@ -2,6 +2,7 @@
 
 #include <cstddef>
 
+#include "../error.hpp"
 #include "../upd.hpp"
 #include "stream_interface.hpp"
 

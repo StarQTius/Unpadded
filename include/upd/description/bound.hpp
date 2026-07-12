@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstddef>
-#include <cstdint>
+#include <expected>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -15,7 +15,6 @@
 #include "../tuple/tuple_like.hpp"
 #include "../upd.hpp"
 #include "../utility/constexpr.hpp"
-#include "../utility/token.hpp"
 #include "codec_info.hpp"
 
 namespace upd::descriptor {
@@ -84,14 +83,6 @@ struct bound_t {
     return Width;
   }
 };
-
-template<name Identifier, bool Signedness, std::size_t Width, typename Rule>
-[[nodiscard]] constexpr auto
-bound(signedness_t<Signedness>, width_t<Width>, Rule rule) noexcept(release) {
-  auto retval = bound_t<Identifier, Signedness, Width, Rule>{std::move(rule)};
-
-  return description{std::move(retval)};
-}
 
 template<name Identifier, std::size_t Width, typename Rule>
 [[nodiscard]] constexpr auto bound2(Rule rule) noexcept(release) {

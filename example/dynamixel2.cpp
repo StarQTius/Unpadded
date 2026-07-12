@@ -1,14 +1,8 @@
-#include <algorithm>
 #include <array>
-#include <cmath>
-#include <cstddef>
 #include <cstdint>
 #include <format>
 #include <iostream>
-#include <limits>
 #include <print>
-#include <ranges>
-#include <string_view>
 #include <type_traits>
 #include <utility>
 
@@ -25,9 +19,7 @@ auto operator<<(ostream &os, char b) -> ostream & {
 #include <upd/description.hpp>
 #include <upd/error.hpp>
 #include <upd/record.hpp>
-#include <upd/stream.hpp>
 #include <upd/tuple.hpp>
-#include <upd/utility/token.hpp>
 #include <upd/utility/when_then.hpp>
 
 #define BITMASK(N) ((1u << N) - 1u)
@@ -268,8 +260,8 @@ auto read_example() -> upd::error {
   std::println("");
   std::println("");
 
-  auto answer2_seq = std::array{0xff, 0xff, 0xfd, 0x00, 0x02, 0x07, 0x00,
-                                0x55, 0x00, 0x06, 0x04, 0x26, 0x6f, 0x6d};
+  auto answer1_seq = std::array{0xff, 0xff, 0xfd, 0x00, 0x01, 0x08, 0x00, 0x55,
+                                0x00, 0xa6, 0x00, 0x00, 0x00, 0x8c, 0xc0};
 
   auto answer1 = answer_description.decode(
       answer1_seq.begin(),

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstddef>
-#include <cstdint>
+#include <expected>
 #include <tuple>
 #include <type_traits>
 
@@ -12,7 +12,6 @@
 #include "../tuple/tuple_like.hpp"
 #include "../upd.hpp"
 #include "../utility/constexpr.hpp"
-#include "../utility/token.hpp"
 #include "codec_info.hpp"
 
 namespace upd::descriptor {
@@ -117,14 +116,6 @@ struct anonymous_field_t {
     return Width;
   }
 };
-
-template<name Identifier, bool Signedness, std::size_t Width>
-[[nodiscard]] constexpr auto
-field(signedness_t<Signedness>, width_t<Width>) noexcept(release) {
-  field_like auto retval = field_t<Identifier, Signedness, Width>{};
-
-  return description{retval};
-}
 
 template<name Identifier, std::size_t Width>
 constexpr auto field2 = [] {
