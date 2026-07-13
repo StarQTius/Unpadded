@@ -17,11 +17,6 @@ namespace upd {
 
 using lite_error_t = std::intptr_t;
 
-struct no_error {
-  constexpr auto
-  operator<=>(const no_error &) const noexcept(release) = default;
-};
-
 struct invalid_code_in_one_of {
   const char *identifier;
   std::intmax_t code;
@@ -62,8 +57,7 @@ struct found_lite_error {
   operator<=>(const found_lite_error &) const noexcept(release) = default;
 };
 
-using error_data_types = typelist2_t<no_error,
-                                     invalid_code_in_one_of,
+using error_data_types = typelist2_t<invalid_code_in_one_of,
                                      negative_repetition_count,
                                      repeated_beyond_max,
                                      checksum_mismatch,
@@ -84,6 +78,9 @@ public:
   constexpr error(ErrorData &&err_data) noexcept(release)
       : m_data{UPD_FWD(err_data)} {}
 
+  constexpr error(lite_error_t err) noexcept(release)
+      : m_data{found_lite_error{err}} {}
+
   constexpr auto
   operator=(const error &) noexcept(release) -> error & = default;
   constexpr auto operator=(error &&) noexcept(release) -> error & = default;
@@ -92,10 +89,6 @@ public:
   constexpr auto operator=(ErrorData &&err_data) noexcept(release) -> error & {
     m_data = UPD_FWD(err_data);
     return *this;
-  }
-
-  [[nodiscard]] constexpr operator bool() const noexcept(release) {
-    return !std::holds_alternative<no_error>(m_data);
   }
 
   constexpr auto operator==(const error &) const -> bool = default;
@@ -128,37 +121,26 @@ template<typename T>
 using result = std::expected<T, error>;
 
 template<typename T>
-[[nodiscard]] constexpr auto
-result_if_no_error(T &&x, const error &err) -> result<std::remove_cvref_t<T>> {
+[[nodiscard]] constexpr auto result_if_no_error(T &&x, const result<void> &err)
+    -> result<std::remove_cvref_t<T>> {
   if (err) {
-    return std::unexpected{err};
+    return std::unexpected{err.error()};
   } else {
     return UPD_FWD(x);
   }
 }
 
 template<typename T>
-[[nodiscard]] constexpr auto
-result_if_no_error(T &&x, error &&err) -> result<std::remove_cvref_t<T>> {
+[[nodiscard]] constexpr auto result_if_no_error(T &&x, result<void> &&err)
+    -> result<std::remove_cvref_t<T>> {
   if (err) {
-    return std::unexpected{std::move(err)};
+    return std::unexpected{std::move(err).error()};
   } else {
     return UPD_FWD(x);
   }
 }
 
 } // namespace upd
-
-template<>
-struct std::formatter<upd::no_error> {
-  constexpr static auto parse(std::format_parse_context &ctx) {
-    return ctx.begin();
-  }
-
-  static auto format(upd::no_error, std::format_context &ctx) {
-    return std::format_to(ctx.out(), "No error");
-  }
-};
 
 template<>
 struct std::formatter<upd::invalid_code_in_one_of> {

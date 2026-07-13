@@ -35,9 +35,14 @@ struct constant_t {
   }
 
   template<tuple_like2 System>
-  constexpr void encode(unit_t, stream_interface &dest, const System &) const
-      noexcept(release) {
-    (void)dest.write_unsigned(field_value, width);
+  [[nodiscard]]
+  constexpr auto encode(unit_t, stream_interface &dest, const System &) const
+      noexcept(release) -> result<void> {
+    if (auto err = dest.write_unsigned(field_value, width); err) {
+      return std::unexpected{found_lite_error{err}};
+    }
+
+    return {};
   }
 
   template<tuple_like2 System>
@@ -72,8 +77,15 @@ struct enumeration_constant_t {
   }
 
   template<tuple_like2 System>
-  constexpr void encode(unit_t, stream_interface &dest, const System &) const {
-    (void)dest.write_unsigned(std::to_underlying(field_value), width);
+  [[nodiscard]]
+  constexpr auto
+  encode(unit_t, stream_interface &dest, const System &) const -> result<void> {
+    if (auto err = dest.write_unsigned(std::to_underlying(field_value), width);
+        err) {
+      return std::unexpected{found_lite_error{err}};
+    }
+
+    return {};
   }
 
   template<tuple_like2 System>

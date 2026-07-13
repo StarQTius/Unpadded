@@ -37,13 +37,21 @@ struct field_t {
   }
 
   template<tuple_like2 System>
-  constexpr static void
-  encode(value_type value, stream_interface &dest, const System &) {
+  [[nodiscard]] constexpr static auto
+  encode(value_type value, stream_interface &dest, const System &)
+      -> result<void> {
+    auto err = lite_error::none;
     if constexpr (is_signed) {
-      (void)dest.write_signed(value, width);
+      err = dest.write_signed(value, width);
     } else {
-      (void)dest.write_unsigned(value, width);
+      err = dest.write_unsigned(value, width);
     }
+
+    if (err) {
+      return std::unexpected{found_lite_error{err}};
+    }
+
+    return {};
   }
 
   template<tuple_like2 System>
@@ -85,13 +93,21 @@ struct anonymous_field_t {
   }
 
   template<tuple_like2 System>
-  constexpr void
-  encode(value_type value, stream_interface &dest, const System &) const {
+  [[nodiscard]] constexpr auto
+  encode(value_type value, stream_interface &dest, const System &) const
+      -> result<void> {
+    auto err = lite_error::none;
     if constexpr (is_signed) {
-      (void)dest.write_signed(value, width);
+      err = dest.write_signed(value, width);
     } else {
-      (void)dest.write_unsigned(value, width);
+      err = dest.write_unsigned(value, width);
     }
+
+    if (err) {
+      return std::unexpected(found_lite_error{err});
+    }
+
+    return {};
   }
 
   template<tuple_like2 System>

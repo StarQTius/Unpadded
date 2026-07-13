@@ -47,15 +47,22 @@ struct bound_t {
   };
 
   template<tuple_like2 System>
-  constexpr static void
-  encode(unit_t, stream_interface &dest, const System &sys) {
+  [[nodiscard]] constexpr static auto
+  encode(unit_t, stream_interface &dest, const System &sys) -> result<void> {
+    auto err = lite_error::none;
     auto value = algebra::solve_for(value_of<Identifier>,
                                     sys | tuple_views::to<std::tuple>);
     if constexpr (is_signed) {
-      (void)dest.write_signed(value, width);
+      err = dest.write_signed(value, width);
     } else {
-      (void)dest.write_unsigned(value, width);
+      err = dest.write_unsigned(value, width);
     }
+
+    if (err) {
+      return std::unexpected(found_lite_error{err});
+    }
+
+    return {};
   }
 
   template<tuple_like2 System>

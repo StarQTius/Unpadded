@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <concepts>
 #include <cstddef>
+#include <expected>
 #include <iosfwd>
 #include <iterator>
 #include <ranges>
@@ -60,7 +61,7 @@ concept codec =
                 std::tuple<> t,
                 stream_interface &st) {
          { x.rules(rec, rec, expr<codec_info{}>) } -> upd::tuple_like2;
-         { x.encode(in, st, t) } -> std::same_as<void>;
+         { x.encode(in, st, t) } -> std::convertible_to<result<void>>;
          { v = *x.decode(st, t) };
          { x.bitsize(v) } -> std::convertible_to<std::size_t>;
        };
@@ -118,36 +119,50 @@ public:
   }
 
   template<record_like Args>
-  constexpr void
-  encode(const Args &args, std::ostream &dest, const char *sep) const {
-    encode(args, standard_stream{nullptr, &dest, sep});
+  [[nodiscard]]
+  constexpr auto
+  encode(const Args &args, std::ostream &dest, const char *sep) const
+      -> result<void> {
+    return encode(args, standard_stream{nullptr, &dest, sep});
   }
 
-  template<record_like Args, tuple_like2 System = std::tuple<>>
-  constexpr void encode(const Args &args, stream_interface &dest) const {
+  template<record_like Args>
+  [[nodiscard]]
+  constexpr auto
+  encode(const Args &args, stream_interface &dest) const -> result<void> {
     using namespace upd::record_views;
 
     auto input = input_type{};
     for_each(args,
              [&](auto id, const auto &value) { get<id.value>(input) = value; });
-    encode(input, dest);
+    return encode(input, dest);
   }
 
   template<record_like Args>
-  constexpr void encode(const Args &args, stream_interface &&dest) const {
-    encode(args, dest);
+  [[nodiscard]]
+  constexpr auto
+  encode(const Args &args, stream_interface &&dest) const -> result<void> {
+    return encode(args, dest);
   }
 
-  template<tuple_like2 System = std::tuple<>>
-  constexpr void encode(const input_type &input,
+  [[nodiscard]]
+  constexpr auto encode(const input_type &input, stream_interface &dest) const
+      -> result<void> {
+    return encode(input, dest, std::tuple{});
+  }
+
+  template<tuple_like2 System>
+  [[nodiscard]]
+  constexpr auto encode(const input_type &input,
                         stream_interface &dest,
-                        const System &ctx_sys = std::tuple{}) const {
+                        const System &ctx_sys) const -> result<void> {
     namespace updv = record_views;
 
     constexpr auto cdinf = codec_info{
         .operation = codec_operation::encoding,
     };
 
+    auto res = result<void>{};
     auto rule_sys = m_fields
                     | updv::values
                     | tuple_views::transform([&](const auto &field) {
@@ -160,9 +175,14 @@ public:
     updv::for_each(m_fields, [&](auto id, const auto &field) {
       using subinput_type =
           typename std::remove_cvref_t<decltype(field)>::input_type;
+      if (!res) {
+        return;
+      }
 
-      field.encode(get_or<id.value>(input, subinput_type{}), dest, sys);
+      res = field.encode(get_or<id.value>(input, subinput_type{}), dest, sys);
     });
+
+    return res;
   }
 
   template<std::input_iterator InputIt, record_like Context = upd::record<>>
@@ -208,18 +228,18 @@ public:
 
   template<tuple_like2 System>
   [[nodiscard]] constexpr auto
-  decode(stream_interface &src, const System &presys) const {
+  decode(stream_interface &src, const System &presys) const
+      -> result<value_type> {
     namespace updv = record_views;
 
     constexpr auto cdinf = codec_info{
         .operation = codec_operation::decoding,
     };
 
-    auto err = error{};
-    auto retval = result_type{};
+    auto maybe_retval = result<value_type>{};
 
     updv::for_each(m_fields, [&](auto id, const auto &field) {
-      if (err) {
+      if (!maybe_retval) {
         return;
       }
 
@@ -230,7 +250,7 @@ public:
 
       auto ctx = known_ids
                  | tuple_views::transform([&]<auto Id>(expr_t<Id>) {
-                     return keyword2<Id>{} = get<Id>(retval);
+                     return keyword2<Id>{} = get<Id>(*maybe_retval);
                    })
                  | tuple_views::as_record
                  | updv::to<upd::record>;
@@ -251,16 +271,14 @@ public:
                    | tuple_views::to<std::tuple>;
 
       auto sys = tuple_views::concat(presys, rules);
-      auto maybe_field_value = field.decode(src, sys);
-      if (!maybe_field_value) {
-        err = maybe_field_value.error();
-        return;
+      if (auto maybe_value = field.decode(src, sys); maybe_value) {
+        get<id.value>(*maybe_retval) = *std::move(maybe_value);
+      } else {
+        maybe_retval = std::unexpected{maybe_value.error()};
       }
-
-      get<id.value>(retval) = *maybe_field_value;
     });
 
-    return result_if_no_error(std::move(retval), std::move(err));
+    return maybe_retval;
   }
 
   [[nodiscard]] constexpr auto

@@ -38,13 +38,20 @@ struct enumeration_field_t {
   }
 
   template<tuple_like2 System>
-  constexpr static void
-  encode(Enum value, stream_interface &dest, const System &) {
+  [[nodiscard]] constexpr static auto
+  encode(Enum value, stream_interface &dest, const System &) -> result<void> {
+    auto err = lite_error::none;
     if constexpr (is_signed) {
-      (void)dest.write_signed(static_cast<word_t>(value), width);
+      err = dest.write_signed(static_cast<word_t>(value), width);
     } else {
-      (void)dest.write_unsigned(static_cast<uword_t>(value), width);
+      err = dest.write_unsigned(static_cast<uword_t>(value), width);
     }
+
+    if (err) {
+      return std::unexpected{found_lite_error{err}};
+    }
+
+    return {};
   }
 
   template<tuple_like2 System>
@@ -90,13 +97,20 @@ struct anonymous_enumeration_field_t {
   }
 
   template<tuple_like2 System>
-  constexpr static void
-  encode(Enum value, stream_interface &dest, const System &) {
+  [[nodiscard]] constexpr static auto
+  encode(Enum value, stream_interface &dest, const System &) -> result<void> {
+    auto err = lite_error::none;
     if constexpr (is_signed) {
-      (void)dest.write_signed(static_cast<word_t>(value), width);
+      err = dest.write_signed(static_cast<word_t>(value), width);
     } else {
-      (void)dest.write_unsigned(static_cast<uword_t>(value), width);
+      err = dest.write_unsigned(static_cast<uword_t>(value), width);
     }
+
+    if (err) {
+      return std::unexpected{found_lite_error{err}};
+    }
+
+    return {};
   }
 
   template<tuple_like2 System>

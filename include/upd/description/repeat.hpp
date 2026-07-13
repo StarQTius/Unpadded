@@ -52,12 +52,17 @@ struct repeat_t {
   }
 
   template<tuple_like2 System>
-  constexpr void encode(const value_type &value,
+  [[nodiscard]]
+  constexpr auto encode(const value_type &value,
                         stream_interface &dest,
-                        const System &) const {
+                        const System &sys) const -> result<void> {
     for (const auto &element : value) {
-      description.encode(element, dest, std::tuple{});
+      if (auto res = description.encode(element, dest, sys); !res) {
+        return res;
+      }
     }
+
+    return {};
   }
 
   template<tuple_like2 System>

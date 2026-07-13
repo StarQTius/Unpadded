@@ -1,5 +1,6 @@
 #include <array>
 #include <cstdint>
+#include <expected>
 #include <format>
 #include <iostream>
 #include <print>
@@ -169,16 +170,16 @@ constexpr auto answer_description = [] {
          | checksum2<"crc", 16>(accumulate_crc, all_fields);
 }();
 
-auto ping_example() -> upd::error;
-auto read_example() -> upd::error;
-auto write_example() -> upd::error;
-auto reg_write_example() -> upd::error;
-auto action_example() -> upd::error;
-auto factory_reset_example() -> upd::error;
-auto reboot_example() -> upd::error;
-auto clear_example() -> upd::error;
-auto control_table_backup_example() -> upd::error;
-auto sync_read_example() -> upd::error;
+auto ping_example() -> upd::result<void>;
+auto read_example() -> upd::result<void>;
+auto write_example() -> upd::result<void>;
+auto reg_write_example() -> upd::result<void>;
+auto action_example() -> upd::result<void>;
+auto factory_reset_example() -> upd::result<void>;
+auto reboot_example() -> upd::result<void>;
+auto clear_example() -> upd::result<void>;
+auto control_table_backup_example() -> upd::result<void>;
+auto sync_read_example() -> upd::result<void>;
 
 auto main() -> int {
   auto examples = std::array{
@@ -189,25 +190,28 @@ auto main() -> int {
   };
 
   for (auto ex : examples) {
-    auto err = ex();
-    if (err) {
-      std::println("Example resulted in the following error: {}", err);
+    auto res = ex();
+    if (!res) {
+      std::println("Example resulted in the following error: {}", res);
     }
   }
 }
 
-auto ping_example() -> upd::error {
+auto ping_example() -> upd::result<void> {
   using namespace upd::literals;
   using namespace upd::record_operators;
 
   std::cout << std::hex;
   std::println("Ping: example 1");
-  description.encode(("id"_kw2 = 1, "instruction"_kw2 = instruction_code::ping,
-                      "parameters"_kw2 = upd::record{}),
-
-                     std::cout, " ");
+  auto res = description.encode(("id"_kw2 = 1,
+                                 "instruction"_kw2 = instruction_code::ping,
+                                 "parameters"_kw2 = upd::record{}),
+                                std::cout, " ");
   std::println("");
   std::println("");
+  if (!res) {
+    return res;
+  }
 
   auto answer1_seq = std::array{0xff, 0xff, 0xfd, 0x00, 0x01, 0x07, 0x00,
                                 0x55, 0x00, 0x06, 0x04, 0x26, 0x65, 0x5d};
@@ -215,7 +219,7 @@ auto ping_example() -> upd::error {
       answer1_seq.begin(),
       upd::record{"status_of"_kw2 = instruction_code::ping});
   if (!answer1) {
-    return answer1.error();
+    return std::unexpected(answer1.error());
   }
 
   std::println("Answer 1:");
@@ -232,7 +236,7 @@ auto ping_example() -> upd::error {
       answer2_seq.begin(),
       upd::record{"status_of"_kw2 = instruction_code::ping});
   if (!answer2) {
-    return answer2.error();
+    return std::unexpected(answer2.error());
   }
 
   std::println("Answer 2:");
@@ -243,22 +247,24 @@ auto ping_example() -> upd::error {
   std::println("- parameters: {}", (*answer2)["parameters"_kw2]);
   std::println("");
 
-  return upd::no_error{};
+  return {};
 }
 
-auto read_example() -> upd::error {
+auto read_example() -> upd::result<void> {
   using namespace upd::literals;
   using namespace upd::record_operators;
 
   std::cout << std::hex;
   std::println("Read: example");
-  description.encode(
+  auto res = description.encode(
       ("id"_kw2 = 1, "instruction"_kw2 = instruction_code::read,
        "parameters"_kw2 = ("address"_kw2 = 0x84, "length_"_kw2 = 4)),
-
       std::cout, " ");
   std::println("");
   std::println("");
+  if (!res) {
+    return res;
+  }
 
   auto answer1_seq = std::array{0xff, 0xff, 0xfd, 0x00, 0x01, 0x08, 0x00, 0x55,
                                 0x00, 0xa6, 0x00, 0x00, 0x00, 0x8c, 0xc0};
@@ -267,7 +273,7 @@ auto read_example() -> upd::error {
       answer1_seq.begin(),
       upd::record{"status_of"_kw2 = instruction_code::read});
   if (!answer1) {
-    return answer1.error();
+    return std::unexpected(answer1.error());
   }
 
   std::println("Answer:");
@@ -278,24 +284,26 @@ auto read_example() -> upd::error {
   std::println("- parameters: {}", (*answer1)["parameters"_kw2]);
   std::println("");
 
-  return upd::no_error{};
+  return {};
 }
 
-auto write_example() -> upd::error {
+auto write_example() -> upd::result<void> {
   using namespace upd::literals;
   using namespace upd::record_operators;
 
   std::cout << std::hex;
   std::println("Write: example");
-  description.encode(
+  auto res = description.encode(
       ("id"_kw2 = 1, "instruction"_kw2 = instruction_code::write,
        "parameters"_kw2 =
            ("address"_kw2 = 0x74,
             "data"_kw2 = std::array<std::uint8_t, 4>{0x0, 0x2, 0x0, 0x0})),
-
       std::cout, " ");
   std::println("");
   std::println("");
+  if (!res) {
+    return res;
+  }
 
   auto answer1_seq = std::array{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04,
                                 0x00, 0x55, 0x00, 0xa1, 0x0c};
@@ -303,7 +311,7 @@ auto write_example() -> upd::error {
       answer1_seq.begin(),
       upd::record{"status_of"_kw2 = instruction_code::write});
   if (!answer1) {
-    return answer1.error();
+    return std::unexpected(answer1.error());
   }
 
   std::println("Answer:");
@@ -314,24 +322,26 @@ auto write_example() -> upd::error {
   std::println("- parameters: {}", (*answer1)["parameters"_kw2]);
   std::println("");
 
-  return upd::no_error{};
+  return {};
 }
 
-auto reg_write_example() -> upd::error {
+auto reg_write_example() -> upd::result<void> {
   using namespace upd::literals;
   using namespace upd::record_operators;
 
   std::cout << std::hex;
   std::println("Reg Write: example");
-  description.encode(
+  auto res = description.encode(
       ("id"_kw2 = 1, "instruction"_kw2 = instruction_code::reg_write,
        "parameters"_kw2 =
            ("address"_kw2 = 0x68,
             "data"_kw2 = std::array<std::uint8_t, 4>{0xc8, 0x0, 0x0, 0x0})),
-
       std::cout, " ");
   std::println("");
   std::println("");
+  if (!res) {
+    return res;
+  }
 
   auto answer1_seq = std::array{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04,
                                 0x00, 0x55, 0x00, 0xa1, 0x0c};
@@ -339,7 +349,7 @@ auto reg_write_example() -> upd::error {
       answer1_seq.begin(),
       upd::record{"status_of"_kw2 = instruction_code::reg_write});
   if (!answer1) {
-    return answer1.error();
+    return std::unexpected(answer1.error());
   }
 
   std::println("Answer:");
@@ -350,22 +360,24 @@ auto reg_write_example() -> upd::error {
   std::println("- parameters: {}", (*answer1)["parameters"_kw2]);
   std::println("");
 
-  return upd::no_error{};
+  return {};
 }
 
-auto action_example() -> upd::error {
+auto action_example() -> upd::result<void> {
   using namespace upd::literals;
   using namespace upd::record_operators;
 
   std::cout << std::hex;
   std::println("Action: example");
-  description.encode(("id"_kw2 = 1,
-                      "instruction"_kw2 = instruction_code::action,
-                      "parameters"_kw2 = upd::record{}),
-
-                     std::cout, " ");
+  auto res = description.encode(("id"_kw2 = 1,
+                                 "instruction"_kw2 = instruction_code::action,
+                                 "parameters"_kw2 = upd::record{}),
+                                std::cout, " ");
   std::println("");
   std::println("");
+  if (!res) {
+    return res;
+  }
 
   auto answer1_seq = std::array{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04,
                                 0x00, 0x55, 0x00, 0xa1, 0x0c};
@@ -373,7 +385,7 @@ auto action_example() -> upd::error {
       answer1_seq.begin(),
       upd::record{"status_of"_kw2 = instruction_code::reg_write});
   if (!answer1) {
-    return answer1.error();
+    return std::unexpected(answer1.error());
   }
 
   std::println("Answer:");
@@ -384,22 +396,24 @@ auto action_example() -> upd::error {
   std::println("- parameters: {}", (*answer1)["parameters"_kw2]);
   std::println("");
 
-  return upd::no_error{};
+  return {};
 }
 
-auto factory_reset_example() -> upd::error {
+auto factory_reset_example() -> upd::result<void> {
   using namespace upd::literals;
   using namespace upd::record_operators;
 
   std::cout << std::hex;
   std::println("Action: example");
-  description.encode(("id"_kw2 = 1,
-                      "instruction"_kw2 = instruction_code::factory_reset,
-                      "parameters"_kw2 = factory_reset_target::all_but_id),
-
-                     std::cout, " ");
+  auto res = description.encode(
+      ("id"_kw2 = 1, "instruction"_kw2 = instruction_code::factory_reset,
+       "parameters"_kw2 = factory_reset_target::all_but_id),
+      std::cout, " ");
   std::println("");
   std::println("");
+  if (!res) {
+    return res;
+  }
 
   auto answer1_seq = std::array{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04,
                                 0x00, 0x55, 0x00, 0xa1, 0x0c};
@@ -407,7 +421,7 @@ auto factory_reset_example() -> upd::error {
       answer1_seq.begin(),
       upd::record{"status_of"_kw2 = instruction_code::reg_write});
   if (!answer1) {
-    return answer1.error();
+    return std::unexpected(answer1.error());
   }
 
   std::println("Answer:");
@@ -418,22 +432,24 @@ auto factory_reset_example() -> upd::error {
   std::println("- parameters: {}", (*answer1)["parameters"_kw2]);
   std::println("");
 
-  return upd::no_error{};
+  return {};
 }
 
-auto reboot_example() -> upd::error {
+auto reboot_example() -> upd::result<void> {
   using namespace upd::literals;
   using namespace upd::record_operators;
 
   std::cout << std::hex;
   std::println("Reboot: example");
-  description.encode(("id"_kw2 = 1,
-                      "instruction"_kw2 = instruction_code::reboot,
-                      "parameters"_kw2 = upd::record{}),
-
-                     std::cout, " ");
+  auto res = description.encode(("id"_kw2 = 1,
+                                 "instruction"_kw2 = instruction_code::reboot,
+                                 "parameters"_kw2 = upd::record{}),
+                                std::cout, " ");
   std::println("");
   std::println("");
+  if (!res) {
+    return res;
+  }
 
   auto answer1_seq = std::array{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04,
                                 0x00, 0x55, 0x00, 0xa1, 0x0c};
@@ -441,7 +457,7 @@ auto reboot_example() -> upd::error {
       answer1_seq.begin(),
       upd::record{"status_of"_kw2 = instruction_code::reg_write});
   if (!answer1) {
-    return answer1.error();
+    return std::unexpected(answer1.error());
   }
 
   std::println("Answer:");
@@ -452,21 +468,24 @@ auto reboot_example() -> upd::error {
   std::println("- parameters: {}", (*answer1)["parameters"_kw2]);
   std::println("");
 
-  return upd::no_error{};
+  return {};
 }
 
-auto clear_example() -> upd::error {
+auto clear_example() -> upd::result<void> {
   using namespace upd::literals;
   using namespace upd::record_operators;
 
   std::cout << std::hex;
   std::println("Clear: example");
-  description.encode(("id"_kw2 = 1, "instruction"_kw2 = instruction_code::clear,
-                      "parameters"_kw2 = clear_target::present_position),
-
-                     std::cout, " ");
+  auto res = description.encode(
+      ("id"_kw2 = 1, "instruction"_kw2 = instruction_code::clear,
+       "parameters"_kw2 = clear_target::present_position),
+      std::cout, " ");
   std::println("");
   std::println("");
+  if (!res) {
+    return res;
+  }
 
   auto answer1_seq = std::array{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04,
                                 0x00, 0x55, 0x00, 0xa1, 0x0c};
@@ -474,7 +493,7 @@ auto clear_example() -> upd::error {
       answer1_seq.begin(),
       upd::record{"status_of"_kw2 = instruction_code::reg_write});
   if (!answer1) {
-    return answer1.error();
+    return std::unexpected(answer1.error());
   }
 
   std::println("Answer:");
@@ -485,22 +504,24 @@ auto clear_example() -> upd::error {
   std::println("- parameters: {}", (*answer1)["parameters"_kw2]);
   std::println("");
 
-  return upd::no_error{};
+  return {};
 }
 
-auto control_table_backup_example() -> upd::error {
+auto control_table_backup_example() -> upd::result<void> {
   using namespace upd::literals;
   using namespace upd::record_operators;
 
   std::cout << std::hex;
   std::println("Control Table Backup: example");
-  description.encode(
+  auto res = description.encode(
       ("id"_kw2 = 1, "instruction"_kw2 = instruction_code::control_table_backup,
        "parameters"_kw2 = (control_table_backup_target::store_current)),
-
       std::cout, " ");
   std::println("");
   std::println("");
+  if (!res) {
+    return res;
+  }
 
   auto answer1_seq = std::array{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04,
                                 0x00, 0x55, 0x00, 0xa1, 0x0c};
@@ -508,7 +529,7 @@ auto control_table_backup_example() -> upd::error {
       answer1_seq.begin(),
       upd::record{"status_of"_kw2 = instruction_code::reg_write});
   if (!answer1) {
-    return answer1.error();
+    return std::unexpected(answer1.error());
   }
 
   std::println("Answer:");
@@ -519,23 +540,25 @@ auto control_table_backup_example() -> upd::error {
   std::println("- parameters: {}", (*answer1)["parameters"_kw2]);
   std::println("");
 
-  return upd::no_error{};
+  return {};
 }
 
-auto sync_read_example() -> upd::error {
+auto sync_read_example() -> upd::result<void> {
   using namespace upd::literals;
   using namespace upd::record_operators;
 
   std::cout << std::hex;
   std::println("Sync Read: example");
-  description.encode(
+  auto res = description.encode(
       ("id"_kw2 = 0xfe, "instruction"_kw2 = instruction_code::sync_read,
        "parameters"_kw2 = ("address"_kw2 = 0x84, "length_"_kw2 = 0x4,
                            "ids"_kw2 = std::array<std::uint8_t, 2>{1, 2})),
-
       std::cout, " ");
   std::println("");
   std::println("");
+  if (!res) {
+    return res;
+  }
 
   auto answer1_seq = std::array{0xff, 0xff, 0xfd, 0x00, 0x01, 0x08, 0x00, 0x55,
                                 0x00, 0xa6, 0x00, 0x00, 0x00, 0x8c, 0xc0};
@@ -543,7 +566,7 @@ auto sync_read_example() -> upd::error {
       answer1_seq.begin(),
       upd::record{"status_of"_kw2 = instruction_code::sync_read});
   if (!answer1) {
-    return answer1.error();
+    return std::unexpected(answer1.error());
   }
 
   std::println("Answer:");
@@ -560,7 +583,7 @@ auto sync_read_example() -> upd::error {
       answer2_seq.begin(),
       upd::record{"status_of"_kw2 = instruction_code::sync_read});
   if (!answer2) {
-    return answer2.error();
+    return std::unexpected(answer2.error());
   }
 
   std::println("Answer:");
@@ -571,5 +594,5 @@ auto sync_read_example() -> upd::error {
   std::println("- parameters: {}", (*answer2)["parameters"_kw2]);
   std::println("");
 
-  return upd::no_error{};
+  return {};
 }

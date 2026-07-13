@@ -1,5 +1,6 @@
 #pragma once
 
+#include <expected>
 #include <format>
 #include <functional>
 #include <string_view>
@@ -78,5 +79,24 @@ struct std::formatter<std::monostate> {
 
   auto format(std::monostate, std::format_context &ctx) const {
     return std::format_to(ctx.out(), "<monostate>");
+  }
+};
+
+template<typename T, typename E>
+struct std::formatter<std::expected<T, E>> {
+  constexpr static auto parse(std::format_parse_context &ctx) {
+    return ctx.begin();
+  }
+
+  static auto format(const std::expected<T, E> &res, std::format_context &ctx) {
+    if (!res) {
+      return std::format_to(ctx.out(), "{}", res.error());
+    }
+
+    if constexpr (std::is_void_v<T>) {
+      return std::format_to(ctx.out(), "<void>");
+    } else {
+      return std::format_to(ctx.out(), "{}", *res);
+    }
   }
 };

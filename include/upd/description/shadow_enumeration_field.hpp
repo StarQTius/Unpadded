@@ -40,7 +40,10 @@ struct shadow_enumeration_field_t {
   }
 
   template<tuple_like2 System>
-  constexpr static void encode(value_type, stream_interface &, const System &) {
+  [[nodiscard]]
+  constexpr static auto
+  encode(value_type, stream_interface &, const System &) -> result<void> {
+    return result<void>{};
   }
 
   template<tuple_like2 System>

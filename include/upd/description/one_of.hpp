@@ -97,21 +97,24 @@ struct one_of_t {
       return std::tuple{code_of<Identifier> = rule};
     } else {
       auto cnt_stream = counting_stream{};
-      encode(get_or<Identifier>(packet, input_type{}), cnt_stream, sys);
+      auto res =
+          encode(get_or<Identifier>(packet, input_type{}), cnt_stream, sys);
       return std::tuple{code_of<Identifier> = rule,
-                        length_of<Identifier> = cnt_stream.written()};
+                        length_of<Identifier> =
+                            (res) ? cnt_stream.written() : 0zu};
     }
   }
 
   template<tuple_like2 System>
-  constexpr void encode(const input_type &args,
-                        stream_interface &dest,
-                        const System &sys) const noexcept(release) {
+  [[nodiscard]] constexpr auto
+  encode(const input_type &args,
+         stream_interface &dest,
+         const System &sys) const noexcept(release) -> result<void> {
     namespace updv = upd::tuple_views;
 
     auto code = solve_for(code_of<Identifier>, sys | updv::to<std::tuple>);
     auto i = updv::dynfind(tags_of_v<TaggedDescriptions>, code);
-    auto encode_alt = [&](const auto &named_descr) {
+    auto encode_alt = [&](const auto &named_descr) -> result<void> {
       using target_type =
           typename std::remove_cvref_t<decltype(named_descr)>::input_type;
       auto target = args.template cast_to<target_type>();
@@ -123,12 +126,18 @@ struct one_of_t {
                 | updv::transform([](auto id) { return length_of<id.value>; }),
             0uz, [](auto acc, auto var) { return acc + var; });
 
-        named_descr.encode(
-            target, dest,
-            updv::concat(sys, std::tuple{length_of<Identifier> = length_rule}));
+        auto sys2 =
+            updv::concat(sys, std::tuple{length_of<Identifier> = length_rule});
+        if (auto res = named_descr.encode(target, dest, sys2); !res) {
+          return res;
+        }
       } else {
-        named_descr.encode(target, dest, sys);
+        if (auto res = named_descr.encode(target, dest, sys); !res) {
+          return res;
+        }
       }
+
+      return {};
     };
 
     return updv::visit(tagged_descriptions | record_views::values, i,

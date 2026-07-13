@@ -67,17 +67,21 @@ struct checksum_t {
         | tuple_views::as_record;
 
     auto dest = accumulator_stream{&op, init};
-    descr.encode(curated_packet | updv::to<record>, dest);
+    auto res = descr.encode(curated_packet | updv::to<record>, dest);
 
-    return std::tuple{value_of<Identifier> = dest.acc,
+    return std::tuple{value_of<Identifier> = (res) ? dest.acc : 0zu,
                       length_of<Identifier> = Width};
   }
 
   template<tuple_like2 System>
-  constexpr static void
-  encode(unit_t, stream_interface &dest, const System &sys) {
+  [[nodiscard]] constexpr static auto
+  encode(unit_t, stream_interface &dest, const System &sys) -> result<void> {
     auto value = algebra::solve_for(value_of<Identifier>, sys);
-    return (void)dest.write_unsigned(value, width);
+    if (auto err = dest.write_unsigned(value, width); err) {
+      return std::unexpected{found_lite_error{err}};
+    }
+
+    return {};
   }
 
   template<tuple_like2 System>
