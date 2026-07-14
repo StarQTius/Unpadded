@@ -30,7 +30,7 @@ filter_view(Base &&, Pred) -> filter_view<Base, Pred>;
 
 constexpr auto filter = [](auto &&pred) {
   auto p = [pred = UPD_FWD(pred)]<auto Tag, typename T> {
-    constexpr auto keep_it = pred.template operator()<Tag, T>();
+    constexpr auto keep_it = UPD_INVOKE_TEMPLATE(pred, (Tag, T));
     return expr<keep_it>;
   };
 
@@ -51,9 +51,10 @@ struct upd::record_view_for<upd::record_views::filter_view<Base, Pred>> {
 
   constexpr static auto indices_to_keep =
       UPD_WITH_SEQUENCE(Is, record_size_v<Base>) {
-    return clean_occurences_of_v<
-        expr_t<false>, decltype(std::declval<Pred>().template
-                                operator()<ith_tag_v<Is>, ith_arg_t<Is>>())...>;
+    return clean_occurences_of_v<expr_t<false>,
+                                 decltype(UPD_INVOKE_TEMPLATE(
+                                     std::declval<Pred>(),
+                                     (ith_tag_v<Is>, ith_arg_t<Is>)))...>;
   };
 
   constexpr static auto size = indices_to_keep.size();

@@ -62,7 +62,7 @@ struct upd::tuple_view_for<upd::tuple_views::take_while_view<Base, Pred>> {
 
   template<std::size_t I>
   using ith_result_t =
-      decltype(std::declval<Pred>().template operator()<ith_arg_t<I>>());
+      decltype(UPD_INVOKE_TEMPLATE(std::declval<Pred>(), (ith_arg_t<I>)));
 
   constexpr static auto size = UPD_WITH_SEQUENCE(Is, tuple_size_v<Base>) {
     namespace stdv = std::views;

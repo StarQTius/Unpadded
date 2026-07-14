@@ -61,7 +61,7 @@ struct upd::tuple_view_for<upd::tuple_views::transform_type_view<Base, F>> {
 
   template<std::size_t I>
   using ith_result_t =
-      decltype(std::declval<F>().template operator()<ith_arg_t<I>>());
+      decltype(UPD_INVOKE_TEMPLATE(std::declval<F>(), (ith_arg_t<I>)));
 
   constexpr static auto size = upd::tuple_size_v<Base>;
 

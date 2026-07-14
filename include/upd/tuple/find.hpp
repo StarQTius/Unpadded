@@ -20,7 +20,7 @@ namespace upd::tuple_views {
 constexpr auto find_if = []<tuple_like2 Tuple>(Tuple &&t, auto &&pred) {
   auto p = [pred]<typename IndexedType> {
     using type = std::remove_cvref_t<typename IndexedType::second_type>;
-    return pred.template operator()<type>();
+    return UPD_INVOKE_TEMPLATE(pred, (type));
   };
 
   auto vw = UPD_FWD(t) | enumerate | filter(p);

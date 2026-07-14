@@ -17,7 +17,7 @@ namespace upd::record_views {
 constexpr auto find_if = []<record_like Record>(Record &&rec, auto &&pred) {
   auto p = [pred]<auto Tag, typename IndexedType> {
     using type = std::remove_cvref_t<typename IndexedType::second_type>;
-    return pred.template operator()<Tag, type>();
+    return UPD_INVOKE_TEMPLATE(pred, (Tag, type));
   };
 
   auto vw = UPD_FWD(rec) | enumerate | filter(p);

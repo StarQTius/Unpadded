@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../upd.hpp"
-#include "../utility/constexpr.hpp"
 #include "../utility/with_sequence.hpp"
 #include "../variadic/folder.hpp"
 #include "get_ith_entry.hpp"
@@ -14,8 +13,8 @@ constexpr auto fold_left = []<record_like Record>(Record &&rec,
                                                   auto &&init,
                                                   auto &&op) -> decltype(auto) {
   auto f = [&](auto &&acc, auto &&ent) {
-    return UPD_INVOKE(op, UPD_FWD(acc), expr<ent.identifier>,
-                      UPD_FWD(ent).value);
+    return UPD_INVOKE_TEMPLATE(op, (ent.identifier), UPD_FWD(acc),
+                               UPD_FWD(ent).value);
   };
 
   return UPD_WITH_SEQUENCE(Is, record_size_v<Record>, &) {
@@ -28,8 +27,8 @@ constexpr auto fold_right =
     []<record_like Record>(
         Record &&rec, auto &&init, auto &&op) -> decltype(auto) {
   auto f = [&](auto &&ent, auto &&acc) {
-    return UPD_INVOKE(op, expr<ent.identifier>, UPD_FWD(ent).value,
-                      UPD_FWD(acc));
+    return UPD_INVOKE_TEMPLATE(op, (ent.identifier), UPD_FWD(ent).value,
+                               UPD_FWD(acc));
   };
 
   return UPD_WITH_SEQUENCE(Is, record_size_v<Record>, &) {

@@ -20,7 +20,7 @@ constexpr auto apply = []<tuple_like2 Tuple, typename F> [[nodiscard]] (
 constexpr auto apply_type =
     []<tuple_like2 Tuple, typename F> [[nodiscard]] (Tuple &&t, F &&f)
     -> decltype([]<typename... Ts>(typelist2_t<Ts...>)
-                    -> decltype(UPD_FWD(f).template operator()<Ts...>()) {
+                    -> decltype(UPD_INVOKE_TEMPLATE(UPD_FWD(f), (Ts...))) {
 }(t | instantiate<typelist2_t>)) {};
 
 } // namespace upd::tuple_views

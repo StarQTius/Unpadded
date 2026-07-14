@@ -33,8 +33,11 @@ constexpr auto release = true;
 
 // NOLINTBEGIN
 
+#define UPD_ESCAPE(...) __VA_ARGS__
 #define UPD_FWD(x) static_cast<decltype(x) &&>(x)
 #define UPD_INVOKE(INVOCABLE, ...) ((INVOCABLE)(__VA_ARGS__))
+#define UPD_INVOKE_TEMPLATE(INVOCABLE, TARG_LIST, ...)                         \
+  ((INVOCABLE.template operator()<UPD_ESCAPE TARG_LIST>)(__VA_ARGS__))
 
 // NOLINTEND
 

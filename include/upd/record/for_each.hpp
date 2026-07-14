@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../upd.hpp"
-#include "../utility/constexpr.hpp"
 #include "../utility/with_sequence.hpp"
 #include "get_ith.hpp"
 #include "record_like.hpp"
@@ -13,8 +12,8 @@ namespace upd::record_views {
 constexpr auto for_each = []<record_like Record>(Record &&rec,
                                                  auto &&f) -> void {
   UPD_WITH_SEQUENCE(Is, record_size_v<Record>, &) {
-    ((void)UPD_INVOKE(f, expr<record_tag_v<Is, Record>>,
-                      get_ith<Is>(UPD_FWD(rec))),
+    ((void)UPD_INVOKE_TEMPLATE(f, (record_tag_v<Is, Record>),
+                               get_ith<Is>(UPD_FWD(rec))),
      ...);
   };
 };
