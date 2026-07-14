@@ -17,6 +17,7 @@
 #include "../upd.hpp"
 #include "../utility/constexpr.hpp"
 #include "../utility/static_vector.hpp"
+#include "codec.hpp"
 
 namespace upd {
 
