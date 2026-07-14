@@ -41,14 +41,13 @@ struct one_of_t {
   constexpr static auto identifier = Identifier;
   constexpr static auto size = record_size_v<TaggedDescriptions>;
   constexpr static auto alternative_types =
-      decltype(tuple_views::concat(typelist2<upd::description<>>,
-                                   std::declval<TaggedDescriptions>()
-                                       | record_views::values
-                                       | tuple_views::to<typelist2_t>)
+      decltype(std::declval<TaggedDescriptions>()
+               | record_views::values
+               | tuple_views::to<typelist2_t>
                | tuple_views::transform_type(
                    []<typename T> -> std::remove_cvref_t<T> {})
                | tuple_views::transform_type([]<typename T> ->
-                                             typename T::result_type {})
+                                             typename T::value_type {})
                | tuple_views::to<typelist2_t>){};
   constexpr static auto subinput_types =
       decltype(std::declval<TaggedDescriptions>()
@@ -106,10 +105,9 @@ struct one_of_t {
   }
 
   template<tuple_like2 System>
-  [[nodiscard]] constexpr auto
-  encode(const input_type &args,
-         stream_interface &dest,
-         const System &sys) const noexcept(release) -> result<void> {
+  [[nodiscard]] constexpr auto encode(const input_type &args,
+                                      stream_interface &dest,
+                                      const System &sys) const -> result<void> {
     namespace updv = upd::tuple_views;
 
     auto code = solve_for(code_of<Identifier>, sys | updv::to<std::tuple>);
@@ -166,7 +164,7 @@ struct one_of_t {
           }),
           0uz, [](auto acc, auto var) { return acc + var; });
       auto make_retval = [&](auto &&alt) {
-        return value_type{std::in_place_index<id_pos + 1>, UPD_FWD(alt)};
+        return value_type{std::in_place_index<id_pos>, UPD_FWD(alt)};
       };
       return descr
           .decode(src, updv::concat(sys, std::tuple{length_of<Identifier> =
@@ -179,11 +177,10 @@ struct one_of_t {
         make_alt);
   }
 
-  [[nodiscard]] constexpr auto
-  bitsize(const value_type &sum_of_field_values) const noexcept(release)
-      -> std::size_t {
+  [[nodiscard]] constexpr auto bitsize(const value_type &sum_of_values) const
+      noexcept(release) -> std::size_t {
     namespace updv = upd::tuple_views;
-    auto alt_index = sum_of_field_values.index();
+    auto alt_index = sum_of_values.index();
     if (alt_index == 0) {
       return 0;
     }
@@ -192,7 +189,7 @@ struct one_of_t {
       return std::tuple{expr<Is>...};
     };
     return updv::visit(seq, alt_index, [&](auto i) {
-      const auto &field_value = *std::get_if<i>(&sum_of_field_values);
+      const auto &field_value = *std::get_if<i>(&sum_of_values);
       const auto &alt_descr = upd::get_ith<i>(tagged_descriptions);
       return alt_descr.bitsize(field_value);
     });

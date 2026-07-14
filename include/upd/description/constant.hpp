@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <expected>
 #include <tuple>
 #include <type_traits>
@@ -23,10 +24,10 @@ struct constant_t {
   constexpr static auto identifier = Identifier;
   constexpr static auto width = Width;
 
-  using value_type = uword_t;
+  using value_type = unit_t;
   using input_type = unit_t;
 
-  value_type field_value;
+  uword_t value;
 
   template<record_like Packet, record_like Fields, codec_info CodecInfo>
   [[nodiscard]] constexpr auto
@@ -35,10 +36,10 @@ struct constant_t {
   }
 
   template<tuple_like2 System>
-  [[nodiscard]]
-  constexpr auto encode(unit_t, stream_interface &dest, const System &) const
+  [[nodiscard]] constexpr auto
+  encode(input_type, stream_interface &dest, const System &) const
       noexcept(release) -> result<void> {
-    if (auto err = dest.write_unsigned(field_value, width); err) {
+    if (auto err = dest.write_unsigned(value, width); err) {
       return std::unexpected{found_lite_error{err}};
     }
 
@@ -46,18 +47,23 @@ struct constant_t {
   }
 
   template<tuple_like2 System>
-  [[nodiscard]] constexpr static auto
-  decode(stream_interface &src, const System &) -> result<value_type> {
-    auto retval = value_type{};
-    if (auto err = src.read_unsigned(width, &retval); err) {
+  [[nodiscard]] constexpr auto
+  decode(stream_interface &src, const System &) const -> result<value_type> {
+    auto read_value = uword_t{};
+    if (auto err = src.read_unsigned(width, &read_value); err) {
       return std::unexpected(found_lite_error{err});
     }
 
-    return retval;
+    if (read_value != value) {
+      return std::unexpected(
+          constant_mismatch{.actual = read_value, .expected = value});
+    }
+
+    return {};
   }
 
-  [[nodiscard]] constexpr auto
-  bitsize(value_type) const noexcept(release) -> std::size_t {
+  [[nodiscard]] constexpr static auto
+  bitsize(value_type) noexcept(release) -> std::size_t {
     return Width;
   }
 };
@@ -67,8 +73,10 @@ struct enumeration_constant_t {
   constexpr static auto identifier = Identifier;
   constexpr static auto width = Width;
 
-  using value_type = Enum;
+  using value_type = unit_t;
   using input_type = unit_t;
+
+  Enum value;
 
   template<record_like Packet, record_like Fields, codec_info CodecInfo>
   [[nodiscard]] constexpr auto
@@ -79,9 +87,9 @@ struct enumeration_constant_t {
   template<tuple_like2 System>
   [[nodiscard]]
   constexpr auto
-  encode(unit_t, stream_interface &dest, const System &) const -> result<void> {
-    if (auto err = dest.write_unsigned(std::to_underlying(field_value), width);
-        err) {
+  encode(input_type, stream_interface &dest, const System &) const
+      -> result<void> {
+    if (auto err = dest.write_unsigned(std::to_underlying(value), width); err) {
       return std::unexpected{found_lite_error{err}};
     }
 
@@ -89,22 +97,26 @@ struct enumeration_constant_t {
   }
 
   template<tuple_like2 System>
-  [[nodiscard]] constexpr static auto
-  decode(stream_interface &src, const System &) -> result<value_type> {
-    auto retval = uword_t{};
-    if (auto err = src.read_unsigned(width, &retval); err) {
+  [[nodiscard]] constexpr auto
+  decode(stream_interface &src, const System &) const -> result<value_type> {
+    auto read_value = uword_t{};
+    if (auto err = src.read_unsigned(width, &read_value); err) {
       return std::unexpected(found_lite_error{err});
     }
 
-    return static_cast<Enum>(retval);
+    if (static_cast<Enum>(read_value) != value) {
+      return std::unexpected(
+          constant_mismatch{.actual = read_value,
+                            .expected = static_cast<std::uintmax_t>(value)});
+    }
+
+    return {};
   }
 
-  [[nodiscard]] constexpr auto
-  bitsize(value_type) const noexcept(release) -> std::size_t {
+  [[nodiscard]] constexpr static auto
+  bitsize(value_type) noexcept(release) -> std::size_t {
     return Width;
   }
-
-  Enum field_value;
 };
 
 template<name Identifier, std::size_t Width>

@@ -26,8 +26,8 @@ struct field_t {
   using input_type = value_type;
 
   template<record_like Packet, record_like Fields, codec_info CodecInfo>
-  [[nodiscard]] constexpr auto
-  rules(const Packet &packet, const Fields &, expr_t<CodecInfo>) const {
+  [[nodiscard]] constexpr static auto
+  rules(const Packet &packet, const Fields &, expr_t<CodecInfo>) {
     if constexpr (has_tag<Identifier>(packet)) {
       return std::tuple{value_of<Identifier> = get<Identifier>(packet),
                         length_of<Identifier> = Width};
@@ -38,7 +38,7 @@ struct field_t {
 
   template<tuple_like2 System>
   [[nodiscard]] constexpr static auto
-  encode(value_type value, stream_interface &dest, const System &)
+  encode(input_type value, stream_interface &dest, const System &)
       -> result<void> {
     auto err = lite_error::none;
     if constexpr (is_signed) {
@@ -72,8 +72,8 @@ struct field_t {
     return retval;
   }
 
-  [[nodiscard]] constexpr auto
-  bitsize(value_type) const noexcept(release) -> std::size_t {
+  [[nodiscard]] constexpr static auto
+  bitsize(value_type) noexcept(release) -> std::size_t {
     return Width;
   }
 };
@@ -87,14 +87,15 @@ struct anonymous_field_t {
   using input_type = value_type;
 
   template<record_like Packet, record_like Fields, codec_info CodecInfo>
-  [[nodiscard]] constexpr auto
-  rules(const Packet &, const Fields &, expr_t<CodecInfo>) const {
+  [[nodiscard]] constexpr static auto
+  rules(const Packet &, const Fields &, expr_t<CodecInfo>) noexcept(release)
+      -> std::tuple<> {
     return std::tuple{};
   }
 
   template<tuple_like2 System>
-  [[nodiscard]] constexpr auto
-  encode(value_type value, stream_interface &dest, const System &) const
+  [[nodiscard]] constexpr static auto
+  encode(value_type value, stream_interface &dest, const System &)
       -> result<void> {
     auto err = lite_error::none;
     if constexpr (is_signed) {
@@ -111,8 +112,8 @@ struct anonymous_field_t {
   }
 
   template<tuple_like2 System>
-  [[nodiscard]] constexpr auto
-  decode(stream_interface &src, const System &) const -> result<value_type> {
+  [[nodiscard]] constexpr static auto
+  decode(stream_interface &src, const System &) -> result<value_type> {
     auto err = lite_error::none;
     auto retval = uword_t{};
     if constexpr (is_signed) {
@@ -128,8 +129,8 @@ struct anonymous_field_t {
     return retval;
   }
 
-  [[nodiscard]] constexpr auto
-  bitsize(value_type) const noexcept(release) -> std::size_t {
+  [[nodiscard]] constexpr static auto
+  bitsize(value_type) noexcept(release) -> std::size_t {
     return Width;
   }
 };

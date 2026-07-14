@@ -225,7 +225,6 @@ auto ping_example() -> upd::result<void> {
   std::println("Answer 1:");
   std::println("- id: {:x}", (*answer1)["id"_kw2]);
   std::println("- length: {:x}", (*answer1)["length"_kw2]);
-  std::println("- instruction: {:x}", (*answer1)["instruction"_kw2]);
   std::println("- error: {:x}", (*answer1)["error"_kw2]);
   std::println("- parameters: {}", (*answer1)["parameters"_kw2]);
   std::println("");
@@ -242,7 +241,6 @@ auto ping_example() -> upd::result<void> {
   std::println("Answer 2:");
   std::println("- id: {:x}", (*answer2)["id"_kw2]);
   std::println("- length: {:x}", (*answer2)["length"_kw2]);
-  std::println("- instruction: {:x}", (*answer2)["instruction"_kw2]);
   std::println("- error: {:x}", (*answer2)["error"_kw2]);
   std::println("- parameters: {}", (*answer2)["parameters"_kw2]);
   std::println("");
@@ -279,7 +277,6 @@ auto read_example() -> upd::result<void> {
   std::println("Answer:");
   std::println("- id: {:x}", (*answer1)["id"_kw2]);
   std::println("- length: {:x}", (*answer1)["length"_kw2]);
-  std::println("- instruction: {:x}", (*answer1)["instruction"_kw2]);
   std::println("- error: {:x}", (*answer1)["error"_kw2]);
   std::println("- parameters: {}", (*answer1)["parameters"_kw2]);
   std::println("");
@@ -317,7 +314,6 @@ auto write_example() -> upd::result<void> {
   std::println("Answer:");
   std::println("- id: {:x}", (*answer1)["id"_kw2]);
   std::println("- length: {:x}", (*answer1)["length"_kw2]);
-  std::println("- instruction: {:x}", (*answer1)["instruction"_kw2]);
   std::println("- error: {:x}", (*answer1)["error"_kw2]);
   std::println("- parameters: {}", (*answer1)["parameters"_kw2]);
   std::println("");
@@ -355,7 +351,6 @@ auto reg_write_example() -> upd::result<void> {
   std::println("Answer:");
   std::println("- id: {:x}", (*answer1)["id"_kw2]);
   std::println("- length: {:x}", (*answer1)["length"_kw2]);
-  std::println("- instruction: {:x}", (*answer1)["instruction"_kw2]);
   std::println("- error: {:x}", (*answer1)["error"_kw2]);
   std::println("- parameters: {}", (*answer1)["parameters"_kw2]);
   std::println("");
@@ -391,7 +386,6 @@ auto action_example() -> upd::result<void> {
   std::println("Answer:");
   std::println("- id: {:x}", (*answer1)["id"_kw2]);
   std::println("- length: {:x}", (*answer1)["length"_kw2]);
-  std::println("- instruction: {:x}", (*answer1)["instruction"_kw2]);
   std::println("- error: {:x}", (*answer1)["error"_kw2]);
   std::println("- parameters: {}", (*answer1)["parameters"_kw2]);
   std::println("");
@@ -427,7 +421,6 @@ auto factory_reset_example() -> upd::result<void> {
   std::println("Answer:");
   std::println("- id: {:x}", (*answer1)["id"_kw2]);
   std::println("- length: {:x}", (*answer1)["length"_kw2]);
-  std::println("- instruction: {:x}", (*answer1)["instruction"_kw2]);
   std::println("- error: {:x}", (*answer1)["error"_kw2]);
   std::println("- parameters: {}", (*answer1)["parameters"_kw2]);
   std::println("");
@@ -463,7 +456,6 @@ auto reboot_example() -> upd::result<void> {
   std::println("Answer:");
   std::println("- id: {:x}", (*answer1)["id"_kw2]);
   std::println("- length: {:x}", (*answer1)["length"_kw2]);
-  std::println("- instruction: {:x}", (*answer1)["instruction"_kw2]);
   std::println("- error: {:x}", (*answer1)["error"_kw2]);
   std::println("- parameters: {}", (*answer1)["parameters"_kw2]);
   std::println("");
@@ -499,7 +491,6 @@ auto clear_example() -> upd::result<void> {
   std::println("Answer:");
   std::println("- id: {:x}", (*answer1)["id"_kw2]);
   std::println("- length: {:x}", (*answer1)["length"_kw2]);
-  std::println("- instruction: {:x}", (*answer1)["instruction"_kw2]);
   std::println("- error: {:x}", (*answer1)["error"_kw2]);
   std::println("- parameters: {}", (*answer1)["parameters"_kw2]);
   std::println("");
@@ -535,7 +526,6 @@ auto control_table_backup_example() -> upd::result<void> {
   std::println("Answer:");
   std::println("- id: {:x}", (*answer1)["id"_kw2]);
   std::println("- length: {:x}", (*answer1)["length"_kw2]);
-  std::println("- instruction: {:x}", (*answer1)["instruction"_kw2]);
   std::println("- error: {:x}", (*answer1)["error"_kw2]);
   std::println("- parameters: {}", (*answer1)["parameters"_kw2]);
   std::println("");
@@ -572,7 +562,6 @@ auto sync_read_example() -> upd::result<void> {
   std::println("Answer:");
   std::println("- id: {:x}", (*answer1)["id"_kw2]);
   std::println("- length: {:x}", (*answer1)["length"_kw2]);
-  std::println("- instruction: {:x}", (*answer1)["instruction"_kw2]);
   std::println("- error: {:x}", (*answer1)["error"_kw2]);
   std::println("- parameters: {}", (*answer1)["parameters"_kw2]);
   std::println("");
@@ -589,7 +578,6 @@ auto sync_read_example() -> upd::result<void> {
   std::println("Answer:");
   std::println("- id: {:x}", (*answer2)["id"_kw2]);
   std::println("- length: {:x}", (*answer2)["length"_kw2]);
-  std::println("- instruction: {:x}", (*answer2)["instruction"_kw2]);
   std::println("- error: {:x}", (*answer2)["error"_kw2]);
   std::println("- parameters: {}", (*answer2)["parameters"_kw2]);
   std::println("");

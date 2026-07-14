@@ -11,7 +11,6 @@
 #include "../error.hpp"
 #include "../record.hpp"
 #include "../stream/stream_interface.hpp"
-#include "../tuple/to.hpp"
 #include "../tuple/tuple_like.hpp"
 #include "../upd.hpp"
 #include "../utility/constexpr.hpp"
@@ -50,8 +49,7 @@ struct bound_t {
   [[nodiscard]] constexpr static auto
   encode(unit_t, stream_interface &dest, const System &sys) -> result<void> {
     auto err = lite_error::none;
-    auto value = algebra::solve_for(value_of<Identifier>,
-                                    sys | tuple_views::to<std::tuple>);
+    auto value = algebra::solve_for(value_of<Identifier>, sys);
     if constexpr (is_signed) {
       err = dest.write_signed(value, width);
     } else {
@@ -83,9 +81,8 @@ struct bound_t {
     return retval;
   }
 
-  template<typename V>
-  [[nodiscard]] constexpr auto
-  bitsize(const V &) const noexcept(release) -> std::size_t {
+  [[nodiscard]] constexpr static auto
+  bitsize(value_type) noexcept(release) -> std::size_t {
     return Width;
   }
 };

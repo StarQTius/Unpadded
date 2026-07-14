@@ -8,7 +8,6 @@
 #include "../error.hpp"
 #include "../record.hpp"
 #include "../stream/stream_interface.hpp"
-#include "../tuple/to.hpp"
 #include "../tuple/tuple_like.hpp"
 #include "../upd.hpp"
 #include "../utility/constexpr.hpp"
@@ -27,8 +26,8 @@ struct shadow_enumeration_field_t {
   using input_type = Enum;
 
   template<record_like Packet, record_like Fields, codec_info CodecInfo>
-  [[nodiscard]] constexpr auto
-  rules(const Packet &packet, const Fields &, expr_t<CodecInfo>) const {
+  [[nodiscard]] constexpr static auto
+  rules(const Packet &packet, const Fields &, expr_t<CodecInfo>) {
     if constexpr (has_tag<Identifier>(packet)
                   && CodecInfo.operation
                   == codec_operation::encoding) {
@@ -42,18 +41,19 @@ struct shadow_enumeration_field_t {
   template<tuple_like2 System>
   [[nodiscard]]
   constexpr static auto
-  encode(value_type, stream_interface &, const System &) -> result<void> {
+  encode(value_type, stream_interface &, const System &) noexcept(release)
+      -> result<void> {
     return result<void>{};
   }
 
   template<tuple_like2 System>
   [[nodiscard]] constexpr static auto
   decode(stream_interface &, const System &sys) -> result<value_type> {
-    return solve_for(value_of<Identifier>, sys | tuple_views::to<std::tuple>);
+    return solve_for(value_of<Identifier>, sys);
   }
 
-  [[nodiscard]] constexpr auto
-  bitsize(value_type) const noexcept(release) -> std::size_t {
+  [[nodiscard]] constexpr static auto
+  bitsize(value_type) noexcept(release) -> std::size_t {
     return Width;
   }
 };

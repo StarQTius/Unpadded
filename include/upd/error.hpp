@@ -57,11 +57,20 @@ struct found_lite_error {
   operator<=>(const found_lite_error &) const noexcept(release) = default;
 };
 
+struct constant_mismatch {
+  std::uintmax_t actual;
+  std::uintmax_t expected;
+
+  constexpr auto
+  operator<=>(const constant_mismatch &) const noexcept(release) = default;
+};
+
 using error_data_types = typelist2_t<invalid_code_in_one_of,
                                      negative_repetition_count,
                                      repeated_beyond_max,
                                      checksum_mismatch,
-                                     found_lite_error>;
+                                     found_lite_error,
+                                     constant_mismatch>;
 
 template<typename T>
 concept error_data = has_type<T>(error_data_types{});
@@ -209,6 +218,20 @@ struct std::formatter<upd::found_lite_error> {
   static auto
   format(const upd::found_lite_error &err, std::format_context &ctx) {
     return std::format_to(ctx.out(), "Found lite error code {}", err.code);
+  }
+};
+
+template<>
+struct std::formatter<upd::constant_mismatch> {
+  constexpr static auto parse(std::format_parse_context &ctx) {
+    return ctx.begin();
+  }
+
+  static auto
+  format(const upd::constant_mismatch &err, std::format_context &ctx) {
+    return std::format_to(
+        ctx.out(), "Actual constant ({}) and expected ({}) does not match",
+        err.actual, err.expected);
   }
 };
 

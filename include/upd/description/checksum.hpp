@@ -35,10 +35,10 @@ struct checksum_t {
   constexpr static auto identifier = Identifier;
   constexpr static auto width = Width;
 
-  using value_type = uword_t;
+  using value_type = unit_t;
   using input_type = unit_t;
 
-  value_type init;
+  uword_t init;
   BinaryOp op;
   FieldFilter identifier_filter;
 
@@ -100,11 +100,11 @@ struct checksum_t {
       }};
     }
 
-    return actual;
+    return {};
   }
 
   [[nodiscard]] constexpr auto
-  bitsize(value_type) const noexcept(release) -> std::size_t {
+  bitsize(unit_t) const noexcept(release) -> std::size_t {
     return Width;
   }
 };
@@ -116,7 +116,7 @@ checksum2(BinaryOp op, all_fields_t) noexcept(release) {
 
   auto retval =
       checksum_t<Identifier, BinaryOp, Width, decltype(is_not_this_field)>{
-          0uz, std::move(op), is_not_this_field};
+          0u, std::move(op), is_not_this_field};
 
   return description{std::move(retval)};
 }

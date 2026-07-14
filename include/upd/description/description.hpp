@@ -11,6 +11,7 @@
 #include <type_traits>
 #include <utility>
 
+#include "../algebra/system.hpp"
 #include "../description/codec_info.hpp"
 #include "../error.hpp"
 #include "../record/concat.hpp"
@@ -32,6 +33,7 @@
 #include "../stream/stream_interface.hpp"
 #include "../tuple/as_record.hpp"
 #include "../tuple/concat.hpp"
+#include "../tuple/filter.hpp"
 #include "../tuple/join.hpp"
 #include "../tuple/take.hpp"
 #include "../tuple/to.hpp"
@@ -43,6 +45,7 @@
 #include "../upd.hpp"
 #include "../utility/constexpr.hpp"
 #include "../utility/get.hpp"
+#include "../utility/type_traits.hpp"
 #include "../utility/with_sequence.hpp"
 #include "variable.hpp"
 
@@ -83,6 +86,10 @@ public:
 
   using value_type =
       decltype(typelist2<Fields...>
+               | tuple_views::filter([]<typename T>(upd::typebox<T>) {
+                   return !std::same_as<
+                       typename std::remove_cvref_t<T>::value_type, unit_t>;
+                 })
                | tuple_views::transform_type(
                    []<typename T> -> entry<T::identifier,
                                            typename T::value_type> {})
@@ -250,7 +257,7 @@ public:
 
       auto ctx = known_ids
                  | tuple_views::transform([&]<auto Id>(expr_t<Id>) {
-                     return keyword2<Id>{} = get<Id>(*maybe_retval);
+                     return keyword2<Id>{} = get_or<Id>(*maybe_retval, unit);
                    })
                  | tuple_views::as_record
                  | updv::to<upd::record>;
@@ -272,7 +279,7 @@ public:
 
       auto sys = tuple_views::concat(presys, rules);
       if (auto maybe_value = field.decode(src, sys); maybe_value) {
-        get<id.value>(*maybe_retval) = *std::move(maybe_value);
+        get_or<id.value>(*maybe_retval, std::ignore) = *std::move(maybe_value);
       } else {
         maybe_retval = std::unexpected{maybe_value.error()};
       }

@@ -23,15 +23,15 @@ TEST_CASE("Protocol descriptors", "[descriptor]") {
   SECTION("Encode then decode unsigned field") {
     auto descr = ufield2<"abc", 16>;
     REQUIRE(descr.encode(("abc"_kw2 = 42), st));
-    REQUIRE((*descr.decode(st))["abc"_kw2] == 42);
+    REQUIRE(descr.decode(st).value()["abc"_kw2] == 42);
   }
 
   SECTION("Encode then decode signed field") {
     auto descr = field2<"abc", 16>;
     REQUIRE(descr.encode(("abc"_kw2 = 42), st));
-    REQUIRE((*descr.decode(st))["abc"_kw2] == 42);
+    REQUIRE(descr.decode(st).value()["abc"_kw2] == 42);
     REQUIRE(descr.encode(("abc"_kw2 = -8), st));
-    REQUIRE((*descr.decode(st))["abc"_kw2] == -8);
+    REQUIRE(descr.decode(st).value()["abc"_kw2] == -8);
   }
 
   SECTION("Encode then decode enumeration field") {
@@ -43,41 +43,41 @@ TEST_CASE("Protocol descriptors", "[descriptor]") {
 
     auto descr = efield2<"abc", abc, 16>;
     REQUIRE(descr.encode(("abc"_kw2 = abc::a), st));
-    REQUIRE((*descr.decode(st))["abc"_kw2] == abc::a);
+    REQUIRE(descr.decode(st).value()["abc"_kw2] == abc::a);
     REQUIRE(descr.encode(("abc"_kw2 = abc::b), st));
-    REQUIRE((*descr.decode(st))["abc"_kw2] == abc::b);
+    REQUIRE(descr.decode(st).value()["abc"_kw2] == abc::b);
     REQUIRE(descr.encode(("abc"_kw2 = abc::c), st));
-    REQUIRE((*descr.decode(st))["abc"_kw2] == abc::c);
+    REQUIRE(descr.decode(st).value()["abc"_kw2] == abc::c);
   }
 
   SECTION("Encode then decode an anonymous unsigned field") {
     auto descr = ufield2<upd::anon, 16>;
     REQUIRE(descr.encode(42, st, std::tuple{}));
-    REQUIRE(*descr.decode(st, std::tuple{}) == 42);
+    REQUIRE(descr.decode(st, std::tuple{}).value() == 42);
   }
 
   SECTION("Encode then decode an anonymous signed field") {
     auto descr = field2<upd::anon, 16>;
     REQUIRE(descr.encode(42, st, std::tuple{}));
-    REQUIRE(*descr.decode(st, std::tuple{}) == 42);
+    REQUIRE(descr.decode(st, std::tuple{}).value() == 42);
     REQUIRE(descr.encode(-8, st, std::tuple{}));
-    REQUIRE(*descr.decode(st, std::tuple{}) == -8);
+    REQUIRE(descr.decode(st, std::tuple{}).value() == -8);
   }
 
   SECTION("Encode then decode unsigned field") {
     auto descr =
         ufield2<"def", 16> | ubound2<"abc", 16>(upd::value_of<"def"> * 3);
     REQUIRE(descr.encode(("def"_kw2 = 10), st));
-    REQUIRE((*descr.decode(st))["abc"_kw2] == 30);
+    REQUIRE(descr.decode(st).value()["abc"_kw2] == 30);
   }
 
   SECTION("Encode then decode signed field") {
     auto descr =
         field2<"def", 16> | bound2<"abc", 16>(upd::value_of<"def"> - 10);
     REQUIRE(descr.encode(("def"_kw2 = 5), st));
-    REQUIRE((*descr.decode(st))["abc"_kw2] == -5);
+    REQUIRE(descr.decode(st).value()["abc"_kw2] == -5);
     REQUIRE(descr.encode(("def"_kw2 = 18), st));
-    REQUIRE((*descr.decode(st))["abc"_kw2] == 8);
+    REQUIRE(descr.decode(st).value()["abc"_kw2] == 8);
   }
 
   SECTION("Encode and decode a repeated field") {
@@ -89,7 +89,7 @@ TEST_CASE("Protocol descriptors", "[descriptor]") {
                                                  upd::record{"def"_kw2 = 16}}),
                          st));
 
-    auto result = *descr.decode(st);
+    auto result = descr.decode(st).value();
     REQUIRE(result["len"_kw2] == 3 * 16);
     REQUIRE(result["abc"_kw2][0]["def"_kw2] == 4);
     REQUIRE(result["abc"_kw2][1]["def"_kw2] == 8);
@@ -103,18 +103,15 @@ TEST_CASE("Protocol descriptors", "[descriptor]") {
                      [](auto acc, auto v) { return acc + v; }, all_fields);
     REQUIRE(descr.encode(("abc"_kw2 = 54, "def"_kw2 = 46), st));
 
-    auto result = *descr.decode(st);
+    auto result = descr.decode(st).value();
     REQUIRE(result["abc"_kw2] == 54);
     REQUIRE(result["def"_kw2] == 46);
-    REQUIRE(result["ghi"_kw2] == 100);
   }
 
   SECTION("Encode and decode a constant field") {
     auto descr = constant2<"abc", 32>(0x12345678);
     REQUIRE(descr.encode(upd::record{}, st));
-
-    auto result = *descr.decode(st);
-    REQUIRE(result["abc"_kw2] == 0x12345678);
+    REQUIRE_NOTHROW(descr.decode(st).value());
   }
 
   SECTION("Encode and decode a constant enumeration field") {
@@ -123,8 +120,7 @@ TEST_CASE("Protocol descriptors", "[descriptor]") {
     auto descr = constant2<"abc", 16>(abc::a);
     REQUIRE(descr.encode(upd::record{}, st));
 
-    auto result = *descr.decode(st);
-    REQUIRE(result["abc"_kw2] == abc::a);
+    REQUIRE_NOTHROW(descr.decode(st).value());
   }
 
   SECTION("Encode and decode an expanding repeated field") {
@@ -132,7 +128,7 @@ TEST_CASE("Protocol descriptors", "[descriptor]") {
                  | repeat<"abc">(ufield2<upd::anon, 16>);
     REQUIRE(descr.encode(("abc"_kw2 = std::array{4, 8, 16}), st));
 
-    auto result = *descr.decode(st);
+    auto result = descr.decode(st).value();
     REQUIRE(result["len"_kw2] == 3 * 16);
     REQUIRE(result["abc"_kw2].size() == 3);
     REQUIRE(result["abc"_kw2][0] == 4);
@@ -149,19 +145,19 @@ TEST_CASE("Protocol descriptors", "[descriptor]") {
                                   upd::when<abc::c> = constant2<"k", 8>(56));
 
     REQUIRE(descr.encode(("i"_kw2 = abc::a), st));
-    auto result = *descr.decode(st);
+    auto result = descr.decode(st).value();
     REQUIRE(result["i"_kw2] == abc::a);
-    REQUIRE(std::get<1>(result["alts"_kw2])["k"_kw2] == 34);
+    REQUIRE(result["alts"_kw2].index() == 0);
 
     REQUIRE(descr.encode(("i"_kw2 = abc::b), st));
-    result = *descr.decode(st);
+    result = descr.decode(st).value();
     REQUIRE(result["i"_kw2] == abc::b);
-    REQUIRE(std::get<2>(result["alts"_kw2])["k"_kw2] == 45);
+    REQUIRE(result["alts"_kw2].index() == 1);
 
     REQUIRE(descr.encode(("i"_kw2 = abc::c), st));
-    result = *descr.decode(st);
+    result = descr.decode(st).value();
     REQUIRE(result["i"_kw2] == abc::c);
-    REQUIRE(std::get<3>(result["alts"_kw2])["k"_kw2] == 56);
+    REQUIRE(result["alts"_kw2].index() == 2);
   }
 
   SECTION("Encode then decode a shadow enumeration field") {
@@ -178,19 +174,19 @@ TEST_CASE("Protocol descriptors", "[descriptor]") {
                                   upd::when<abc::c> = constant2<"k", 8>(56));
 
     REQUIRE(descr.encode(("abc"_kw2 = abc::a), st));
-    auto res1 = *descr.decode(st, ("abc"_kw2 = abc::a));
+    auto res1 = descr.decode(st, ("abc"_kw2 = abc::a)).value();
     REQUIRE(res1["abc"_kw2] == abc::a);
-    REQUIRE(std::get<1>(res1["alts"_kw2])["k"_kw2] == 34);
+    REQUIRE(res1["alts"_kw2].index() == 0);
 
     REQUIRE(descr.encode(("abc"_kw2 = abc::b), st));
-    auto res2 = *descr.decode(st, ("abc"_kw2 = abc::b));
+    auto res2 = descr.decode(st, ("abc"_kw2 = abc::b)).value();
     REQUIRE(res2["abc"_kw2] == abc::b);
-    REQUIRE(std::get<2>(res2["alts"_kw2])["k"_kw2] == 45);
+    REQUIRE(res2["alts"_kw2].index() == 1);
 
     REQUIRE(descr.encode(("abc"_kw2 = abc::c), st));
-    auto res3 = *descr.decode(st, ("abc"_kw2 = abc::c));
+    auto res3 = descr.decode(st, ("abc"_kw2 = abc::c)).value();
     REQUIRE(res3["abc"_kw2] == abc::c);
-    REQUIRE(std::get<3>(res3["alts"_kw2])["k"_kw2] == 56);
+    REQUIRE(res3["alts"_kw2].index() == 2);
   }
 
   SECTION("Encode and decode a constant and a checksum field") {
@@ -199,11 +195,7 @@ TEST_CASE("Protocol descriptors", "[descriptor]") {
                  | checksum2<"ghi", 16>(
                      [](auto acc, auto v) { return acc + v; }, all_fields);
     REQUIRE(descr.encode(upd::record{}, st));
-
-    auto result = *descr.decode(st);
-    REQUIRE(result["abc"_kw2] == 12);
-    REQUIRE(result["def"_kw2] == 88);
-    REQUIRE(result["ghi"_kw2] == 100);
+    REQUIRE_NOTHROW(descr.decode(st).value());
   }
 
   SECTION("Try decode a checksum field when mismatch") {
@@ -250,12 +242,12 @@ TEST_CASE("Nested protocol descriptors", "[descriptor]") {
         ("i"_kw2 = abc::a, "param"_kw2 = ("abc"_kw2 = std::array{4, 8, 16})),
         st));
 
-    auto result = *descr.decode(st);
+    auto result = descr.decode(st).value();
     REQUIRE(result["len"_kw2] == 3 * 16);
     REQUIRE(result["i"_kw2] == abc::a);
-    REQUIRE(std::get<1>(result["param"_kw2])["abc"_kw2].size() == 3);
-    REQUIRE(std::get<1>(result["param"_kw2])["abc"_kw2][0] == 4);
-    REQUIRE(std::get<1>(result["param"_kw2])["abc"_kw2][1] == 8);
-    REQUIRE(std::get<1>(result["param"_kw2])["abc"_kw2][2] == 16);
+    REQUIRE(std::get<0>(result["param"_kw2])["abc"_kw2].size() == 3);
+    REQUIRE(std::get<0>(result["param"_kw2])["abc"_kw2][0] == 4);
+    REQUIRE(std::get<0>(result["param"_kw2])["abc"_kw2][1] == 8);
+    REQUIRE(std::get<0>(result["param"_kw2])["abc"_kw2][2] == 16);
   }
 }

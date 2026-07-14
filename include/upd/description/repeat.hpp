@@ -53,7 +53,7 @@ struct repeat_t {
 
   template<tuple_like2 System>
   [[nodiscard]]
-  constexpr auto encode(const value_type &value,
+  constexpr auto encode(const input_type &value,
                         stream_interface &dest,
                         const System &sys) const -> result<void> {
     for (const auto &element : value) {
@@ -100,10 +100,12 @@ struct repeat_t {
 
   [[nodiscard]] constexpr auto
   bitsize(const value_type &svec) const -> std::size_t {
-    namespace stdr = std::ranges;
-    return stdr::fold_left(svec, 0uz, [&](auto acc, const auto &elem) {
-      return acc + description.bitsize(elem);
-    });
+    auto retval = 0zu;
+    for (const auto &elem : svec) {
+      retval += description.bitsize(elem);
+    }
+
+    return retval;
   }
 };
 
