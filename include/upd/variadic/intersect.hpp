@@ -28,13 +28,13 @@ intersect(std::tuple<Xs...> lhs, std::tuple<Ys...> rhs) noexcept(release) {
 
   auto inter_with_dup =
       merged_view
-      | updv::filter([&]<typename T>(typebox<T>) {
+      | updv::filter([&]<typename T> {
           return !requires { merged.get_by_tag(std::decay_t<T>{}); };
         })
       | updv::to<std::tuple>;
 
   return lhs
-         | updv::filter([&]<typename T>(typebox<T>) {
+         | updv::filter([&]<typename T> {
              return tuple_has_type_v<std::decay_t<T>, decltype(inter_with_dup)>;
            })
          | updv::to<std::tuple>;

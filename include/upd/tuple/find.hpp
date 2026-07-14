@@ -8,7 +8,6 @@
 #include "../upd.hpp"
 #include "../utility/constexpr.hpp"
 #include "../utility/get.hpp"
-#include "../utility/type_traits.hpp"
 #include "enumerate.hpp"
 #include "filter.hpp"
 #include "to.hpp"
@@ -19,9 +18,9 @@
 namespace upd::tuple_views {
 
 constexpr auto find_if = []<tuple_like2 Tuple>(Tuple &&t, auto &&pred) {
-  auto p = [pred]<typename IAndTypebox>(typebox<IAndTypebox>) constexpr {
-    using value_type = typename std::remove_cvref_t<IAndTypebox>::second_type;
-    return UPD_INVOKE(pred, typebox<value_type>{});
+  auto p = [pred]<typename IndexedType> {
+    using type = std::remove_cvref_t<typename IndexedType::second_type>;
+    return pred.template operator()<type>();
   };
 
   auto vw = UPD_FWD(t) | enumerate | filter(p);
@@ -34,9 +33,9 @@ constexpr auto find_if = []<tuple_like2 Tuple>(Tuple &&t, auto &&pred) {
 
 template<typename T>
 constexpr auto find = []<tuple_like2 Tuple>(Tuple &&t) {
-  auto p = []<typename IAndTypebox>(typebox<IAndTypebox>) {
-    return std::same_as<typename std::remove_cvref_t<IAndTypebox>::second_type,
-                        T>;
+  auto p = []<typename IndexedType> {
+    using type = std::remove_cvref_t<typename IndexedType::second_type>;
+    return std::same_as<type, T>;
   };
   auto vw = UPD_FWD(t) | enumerate | filter(p);
 

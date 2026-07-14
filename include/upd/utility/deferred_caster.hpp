@@ -10,7 +10,6 @@
 #include "../upd.hpp"
 #include "is_instance_of.hpp"
 #include "static_assert.hpp"
-#include "type_traits.hpp"
 
 namespace upd {
 
@@ -56,7 +55,7 @@ public:
 
     UPD_ASSERT(m_orig);
 
-    auto i = find_if(m_casters, []<typename F>(typebox<F>) {
+    auto i = find_if(m_casters, []<typename F> {
       return std::is_invocable_r_v<Target, F, const void *>;
     });
     UPD_STATIC_ASSERT(i < sizeof...(Targets), "Cannot cast to target type `{}`",

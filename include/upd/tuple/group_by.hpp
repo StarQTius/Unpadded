@@ -18,7 +18,6 @@
 #include "../utility/collector_of.hpp"
 #include "../utility/constexpr.hpp"
 #include "../utility/get.hpp"
-#include "../utility/type_traits.hpp"
 #include "../utility/with_sequence.hpp"
 #include "../variadic/template_box.hpp"
 #include "enumerate.hpp"
@@ -84,10 +83,9 @@ struct upd::record_view_for<
 
     return std::make_tuple(
         (indices_and_tags
-         | updv::filter([]<typename IAndExpr>(typebox<IAndExpr>) {
+         | updv::filter([]<typename IAndExpr> {
              return std::same_as<
-                 std::remove_cvref_t<
-                     typename std::remove_cvref_t<IAndExpr>::second_type>,
+                 std::remove_cvref_t<typename IAndExpr::second_type>,
                  tuple_element_t<Is, decltype(tags)>>;
            })
          | updv::transform_type([]<typename IAndExpr> {

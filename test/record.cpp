@@ -198,12 +198,10 @@ TEST_CASE("Record views", "[record_view]") {
 
   SECTION("Filter element from a record") {
     upd::record_view auto view =
-        rec
-        | updv::filter(
-            []<auto Id, typename T>(upd::auto_constant<Id>, upd::typebox<T>) {
-              return !upd::equivalent_to<Id, upd::name{"b"}>
-                     && !std::same_as<T, int &>;
-            });
+        rec | updv::filter([]<auto Id, typename T> {
+          return !upd::equivalent_to<Id, upd::name{"b"}>
+                 && !std::same_as<T, int>;
+        });
 
     REQUIRE(!has_tag<upd::name{"a"}>(view));
     REQUIRE(!has_tag<upd::name{"b"}>(view));
@@ -273,7 +271,7 @@ TEST_CASE("Record views", "[record_view]") {
     upd::regular_record auto regec =
         rec
         | updv::transform([](auto, auto v) { return v + 1; })
-        | updv::filter([](auto k, auto) { return k != "b"; })
+        | updv::filter([]<auto Tag, typename> { return Tag != "b"; })
         | updv::to<upd::record>;
 
     REQUIRE(regec["a"_kw2] == 5);
@@ -379,17 +377,15 @@ TEST_CASE("Algorithms on records", "[record_algorithm]") {
   }
 
   SECTION("Find the first value matching a predicate") {
-    auto i = updv::find_if(rec, []<typename T>(auto, upd::typebox<T>) {
-      return std::same_as<T, long &>;
-    });
+    auto i = updv::find_if(
+        rec, []<auto, typename T> { return std::same_as<T, long>; });
 
     REQUIRE(i == 2);
   }
 
   SECTION("Find by a predicate that matches no value") {
-    auto i = updv::find_if(rec, []<typename T>(auto, upd::typebox<T>) {
-      return std::same_as<T, void>;
-    });
+    auto i = updv::find_if(
+        rec, []<auto, typename T> { return std::same_as<T, void>; });
 
     REQUIRE(i == 3);
   }
@@ -400,7 +396,7 @@ TEST_CASE("Algorithms on records", "[record_algorithm]") {
   }
 
   SECTION("Find the first value of given type") {
-    auto i = updv::find_type<long &>(rec);
+    auto i = updv::find_type<long>(rec);
 
     REQUIRE(i == 2);
   }
@@ -456,14 +452,14 @@ TEST_CASE("Record view handling references", "[record_view]") {
 
   SECTION("Pass references through filter") {
     upd::record_view auto lview =
-        rec | updv::filter([](auto, auto) { return true; });
+        rec | updv::filter([]<auto, typename> { return true; });
 
     REQUIRE_SAME(upd::get<upd::name{"l"}>(lview), (lv));
     REQUIRE_SAME(upd::get<upd::name{"x"}>(lview), (xv));
     REQUIRE_SAME(upd::get<upd::name{"pr"}>(lview), rec["pr"_kw2]);
 
     upd::record_view auto rview =
-        std::move(rec) | updv::filter([](auto, auto) { return true; });
+        std::move(rec) | updv::filter([]<auto, typename> { return true; });
 
     REQUIRE_SAME(upd::get<upd::name{"l"}>(rview), (lv));
     REQUIRE_SAME(upd::get<upd::name{"x"}>(rview), std::move(xv));

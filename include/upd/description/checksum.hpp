@@ -19,7 +19,6 @@
 #include "../tuple/tuple_like.hpp"
 #include "../upd.hpp"
 #include "../utility/constexpr.hpp"
-#include "../utility/type_traits.hpp"
 #include "codec_info.hpp"
 
 namespace upd::descriptor {
@@ -48,14 +47,16 @@ struct checksum_t {
     using namespace upd::literals;
     namespace updv = upd::record_views;
 
-    auto descr = updv::apply(
-        [](const auto &...es) { return description{es.value...}; },
-        fields | updv::filter([](auto id, auto) { return id != Identifier; }));
+    auto descr =
+        updv::apply([](const auto &...es) { return description{es.value...}; },
+                    fields | updv::filter([]<auto Id, typename> {
+                      return Id != Identifier;
+                    }));
 
     using descr_input = typename decltype(descr)::input_type;
     auto curated_packet =
         tags_of_v<descr_input>
-        | tuple_views::filter([&]<typename Id>(typebox<const Id &>) {
+        | tuple_views::filter([&]<typename Id> {
             return !std::convertible_to<
                 record_element_t<Id::value, descr_input>, unit_t>;
           })

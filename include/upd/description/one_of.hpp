@@ -80,7 +80,7 @@ struct one_of_t {
 
     auto rule_sys =
         fields
-        | updv::filter([](auto id, const auto &) { return id != Identifier; })
+        | updv::filter([]<auto Id, typename> { return Id != Identifier; })
         | updv::values
         | tuple_views::transform([&](const auto &field) {
             return field.rules(packet, fields, expr<CodecInfo>);

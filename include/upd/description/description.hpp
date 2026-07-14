@@ -45,7 +45,6 @@
 #include "../upd.hpp"
 #include "../utility/constexpr.hpp"
 #include "../utility/get.hpp"
-#include "../utility/type_traits.hpp"
 #include "../utility/with_sequence.hpp"
 #include "codec.hpp"
 #include "variable.hpp"
@@ -69,7 +68,7 @@ public:
 
   using value_type =
       decltype(typelist2<Fields...>
-               | tuple_views::filter([]<typename T>(upd::typebox<T>) {
+               | tuple_views::filter([]<typename T> {
                    return !std::same_as<
                        typename std::remove_cvref_t<T>::value_type, unit_t>;
                  })
@@ -277,7 +276,7 @@ public:
     return updv::fold_left(
         packet, 0uz, [&](std::size_t acc, auto k, const auto &field_value) {
           auto field_pos = updv::find_if(
-              m_fields, [&](auto id, auto) { return expr<id == k>; });
+              m_fields, [&]<auto Id, typename> { return expr<Id == k>; });
           return acc + get_ith<field_pos>(m_fields).bitsize(field_value);
         });
   }

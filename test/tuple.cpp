@@ -9,7 +9,6 @@
 #include <upd/tuple.hpp>
 #include <upd/upd.hpp>
 #include <upd/utility/constexpr.hpp>
-#include <upd/utility/type_traits.hpp>
 #include <upd/variadic/intersect.hpp>
 
 TEST_CASE("Typelist basic functionalities", "[typelist]") {
@@ -53,9 +52,7 @@ TEST_CASE("Tuple views", "[tuple_view]") {
 
   SECTION("Filter elements of a tuple") {
     upd::tuple_view auto view =
-        t | updv::filter([]<typename T>(upd::typebox<T>) {
-          return !std::same_as<T, char &>;
-        });
+        t | updv::filter([]<typename T> { return !std::same_as<T, char>; });
     REQUIRE(&upd::get<0>(view) == &upd::get<0>(t));
     REQUIRE(&upd::get<1>(view) == &upd::get<2>(t));
   }
@@ -194,8 +191,7 @@ TEST_CASE("Algorithms on records", "[tuple_algorithm]") {
   upd::regular_tuple auto t = std::tuple{int{4}, char{8}, long{67}};
 
   SECTION("Find element in a tuple") {
-    auto i = updv::find_if(
-        t, []<typename T>(upd::typebox<T>) { return std::same_as<T, long &>; });
+    auto i = updv::find_if(t, []<typename T> { return std::same_as<T, long>; });
     REQUIRE(i == 2);
   }
 
@@ -246,7 +242,7 @@ TEST_CASE("Algorithms on records", "[tuple_algorithm]") {
   }
 
   SECTION("Find element of a given type in a tuple") {
-    auto i = updv::find<long &>(t);
+    auto i = updv::find<long>(t);
     REQUIRE(i == 2);
   }
 
@@ -295,14 +291,15 @@ TEST_CASE("Tuple view handling references", "[tuple_view]") {
   }
 
   SECTION("Pass references through filter") {
-    upd::tuple_view auto lview = t | updv::filter([](auto) { return true; });
+    upd::tuple_view auto lview =
+        t | updv::filter([]<typename> { return true; });
 
     REQUIRE_SAME(upd::get<0>(lview), (lv));
     REQUIRE_SAME(upd::get<1>(lview), (xv));
     REQUIRE_SAME(upd::get<2>(lview), upd::get<2>(t));
 
     upd::tuple_view auto rview =
-        std::move(t) | updv::filter([](auto) { return true; });
+        std::move(t) | updv::filter([]<typename> { return true; });
 
     REQUIRE_SAME(upd::get<0>(rview), (lv));
     REQUIRE_SAME(upd::get<1>(rview), std::move(xv));

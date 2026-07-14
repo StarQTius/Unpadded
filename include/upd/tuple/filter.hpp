@@ -7,7 +7,6 @@
 #include "../upd.hpp"
 #include "../utility/constexpr.hpp"
 #include "../utility/get.hpp"
-#include "../utility/type_traits.hpp"
 #include "../utility/with_sequence.hpp"
 #include "../variadic/clean_occurences_of.hpp"
 #include "tuple_element.hpp"
@@ -28,12 +27,12 @@ template<tuple_like2 Base, typename Pred>
 filter_view(Base &&, Pred) -> filter_view<Base, Pred>;
 
 constexpr auto filter = [](auto &&pred) {
-  auto f = [pred = UPD_FWD(pred)]<typename Typebox>(Typebox) {
-    constexpr auto keep_it = UPD_INVOKE(pred, Typebox{});
+  auto p = [pred = UPD_FWD(pred)]<typename T> {
+    constexpr auto keep_it = pred.template operator()<T>();
     return expr<keep_it>;
   };
 
-  return tuple_view_adaptor<filter_view>(std::move(f));
+  return tuple_view_adaptor<filter_view>(std::move(p));
 };
 
 } // namespace upd::tuple_views
@@ -42,11 +41,14 @@ template<upd::tuple_like2 Base, typename Pred>
 struct upd::tuple_view_for<upd::tuple_views::filter_view<Base, Pred>> {
   using base_type = Base;
 
+  template<std::size_t I>
+  using ith_arg_t = std::remove_cvref_t<tuple_element_t<I, Base>>;
+
   constexpr static auto indices_to_keep =
       UPD_WITH_SEQUENCE(Is, tuple_size_v<Base>) {
     return clean_occurences_of_v<
         expr_t<false>,
-        std::invoke_result_t<Pred, typebox<tuple_element_t<Is, Base> &&>>...>;
+        decltype(std::declval<Pred>().template operator()<ith_arg_t<Is>>())...>;
   };
 
   constexpr static auto size = indices_to_keep.size();

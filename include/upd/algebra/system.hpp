@@ -17,7 +17,6 @@
 #include "../utility/constexpr.hpp"
 #include "../utility/get.hpp"
 #include "../utility/static_assert.hpp"
-#include "../utility/type_traits.hpp"
 #include "../variadic/is_template_deductible_from.hpp"
 #include "let.hpp"
 #include "side.hpp"
@@ -55,7 +54,7 @@ try_solve_for(side<variable<Varname>> var,
               const System &sys) noexcept(release) {
   namespace updv = upd::tuple_views;
 
-  auto solpos = updv::find_if(sys, [&]<typename Eq>(typebox<Eq>) {
+  auto solpos = updv::find_if(sys, [&]<typename Eq> {
     using eq_type = std::remove_cvref_t<Eq>;
     return variadic::is_template_deductible_from<let, eq_type>()
            && eq_type::depends_on(var.expr);
@@ -67,7 +66,7 @@ try_solve_for(side<variable<Varname>> var,
     auto ssys =
         sys | updv::transform([&](const auto &eq) { return eq.simplify(); });
     auto lets = ssys
-                | updv::filter([]<typename Eq>(typebox<Eq>) {
+                | updv::filter([]<typename Eq> {
                     return variadic::is_template_deductible_from<let, Eq>();
                   })
                 | updv::transform([](const auto &eq) { return let{eq}; })
@@ -76,7 +75,7 @@ try_solve_for(side<variable<Varname>> var,
                   })
                 | updv::to<std::tuple>;
     auto eqs = ssys
-               | updv::filter([]<typename Eq>(typebox<Eq>) {
+               | updv::filter([]<typename Eq> {
                    return !variadic::is_template_deductible_from<let, Eq>();
                  })
                | updv::transform([&](const auto &eq) {
