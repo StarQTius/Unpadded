@@ -59,8 +59,7 @@ struct shadow_enumeration_field_t {
 };
 
 template<name Identifier, typename Enum, std::size_t Width>
-constexpr auto shadow_efield2 = [] {
-  return description{shadow_enumeration_field_t<Identifier, Enum, Width>{}};
-}();
+constexpr auto shadow_efield2 =
+    [] { return shadow_enumeration_field_t<Identifier, Enum, Width>{}; }();
 
 } // namespace upd::descriptor

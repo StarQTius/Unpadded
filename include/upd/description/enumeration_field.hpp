@@ -145,7 +145,7 @@ constexpr auto efield2 = [] {
   if constexpr (Identifier.anonymous()) {
     return anonymous_enumeration_field_t<Enum, Width>{};
   } else {
-    return description{enumeration_field_t<Identifier, Enum, Width>{}};
+    return enumeration_field_t<Identifier, Enum, Width>{};
   }
 }();
 

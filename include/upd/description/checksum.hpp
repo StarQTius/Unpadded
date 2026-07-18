@@ -115,11 +115,8 @@ template<name Identifier, std::size_t Width, typename BinaryOp>
 checksum2(BinaryOp op, all_fields_t) noexcept(release) {
   auto is_not_this_field = [](auto id) { return expr<id != Identifier>; };
 
-  auto retval =
-      checksum_t<Identifier, BinaryOp, Width, decltype(is_not_this_field)>{
-          0u, std::move(op), is_not_this_field};
-
-  return description{std::move(retval)};
+  return checksum_t<Identifier, BinaryOp, Width, decltype(is_not_this_field)>{
+      0u, std::move(op), is_not_this_field};
 }
 
 } // namespace upd::descriptor

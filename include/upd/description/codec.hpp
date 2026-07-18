@@ -3,6 +3,7 @@
 #include <concepts>
 #include <cstddef>
 #include <tuple>
+#include <type_traits>
 
 #include "../description/codec_info.hpp"
 #include "../error.hpp"
@@ -16,13 +17,13 @@ namespace upd {
 template<typename T>
 concept codec =
     requires {
-      typename T::value_type;
-      typename T::input_type;
+      typename std::remove_cvref_t<T>::value_type;
+      typename std::remove_cvref_t<T>::input_type;
     }
-    && std::default_initializable<typename T::value_type>
+    && std::default_initializable<typename std::remove_cvref_t<T>::value_type>
     && requires(T x,
-                typename T::value_type v,
-                typename T::input_type in,
+                typename std::remove_cvref_t<T>::value_type v,
+                typename std::remove_cvref_t<T>::input_type in,
                 upd::record<> rec,
                 std::tuple<> t,
                 stream_interface &st) {

@@ -206,7 +206,7 @@ template<name Identifier, typename Rule, typename... WhenThens>
       .tagged_descriptions = std::move(tagged_descriptions),
   };
 
-  return description{std::move(retval)};
+  return std::move(retval);
 }
 
 } // namespace upd::descriptor

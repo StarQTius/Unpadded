@@ -14,7 +14,6 @@
 #include "../algebra/system.hpp"
 #include "../description/codec_info.hpp"
 #include "../error.hpp"
-#include "../record/concat.hpp"
 #include "../record/entry.hpp"
 #include "../record/find.hpp"
 #include "../record/fold.hpp"
@@ -39,25 +38,20 @@
 #include "../tuple/to.hpp"
 #include "../tuple/transform.hpp"
 #include "../tuple/tuple_like.hpp"
-#include "../tuple/tuple_size.hpp"
 #include "../tuple/tuple_view_adaptor.hpp"
 #include "../tuple/typelist.hpp"
 #include "../upd.hpp"
 #include "../utility/constexpr.hpp"
 #include "../utility/equivalent_to.hpp"
 #include "../utility/get.hpp"
-#include "../utility/with_sequence.hpp"
 #include "codec.hpp"
 #include "variable.hpp"
 
 namespace upd {
 
 template<codec... Fields>
+  requires(requires { Fields::identifier; } && ...)
 class description {
-  template<codec... _Ts, codec... Us>
-  friend constexpr auto
-  operator|(description<_Ts...> lhs, description<Us...> rhs) noexcept(release);
-
 public:
   using result_type =
       decltype(typelist2<Fields...>
@@ -99,7 +93,8 @@ public:
       | tuple_views::transform_type([]<typename T> -> expr_t<T::identifier> {})
       | tuple_views::to<std::tuple>;
 
-  explicit constexpr description(Fields... fields)
+  template<codec... Ts>
+  explicit constexpr description(Ts &&...fields)
       : m_fields{entry{expr<fields.identifier>, std::move(fields)}...} {}
 
   template<record_like Packet, record_like FieldRecord, codec_info CodecInfo>
@@ -284,18 +279,8 @@ public:
   storage_type m_fields;
 };
 
-template<codec... Fields, codec... Us>
-[[nodiscard]] constexpr auto
-operator|(description<Fields...> lhs,
-          description<Us...> rhs) noexcept(release) {
-  namespace updv = record_views;
-
-  auto fields = updv::concat(std::move(lhs.m_fields), std::move(rhs.m_fields))
-                | updv::values;
-  return UPD_WITH_SEQUENCE(Is, tuple_size_v<decltype(fields)>, &) {
-    return description{get<Is>(std::move(fields))...};
-  };
-}
+template<codec... Fields>
+explicit description(Fields...) -> description<Fields...>;
 
 constexpr auto empty_description = description<>{};
 

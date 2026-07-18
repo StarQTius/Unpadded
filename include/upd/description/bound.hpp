@@ -89,16 +89,12 @@ struct bound_t {
 
 template<name Identifier, std::size_t Width, typename Rule>
 [[nodiscard]] constexpr auto bound2(Rule rule) noexcept(release) {
-  auto retval = bound_t<Identifier, true, Width, Rule>{std::move(rule)};
-
-  return description{std::move(retval)};
+  return bound_t<Identifier, true, Width, Rule>{std::move(rule)};
 }
 
 template<name Identifier, std::size_t Width, typename Rule>
 [[nodiscard]] constexpr auto ubound2(Rule rule) noexcept(release) {
-  auto retval = bound_t<Identifier, false, Width, Rule>{std::move(rule)};
-
-  return description{std::move(retval)};
+  return bound_t<Identifier, false, Width, Rule>{std::move(rule)};
 }
 
 } // namespace upd::descriptor

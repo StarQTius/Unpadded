@@ -110,23 +110,26 @@ struct repeat_t {
   }
 };
 
-template<name Identifier, typename Description, typename Rule>
-[[nodiscard]] constexpr auto repeat(Description &&descr, Rule &&rule) {
-  using description_type = std::remove_cvref_t<Description>;
+template<name Identifier, codec Codec, typename Rule>
+[[nodiscard]] constexpr auto repeat(Codec &&cdc, Rule &&rule) {
+  using codec_type = std::remove_cvref_t<Codec>;
   using rule_type = std::remove_cvref_t<Rule>;
 
-  auto retval =
-      repeat_t<Identifier, description_type, rule_type, max_repetition>{
-          .description = UPD_FWD(descr),
-          .rule = UPD_FWD(rule),
-      };
-
-  return description{std::move(retval)};
+  return repeat_t<Identifier, codec_type, rule_type, max_repetition>{
+      .description = UPD_FWD(cdc),
+      .rule = UPD_FWD(rule),
+  };
 }
 
-template<name Identifier, typename Description>
-[[nodiscard]] constexpr auto repeat(Description &&descr) {
-  return repeat<Identifier>(UPD_FWD(descr), length_of<Identifier>);
+template<name Identifier, codec Codec, typename Rule>
+  requires requires(Codec cdc) { expr<cdc.identifier>; }
+[[nodiscard]] constexpr auto repeat(Codec &&cdc, Rule &&rule) {
+  return repeat<Identifier>(description{UPD_FWD(cdc)}, UPD_FWD(rule));
+}
+
+template<name Identifier, codec Codec>
+[[nodiscard]] constexpr auto repeat(Codec &&cdc) {
+  return repeat<Identifier>(UPD_FWD(cdc), length_of<Identifier>);
 }
 
 } // namespace upd::descriptor

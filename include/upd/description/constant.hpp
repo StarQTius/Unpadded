@@ -121,15 +121,13 @@ struct enumeration_constant_t {
 
 template<name Identifier, std::size_t Width>
 [[nodiscard]] constexpr auto constant2(uword_t n) noexcept(release) {
-  auto retval = constant_t<Identifier, Width>{n};
-  return description{retval};
+  return constant_t<Identifier, Width>{n};
 }
 
 template<name Identifier, std::size_t Width, typename Enum>
   requires std::is_enum_v<Enum>
 [[nodiscard]] constexpr auto constant2(Enum e) noexcept(release) {
-  auto retval = enumeration_constant_t<Identifier, Width, Enum>{e};
-  return description{retval};
+  return enumeration_constant_t<Identifier, Width, Enum>{e};
 }
 
 } // namespace upd::descriptor
