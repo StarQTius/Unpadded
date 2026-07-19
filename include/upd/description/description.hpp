@@ -44,98 +44,92 @@
 #include "../utility/constexpr.hpp"
 #include "../utility/equivalent_to.hpp"
 #include "../utility/get.hpp"
+#include "../utility/is_instance_of.hpp"
 #include "codec.hpp"
 #include "variable.hpp"
 
 namespace upd {
 
-template<codec... Fields>
-  requires(requires { Fields::identifier; } && ...)
-class description {
+template<typename...>
+class description;
+
+template<auto... Identifiers, typename... Fields>
+class description<entry<Identifiers, Fields>...> {
 public:
   using result_type =
-      decltype(typelist2<Fields...>
-               | tuple_views::transform_type(
-                   []<typename T> -> entry<T::identifier,
-                                           typename T::value_type> {})
+      decltype(typelist2<entry<Identifiers, typename Fields::value_type>...>
                | tuple_views::as_record
                | record_views::instantiate<record>);
 
   using value_type =
-      decltype(typelist2<Fields...>
-               | tuple_views::filter([]<typename T> {
-                   return !std::same_as<
-                       typename std::remove_cvref_t<T>::value_type, unit_t>;
+      decltype(typelist2<entry<Identifiers, typename Fields::value_type>...>
+               | tuple_views::filter([]<typename Entry> {
+                   return !std::same_as<typename Entry::value_type, unit_t>;
                  })
-               | tuple_views::transform_type(
-                   []<typename T> -> entry<T::identifier,
-                                           typename T::value_type> {})
                | tuple_views::as_record
                | record_views::instantiate<record>);
 
-  using storage_type =
-      decltype(typelist2<Fields...>
-               | tuple_views::transform_type(
-                   []<typename T> -> entry<T::identifier, T> {})
-               | tuple_views::as_record
-               | record_views::instantiate<record>);
+  using storage_type = decltype(typelist2<entry<Identifiers, Fields>...>
+                                | tuple_views::as_record
+                                | record_views::instantiate<record>);
 
   using input_type =
-      decltype(typelist2<Fields...>
-               | tuple_views::transform_type(
-                   []<typename T> -> entry<T::identifier,
-                                           typename T::input_type> {})
+      decltype(typelist2<entry<Identifiers, typename Fields::input_type>...>
                | tuple_views::as_record
                | record_views::instantiate<record>);
 
-  constexpr static auto identifiers =
-      typelist2<Fields...>
-      | tuple_views::transform_type([]<typename T> -> expr_t<T::identifier> {})
-      | tuple_views::to<std::tuple>;
+  constexpr static auto identifiers = std::tuple{expr<Identifiers>...};
 
-  template<codec... Ts>
-  explicit constexpr description(Ts &&...fields)
-      : m_fields{entry{expr<fields.identifier>, std::move(fields)}...} {}
+  template<typename... Entries>
+    requires(is_instance_of<Entries, entry>() && ...)
+  explicit constexpr description(Entries &&...es) : m_fields{UPD_FWD(es)...} {}
 
-  template<record_like Packet, record_like FieldRecord, codec_info CodecInfo>
+  template<record_like Record>
+  explicit constexpr description(Record &&rec) : m_fields{UPD_FWD(rec)} {}
+
+  template<auto = unit,
+           record_like Packet,
+           record_like FieldRecord,
+           codec_info CodecInfo>
   [[nodiscard]] constexpr static auto
   rules(const Packet &, const FieldRecord &, expr_t<CodecInfo>) {
     return std::tuple{};
   }
 
-  template<record_like Args>
+  template<auto Id = unit, record_like Args>
   [[nodiscard]]
   constexpr auto
   encode(const Args &args, std::ostream &dest, const char *sep) const
       -> result<void> {
-    return encode(args, standard_stream{nullptr, &dest, sep});
+    return encode<Id>(args, standard_stream{nullptr, &dest, sep});
   }
 
-  template<record_like Args>
+  template<auto Id = unit, record_like Args>
   [[nodiscard]]
   constexpr auto
   encode(const Args &args, stream_interface &dest) const -> result<void> {
     using namespace upd::record_views;
 
     auto input = input_type{};
-    for_each(args, [&]<auto Id>(const auto &value) { get<Id>(input) = value; });
-    return encode(input, dest);
+    for_each(args, [&]<auto K>(const auto &value) { get<K>(input) = value; });
+    return encode<Id>(input, dest);
   }
 
-  template<record_like Args>
+  template<auto Id = unit, record_like Args>
   [[nodiscard]]
   constexpr auto
   encode(const Args &args, stream_interface &&dest) const -> result<void> {
-    return encode(args, dest);
+    return encode<Id>(args, dest);
   }
 
+  template<auto Id = unit>
   [[nodiscard]]
   constexpr auto encode(const input_type &input, stream_interface &dest) const
       -> result<void> {
-    return encode(input, dest, std::tuple{});
+    return encode<Id>(input, dest, std::tuple{});
   }
 
-  template<tuple_like2 System>
+  template<auto = unit, tuple_like2 System>
   [[nodiscard]]
   constexpr auto encode(const input_type &input,
                         stream_interface &dest,
@@ -147,12 +141,13 @@ public:
     };
 
     auto res = result<void>{};
-    auto rule_sys = m_fields
-                    | updv::values
-                    | tuple_views::transform([&](const auto &field) {
-                        return field.rules(input, m_fields, expr<cdinf>);
-                      })
-                    | tuple_views::join;
+    auto rule_sys =
+        m_fields
+        | updv::transform([&]<auto Id>(const auto &field) {
+            return field.template rules<Id>(input, m_fields, expr<cdinf>);
+          })
+        | updv::values
+        | tuple_views::join;
 
     auto sys = tuple_views::concat(rule_sys, ctx_sys);
 
@@ -163,21 +158,26 @@ public:
         return;
       }
 
-      res = field.encode(get_or<Id>(input, subinput_type{}), dest, sys);
+      res = field.template encode<Id>(get_or<Id>(input, subinput_type{}), dest,
+                                      sys);
     });
 
     return res;
   }
 
-  template<std::input_iterator InputIt, record_like Context = upd::record<>>
+  template<auto Id = unit,
+           std::input_iterator InputIt,
+           record_like Context = upd::record<>>
     requires std::convertible_to<std::iter_value_t<InputIt>, char>
   [[nodiscard]] constexpr auto
   decode(InputIt src, const Context &ctx = record{}) const {
     auto null_it = static_cast<char *>(nullptr);
-    return decode(iterator_stream{src, null_it}, ctx);
+    return decode<Id>(iterator_stream{src, null_it}, ctx);
   }
 
-  template<std::input_iterator InputIt, record_like Context = upd::record<>>
+  template<auto Id = unit,
+           std::input_iterator InputIt,
+           record_like Context = upd::record<>>
     requires std::same_as<std::iter_value_t<InputIt>, std::byte>
   [[nodiscard]] constexpr auto
   decode(InputIt src, const Context &ctx = record{}) const {
@@ -188,10 +188,10 @@ public:
                  | stdv::transform(std::to_integer<char>);
 
     auto null_it = static_cast<char *>(nullptr);
-    return decode(iterator_stream{std::begin(words), null_it}, ctx);
+    return decode<Id>(iterator_stream{std::begin(words), null_it}, ctx);
   }
 
-  template<record_like Context = upd::record<>>
+  template<auto Id = unit, record_like Context = upd::record<>>
   [[nodiscard]] constexpr auto
   decode(stream_interface &src, const Context &ctx = upd::record{}) const {
     namespace updv = record_views;
@@ -201,16 +201,16 @@ public:
         | updv::transform([]<auto K>(const auto &v) { return value_of<K> = v; })
         | updv::values;
 
-    return decode(src, sys);
+    return decode<Id>(src, sys);
   }
 
-  template<record_like Context = upd::record<>>
+  template<auto Id = unit, record_like Context = upd::record<>>
   [[nodiscard]] constexpr auto
   decode(stream_interface &&src, const Context &ctx = upd::record{}) const {
-    return decode(src, ctx);
+    return decode<Id>(src, ctx);
   }
 
-  template<tuple_like2 System>
+  template<auto = unit, tuple_like2 System>
   [[nodiscard]] constexpr auto
   decode(stream_interface &src, const System &presys) const
       -> result<value_type> {
@@ -239,23 +239,24 @@ public:
                  | tuple_views::as_record
                  | updv::to<upd::record>;
 
-      auto rules = tuple_views::concat(known_ids, std::tuple{expr<Id>})
-                   | tuple_views::to<std::tuple>
-                   | tuple_views::transform([&]<auto K>(expr_t<K>) {
-                       return keyword2<K>{} = get<K>(m_fields);
-                     })
-                   | tuple_views::as_record
-                   | updv::to<upd::record>
-                   | updv::transform([&]<auto>(const auto &field) {
-                       return field.rules(ctx, m_fields, expr<cdinf>);
-                     })
-                   | updv::to<upd::record>
-                   | updv::values
-                   | tuple_views::join
-                   | tuple_views::to<std::tuple>;
+      auto rules =
+          tuple_views::concat(known_ids, std::tuple{expr<Id>})
+          | tuple_views::to<std::tuple>
+          | tuple_views::transform([&]<auto K>(expr_t<K>) {
+              return keyword2<K>{} = get<K>(m_fields);
+            })
+          | tuple_views::as_record
+          | updv::to<upd::record>
+          | updv::transform([&]<auto K>(const auto &field) {
+              return field.template rules<K>(ctx, m_fields, expr<cdinf>);
+            })
+          | updv::to<upd::record>
+          | updv::values
+          | tuple_views::join
+          | tuple_views::to<std::tuple>;
 
       auto sys = tuple_views::concat(presys, rules);
-      if (auto maybe_value = field.decode(src, sys); maybe_value) {
+      if (auto maybe_value = field.template decode<Id>(src, sys); maybe_value) {
         get_or<Id>(*maybe_retval, std::ignore) = *std::move(maybe_value);
       } else {
         maybe_retval = std::unexpected{maybe_value.error()};
@@ -279,9 +280,12 @@ public:
   storage_type m_fields;
 };
 
-template<codec... Fields>
-explicit description(Fields...) -> description<Fields...>;
+template<auto... Identifiers, codec... Fields>
+explicit description(entry<Identifiers, Fields>...)
+    -> description<entry<Identifiers, Fields>...>;
 
-constexpr auto empty_description = description<>{};
+template<auto... Identifiers, codec... Fields>
+explicit description(record<entry<Identifiers, Fields>...>)
+    -> description<entry<Identifiers, Fields>...>;
 
 } // namespace upd

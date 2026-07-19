@@ -7,6 +7,7 @@
 
 #include "../description/codec_info.hpp"
 #include "../error.hpp"
+#include "../record/name.hpp"
 #include "../record/record.hpp"
 #include "../stream/stream_interface.hpp"
 #include "../tuple/tuple_like.hpp"
@@ -27,9 +28,13 @@ concept codec =
                 upd::record<> rec,
                 std::tuple<> t,
                 stream_interface &st) {
-         { x.rules(rec, rec, expr<codec_info{}>) } -> upd::tuple_like2;
-         { x.encode(in, st, t) } -> std::convertible_to<result<void>>;
-         { v = *x.decode(st, t) };
+         {
+           x.template rules<anon>(rec, rec, expr<codec_info{}>)
+         } -> upd::tuple_like2;
+         {
+           x.template encode<anon>(in, st, t)
+         } -> std::convertible_to<result<void>>;
+         { v = *x.template decode<anon>(st, t) };
          { x.bitsize(v) } -> std::convertible_to<std::size_t>;
        };
 

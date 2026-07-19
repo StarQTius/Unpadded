@@ -18,9 +18,8 @@
 
 namespace upd::descriptor {
 
-template<name Identifier, bool Signedness, std::size_t Width, typename Rule>
+template<bool Signedness, std::size_t Width, typename Rule>
 struct bound_t {
-  constexpr static auto identifier = Identifier;
   constexpr static auto is_signed = Signedness;
   constexpr static auto width = Width;
 
@@ -30,26 +29,27 @@ struct bound_t {
 
   Rule rule;
 
-  template<record_like Packet, record_like Fields, codec_info CodecInfo>
+  template<auto Id,
+           record_like Packet,
+           record_like Fields,
+           codec_info CodecInfo>
   [[nodiscard]] constexpr auto
   rules(const Packet &packet, const Fields &, expr_t<CodecInfo>) const {
     if constexpr (CodecInfo.operation
                   == codec_operation::decoding
-                  && has_tag<Identifier>(packet)) {
-      return std::tuple{value_of<Identifier> = get<Identifier>(packet),
-                        value_of<Identifier> = rule,
-                        length_of<Identifier> = Width};
+                  && has_tag<Id>(packet)) {
+      return std::tuple{value_of<Id> = get<Id>(packet), value_of<Id> = rule,
+                        length_of<Id> = Width};
     } else {
-      return std::tuple{value_of<Identifier> = rule,
-                        length_of<Identifier> = Width};
+      return std::tuple{value_of<Id> = rule, length_of<Id> = Width};
     }
   };
 
-  template<tuple_like2 System>
+  template<auto Id, tuple_like2 System>
   [[nodiscard]] constexpr static auto
   encode(unit_t, stream_interface &dest, const System &sys) -> result<void> {
     auto err = lite_error::none;
-    auto value = algebra::solve_for(value_of<Identifier>, sys);
+    auto value = algebra::solve_for(value_of<Id>, sys);
     if constexpr (is_signed) {
       err = dest.write_signed(value, width);
     } else {
@@ -63,7 +63,7 @@ struct bound_t {
     return {};
   }
 
-  template<tuple_like2 System>
+  template<auto, tuple_like2 System>
   [[nodiscard]] constexpr static auto
   decode(stream_interface &src, const System &) -> result<value_type> {
     auto err = lite_error_t{};
@@ -87,14 +87,14 @@ struct bound_t {
   }
 };
 
-template<name Identifier, std::size_t Width, typename Rule>
+template<std::size_t Width, typename Rule>
 [[nodiscard]] constexpr auto bound2(Rule rule) noexcept(release) {
-  return bound_t<Identifier, true, Width, Rule>{std::move(rule)};
+  return bound_t<true, Width, Rule>{std::move(rule)};
 }
 
-template<name Identifier, std::size_t Width, typename Rule>
+template<std::size_t Width, typename Rule>
 [[nodiscard]] constexpr auto ubound2(Rule rule) noexcept(release) {
-  return bound_t<Identifier, false, Width, Rule>{std::move(rule)};
+  return bound_t<false, Width, Rule>{std::move(rule)};
 }
 
 } // namespace upd::descriptor

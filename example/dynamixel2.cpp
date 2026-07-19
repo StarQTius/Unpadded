@@ -115,61 +115,59 @@ struct std::formatter<instruction_code> {
 constexpr auto request_description = [] {
   using namespace upd;
   using namespace upd::literals;
+  using namespace upd::record_operators;
   using namespace upd::descriptor;
 
   using enum instruction_code;
 
   return description{
-      constant2<"header", 32>(0x00fdffff),
-      ufield2<"id", 8>,
-      ubound2<"length", 16>(length_of<"parameters"> / 8 + 3),
-      efield2<"instruction", instruction_code, 8>,
-      one_of<"parameters">(
-          value_of<"instruction">, when<ping> = empty_description,
+      "header"_kw2 = constant2<32>(0x00fdffff),
+      "id"_kw2 = ufield2<8>,
+      "length"_kw2 = ubound2<16>(length_of<"parameters"> / 8 + 3),
+      "instruction"_kw2 = efield2<instruction_code, 8>,
+      "parameters"_kw2 = one_of(
+          value_of<"instruction">, when<ping> = unit,
           when<read> =
-              description{ufield2<"address", 16>, ufield2<"length_", 16>},
-          when<write> = description{ufield2<"address", 16>,
-                                    repeat<"data">(ufield2<anon, 8>)},
-          when<reg_write> = description{ufield2<"address", 16>,
-                                        repeat<"data">(ufield2<anon, 8>)},
-          when<action> = empty_description,
-          when<factory_reset> = efield2<anon, factory_reset_target, 8>,
-          when<reboot> = empty_description,
-          when<clear> = efield2<anon, clear_target, 40>,
-          when<control_table_backup> =
-              efield2<anon, control_table_backup_target, 40>,
+              ("address"_kw2 = ufield2<16>, "length_"_kw2 = ufield2<16>),
+          when<write> =
+              ("address"_kw2 = ufield2<16>, "data"_kw2 = repeat(ufield2<8>)),
+          when<reg_write> =
+              ("address"_kw2 = ufield2<16>, "data"_kw2 = repeat(ufield2<8>)),
+          when<action> = unit,
+          when<factory_reset> = efield2<factory_reset_target, 8>,
+          when<reboot> = unit, when<clear> = efield2<clear_target, 40>,
+          when<control_table_backup> = efield2<control_table_backup_target, 40>,
           when<sync_read> =
-              description{ufield2<"address", 16>, ufield2<"length_", 16>,
-                          repeat<"ids">(ufield2<anon, 8>)}),
-      checksum2<"crc", 16>(accumulate_crc, all_fields)};
+              ("address"_kw2 = ufield2<16>, "length_"_kw2 = ufield2<16>,
+               "ids"_kw2 = repeat(ufield2<8>))),
+      "crc"_kw2 = checksum2<16>(accumulate_crc, all_fields)};
 }();
 
 constexpr auto answer_description = [] {
   using namespace upd;
   using namespace upd::literals;
+  using namespace upd::record_operators;
   using namespace upd::descriptor;
 
   using enum instruction_code;
 
   return description{
-      constant2<"header", 32>(0x00fdffff),
-      ufield2<"id", 8>,
-      ubound2<"length", 16>(length_of<"parameters"> / 8 + 4),
-      constant2<"instruction", 8>(instruction_code::status),
-      ufield2<"error", 8>,
-      shadow_efield2<"status_of", instruction_code, 8>,
-      one_of<"parameters">(
-          value_of<"status_of">,
-          when<ping> = description{ufield2<"model_number", 16>,
-                                   ufield2<"firmware_version", 8>},
-          when<read> = description{repeat<"data">(ufield2<anon, 8>)},
-          when<write> = empty_description, when<reg_write> = empty_description,
-          when<action> = empty_description,
-          when<factory_reset> = empty_description,
-          when<reboot> = empty_description,
-          when<control_table_backup> = empty_description,
-          when<sync_read> = description{repeat<"data">(ufield2<anon, 8>)}),
-      checksum2<"crc", 16>(accumulate_crc, all_fields)};
+      "header"_kw2 = constant2<32>(0x00fdffff),
+      "id"_kw2 = ufield2<8>,
+      "length"_kw2 = ubound2<16>(length_of<"parameters"> / 8 + 4),
+      "instruction"_kw2 = constant2<8>(instruction_code::status),
+      "error"_kw2 = ufield2<8>,
+      "status_of"_kw2 = shadow_efield2<instruction_code, 8>,
+      "parameters"_kw2 =
+          one_of(value_of<"status_of">,
+                 when<ping> = ("model_number"_kw2 = ufield2<16>,
+                               "firmware_version"_kw2 = ufield2<8>),
+                 when<read> = ("data"_kw2 = repeat(ufield2<8>)),
+                 when<write> = unit, when<reg_write> = unit,
+                 when<action> = unit, when<factory_reset> = unit,
+                 when<reboot> = unit, when<control_table_backup> = unit,
+                 when<sync_read> = ("data"_kw2 = repeat(ufield2<8>))),
+      "crc"_kw2 = checksum2<16>(accumulate_crc, all_fields)};
 }();
 
 auto ping_example() -> upd::result<void>;

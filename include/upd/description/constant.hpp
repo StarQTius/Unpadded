@@ -19,9 +19,8 @@
 
 namespace upd::descriptor {
 
-template<name Identifier, std::size_t Width>
+template<std::size_t Width>
 struct constant_t {
-  constexpr static auto identifier = Identifier;
   constexpr static auto width = Width;
 
   using value_type = unit_t;
@@ -29,13 +28,16 @@ struct constant_t {
 
   uword_t value;
 
-  template<record_like Packet, record_like Fields, codec_info CodecInfo>
+  template<auto Id,
+           record_like Packet,
+           record_like Fields,
+           codec_info CodecInfo>
   [[nodiscard]] constexpr auto
   rules(const Packet &, const Fields &, expr_t<CodecInfo>) const {
-    return std::tuple{length_of<Identifier> = Width};
+    return std::tuple{length_of<Id> = Width};
   }
 
-  template<tuple_like2 System>
+  template<auto, tuple_like2 System>
   [[nodiscard]] constexpr auto
   encode(input_type, stream_interface &dest, const System &) const
       noexcept(release) -> result<void> {
@@ -46,7 +48,7 @@ struct constant_t {
     return {};
   }
 
-  template<tuple_like2 System>
+  template<auto, tuple_like2 System>
   [[nodiscard]] constexpr auto
   decode(stream_interface &src, const System &) const -> result<value_type> {
     auto read_value = uword_t{};
@@ -68,9 +70,8 @@ struct constant_t {
   }
 };
 
-template<name Identifier, std::size_t Width, typename Enum>
+template<std::size_t Width, typename Enum>
 struct enumeration_constant_t {
-  constexpr static auto identifier = Identifier;
   constexpr static auto width = Width;
 
   using value_type = unit_t;
@@ -78,13 +79,16 @@ struct enumeration_constant_t {
 
   Enum value;
 
-  template<record_like Packet, record_like Fields, codec_info CodecInfo>
+  template<auto Id,
+           record_like Packet,
+           record_like Fields,
+           codec_info CodecInfo>
   [[nodiscard]] constexpr auto
   rules(const Packet &, const Fields &, expr_t<CodecInfo>) const {
-    return std::tuple{length_of<Identifier> = Width};
+    return std::tuple{length_of<Id> = Width};
   }
 
-  template<tuple_like2 System>
+  template<auto, tuple_like2 System>
   [[nodiscard]]
   constexpr auto
   encode(input_type, stream_interface &dest, const System &) const
@@ -96,7 +100,7 @@ struct enumeration_constant_t {
     return {};
   }
 
-  template<tuple_like2 System>
+  template<auto, tuple_like2 System>
   [[nodiscard]] constexpr auto
   decode(stream_interface &src, const System &) const -> result<value_type> {
     auto read_value = uword_t{};
@@ -119,15 +123,15 @@ struct enumeration_constant_t {
   }
 };
 
-template<name Identifier, std::size_t Width>
+template<std::size_t Width>
 [[nodiscard]] constexpr auto constant2(uword_t n) noexcept(release) {
-  return constant_t<Identifier, Width>{n};
+  return constant_t<Width>{n};
 }
 
-template<name Identifier, std::size_t Width, typename Enum>
+template<std::size_t Width, typename Enum>
   requires std::is_enum_v<Enum>
 [[nodiscard]] constexpr auto constant2(Enum e) noexcept(release) {
-  return enumeration_constant_t<Identifier, Width, Enum>{e};
+  return enumeration_constant_t<Width, Enum>{e};
 }
 
 } // namespace upd::descriptor

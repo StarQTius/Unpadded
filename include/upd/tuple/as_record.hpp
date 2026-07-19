@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <type_traits>
 
 #include "../record/entry.hpp"
 #include "../record/record_view.hpp"
@@ -35,7 +36,7 @@ struct upd::record_view_for<upd::tuple_views::as_record_view<Base>> {
 
   template<std::size_t I, typename View>
   [[nodiscard]] constexpr static auto get_ith(View &&view) {
-    using entry_type = tuple_element_t<I, Base>;
+    using entry_type = std::remove_cvref_t<tuple_element_t<I, Base>>;
     constexpr auto identifier = entry_type::identifier;
     using value_type = decltype(get<I>(UPD_FWD(view).base).value);
     return entry<identifier, value_type>{get<I>(UPD_FWD(view).base).value};

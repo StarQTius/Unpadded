@@ -15,9 +15,8 @@
 
 namespace upd::descriptor {
 
-template<name Identifier, typename Enum, std::size_t Width>
+template<typename Enum, std::size_t Width>
 struct shadow_enumeration_field_t {
-  constexpr static auto identifier = Identifier;
   constexpr static auto is_signed =
       std::is_signed_v<std::underlying_type_t<Enum>>;
   constexpr static auto width = Width;
@@ -25,20 +24,22 @@ struct shadow_enumeration_field_t {
   using value_type = Enum;
   using input_type = Enum;
 
-  template<record_like Packet, record_like Fields, codec_info CodecInfo>
+  template<auto Id,
+           record_like Packet,
+           record_like Fields,
+           codec_info CodecInfo>
   [[nodiscard]] constexpr static auto
   rules(const Packet &packet, const Fields &, expr_t<CodecInfo>) {
-    if constexpr (has_tag<Identifier>(packet)
+    if constexpr (has_tag<Id>(packet)
                   && CodecInfo.operation
                   == codec_operation::encoding) {
-      return std::tuple{value_of<Identifier> = get<Identifier>(packet),
-                        length_of<Identifier> = Width};
+      return std::tuple{value_of<Id> = get<Id>(packet), length_of<Id> = Width};
     } else {
-      return std::tuple{length_of<Identifier> = Width};
+      return std::tuple{length_of<Id> = Width};
     }
   }
 
-  template<tuple_like2 System>
+  template<auto, tuple_like2 System>
   [[nodiscard]]
   constexpr static auto
   encode(value_type, stream_interface &, const System &) noexcept(release)
@@ -46,10 +47,10 @@ struct shadow_enumeration_field_t {
     return result<void>{};
   }
 
-  template<tuple_like2 System>
+  template<auto Id, tuple_like2 System>
   [[nodiscard]] constexpr static auto
   decode(stream_interface &, const System &sys) -> result<value_type> {
-    return solve_for(value_of<Identifier>, sys);
+    return solve_for(value_of<Id>, sys);
   }
 
   [[nodiscard]] constexpr static auto
@@ -58,8 +59,7 @@ struct shadow_enumeration_field_t {
   }
 };
 
-template<name Identifier, typename Enum, std::size_t Width>
-constexpr auto shadow_efield2 =
-    [] { return shadow_enumeration_field_t<Identifier, Enum, Width>{}; }();
+template<typename Enum, std::size_t Width>
+constexpr auto shadow_efield2 = shadow_enumeration_field_t<Enum, Width>{};
 
 } // namespace upd::descriptor
