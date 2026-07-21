@@ -201,7 +201,7 @@ template<typename Rule, typename... WhenThens>
   auto tagged_descriptions =
       aggregate_when_thens(UPD_FWD(when_thens)...)
       | record_views::transform([]<auto, typename T>(T &&v) -> decltype(auto) {
-          if constexpr (std::convertible_to<T, unit_t>) {
+          if constexpr (std::same_as<std::remove_cvref_t<T>, unit_t>) {
             return description<>{};
           } else if constexpr (record_like<T>) {
             return description{std::move(v)};

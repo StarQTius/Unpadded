@@ -22,6 +22,10 @@ concept codec =
       typename std::remove_cvref_t<T>::input_type;
     }
     && std::default_initializable<typename std::remove_cvref_t<T>::value_type>
+    && std::constructible_from<typename std::remove_cvref_t<T>::input_type,
+                               typename std::remove_cvref_t<T>::value_type>
+    && std::assignable_from<typename std::remove_cvref_t<T>::input_type &,
+                            typename std::remove_cvref_t<T>::value_type>
     && requires(T x,
                 typename std::remove_cvref_t<T>::value_type v,
                 typename std::remove_cvref_t<T>::input_type in,

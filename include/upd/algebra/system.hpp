@@ -25,6 +25,19 @@
 namespace upd {
 
 constexpr struct unit_t {
+  constexpr unit_t() noexcept(release) = default;
+
+  constexpr unit_t(const unit_t &) noexcept(release) = default;
+
+  template<typename T>
+  constexpr unit_t(const T &) noexcept(release) {}
+
+  constexpr unit_t &operator=(const unit_t &) noexcept(release) = default;
+
+  template<typename T>
+  constexpr unit_t &operator=(const T &) noexcept(release) {
+    return *this;
+  }
 } unit;
 
 template<typename T>

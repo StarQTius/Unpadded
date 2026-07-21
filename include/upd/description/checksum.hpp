@@ -1,6 +1,5 @@
 #pragma once
 
-#include <concepts>
 #include <cstddef>
 #include <expected>
 #include <tuple>
@@ -10,12 +9,8 @@
 #include "../description.hpp"
 #include "../error.hpp"
 #include "../record.hpp"
-#include "../record/tags_of.hpp"
 #include "../stream/accumulator_stream.hpp"
 #include "../stream/stream_interface.hpp"
-#include "../tuple/as_record.hpp"
-#include "../tuple/filter.hpp"
-#include "../tuple/transform.hpp"
 #include "../tuple/tuple_like.hpp"
 #include "../upd.hpp"
 #include "../utility/constexpr.hpp"
@@ -23,10 +18,7 @@
 
 namespace upd::descriptor {
 
-constexpr struct all_fields_t {
-} all_fields{};
-
-template<typename BinaryOp, std::size_t Width, typename FieldFilter>
+template<typename BinaryOp, std::size_t Width, typename KeyPred>
 struct checksum_t {
   constexpr static auto width = Width;
 
@@ -35,7 +27,7 @@ struct checksum_t {
 
   uword_t init;
   BinaryOp op;
-  FieldFilter identifier_filter;
+  KeyPred key_pred;
 
   template<auto Id,
            record_like Packet,
@@ -44,32 +36,17 @@ struct checksum_t {
   [[nodiscard]] constexpr auto
   rules(const Packet &packet, const Fields &fields, expr_t<CodecInfo>) const {
     using namespace upd::literals;
-    namespace updv = upd::record_views;
+    using namespace upd::record_views;
 
-    auto descr =
-        updv::apply([](const auto &...es) { return description{es...}; },
-                    fields | updv::filter([]<auto FieldId, typename> {
-                      return FieldId != Id;
-                    }));
+    auto p = [key_pred = key_pred]<auto K, typename> {
+      return K != Id && UPD_INVOKE_TEMPLATE(key_pred, (K));
+    };
+    auto curated_fields = fields | filter(p);
+    auto curated_packet = packet | filter(p);
 
-    using descr_input = typename decltype(descr)::input_type;
-    auto curated_packet =
-        tags_of_v<descr_input>
-        | tuple_views::filter([&]<typename Tag> {
-            return !std::convertible_to<
-                record_element_t<Tag::value, descr_input>, unit_t>;
-          })
-        | tuple_views::transform([&](auto id) {
-            using subinput_type =
-                typename record_element_t<id.value, Fields>::input_type;
-            return entry{id, get_or<id.value>(packet, subinput_type{})};
-          })
-        | tuple_views::as_record;
-
+    auto descr = description{curated_fields | to<record>};
     auto dest = accumulator_stream{&op, init};
-    auto res =
-        descr.template encode<Id>(curated_packet | updv::to<record>, dest);
-
+    auto res = descr.template encode<Id>(curated_packet, dest);
     return std::tuple{value_of<Id> = (res) ? dest.acc : 0zu,
                       length_of<Id> = Width};
   }
@@ -110,11 +87,14 @@ struct checksum_t {
   }
 };
 
+constexpr struct all_fields_t {
+} all_fields;
+
 template<std::size_t Width, typename BinaryOp>
 [[nodiscard]] constexpr auto
 checksum2(BinaryOp op, all_fields_t) noexcept(release) {
-  return checksum_t<BinaryOp, Width, all_fields_t>{0u, std::move(op),
-                                                   all_fields};
+  auto pred = []<auto> { return true; };
+  return checksum_t<BinaryOp, Width, decltype(pred)>{0u, std::move(op), pred};
 }
 
 } // namespace upd::descriptor
