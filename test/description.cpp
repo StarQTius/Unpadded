@@ -103,7 +103,7 @@ TEST_CASE("Protocol descriptors", "[descriptor]") {
     auto descr = upd::description{
         "abc"_kw2 = ufield2<16>, "def"_kw2 = ufield2<16>,
         "ghi"_kw2 = checksum2<16>([](auto acc, auto v) { return acc + v; },
-                                  all_fields)};
+                                  all_previous_fields)};
     REQUIRE(descr.encode(("abc"_kw2 = 54, "def"_kw2 = 46), st));
 
     auto result = descr.decode(st).value();
@@ -201,16 +201,18 @@ TEST_CASE("Protocol descriptors", "[descriptor]") {
     auto descr = upd::description{
         "abc"_kw2 = constant2<8>(12), "def"_kw2 = constant2<8>(88),
         "ghi"_kw2 = checksum2<16>([](auto acc, auto v) { return acc + v; },
-                                  all_fields)};
+                                  all_previous_fields)};
     REQUIRE(descr.encode(upd::record{}, st));
     REQUIRE_NOTHROW(descr.decode(st).value());
+    REQUIRE(buf[2] == 0x64);
+    REQUIRE(buf[3] == 0);
   }
 
   SECTION("Try decode a checksum field when mismatch") {
     auto descr = upd::description{
         "abc"_kw2 = ufield2<16>, "def"_kw2 = ufield2<16>,
         "ghi"_kw2 = checksum2<16>([](auto acc, auto v) { return acc + v; },
-                                  all_fields)};
+                                  all_previous_fields)};
 
     buf[0] = 54;
     buf[1] = 0;
@@ -226,6 +228,30 @@ TEST_CASE("Protocol descriptors", "[descriptor]") {
                 .actual = 101,
                 .expected = 100,
             });
+  }
+
+  SECTION("Encode and decode a partial checksum field") {
+    auto descr = upd::description{
+        "abc"_kw2 = constant2<8>(12), "def"_kw2 = constant2<8>(37),
+        "ghi"_kw2 = constant2<8>(88),
+        "jkl"_kw2 = checksum2<16>([](auto acc, auto v) { return acc + v; },
+                                  only_fields<"abc", "ghi">)};
+    REQUIRE(descr.encode(upd::record{}, st));
+    REQUIRE_NOTHROW(descr.decode(st).value());
+    REQUIRE(buf[3] == 0x64);
+    REQUIRE(buf[4] == 0);
+  }
+
+  SECTION("Encode and decode a checksum surrounded by constants") {
+    auto descr = upd::description{
+        "abc"_kw2 = constant2<8>(12), "def"_kw2 = constant2<8>(88),
+        "ghi"_kw2 = checksum2<16>([](auto acc, auto v) { return acc + v; },
+                                  all_previous_fields),
+        "jkl"_kw2 = constant2<8>(37)};
+    REQUIRE(descr.encode(upd::record{}, st));
+    REQUIRE_NOTHROW(descr.decode(st).value());
+    REQUIRE(buf[2] == 0x64);
+    REQUIRE(buf[3] == 0);
   }
 }
 

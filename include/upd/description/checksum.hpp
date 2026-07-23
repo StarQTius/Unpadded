@@ -11,6 +11,7 @@
 #include "../record.hpp"
 #include "../stream/accumulator_stream.hpp"
 #include "../stream/stream_interface.hpp"
+#include "../tuple/find.hpp"
 #include "../tuple/tuple_like.hpp"
 #include "../upd.hpp"
 #include "../utility/constexpr.hpp"
@@ -39,10 +40,10 @@ struct checksum_t {
     using namespace upd::record_views;
 
     auto p = [key_pred = key_pred]<auto K, typename> {
-      return K != Id && UPD_INVOKE_TEMPLATE(key_pred, (K));
+      return UPD_INVOKE_TEMPLATE(key_pred, (K));
     };
-    auto curated_fields = fields | filter(p);
-    auto curated_packet = packet | filter(p);
+    auto curated_fields = fields | take_until<Id> | filter(p);
+    auto curated_packet = packet | take_until<Id> | filter(p);
 
     auto descr = description{curated_fields | to<record>};
     auto dest = accumulator_stream{&op, init};
@@ -87,13 +88,31 @@ struct checksum_t {
   }
 };
 
-constexpr struct all_fields_t {
-} all_fields;
+constexpr struct all_previous_fields_t {
+} all_previous_fields;
 
 template<std::size_t Width, typename BinaryOp>
 [[nodiscard]] constexpr auto
-checksum2(BinaryOp op, all_fields_t) noexcept(release) {
+checksum2(BinaryOp op, all_previous_fields_t) noexcept(release) {
   auto pred = []<auto> { return true; };
+  return checksum_t<BinaryOp, Width, decltype(pred)>{0u, std::move(op), pred};
+}
+
+template<auto... Identifiers>
+struct only_fields_t {};
+
+template<name... Identifiers>
+constexpr auto only_fields = only_fields_t<Identifiers...>{};
+
+template<std::size_t Width, typename BinaryOp, auto... Identifiers>
+[[nodiscard]] constexpr auto
+checksum2(BinaryOp op, only_fields_t<Identifiers...>) noexcept(release) {
+  using namespace upd::tuple_views;
+
+  auto pred = []<auto Id> {
+    auto ids = std::tuple{expr<Identifiers>...};
+    return find<expr_t<Id>>(ids) != sizeof...(Identifiers);
+  };
   return checksum_t<BinaryOp, Width, decltype(pred)>{0u, std::move(op), pred};
 }
 

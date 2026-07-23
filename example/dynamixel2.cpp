@@ -140,7 +140,7 @@ constexpr auto request_description = [] {
           when<sync_read> =
               ("address"_kw2 = ufield2<16>, "length_"_kw2 = ufield2<16>,
                "ids"_kw2 = repeat(ufield2<8>))),
-      "crc"_kw2 = checksum2<16>(accumulate_crc, all_fields)};
+      "crc"_kw2 = checksum2<16>(accumulate_crc, all_previous_fields)};
 }();
 
 constexpr auto answer_description = [] {
@@ -167,7 +167,7 @@ constexpr auto answer_description = [] {
                  when<action> = unit, when<factory_reset> = unit,
                  when<reboot> = unit, when<control_table_backup> = unit,
                  when<sync_read> = ("data"_kw2 = repeat(ufield2<8>))),
-      "crc"_kw2 = checksum2<16>(accumulate_crc, all_fields)};
+      "crc"_kw2 = checksum2<16>(accumulate_crc, all_previous_fields)};
 }();
 
 auto ping_example() -> upd::result<void>;
