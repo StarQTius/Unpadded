@@ -37,5 +37,6 @@
 #include "record/universal_record.hpp"    // IWYU pragma: export
 #include "record/values.hpp"              // IWYU pragma: export
 #include "record/view.hpp"                // IWYU pragma: export
+#include "record/visit.hpp"               // IWYU pragma: export
 #include "record/zip.hpp"                 // IWYU pragma: export
 #include "utility/get.hpp"                // IWYU pragma: export

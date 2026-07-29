@@ -2,6 +2,7 @@
 
 #include <array>
 #include <concepts>
+#include <cstddef>
 #include <ranges>
 #include <type_traits>
 
@@ -60,7 +61,8 @@ constexpr auto dynfind = []<tuple_like2 Tuple, typename T>(Tuple &&t,
                           })
                         | to<std::array>;
 
-  return stdr::find(equal_elements, true) - equal_elements.begin();
+  return static_cast<std::size_t>(stdr::find(equal_elements, true)
+                                  - equal_elements.begin());
 };
 
 } // namespace upd::tuple_views

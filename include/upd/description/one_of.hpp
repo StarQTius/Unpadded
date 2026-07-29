@@ -3,6 +3,7 @@
 #include <concepts>
 #include <cstddef>
 #include <expected>
+#include <functional>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -12,13 +13,11 @@
 #include "../description.hpp"
 #include "../error.hpp"
 #include "../record.hpp"
-#include "../record/tags.hpp"
 #include "../record/tags_of.hpp"
 #include "../stream/counting_stream.hpp"
 #include "../stream/stream_interface.hpp"
 #include "../tuple/apply.hpp"
 #include "../tuple/concat.hpp"
-#include "../tuple/enumerate.hpp"
 #include "../tuple/find.hpp"
 #include "../tuple/fold.hpp"
 #include "../tuple/join.hpp"
@@ -36,18 +35,18 @@
 
 namespace upd::descriptor {
 
-template<typename Rule, typename TaggedDescriptions>
+template<typename Rule, typename Arms>
 struct one_of_t {
-  constexpr static auto size = record_size_v<TaggedDescriptions>;
-  constexpr static auto alternative_types =
-      decltype(std::declval<TaggedDescriptions>()
+  constexpr static auto size = record_size_v<Arms>;
+  constexpr static auto arm_types =
+      decltype(std::declval<Arms>()
                | record_views::values
                | tuple_views::to<typelist2_t>
                | tuple_views::transform_type([]<typename T> ->
                                              typename T::value_type {})
                | tuple_views::to<typelist2_t>){};
   constexpr static auto subinput_types =
-      decltype(std::declval<TaggedDescriptions>()
+      decltype(std::declval<Arms>()
                | record_views::values
                | tuple_views::to<typelist2_t>
                | tuple_views::transform_type([]<typename T> ->
@@ -55,18 +54,18 @@ struct one_of_t {
                | tuple_views::to<typelist2_t>){};
 
   using value_type = decltype(tuple_views::apply_type(
-      alternative_types, []<typename... Ts> -> std::variant<Ts...> {}));
+      arm_types, []<typename... Ts> -> std::variant<Ts...> {}));
   using input_type =
       instantiate_variadic<deferred_caster, decltype(subinput_types)>;
   using rule_type = Rule;
   using tag_type = decltype(tuple_views::apply_type(
-      tags_of_v<TaggedDescriptions>
+      tags_of_v<Arms>
           | tuple_views::transform_type([]<typename T> ->
                                         typename T::value_type {}),
       []<typename... Ts> -> std::common_type_t<Ts...> {}));
 
   Rule rule;
-  TaggedDescriptions tagged_descriptions;
+  Arms arms;
 
   template<auto Id,
            record_like Packet,
@@ -74,30 +73,28 @@ struct one_of_t {
            codec_info CodecInfo>
   [[nodiscard]] constexpr auto
   rules(const Packet &packet, const Fields &fields, expr_t<CodecInfo>) const {
-    namespace updv = upd::record_views;
+    using namespace upd::record_views;
 
-    auto rule_sys =
+    auto other_rules =
         fields
-        | updv::filter([]<auto FieldId, typename> { return FieldId != Id; })
-        | updv::transform([&]<auto FieldId>(const auto &field) {
-            return field.template rules<FieldId>(packet, fields,
-                                                 expr<CodecInfo>);
+        | filter([]<auto K, typename> { return K != Id; })
+        | transform([&]<auto K>(const auto &field) {
+            return field.template rules<K>(packet, fields, expr<CodecInfo>);
           })
-        | updv::values
+        | values
         | tuple_views::join
         | tuple_views::to<std::tuple>;
 
-    auto sys = tuple_views::concat(std::tuple{code_of<Id> = rule}, rule_sys);
+    auto sys = tuple_views::concat(std::tuple{code_of<Id> = rule}, other_rules);
     auto id = try_solve_for(code_of<Id>, sys);
     auto len = try_solve_for(length_of<Id>, sys);
     if constexpr (id == unit || len != unit) {
       return std::tuple{code_of<Id> = rule};
     } else {
       auto cnt_stream = counting_stream{};
-      auto res = this->template encode<Id>(get_or<Id>(packet, input_type{}),
-                                           cnt_stream, sys);
-      return std::tuple{code_of<Id> = rule,
-                        length_of<Id> = (res) ? cnt_stream.written() : 0zu};
+      auto res = encode<Id>(get_or<Id>(packet, input_type{}), cnt_stream, sys);
+      auto count = (res) ? cnt_stream.written() : 0zu;
+      return std::tuple{code_of<Id> = rule, length_of<Id> = count};
     }
   }
 
@@ -105,117 +102,105 @@ struct one_of_t {
   [[nodiscard]] constexpr auto encode(const input_type &args,
                                       stream_interface &dest,
                                       const System &sys) const -> result<void> {
-    namespace updv = upd::tuple_views;
+    using namespace upd::tuple_views;
 
-    auto code = solve_for(code_of<Id>, sys | updv::to<std::tuple>);
-    auto i = updv::dynfind(tags_of_v<TaggedDescriptions>, code);
-    auto encode_alt = [&](const auto &named_descr) -> result<void> {
-      using target_type =
-          typename std::remove_cvref_t<decltype(named_descr)>::input_type;
-      auto target = args.template cast_to<target_type>();
+    auto encode_descr = [&]<typename D>(const D &descr, const auto &in) {
+      auto lengths = D::identifiers
+                     | transform([](auto id) { return length_of<id.value>; });
 
-      if constexpr (is_instance_of<decltype(named_descr), description>()) {
-        auto length_rule = tuple_views::fold_left(
-            named_descr.m_fields
-                | record_views::tags
-                | updv::transform([](auto id) { return length_of<id.value>; }),
-            0uz, [](auto acc, auto var) { return acc + var; });
-
-        auto sys2 = updv::concat(sys, std::tuple{length_of<Id> = length_rule});
-        if (auto res = named_descr.template encode<Id>(target, dest, sys2);
-            !res) {
-          return res;
-        }
-      } else {
-        if (auto res = named_descr.template encode<Id>(target, dest, sys);
-            !res) {
-          return res;
-        }
-      }
-
-      return {};
+      auto length_sum = fold_left(lengths, 0uz, std::plus<>{});
+      auto length_rule = std::tuple{length_of<Id> = length_sum};
+      auto full_sys = concat(sys, length_rule);
+      return descr.template encode<Id>(in, dest, full_sys);
     };
 
-    return updv::visit(tagged_descriptions | record_views::values, i,
-                       encode_alt);
-  }
+    auto encode_codec = [&](const auto &codec, const auto &in) {
+      return codec.template encode<Id>(in, dest, sys);
+    };
+
+    auto encode_alt = [&]<auto, typename Arm>(const Arm &arm) {
+      using arm_input_type = typename Arm::input_type;
+      auto in = args.template cast_to<arm_input_type>();
+      if constexpr (is_instance_of<Arm, description>()) {
+        return encode_descr(arm, in);
+      } else {
+        return encode_codec(arm, in);
+      }
+    };
+
+    auto code = solve_for(code_of<Id>, sys);
+    return record_views::visit(arms, code, encode_alt);
+  };
 
   template<auto Id, tuple_like2 System>
   [[nodiscard]] constexpr auto
   decode(stream_interface &src, const System &sys) const -> result<value_type> {
-    namespace stdr = std::ranges;
-    namespace updv = upd::tuple_views;
+    using namespace upd::tuple_views;
 
-    auto id = solve_for(code_of<Id>, sys);
-    auto id_pos = updv::dynfind(tagged_descriptions | record_views::tags, id);
+    auto k = solve_for(code_of<Id>, sys);
+    auto make_alt = [&]<auto K>(const auto &descr) -> result<value_type> {
+      constexpr auto i = dynfind(tags_of_v<Arms>, K);
+      if (i == record_size_v<Arms>) {
+        return std::unexpected{
+            invalid_code_in_one_of{Id.string, std::to_underlying(k)}};
+      }
 
-    if (id_pos == record_size_v<TaggedDescriptions>) {
-      return std::unexpected{
-          invalid_code_in_one_of{Id.string, std::to_underlying(id)}};
-    }
+      auto lengths = descr.identifiers
+                     | transform([](auto id) { return length_of<id.value>; });
 
-    auto make_alt = [&](const auto &id_pos_and_descr) {
-      const auto &[id_pos, descr] = id_pos_and_descr;
-      auto length_rule = tuple_views::fold_left(
-          descr.m_fields | record_views::tags | updv::transform([](auto id) {
-            return length_of<id.value>;
-          }),
-          0uz, [](auto acc, auto var) { return acc + var; });
-      auto make_retval = [&](auto &&alt) {
-        return value_type{std::in_place_index<id_pos>, UPD_FWD(alt)};
-      };
-      return descr
-          .template decode<Id>(
-              src, updv::concat(sys, std::tuple{length_of<Id> = length_rule}))
-          .transform(make_retval);
+      auto length_sum = fold_left(lengths, 0uz, std::plus<>{});
+      auto length_rule = std::tuple{length_of<Id> = length_sum};
+      auto full_sys = concat(sys, length_rule);
+      auto maybe_alt = descr.template decode<Id>(src, full_sys);
+      if (!maybe_alt) {
+        return std::unexpected{maybe_alt.error()};
+      }
+
+      return value_type{std::in_place_index<i>, UPD_FWD(*maybe_alt)};
     };
 
-    return updv::visit(
-        tagged_descriptions | record_views::values | updv::enumerate, id_pos,
-        make_alt);
+    return record_views::visit(arms, k, make_alt);
   }
 
   [[nodiscard]] constexpr auto bitsize(const value_type &sum_of_values) const
       noexcept(release) -> std::size_t {
-    namespace updv = upd::tuple_views;
-    auto alt_index = sum_of_values.index();
-    if (alt_index == 0) {
-      return 0;
-    }
+    using namespace upd::tuple_views;
 
+    auto i = sum_of_values.index();
     auto seq = UPD_WITH_SEQUENCE(Is, size, &) {
       return std::tuple{expr<Is>...};
     };
-    return updv::visit(seq, alt_index, [&](auto i) {
-      const auto &field_value = *std::get_if<i>(&sum_of_values);
-      const auto &alt_descr = upd::get_ith<i>(tagged_descriptions);
-      return alt_descr.bitsize(field_value);
+
+    return visit(seq, i, [&](auto i) {
+      const auto &value = *std::get_if<i>(&sum_of_values);
+      const auto &descr = upd::get_ith<i>(arms);
+      return descr.bitsize(value);
     });
   }
 };
 
 template<typename Rule, typename... WhenThens>
 [[nodiscard]] constexpr auto one_of(Rule &&rule, WhenThens &&...when_thens) {
+  using namespace upd::record_views;
+
+  auto arms = aggregate_when_thens(UPD_FWD(when_thens)...)
+              | transform([]<auto, typename T>(T &&v) -> decltype(auto) {
+                  if constexpr (std::same_as<std::remove_cvref_t<T>, unit_t>) {
+                    return description<>{};
+                  } else if constexpr (record_like<T>) {
+                    return description{std::move(v)};
+                  } else {
+                    return std::move(v);
+                  }
+                })
+              | to<record>;
+
   using rule_type = std::remove_cvref_t<Rule>;
-
-  auto tagged_descriptions =
-      aggregate_when_thens(UPD_FWD(when_thens)...)
-      | record_views::transform([]<auto, typename T>(T &&v) -> decltype(auto) {
-          if constexpr (std::same_as<std::remove_cvref_t<T>, unit_t>) {
-            return description<>{};
-          } else if constexpr (record_like<T>) {
-            return description{std::move(v)};
-          } else {
-            return std::move(v);
-          }
-        })
-      | record_views::to<record>;
-  auto retval = one_of_t<rule_type, decltype(tagged_descriptions)>{
+  using arm_types = decltype(arms);
+  return one_of_t<rule_type, arm_types>{
       .rule = UPD_FWD(rule),
-      .tagged_descriptions = std::move(tagged_descriptions),
+      .arms = std::move(arms),
   };
-
-  return std::move(retval);
 }
 
 } // namespace upd::descriptor
