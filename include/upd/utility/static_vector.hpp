@@ -28,19 +28,38 @@ public:
     }
   }
 
-  template<typename U, std::size_t N>
-    requires std::convertible_to<U, T>
-  constexpr static_vector(const upd::static_vector<U, N> &other)
-      : static_vector{} {
-    for (const auto &val : other) {
-      push_back(val);
-    }
+  constexpr static_vector(const static_vector &other) : static_vector{} {
+    *this = other;
+  }
+
+  constexpr static_vector(static_vector &&other) : static_vector{} {
+    *this = std::move(other);
   }
 
   constexpr static_vector(std::initializer_list<T> init) : static_vector{} {
     for (auto &val : init) {
       push_back(std::move(val));
     }
+  }
+
+  constexpr auto operator=(const static_vector &other) -> static_vector & {
+    clear();
+
+    for (const auto &val : other) {
+      push_back(val);
+    }
+
+    return *this;
+  }
+
+  constexpr auto operator=(static_vector &&other) -> static_vector & {
+    clear();
+
+    for (auto &&val : other) {
+      push_back(std::move(val));
+    }
+
+    return *this;
   }
 
   constexpr auto operator[](std::size_t i) & noexcept(release) -> auto & {
@@ -148,7 +167,7 @@ public:
     return true;
   }
 
-  ~static_vector() {
+  constexpr void clear() {
     namespace stdv = std::views;
 
     for (auto &elem : m_content | stdv::take(m_size)) {
@@ -156,9 +175,13 @@ public:
     }
   }
 
+  ~static_vector() { clear(); }
+
 private:
   union stored_type {
     value_type value;
+
+    ~stored_type() {};
   };
 
   std::array<stored_type, Capacity> m_content;

@@ -100,3 +100,18 @@ Answer:
 - error: 0
 - parameters: (data -> {31, 8, 0, 0})
 
+Sync Write: example
+ff ff fd 0 fe 11 0 83 74 0 4 0 1 96 0 0 0 2 aa 0 0 0 82 87 
+
+Answer:
+- id: 1
+- length: 4
+- error: 0
+- parameters: ()
+
+Answer:
+- id: 2
+- length: 4
+- error: 0
+- parameters: ()
+

@@ -80,8 +80,16 @@ public:
 
   constexpr static auto identifiers = std::tuple{expr<Identifiers>...};
 
+  constexpr description()
+    requires(std::default_initializable<Fields> && ...)
+  = default;
+
   template<typename... Entries>
-    requires(is_instance_of<Entries, entry>() && ...)
+    requires((is_instance_of<Entries, entry>() && ...)
+             && sizeof...(Entries)
+             == sizeof...(Fields)
+             && sizeof...(Fields)
+             > 0)
   explicit constexpr description(Entries &&...es) : m_fields{UPD_FWD(es)...} {}
 
   template<record_like Record>

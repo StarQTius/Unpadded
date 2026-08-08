@@ -10,6 +10,7 @@
 #include "../upd.hpp"
 #include "../utility/collector_of.hpp"
 #include "../utility/constexpr.hpp"
+#include "../utility/equivalent_to.hpp"
 #include "../utility/get.hpp"
 #include "../utility/is_instance_of.hpp"
 #include "../utility/with_sequence.hpp"
@@ -44,10 +45,17 @@ public:
   = default;
 
   template<typename... Entries>
-    requires(sizeof...(Ts)
-             == sizeof...(Entries)
-             && (is_instance_of<Entries, entry>() && ...))
-  constexpr explicit record(Entries &&...entries)
+    requires(
+        sizeof...(Ts)
+        == sizeof...(Entries)
+        && (is_instance_of<Entries, entry>() && ...)
+        && (equivalent_to<Identifiers, std::remove_cvref_t<Entries>::identifier>
+            && ...)
+        && (std::constructible_from<
+                Ts,
+                typename std::remove_cvref_t<Entries>::value_type>
+            && ...))
+  constexpr record(Entries &&...entries)
       : m_storage{
             lite_record_node<Identifiers,
                              typename std::remove_cvref_t<Entries>::value_type>{

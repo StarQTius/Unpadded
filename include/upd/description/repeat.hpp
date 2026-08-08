@@ -24,7 +24,7 @@
 
 namespace upd {
 
-constexpr auto max_repetition = 1024;
+constexpr auto max_repetition = 64;
 
 } // namespace upd
 
@@ -144,13 +144,13 @@ template<codec Codec, typename Rule>
   };
 }
 
-template<record_like Codecs, typename Rule>
-[[nodiscard]] constexpr auto repeat(Codecs cdcs) {
+template<record_like Codecs>
+[[nodiscard]] constexpr auto repeat(Codecs &&cdcs) {
   return repeat(description{UPD_FWD(cdcs)}, unit);
 }
 
 template<record_like Codecs, typename Rule>
-[[nodiscard]] constexpr auto repeat(Codecs cdcs, Rule &&rule) {
+[[nodiscard]] constexpr auto repeat(Codecs &&cdcs, Rule &&rule) {
   return repeat(description{UPD_FWD(cdcs)}, UPD_FWD(rule));
 }
 

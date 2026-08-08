@@ -75,6 +75,7 @@ enum class instruction_code {
   clear = 0x10,
   control_table_backup = 0x20,
   sync_read = 0x82,
+  sync_write = 0x83,
   status = 0x55,
 };
 
@@ -139,7 +140,12 @@ constexpr auto request_description = [] {
           when<control_table_backup> = efield2<control_table_backup_target, 40>,
           when<sync_read> =
               ("address"_kw2 = ufield2<16>, "length_"_kw2 = ufield2<16>,
-               "ids"_kw2 = repeat(ufield2<8>))),
+               "ids"_kw2 = repeat(ufield2<8>)),
+          when<sync_write> =
+              ("address"_kw2 = ufield2<16>, "length_"_kw2 = ufield2<16>,
+               "payload"_kw2 = repeat(
+                   ("id"_kw2 = ufield2<8>,
+                    "data"_kw2 = repeat(ufield2<8>, value_of<"length_">))))),
       "crc"_kw2 = checksum2<16>(accumulate_crc, all_previous_fields)};
 }();
 
@@ -166,7 +172,8 @@ constexpr auto answer_description = [] {
                  when<write> = unit, when<reg_write> = unit,
                  when<action> = unit, when<factory_reset> = unit,
                  when<reboot> = unit, when<control_table_backup> = unit,
-                 when<sync_read> = ("data"_kw2 = repeat(ufield2<8>))),
+                 when<sync_read> = ("data"_kw2 = repeat(ufield2<8>)),
+                 when<sync_write> = unit),
       "crc"_kw2 = checksum2<16>(accumulate_crc, all_previous_fields)};
 }();
 
@@ -180,13 +187,14 @@ auto reboot_example() -> upd::result<void>;
 auto clear_example() -> upd::result<void>;
 auto control_table_backup_example() -> upd::result<void>;
 auto sync_read_example() -> upd::result<void>;
+auto sync_write_example() -> upd::result<void>;
 
 auto main() -> int {
   auto examples = std::array{
-      ping_example,      read_example,   write_example,
-      reg_write_example, action_example, factory_reset_example,
-      reboot_example,    clear_example,  control_table_backup_example,
-      sync_read_example,
+      ping_example,      read_example,       write_example,
+      reg_write_example, action_example,     factory_reset_example,
+      reboot_example,    clear_example,      control_table_backup_example,
+      sync_read_example, sync_write_example,
   };
 
   for (auto ex : examples) {
@@ -571,6 +579,65 @@ auto sync_read_example() -> upd::result<void> {
   auto answer2 = answer_description.decode(
       answer2_seq.begin(),
       upd::record{"status_of"_kw2 = instruction_code::sync_read});
+  if (!answer2) {
+    return std::unexpected(answer2.error());
+  }
+
+  std::println("Answer:");
+  std::println("- id: {:x}", (*answer2)["id"_kw2]);
+  std::println("- length: {:x}", (*answer2)["length"_kw2]);
+  std::println("- error: {:x}", (*answer2)["error"_kw2]);
+  std::println("- parameters: {}", (*answer2)["parameters"_kw2]);
+  std::println("");
+
+  return {};
+}
+
+auto sync_write_example() -> upd::result<void> {
+  using namespace upd::literals;
+  using namespace upd::record_operators;
+
+  std::cout << std::hex;
+  std::println("Sync Write: example");
+  auto res = request_description.encode(
+      ("id"_kw2 = 0xfe, "instruction"_kw2 = instruction_code::sync_write,
+       "parameters"_kw2 =
+           ("address"_kw2 = 0x74, "length_"_kw2 = 0x4,
+            "payload"_kw2 =
+                std::array{("id"_kw2 = 0x1,
+                            "data"_kw2 = std::array<std::uint8_t, 4>{0x96, 0x0,
+                                                                     0x0, 0x0}),
+                           ("id"_kw2 = 0x2, "data"_kw2 =
+                                                std::array<std::uint8_t, 4>{
+                                                    0xaa, 0x0, 0x0, 0x0})})),
+      std::cout, " ");
+  std::println("");
+  std::println("");
+  if (!res) {
+    return res;
+  }
+
+  auto answer1_seq = std::array{0xff, 0xff, 0xfd, 0x00, 0x01, 0x04,
+                                0x00, 0x55, 0x00, 0xa1, 0x0c};
+  auto answer1 = answer_description.decode(
+      answer1_seq.begin(),
+      upd::record{"status_of"_kw2 = instruction_code::sync_write});
+  if (!answer1) {
+    return std::unexpected(answer1.error());
+  }
+
+  std::println("Answer:");
+  std::println("- id: {:x}", (*answer1)["id"_kw2]);
+  std::println("- length: {:x}", (*answer1)["length"_kw2]);
+  std::println("- error: {:x}", (*answer1)["error"_kw2]);
+  std::println("- parameters: {}", (*answer1)["parameters"_kw2]);
+  std::println("");
+
+  auto answer2_seq = std::array{0xff, 0xff, 0xfd, 0x00, 0x02, 0x04,
+                                0x00, 0x55, 0x00, 0x29, 0x0c};
+  auto answer2 = answer_description.decode(
+      answer2_seq.begin(),
+      upd::record{"status_of"_kw2 = instruction_code::sync_write});
   if (!answer2) {
     return std::unexpected(answer2.error());
   }

@@ -104,21 +104,21 @@ struct one_of_t {
                                       const System &sys) const -> result<void> {
     using namespace upd::tuple_views;
 
-    auto encode_descr = [&]<typename D>(const D &descr, const auto &in) {
-      auto lengths = D::identifiers
-                     | transform([](auto id) { return length_of<id.value>; });
-
-      auto length_sum = fold_left(lengths, 0uz, std::plus<>{});
-      auto length_rule = std::tuple{length_of<Id> = length_sum};
-      auto full_sys = concat(sys, length_rule);
-      return descr.template encode<Id>(in, dest, full_sys);
-    };
-
-    auto encode_codec = [&](const auto &codec, const auto &in) {
-      return codec.template encode<Id>(in, dest, sys);
-    };
-
     auto encode_alt = [&]<auto, typename Arm>(const Arm &arm) {
+      auto encode_descr = [&]<typename D>(const D &descr, const auto &in) {
+        auto lengths = D::identifiers
+                       | transform([](auto id) { return length_of<id.value>; });
+
+        auto length_sum = fold_left(lengths, 0uz, std::plus<>{});
+        auto length_rule = std::tuple{length_of<Id> = length_sum};
+        auto full_sys = concat(sys, length_rule);
+        return descr.template encode<Id>(in, dest, full_sys);
+      };
+
+      auto encode_codec = [&](const auto &codec, const auto &in) {
+        return codec.template encode<Id>(in, dest, sys);
+      };
+
       using arm_input_type = typename Arm::input_type;
       auto in = args.template cast_to<arm_input_type>();
       if constexpr (is_instance_of<Arm, description>()) {

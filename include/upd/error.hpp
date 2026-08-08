@@ -22,15 +22,15 @@ struct invalid_code_in_one_of {
   std::intmax_t code;
 
   constexpr auto
-  operator<=>(const invalid_code_in_one_of &) const noexcept(release) = default;
+  operator<=>(const invalid_code_in_one_of &) const noexcept = default;
 };
 
 struct negative_repetition_count {
   const char *identifier;
   std::intmax_t count;
 
-  constexpr auto operator<=>(const negative_repetition_count &) const
-      noexcept(release) = default;
+  constexpr auto
+  operator<=>(const negative_repetition_count &) const noexcept = default;
 };
 
 struct repeated_beyond_max {
@@ -39,7 +39,7 @@ struct repeated_beyond_max {
   std::size_t max;
 
   constexpr auto
-  operator<=>(const repeated_beyond_max &) const noexcept(release) = default;
+  operator<=>(const repeated_beyond_max &) const noexcept = default;
 };
 
 struct checksum_mismatch {
@@ -47,14 +47,13 @@ struct checksum_mismatch {
   std::uintmax_t expected;
 
   constexpr auto
-  operator<=>(const checksum_mismatch &) const noexcept(release) = default;
+  operator<=>(const checksum_mismatch &) const noexcept = default;
 };
 
 struct found_lite_error {
   lite_error_t code;
 
-  constexpr auto
-  operator<=>(const found_lite_error &) const noexcept(release) = default;
+  constexpr auto operator<=>(const found_lite_error &) const noexcept = default;
 };
 
 struct constant_mismatch {
@@ -62,7 +61,7 @@ struct constant_mismatch {
   std::uintmax_t expected;
 
   constexpr auto
-  operator<=>(const constant_mismatch &) const noexcept(release) = default;
+  operator<=>(const constant_mismatch &) const noexcept = default;
 };
 
 using error_data_types = typelist2_t<invalid_code_in_one_of,
@@ -79,23 +78,20 @@ class error {
   using data_type = instantiate_variadic<std::variant, error_data_types>;
 
 public:
-  constexpr error() noexcept(release) = default;
-  constexpr error(const error &) noexcept(release) = default;
-  constexpr error(error &&) noexcept(release) = default;
+  constexpr error() noexcept = default;
+  constexpr error(const error &) noexcept = default;
+  constexpr error(error &&) noexcept = default;
 
   template<error_data ErrorData>
-  constexpr error(ErrorData &&err_data) noexcept(release)
-      : m_data{UPD_FWD(err_data)} {}
+  constexpr error(ErrorData &&err_data) noexcept : m_data{UPD_FWD(err_data)} {}
 
-  constexpr error(lite_error_t err) noexcept(release)
-      : m_data{found_lite_error{err}} {}
+  constexpr error(lite_error_t err) noexcept : m_data{found_lite_error{err}} {}
 
-  constexpr auto
-  operator=(const error &) noexcept(release) -> error & = default;
-  constexpr auto operator=(error &&) noexcept(release) -> error & = default;
+  constexpr auto operator=(const error &) noexcept -> error & = default;
+  constexpr auto operator=(error &&) noexcept -> error & = default;
 
   template<error_data ErrorData>
-  constexpr auto operator=(ErrorData &&err_data) noexcept(release) -> error & {
+  constexpr auto operator=(ErrorData &&err_data) noexcept -> error & {
     m_data = UPD_FWD(err_data);
     return *this;
   }
@@ -105,14 +101,13 @@ public:
   constexpr auto operator<=>(const error &) const = default;
 
   template<error_data ErrorData>
-  constexpr auto
-  operator==(const ErrorData &rhs) const noexcept(release) -> bool {
+  constexpr auto operator==(const ErrorData &rhs) const noexcept -> bool {
     const auto *ptr = std::get_if<ErrorData>(&m_data);
     return ptr && *ptr == rhs;
   }
 
   template<error_data ErrorData>
-  constexpr auto operator<=>(const ErrorData &rhs) const noexcept(release) {
+  constexpr auto operator<=>(const ErrorData &rhs) const noexcept {
     const auto *ptr = std::get_if<ErrorData>(&m_data);
     return ptr && (*ptr <=> rhs) == 0;
   }
