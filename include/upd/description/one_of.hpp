@@ -67,19 +67,16 @@ struct one_of_t {
   Rule rule;
   Arms arms;
 
-  template<auto Id,
-           record_like Packet,
-           record_like Fields,
-           codec_info CodecInfo>
+  template<auto Id, record_like Frame, record_like Fields, codec_info CodecInfo>
   [[nodiscard]] constexpr auto
-  rules(const Packet &packet, const Fields &fields, expr_t<CodecInfo>) const {
+  rules(const Frame &frm, const Fields &fields, expr_t<CodecInfo>) const {
     using namespace upd::record_views;
 
     auto other_rules =
         fields
         | filter([]<auto K, typename> { return K != Id; })
         | transform([&]<auto K>(const auto &field) {
-            return field.template rules<K>(packet, fields, expr<CodecInfo>);
+            return field.template rules<K>(frm, fields, expr<CodecInfo>);
           })
         | values
         | tuple_views::join
@@ -92,7 +89,7 @@ struct one_of_t {
       return std::tuple{code_of<Id> = rule};
     } else {
       auto cnt_stream = counting_stream{};
-      auto res = encode<Id>(get_or<Id>(packet, input_type{}), cnt_stream, sys);
+      auto res = encode<Id>(get_or<Id>(frm, input_type{}), cnt_stream, sys);
       auto count = (res) ? cnt_stream.written() : 0zu;
       return std::tuple{code_of<Id> = rule, length_of<Id> = count};
     }

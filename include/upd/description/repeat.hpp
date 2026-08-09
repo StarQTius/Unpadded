@@ -42,12 +42,9 @@ struct repeat_t {
   Description description;
   Rule rule;
 
-  template<auto Id,
-           record_like Packet,
-           record_like Fields,
-           codec_info CodecInfo>
+  template<auto Id, record_like Frame, record_like Fields, codec_info CodecInfo>
   [[nodiscard]] constexpr auto
-  rules(const Packet &packet, const Fields &fields, expr_t<CodecInfo>) const {
+  rules(const Frame &frm, const Fields &fields, expr_t<CodecInfo>) const {
     auto helper_rule = [&] {
       if constexpr (!std::same_as<unit_t, Rule>) {
         return std::tuple{length_of<Id> = rule};
@@ -57,9 +54,9 @@ struct repeat_t {
     }();
 
     auto bitsize_rule = [&] {
-      if constexpr (has_tag_v<Id, Packet>) {
+      if constexpr (has_tag_v<Id, Frame>) {
         return std::tuple{length_of<Id> =
-                              get<Id>(fields).bitsize(get<Id>(packet))};
+                              get<Id>(fields).bitsize(get<Id>(frm))};
       } else {
         return std::tuple{};
       }

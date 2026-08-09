@@ -29,16 +29,13 @@ struct bound_t {
 
   Rule rule;
 
-  template<auto Id,
-           record_like Packet,
-           record_like Fields,
-           codec_info CodecInfo>
+  template<auto Id, record_like Frame, record_like Fields, codec_info CodecInfo>
   [[nodiscard]] constexpr auto
-  rules(const Packet &packet, const Fields &, expr_t<CodecInfo>) const {
+  rules(const Frame &frm, const Fields &, expr_t<CodecInfo>) const {
     if constexpr (CodecInfo.operation
                   == codec_operation::decoding
-                  && has_tag<Id>(packet)) {
-      return std::tuple{value_of<Id> = get<Id>(packet), value_of<Id> = rule,
+                  && has_tag<Id>(frm)) {
+      return std::tuple{value_of<Id> = get<Id>(frm), value_of<Id> = rule,
                         length_of<Id> = Width};
     } else {
       return std::tuple{value_of<Id> = rule, length_of<Id> = Width};

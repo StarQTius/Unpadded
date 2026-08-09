@@ -24,14 +24,11 @@ struct field_t {
   using value_type = std::conditional_t<is_signed, word_t, uword_t>;
   using input_type = value_type;
 
-  template<auto Id,
-           record_like Packet,
-           record_like Fields,
-           codec_info CodecInfo>
+  template<auto Id, record_like Frame, record_like Fields, codec_info CodecInfo>
   [[nodiscard]] constexpr static auto
-  rules(const Packet &packet, const Fields &, expr_t<CodecInfo>) {
-    if constexpr (has_tag<Id>(packet)) {
-      return std::tuple{value_of<Id> = get<Id>(packet), length_of<Id> = Width};
+  rules(const Frame &frm, const Fields &, expr_t<CodecInfo>) {
+    if constexpr (has_tag<Id>(frm)) {
+      return std::tuple{value_of<Id> = get<Id>(frm), length_of<Id> = Width};
     } else {
       return std::tuple{length_of<Id> = Width};
     }

@@ -30,12 +30,9 @@ struct checksum_t {
   BinaryOp op;
   KeyPred key_pred;
 
-  template<auto Id,
-           record_like Packet,
-           record_like Fields,
-           codec_info CodecInfo>
+  template<auto Id, record_like Frame, record_like Fields, codec_info CodecInfo>
   [[nodiscard]] constexpr auto
-  rules(const Packet &packet, const Fields &fields, expr_t<CodecInfo>) const {
+  rules(const Frame &frm, const Fields &fields, expr_t<CodecInfo>) const {
     using namespace upd::literals;
     using namespace upd::record_views;
 
@@ -43,11 +40,11 @@ struct checksum_t {
       return UPD_INVOKE_TEMPLATE(key_pred, (K));
     };
     auto curated_fields = fields | take_until<Id> | filter(p);
-    auto curated_packet = packet | take_until<Id> | filter(p);
+    auto curated_frm = frm | take_until<Id> | filter(p);
 
     auto descr = description{curated_fields | to<record>};
     auto dest = accumulator_stream{&op, init};
-    auto res = descr.template encode<Id>(curated_packet, dest);
+    auto res = descr.template encode<Id>(curated_frm, dest);
     return std::tuple{value_of<Id> = (res) ? dest.acc : 0zu,
                       length_of<Id> = Width};
   }

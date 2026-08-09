@@ -96,11 +96,11 @@ public:
   explicit constexpr description(Record &&rec) : m_fields{UPD_FWD(rec)} {}
 
   template<auto = unit,
-           record_like Packet,
+           record_like Frame,
            record_like FieldRecord,
            codec_info CodecInfo>
   [[nodiscard]] constexpr static auto
-  rules(const Packet &, const FieldRecord &, expr_t<CodecInfo>) {
+  rules(const Frame &, const FieldRecord &, expr_t<CodecInfo>) {
     return std::tuple{};
   }
 
@@ -275,10 +275,10 @@ public:
   }
 
   [[nodiscard]] constexpr auto
-  bitsize(const value_type &packet) const noexcept(release) -> std::size_t {
+  bitsize(const value_type &frm) const noexcept(release) -> std::size_t {
     namespace updv = record_views;
     return updv::fold_left(
-        packet, 0uz, [&]<auto K>(std::size_t acc, const auto &field_value) {
+        frm, 0uz, [&]<auto K>(std::size_t acc, const auto &field_value) {
           auto field_pos = updv::find_if(
               m_fields, []<auto Id, typename> { return equivalent_to<Id, K>; });
           return acc + get_ith<field_pos>(m_fields).bitsize(field_value);

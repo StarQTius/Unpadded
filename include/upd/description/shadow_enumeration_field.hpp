@@ -24,16 +24,13 @@ struct shadow_enumeration_field_t {
   using value_type = Enum;
   using input_type = Enum;
 
-  template<auto Id,
-           record_like Packet,
-           record_like Fields,
-           codec_info CodecInfo>
+  template<auto Id, record_like Frame, record_like Fields, codec_info CodecInfo>
   [[nodiscard]] constexpr static auto
-  rules(const Packet &packet, const Fields &, expr_t<CodecInfo>) {
-    if constexpr (has_tag<Id>(packet)
+  rules(const Frame &frm, const Fields &, expr_t<CodecInfo>) {
+    if constexpr (has_tag<Id>(frm)
                   && CodecInfo.operation
                   == codec_operation::encoding) {
-      return std::tuple{value_of<Id> = get<Id>(packet), length_of<Id> = Width};
+      return std::tuple{value_of<Id> = get<Id>(frm), length_of<Id> = Width};
     } else {
       return std::tuple{length_of<Id> = Width};
     }

@@ -28,12 +28,9 @@ struct constant_t {
 
   uword_t value;
 
-  template<auto Id,
-           record_like Packet,
-           record_like Fields,
-           codec_info CodecInfo>
+  template<auto Id, record_like Frame, record_like Fields, codec_info CodecInfo>
   [[nodiscard]] constexpr auto
-  rules(const Packet &, const Fields &, expr_t<CodecInfo>) const {
+  rules(const Frame &, const Fields &, expr_t<CodecInfo>) const {
     return std::tuple{length_of<Id> = Width};
   }
 
@@ -79,12 +76,9 @@ struct enumeration_constant_t {
 
   Enum value;
 
-  template<auto Id,
-           record_like Packet,
-           record_like Fields,
-           codec_info CodecInfo>
+  template<auto Id, record_like Frame, record_like Fields, codec_info CodecInfo>
   [[nodiscard]] constexpr auto
-  rules(const Packet &, const Fields &, expr_t<CodecInfo>) const {
+  rules(const Frame &, const Fields &, expr_t<CodecInfo>) const {
     return std::tuple{length_of<Id> = Width};
   }
 
