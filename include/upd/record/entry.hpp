@@ -1,9 +1,11 @@
 #pragma once
 
+#include <array>
 #include <concepts>
 #include <cstddef>
 #include <format>
 #include <type_traits>
+#include <utility>
 
 #include "../upd.hpp"
 #include "../utility/constexpr.hpp"
@@ -63,6 +65,20 @@ struct keyword2 {
   [[nodiscard]] constexpr auto operator=(T &&x) const {
     using value_type = std::decay_t<T>;
     return entry<identifier, value_type>{UPD_FWD(x)};
+  }
+
+  template<typename T, std::size_t N>
+  [[nodiscard]] constexpr auto operator=(T (&a)[N]) const {
+    using value_type = std::array<T, N>;
+    auto value = std::to_array(a);
+    auto retval = entry<identifier, value_type>{value};
+  }
+
+  template<typename T, std::size_t N>
+  [[nodiscard]] constexpr auto operator=(T (&&a)[N]) const {
+    using value_type = std::array<T, N>;
+    auto value = std::to_array(std::move(a));
+    return entry<identifier, value_type>{std::move(value)};
   }
 };
 

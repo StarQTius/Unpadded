@@ -52,17 +52,17 @@ struct lite_record_node : lite_record_tag_node<Tag>, lite_record_type_node<T> {
   = default;
 
   template<typename U>
-    requires std::convertible_to<U, T>
+    requires std::constructible_from<T, U>
   explicit constexpr lite_record_node(U &&v) : value{UPD_FWD(v)} {}
 
   template<typename U>
-    requires std::convertible_to<U, T>
+    requires std::constructible_from<T, U>
   explicit constexpr lite_record_node(auto_constant<Tag>, U &&v)
       : value{UPD_FWD(v)} {}
 
   template<typename Other>
     requires(is_instance_of<Other, lite_record_node>()
-             && std::convertible_to<typename Other::value_type, T>)
+             && std::constructible_from<T, typename Other::value_type>)
   explicit constexpr lite_record_node(Other &&other)
       : value(UPD_FWD(other).value) {}
 

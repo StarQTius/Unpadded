@@ -1,7 +1,9 @@
 #include <array>
 #include <tuple>
+#include <utility>
 #include <variant>
 
+#include "../include/upd/description/frame_segment.hpp"
 #include <catch2/catch_test_macros.hpp>
 #include <upd/algebra.hpp>
 #include <upd/description.hpp>
@@ -284,5 +286,46 @@ TEST_CASE("Nested protocol descriptors", "[descriptor]") {
     REQUIRE(std::get<0>(result["param"_kw2])["abc"_kw2][0] == 4);
     REQUIRE(std::get<0>(result["param"_kw2])["abc"_kw2][1] == 8);
     REQUIRE(std::get<0>(result["param"_kw2])["abc"_kw2][2] == 16);
+  }
+}
+
+TEST_CASE("Frame object", "[descriptor][record]") {
+  using namespace upd::literals;
+
+  using frame_type =
+      upd::frame<upd::entry<upd::name{"abc"}, int>,
+                 upd::entry<upd::name{"def"}, upd::frame_segment<int>>>;
+
+  upd::regular_record auto frm =
+      frame_type{"abc"_kw2 = 42, "def"_kw2 = {13, 17, 19}};
+
+  SECTION("Get elements from a frame") {
+    REQUIRE(frm["abc"_kw2] == 42);
+    REQUIRE(frm["def"_kw2].size() == 3);
+    REQUIRE(frm["def"_kw2][0] == 13);
+    REQUIRE(frm["def"_kw2][1] == 17);
+    REQUIRE(frm["def"_kw2][2] == 19);
+  }
+
+  SECTION("Copy a frame") {
+    auto frm_ = frm;
+
+    REQUIRE(frm_["def"_kw2].data() != frm["def"_kw2].data());
+    REQUIRE(frm_["abc"_kw2] == 42);
+    REQUIRE(frm_["def"_kw2].size() == 3);
+    REQUIRE(frm_["def"_kw2][0] == 13);
+    REQUIRE(frm_["def"_kw2][1] == 17);
+    REQUIRE(frm_["def"_kw2][2] == 19);
+  }
+
+  SECTION("Move a frame") {
+    auto frm_ = std::move(frm);
+
+    REQUIRE(frm_["def"_kw2].data() != frm["def"_kw2].data());
+    REQUIRE(frm_["abc"_kw2] == 42);
+    REQUIRE(frm_["def"_kw2].size() == 3);
+    REQUIRE(frm_["def"_kw2][0] == 13);
+    REQUIRE(frm_["def"_kw2][1] == 17);
+    REQUIRE(frm_["def"_kw2][2] == 19);
   }
 }

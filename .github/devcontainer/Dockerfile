@@ -31,7 +31,8 @@ RUN --mount=type=cache,id=Unpadded,target=/var/cache/apk \
   llvm21-static \
   pipx \
   socat \
-  sudo
+  sudo \
+  valgrind
 RUN git config --global --add safe.directory /code
 ENV CCACHE_DIR=/code/.ccache
 
