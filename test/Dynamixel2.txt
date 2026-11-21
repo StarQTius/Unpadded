@@ -20,7 +20,7 @@ Answer:
 - id: 1
 - length: 8
 - error: 0
-- parameters: (data -> {166, 0, 0, 0})
+- parameters: (data -> [166, 0, 0, 0])
 
 Write: example
 ff ff fd 0 1 9 0 3 74 0 0 2 0 0 ca 89 
@@ -92,13 +92,13 @@ Answer:
 - id: 1
 - length: 8
 - error: 0
-- parameters: (data -> {166, 0, 0, 0})
+- parameters: (data -> [166, 0, 0, 0])
 
 Answer:
 - id: 2
 - length: 8
 - error: 0
-- parameters: (data -> {31, 8, 0, 0})
+- parameters: (data -> [31, 8, 0, 0])
 
 Sync Write: example
 ff ff fd 0 fe 11 0 83 74 0 4 0 1 96 0 0 0 2 aa 0 0 0 82 87 

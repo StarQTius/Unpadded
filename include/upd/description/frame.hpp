@@ -6,8 +6,10 @@
 #include <format>
 #include <memory>
 #include <memory_resource>
+#include <ranges>
 #include <tuple>
 #include <utility>
+#include <vector>
 
 #include "../record/as_tuple.hpp"
 #include "../record/entry.hpp"
@@ -24,80 +26,34 @@
 
 namespace upd {
 
-inline struct : std::pmr::memory_resource {
-  auto do_allocate(std::size_t, std::size_t) -> void * { return nullptr; }
-
-  void do_deallocate(void *, std::size_t, std::size_t) {}
-
-  bool do_is_equal(const std::pmr::memory_resource &other) const noexcept {
-    return &other == this;
-  }
-} nothrow_null_memory_resource;
-
 template<typename...>
 class frame;
 
 template<auto... Identifiers, typename... Ts>
 class frame<entry<Identifiers, Ts>...> {
-  friend struct upd::record_like_for<
-      upd::frame<upd::entry<Identifiers, Ts>...>>;
+  friend struct record_like_for<frame<entry<Identifiers, Ts>...>>;
+
+  template<typename...>
+  friend struct description;
 
   constexpr static auto buffer_size = 1024;
 
   using storage_type = record<entry<Identifiers, Ts>...>;
 
-  template<typename Storage>
-  constexpr auto replicate_storage(Storage &&other) {
-    using namespace upd::record_views;
-
-    return other
-           | transform([&]<auto Id, typename T>(T &&v) -> decltype(auto) {
-               using target_type = record_element_t<Id, storage_type>;
-               if constexpr (is_instance_of<target_type, frame_segment>()) {
-                 using ctor_arg_t =
-                     typename target_type::template ctor_argument<T &&>;
-                 return ctor_arg_t{&v, &m_rsrc};
-               } else {
-                 return std::forward_like<Storage>(v);
-               }
-             })
-           | to<record>;
-  }
-
 public:
-  constexpr frame()
-      : m_rsrc{m_buf.data(), buffer_size, &nothrow_null_memory_resource},
-        m_storage{storage_type{}} {}
+  constexpr frame() = default;
 
   template<typename... Entries>
   constexpr explicit frame(Entries &&...entries)
-      : m_rsrc{m_buf.data(), buffer_size, &nothrow_null_memory_resource},
-        m_storage{replicate_storage(record{UPD_FWD(entries)...})} {}
+      : m_storage{UPD_FWD(entries)...} {}
 
-  constexpr frame(const frame &other)
-      : m_rsrc{m_buf.data(), buffer_size, &nothrow_null_memory_resource},
-        m_storage{replicate_storage(other.m_storage)} {}
+  constexpr frame(const frame &other) = default;
 
-  constexpr frame(frame &&other)
-      : m_rsrc{m_buf.data(), buffer_size, &nothrow_null_memory_resource},
-        m_storage{replicate_storage(std::move(other).m_storage)} {}
+  constexpr frame(frame &&other) = default;
 
-  constexpr auto operator=(const frame &other) -> frame & {
-    std::destroy_at(&m_storage);
-    m_rsrc.release();
-    std::construct_at(&m_storage, replicate_storage(other.m_storage));
+  constexpr auto operator=(const frame &other) -> frame & = default;
 
-    return *this;
-  }
-
-  constexpr auto operator=(frame &&other) -> frame & {
-    std::destroy_at(&m_storage);
-    m_rsrc.release();
-    std::construct_at(&m_storage,
-                      replicate_storage(std::move(other).m_storage));
-
-    return *this;
-  }
+  constexpr auto operator=(frame &&other) -> frame & = default;
 
   template<typename Self, auto Id>
   [[nodiscard]] constexpr auto
@@ -106,8 +62,6 @@ public:
   }
 
 private:
-  std::array<char, buffer_size> m_buf;
-  std::pmr::monotonic_buffer_resource m_rsrc;
   storage_type m_storage;
 };
 
@@ -133,6 +87,18 @@ struct upd::record_like_for<upd::frame<upd::entry<Identifiers, Ts>...>> {
   [[nodiscard]] constexpr static auto
   get_ith(Record &&rec) noexcept(release) -> auto && {
     return UPD_FWD(rec)[keyword2<tag<I>>{}];
+  }
+};
+
+template<>
+struct upd::collector_for<upd::template_box<upd::frame>> {
+  template<record_like View>
+  [[nodiscard]] constexpr static auto collect(View &&view) {
+    namespace updv = upd::record_views;
+
+    return updv::apply(
+        [](auto &&...entries) { return frame{UPD_FWD(entries)...}; },
+        UPD_FWD(view));
   }
 };
 

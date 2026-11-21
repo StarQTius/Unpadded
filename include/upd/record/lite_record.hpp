@@ -2,6 +2,7 @@
 
 #include <concepts>
 #include <cstddef>
+#include <print>
 #include <tuple>
 #include <utility>
 
@@ -52,7 +53,8 @@ struct lite_record_node : lite_record_tag_node<Tag>, lite_record_type_node<T> {
   = default;
 
   template<typename U>
-    requires std::constructible_from<T, U>
+    requires(!is_instance_of<U, lite_record_node>()
+             && std::constructible_from<T, U>)
   explicit constexpr lite_record_node(U &&v) : value{UPD_FWD(v)} {}
 
   template<typename U>
@@ -64,7 +66,7 @@ struct lite_record_node : lite_record_tag_node<Tag>, lite_record_type_node<T> {
     requires(is_instance_of<Other, lite_record_node>()
              && std::constructible_from<T, typename Other::value_type>)
   explicit constexpr lite_record_node(Other &&other)
-      : value(UPD_FWD(other).value) {}
+      : value(UPD_FWD(UPD_FWD(other).value)) {}
 
   [[nodiscard]] constexpr auto
   get_by_tag(auto_constant<Tag>) & noexcept(release) -> T & {

@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <expected>
 #include <functional>
+#include <memory_resource>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -131,7 +132,9 @@ struct one_of_t {
 
   template<auto Id, tuple_like2 System>
   [[nodiscard]] constexpr auto
-  decode(stream_interface &src, const System &sys) const -> result<value_type> {
+  decode(stream_interface &src,
+         const System &sys,
+         std::pmr::memory_resource *rsrc) const -> result<value_type> {
     using namespace upd::tuple_views;
 
     auto k = solve_for(code_of<Id>, sys);
@@ -148,12 +151,12 @@ struct one_of_t {
       auto length_sum = fold_left(lengths, 0uz, std::plus<>{});
       auto length_rule = std::tuple{length_of<Id> = length_sum};
       auto full_sys = concat(sys, length_rule);
-      auto maybe_alt = descr.template decode<Id>(src, full_sys);
+      auto maybe_alt = descr.template decode<Id>(src, full_sys, rsrc);
       if (!maybe_alt) {
         return std::unexpected{maybe_alt.error()};
       }
 
-      return value_type{std::in_place_index<i>, UPD_FWD(*maybe_alt)};
+      return value_type{std::in_place_index<i>, *UPD_FWD(maybe_alt)};
     };
 
     return record_views::visit(arms, k, make_alt);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <memory_resource>
 #include <tuple>
 #include <type_traits>
 
@@ -46,7 +47,8 @@ struct shadow_enumeration_field_t {
 
   template<auto Id, tuple_like2 System>
   [[nodiscard]] constexpr static auto
-  decode(stream_interface &, const System &sys) -> result<value_type> {
+  decode(stream_interface &, const System &sys, std::pmr::memory_resource *)
+      -> result<value_type> {
     return solve_for(value_of<Id>, sys);
   }
 

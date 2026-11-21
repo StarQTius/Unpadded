@@ -6,6 +6,7 @@
 #include <expected>
 #include <iosfwd>
 #include <iterator>
+#include <memory_resource>
 #include <ranges>
 #include <tuple>
 #include <type_traits>
@@ -46,6 +47,7 @@
 #include "../utility/get.hpp"
 #include "../utility/is_instance_of.hpp"
 #include "codec.hpp"
+#include "frame.hpp"
 #include "variable.hpp"
 
 namespace upd {
@@ -56,25 +58,23 @@ class description;
 template<auto... Identifiers, typename... Fields>
 class description<entry<Identifiers, Fields>...> {
 public:
-  using result_type =
-      decltype(typelist2<entry<Identifiers, typename Fields::value_type>...>
-               | tuple_views::as_record
-               | record_views::instantiate<record>);
-
   using value_type =
-      decltype(typelist2<entry<Identifiers, typename Fields::value_type>...>
+      decltype(typelist2_t<entry<Identifiers, typename Fields::value_type>...>{}
                | tuple_views::filter([]<typename Entry> {
                    return !std::same_as<typename Entry::value_type, unit_t>;
                  })
                | tuple_views::as_record
                | record_views::instantiate<record>);
 
-  using storage_type = decltype(typelist2<entry<Identifiers, Fields>...>
+  using frame_type =
+      decltype(std::declval<value_type>() | record_views::to<frame>);
+
+  using storage_type = decltype(typelist2_t<entry<Identifiers, Fields>...>{}
                                 | tuple_views::as_record
                                 | record_views::instantiate<record>);
 
   using input_type =
-      decltype(typelist2<entry<Identifiers, typename Fields::input_type>...>
+      decltype(typelist2_t<entry<Identifiers, typename Fields::input_type>...>{}
                | tuple_views::as_record
                | record_views::instantiate<record>);
 
@@ -119,7 +119,10 @@ public:
     using namespace upd::record_views;
 
     auto input = input_type{};
-    for_each(args, [&]<auto K>(const auto &value) { get<K>(input) = value; });
+    for_each(args, [&]<auto K>(const auto &value) {
+      get<K>(input) = static_cast<record_element_t<K, input_type>>(value);
+    });
+
     return encode<Id>(input, dest);
   }
 
@@ -178,7 +181,8 @@ public:
            record_like Context = upd::record<>>
     requires std::convertible_to<std::iter_value_t<InputIt>, char>
   [[nodiscard]] constexpr auto
-  decode(InputIt src, const Context &ctx = record{}) const {
+  decode(InputIt src, const Context &ctx = record{}) const
+      -> result<frame_type> {
     auto null_it = static_cast<char *>(nullptr);
     return decode<Id>(iterator_stream{src, null_it}, ctx);
   }
@@ -188,7 +192,8 @@ public:
            record_like Context = upd::record<>>
     requires std::same_as<std::iter_value_t<InputIt>, std::byte>
   [[nodiscard]] constexpr auto
-  decode(InputIt src, const Context &ctx = record{}) const {
+  decode(InputIt src, const Context &ctx = record{}) const
+      -> result<frame_type> {
     namespace stdr = std::ranges;
     namespace stdv = std::views;
 
@@ -201,7 +206,8 @@ public:
 
   template<auto Id = unit, record_like Context = upd::record<>>
   [[nodiscard]] constexpr auto
-  decode(stream_interface &src, const Context &ctx = upd::record{}) const {
+  decode(stream_interface &src, const Context &ctx = upd::record{}) const
+      -> result<frame_type> {
     namespace updv = record_views;
 
     auto sys =
@@ -209,19 +215,27 @@ public:
         | updv::transform([]<auto K>(const auto &v) { return value_of<K> = v; })
         | updv::values;
 
-    return decode<Id>(src, sys);
+    auto retval = frame_type{};
+    if (auto maybe_storage = decode<Id>(src, sys, nullptr)) {
+      retval.m_storage = std::move(*maybe_storage);
+      return retval;
+    } else {
+      return std::unexpected{std::move(maybe_storage).error()};
+    }
   }
 
   template<auto Id = unit, record_like Context = upd::record<>>
   [[nodiscard]] constexpr auto
-  decode(stream_interface &&src, const Context &ctx = upd::record{}) const {
+  decode(stream_interface &&src, const Context &ctx = upd::record{}) const
+      -> result<frame_type> {
     return decode<Id>(src, ctx);
   }
 
   template<auto = unit, tuple_like2 System>
   [[nodiscard]] constexpr auto
-  decode(stream_interface &src, const System &presys) const
-      -> result<value_type> {
+  decode(stream_interface &src,
+         const System &presys,
+         std::pmr::memory_resource *rsrc) const -> result<value_type> {
     namespace updv = record_views;
 
     constexpr auto cdinf = codec_info{
@@ -264,7 +278,8 @@ public:
           | tuple_views::to<std::tuple>;
 
       auto sys = tuple_views::concat(presys, rules);
-      if (auto maybe_value = field.template decode<Id>(src, sys); maybe_value) {
+      if (auto maybe_value = field.template decode<Id>(src, sys, rsrc);
+          maybe_value) {
         get_or<Id>(*maybe_retval, std::ignore) = *std::move(maybe_value);
       } else {
         maybe_retval = std::unexpected{maybe_value.error()};
@@ -276,6 +291,19 @@ public:
 
   [[nodiscard]] constexpr auto
   bitsize(const value_type &frm) const noexcept(release) -> std::size_t {
+    namespace updv = record_views;
+    return updv::fold_left(
+        frm, 0uz, [&]<auto K>(std::size_t acc, const auto &field_value) {
+          auto field_pos = updv::find_if(
+              m_fields, []<auto Id, typename> { return equivalent_to<Id, K>; });
+          return acc + get_ith<field_pos>(m_fields).bitsize(field_value);
+        });
+  }
+
+  [[nodiscard]] constexpr auto
+  bitsize(const input_type &frm) const noexcept(release) -> std::size_t
+    requires(!std::same_as<input_type, value_type>)
+  {
     namespace updv = record_views;
     return updv::fold_left(
         frm, 0uz, [&]<auto K>(std::size_t acc, const auto &field_value) {

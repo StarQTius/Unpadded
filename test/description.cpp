@@ -1,4 +1,5 @@
 #include <array>
+#include <print>
 #include <tuple>
 #include <utility>
 #include <variant>
@@ -55,15 +56,15 @@ TEST_CASE("Protocol descriptors", "[descriptor]") {
   SECTION("Encode then decode an anonymous unsigned field") {
     auto descr = ufield2<16>;
     REQUIRE(descr.encode<upd::anon>(42, st, std::tuple{}));
-    REQUIRE(descr.decode<upd::anon>(st, std::tuple{}).value() == 42);
+    REQUIRE(descr.decode<upd::anon>(st, std::tuple{}, nullptr).value() == 42);
   }
 
   SECTION("Encode then decode an anonymous signed field") {
     auto descr = field2<16>;
     REQUIRE(descr.encode<upd::anon>(42, st, std::tuple{}));
-    REQUIRE(descr.decode<upd::anon>(st, std::tuple{}).value() == 42);
+    REQUIRE(descr.decode<upd::anon>(st, std::tuple{}, nullptr).value() == 42);
     REQUIRE(descr.encode<upd::anon>(-8, st, std::tuple{}));
-    REQUIRE(descr.decode<upd::anon>(st, std::tuple{}).value() == -8);
+    REQUIRE(descr.decode<upd::anon>(st, std::tuple{}, nullptr).value() == -8);
   }
 
   SECTION("Encode then decode unsigned field") {
@@ -275,11 +276,12 @@ TEST_CASE("Nested protocol descriptors", "[descriptor]") {
             one_of(upd::value_of<"i">,
                    upd::when<abc::a> = ("abc"_kw2 = repeat(ufield2<16>)))};
 
-    REQUIRE(descr.encode(
-        ("i"_kw2 = abc::a, "param"_kw2 = ("abc"_kw2 = std::array{4, 8, 16})),
-        st));
+    auto args =
+        ("i"_kw2 = abc::a, "param"_kw2 = ("abc"_kw2 = std::array{4, 8, 16}));
+    REQUIRE(descr.encode(args, st));
 
     auto result = descr.decode(st).value();
+
     REQUIRE(result["len"_kw2] == 3 * 16);
     REQUIRE(result["i"_kw2] == abc::a);
     REQUIRE(std::get<0>(result["param"_kw2])["abc"_kw2].size() == 3);

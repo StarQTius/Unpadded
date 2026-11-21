@@ -3,6 +3,7 @@
 #include <concepts>
 #include <cstddef>
 #include <format>
+#include <print>
 #include <tuple>
 #include <type_traits>
 
@@ -56,10 +57,9 @@ public:
                 typename std::remove_cvref_t<Entries>::value_type>
             && ...))
   constexpr record(Entries &&...entries)
-      : m_storage{
-            lite_record_node<Identifiers,
-                             typename std::remove_cvref_t<Entries>::value_type>{
-                UPD_FWD(entries).forward()}...} {}
+      : m_storage{lite_record_node<Identifiers,
+                                   decltype(UPD_FWD(entries).forward()) &&>{
+            UPD_FWD(entries).forward()}...} {}
 
   template<typename Record>
     requires(is_instance_of<Record, record>()
@@ -69,9 +69,10 @@ public:
     requires(
         std::constructible_from<Ts, decltype(get<Identifiers>(UPD_FWD(other)))>
         && ...)
-      : m_storage{lite_record_node<Identifiers,
-                                   record_element_t<Identifiers, Record>>{
-            get<Identifiers>(UPD_FWD(other))}...} {}
+      : m_storage{
+            lite_record_node<Identifiers,
+                             decltype(get<Identifiers>(UPD_FWD(other))) &&>{
+                get<Identifiers>(UPD_FWD(other))}...} {}
 
   template<typename Record>
     requires(is_instance_of<Record, record>()

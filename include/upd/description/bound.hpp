@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <expected>
+#include <memory_resource>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -62,7 +63,8 @@ struct bound_t {
 
   template<auto, tuple_like2 System>
   [[nodiscard]] constexpr static auto
-  decode(stream_interface &src, const System &) -> result<value_type> {
+  decode(stream_interface &src, const System &, std::pmr::memory_resource *)
+      -> result<value_type> {
     auto err = lite_error_t{};
     auto retval = uword_t{};
     if constexpr (is_signed) {

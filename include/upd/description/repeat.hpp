@@ -4,10 +4,12 @@
 #include <concepts>
 #include <cstddef>
 #include <expected>
+#include <memory_resource>
 #include <ranges>
 #include <tuple>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 #include "../algebra/system.hpp"
 #include "../description.hpp"
@@ -19,23 +21,16 @@
 #include "../tuple/tuple_like.hpp"
 #include "../upd.hpp"
 #include "../utility/constexpr.hpp"
-#include "../utility/static_vector.hpp"
+#include "../utility/deferred_caster.hpp"
 #include "codec.hpp"
-
-namespace upd {
-
-constexpr auto max_repetition = 64;
-
-} // namespace upd
+#include "frame_segment.hpp"
 
 namespace upd::descriptor {
 
-template<codec Description, typename Rule, std::size_t Max>
+template<codec Description, typename Rule>
 struct repeat_t {
-  constexpr static auto max = Max;
-
-  using value_type = static_vector<typename Description::value_type, Max>;
-  using input_type = value_type;
+  using value_type = frame_segment<typename Description::value_type>;
+  using input_type = deferred_range_caster<typename Description::input_type>;
   using description_type = Description;
   using rule_type = Rule;
 
@@ -71,7 +66,8 @@ struct repeat_t {
   constexpr auto encode(const input_type &value,
                         stream_interface &dest,
                         const System &sys) const -> result<void> {
-    for (const auto &element : value) {
+    auto rg = value.template cast_to<typename description_type::input_type>();
+    for (const auto &element : rg) {
       if (auto res = description.template encode<Id>(element, dest, sys);
           !res) {
         return res;
@@ -83,9 +79,12 @@ struct repeat_t {
 
   template<auto Id, tuple_like2 System>
   [[nodiscard]] constexpr auto
-  decode(stream_interface &src, const System &sys) const -> result<value_type> {
-    namespace stdv = std::views;
+  decode(stream_interface &src,
+         const System &sys,
+         std::pmr::memory_resource *rsrc) const -> result<value_type> {
     namespace updv = upd::tuple_views;
+
+    using element_type = typename Description::value_type;
 
     auto len = solve_for(length_of<Id>, sys | updv::to<std::tuple>);
     if (len < 0) {
@@ -93,31 +92,35 @@ struct repeat_t {
           negative_repetition_count{Id.string, static_cast<word_t>(len)}};
     }
 
-    auto retval = value_type{};
-
+    auto retval = std::vector<element_type>{};
     auto i = 0uz;
-    auto overflown = false;
-    while (!overflown && i < len) {
-      auto maybe_value = description.template decode<Id>(src, sys);
+    while (i < static_cast<std::size_t>(len)) {
+      auto maybe_value = description.template decode<Id>(src, sys, rsrc);
       if (!maybe_value) {
         return std::unexpected{std::move(maybe_value).error()};
       }
-      overflown = !retval.try_push_back(std::move(maybe_value).value());
+      retval.push_back(std::move(maybe_value).value());
       i += description.bitsize(retval.back());
     }
 
-    if (overflown) {
-      return std::unexpected{
-          repeated_beyond_max{Id.string, static_cast<uword_t>(len), Max}};
+    return value_type{std::move(retval)};
+  }
+
+  [[nodiscard]] constexpr auto
+  bitsize(const value_type &fseg) const -> std::size_t {
+    auto retval = 0zu;
+    for (const auto &elem : fseg) {
+      retval += description.bitsize(elem);
     }
 
     return retval;
   }
 
   [[nodiscard]] constexpr auto
-  bitsize(const value_type &svec) const -> std::size_t {
+  bitsize(const input_type &dcast) const -> std::size_t {
+    auto rg = dcast.template cast_to<typename description_type::input_type>();
     auto retval = 0zu;
-    for (const auto &elem : svec) {
+    for (const auto &elem : rg) {
       retval += description.bitsize(elem);
     }
 
@@ -135,7 +138,7 @@ template<codec Codec, typename Rule>
   using codec_type = std::remove_cvref_t<Codec>;
   using rule_type = std::remove_cvref_t<Rule>;
 
-  return repeat_t<codec_type, rule_type, max_repetition>{
+  return repeat_t<codec_type, rule_type>{
       .description = UPD_FWD(cdc),
       .rule = UPD_FWD(rule),
   };

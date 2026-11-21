@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <memory_resource>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -47,7 +48,9 @@ struct constant_t {
 
   template<auto, tuple_like2 System>
   [[nodiscard]] constexpr auto
-  decode(stream_interface &src, const System &) const -> result<value_type> {
+  decode(stream_interface &src,
+         const System &,
+         std::pmr::memory_resource *) const -> result<value_type> {
     auto read_value = uword_t{};
     if (auto err = src.read_unsigned(width, &read_value); err) {
       return std::unexpected(found_lite_error{err});
@@ -96,7 +99,9 @@ struct enumeration_constant_t {
 
   template<auto, tuple_like2 System>
   [[nodiscard]] constexpr auto
-  decode(stream_interface &src, const System &) const -> result<value_type> {
+  decode(stream_interface &src,
+         const System &,
+         std::pmr::memory_resource *) const -> result<value_type> {
     auto read_value = uword_t{};
     if (auto err = src.read_unsigned(width, &read_value); err) {
       return std::unexpected(found_lite_error{err});

@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <expected>
+#include <memory_resource>
 #include <tuple>
 #include <utility>
 
@@ -62,7 +63,8 @@ struct checksum_t {
 
   template<auto Id, tuple_like2 System>
   [[nodiscard]] constexpr static auto
-  decode(stream_interface &src, const System &sys) -> result<value_type> {
+  decode(stream_interface &src, const System &sys, std::pmr::memory_resource *)
+      -> result<value_type> {
     auto actual = uword_t{};
     if (auto err = src.read_unsigned(width, &actual); err) {
       return std::unexpected(found_lite_error{err});

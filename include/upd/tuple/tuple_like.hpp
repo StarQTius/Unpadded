@@ -23,7 +23,7 @@ concept ith_tuple_element_gettable =
       {
         get<I>(UPD_FWD(t))
       } -> std::common_reference_with<
-          std::tuple_element_t<I, std::remove_reference_t<Tuple>>>;
+          std::tuple_element_t<I, std::remove_reference_t<Tuple>> &&>;
     };
 
 template<typename Tuple>

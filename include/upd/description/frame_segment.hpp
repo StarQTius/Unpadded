@@ -20,12 +20,6 @@ class frame_segment {
   template<typename...>
   friend class frame;
 
-  template<typename RangeReference>
-  struct ctor_argument {
-    std::remove_reference_t<RangeReference> *ptr;
-    std::pmr::memory_resource *rsrc;
-  };
-
 public:
   using element_type = T;
   using value_type = std::remove_cv_t<T>;
@@ -40,54 +34,58 @@ public:
   using reverse_iterator = std::reverse_iterator<iterator>;
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
-  template<typename RangeReference>
-  constexpr explicit frame_segment(const ctor_argument<RangeReference> &h)
-      : m_vec{std::from_range, std::forward<RangeReference>(*h.ptr),
-              std::pmr::polymorphic_allocator<T>{h.rsrc}} {}
+  constexpr frame_segment() = default;
 
-  constexpr frame_segment(const frame_segment &) = delete;
-  constexpr frame_segment(frame_segment &&) = delete;
+  constexpr explicit frame_segment(std::pmr::memory_resource *rsrc)
+      : m_content{rsrc} {}
 
-  constexpr auto operator=(const frame_segment &) -> frame_segment & = delete;
-  constexpr auto operator=(frame_segment &&) -> frame_segment & = delete;
+  template<std::ranges::range R>
+  constexpr explicit frame_segment(R &&r)
+      : m_content{std::from_range, UPD_FWD(r)} {}
+
+  constexpr frame_segment(const frame_segment &) = default;
+  constexpr frame_segment(frame_segment &&) = default;
+
+  constexpr auto operator=(const frame_segment &) -> frame_segment & = default;
+  constexpr auto operator=(frame_segment &&) -> frame_segment & = default;
 
   constexpr auto
   operator[](size_type idx) const noexcept(release) -> reference {
     UPD_ASSERT(idx < size());
-    return m_vec[idx];
+    return m_content[idx];
   }
 
   constexpr auto front() const noexcept(release) -> reference {
     UPD_ASSERT(size() > 0);
-    return m_vec.front();
+    return m_content.front();
   }
 
   constexpr auto back() const noexcept(release) -> reference {
     UPD_ASSERT(size() > 0);
-    return m_vec.back();
+    return m_content.back();
   }
 
   [[nodiscard]] constexpr auto data() const noexcept(release) -> pointer {
-    return m_vec.data();
+    return m_content.data();
   }
 
   // Iterators
   [[nodiscard]] constexpr auto begin() const noexcept(release) -> iterator {
-    return m_vec.data();
+    return m_content.data();
   }
 
   [[nodiscard]] constexpr auto
   cbegin() const noexcept(release) -> const_iterator {
-    return m_vec.data();
+    return m_content.data();
   }
 
   [[nodiscard]] constexpr auto end() const noexcept(release) -> iterator {
-    return m_vec.data() + m_vec.size();
+    return m_content.data() + m_content.size();
   }
 
   [[nodiscard]] constexpr auto
   cend() const noexcept(release) -> const_iterator {
-    return m_vec.data() + m_vec.size();
+    return m_content.data() + m_content.size();
   }
 
   [[nodiscard]] constexpr auto
@@ -111,7 +109,7 @@ public:
   }
 
   [[nodiscard]] constexpr auto size() const noexcept(release) -> size_type {
-    return m_vec.size();
+    return m_content.size();
   }
 
   template<typename U>
@@ -134,7 +132,7 @@ public:
   }
 
 private:
-  mutable std::pmr::vector<T> m_vec;
+  mutable std::vector<T> m_content;
 };
 
 } // namespace upd
