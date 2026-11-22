@@ -1,5 +1,4 @@
 #include <array>
-#include <print>
 #include <tuple>
 #include <utility>
 #include <variant>
@@ -12,7 +11,6 @@
 #include <upd/record.hpp>
 #include <upd/stream.hpp>
 #include <upd/tuple.hpp>
-#include <upd/utility/static_vector.hpp>
 #include <upd/utility/when_then.hpp>
 
 TEST_CASE("Protocol descriptors", "[descriptor]") {
@@ -298,8 +296,9 @@ TEST_CASE("Frame object", "[descriptor][record]") {
       upd::frame<upd::entry<upd::name{"abc"}, int>,
                  upd::entry<upd::name{"def"}, upd::frame_segment<int>>>;
 
-  upd::regular_record auto frm =
-      frame_type{"abc"_kw2 = 42, "def"_kw2 = {13, 17, 19}};
+  upd::regular_record auto frm = frame_type{};
+  frm["abc"_kw2] = 42;
+  frm["def"_kw2] = upd::frame_segment<int>{&frm.allocator(), {13, 17, 19}};
 
   SECTION("Get elements from a frame") {
     REQUIRE(frm["abc"_kw2] == 42);

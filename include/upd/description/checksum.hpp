@@ -2,7 +2,6 @@
 
 #include <cstddef>
 #include <expected>
-#include <memory_resource>
 #include <tuple>
 #include <utility>
 
@@ -17,6 +16,7 @@
 #include "../upd.hpp"
 #include "../utility/constexpr.hpp"
 #include "codec_info.hpp"
+#include "frame_allocator.hpp"
 
 namespace upd::descriptor {
 
@@ -63,7 +63,7 @@ struct checksum_t {
 
   template<auto Id, tuple_like2 System>
   [[nodiscard]] constexpr static auto
-  decode(stream_interface &src, const System &sys, std::pmr::memory_resource *)
+  decode(stream_interface &src, const System &sys, frame_allocator *)
       -> result<value_type> {
     auto actual = uword_t{};
     if (auto err = src.read_unsigned(width, &actual); err) {

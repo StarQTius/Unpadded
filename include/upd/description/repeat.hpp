@@ -4,12 +4,9 @@
 #include <concepts>
 #include <cstddef>
 #include <expected>
-#include <memory_resource>
-#include <ranges>
 #include <tuple>
 #include <type_traits>
 #include <utility>
-#include <vector>
 
 #include "../algebra/system.hpp"
 #include "../description.hpp"
@@ -23,6 +20,7 @@
 #include "../utility/constexpr.hpp"
 #include "../utility/deferred_caster.hpp"
 #include "codec.hpp"
+#include "frame_allocator.hpp"
 #include "frame_segment.hpp"
 
 namespace upd::descriptor {
@@ -79,9 +77,8 @@ struct repeat_t {
 
   template<auto Id, tuple_like2 System>
   [[nodiscard]] constexpr auto
-  decode(stream_interface &src,
-         const System &sys,
-         std::pmr::memory_resource *rsrc) const -> result<value_type> {
+  decode(stream_interface &src, const System &sys, frame_allocator *alloc) const
+      -> result<value_type> {
     namespace updv = upd::tuple_views;
 
     using element_type = typename Description::value_type;
@@ -92,18 +89,18 @@ struct repeat_t {
           negative_repetition_count{Id.string, static_cast<word_t>(len)}};
     }
 
-    auto retval = std::vector<element_type>{};
+    auto retval = frame_segment<element_type>{alloc};
     auto i = 0uz;
     while (i < static_cast<std::size_t>(len)) {
-      auto maybe_value = description.template decode<Id>(src, sys, rsrc);
+      auto maybe_value = description.template decode<Id>(src, sys, alloc);
       if (!maybe_value) {
         return std::unexpected{std::move(maybe_value).error()};
       }
-      retval.push_back(std::move(maybe_value).value());
+      retval.emplace_back(std::move(maybe_value).value());
       i += description.bitsize(retval.back());
     }
 
-    return value_type{std::move(retval)};
+    return retval;
   }
 
   [[nodiscard]] constexpr auto

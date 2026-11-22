@@ -4,7 +4,6 @@
 #include <cstddef>
 #include <expected>
 #include <functional>
-#include <memory_resource>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -33,6 +32,7 @@
 #include "../utility/is_instance_of.hpp"
 #include "../utility/template_traits.hpp"
 #include "../utility/with_sequence.hpp"
+#include "frame_allocator.hpp"
 
 namespace upd::descriptor {
 
@@ -132,9 +132,8 @@ struct one_of_t {
 
   template<auto Id, tuple_like2 System>
   [[nodiscard]] constexpr auto
-  decode(stream_interface &src,
-         const System &sys,
-         std::pmr::memory_resource *rsrc) const -> result<value_type> {
+  decode(stream_interface &src, const System &sys, frame_allocator *alloc) const
+      -> result<value_type> {
     using namespace upd::tuple_views;
 
     auto k = solve_for(code_of<Id>, sys);
@@ -151,7 +150,7 @@ struct one_of_t {
       auto length_sum = fold_left(lengths, 0uz, std::plus<>{});
       auto length_rule = std::tuple{length_of<Id> = length_sum};
       auto full_sys = concat(sys, length_rule);
-      auto maybe_alt = descr.template decode<Id>(src, full_sys, rsrc);
+      auto maybe_alt = descr.template decode<Id>(src, full_sys, alloc);
       if (!maybe_alt) {
         return std::unexpected{maybe_alt.error()};
       }

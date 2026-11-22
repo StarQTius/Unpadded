@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstddef>
-#include <memory_resource>
 #include <tuple>
 #include <type_traits>
 
@@ -13,6 +12,7 @@
 #include "../upd.hpp"
 #include "../utility/constexpr.hpp"
 #include "codec_info.hpp"
+#include "frame_allocator.hpp"
 
 namespace upd::descriptor {
 
@@ -47,7 +47,7 @@ struct shadow_enumeration_field_t {
 
   template<auto Id, tuple_like2 System>
   [[nodiscard]] constexpr static auto
-  decode(stream_interface &, const System &sys, std::pmr::memory_resource *)
+  decode(stream_interface &, const System &sys, frame_allocator *)
       -> result<value_type> {
     return solve_for(value_of<Id>, sys);
   }

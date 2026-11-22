@@ -4,30 +4,28 @@
 #include <array>
 #include <cstddef>
 #include <format>
-#include <memory>
-#include <memory_resource>
 #include <ranges>
 #include <tuple>
 #include <utility>
-#include <vector>
 
+#include "../record/apply.hpp"
 #include "../record/as_tuple.hpp"
 #include "../record/entry.hpp"
 #include "../record/record.hpp"
 #include "../record/record_element.hpp"
 #include "../record/record_like.hpp"
-#include "../record/to.hpp"
-#include "../record/transform.hpp"
 #include "../tuple/for_each.hpp"
 #include "../upd.hpp"
+#include "../utility/collector_of.hpp"
 #include "../utility/get.hpp"
 #include "../utility/is_instance_of.hpp"
-#include "frame_segment.hpp"
+#include "../variadic/template_box.hpp"
+#include "frame_allocator.hpp"
 
 namespace upd {
 
 template<typename...>
-class frame;
+class frame; // IWYU pragma: keep
 
 template<auto... Identifiers, typename... Ts>
 class frame<entry<Identifiers, Ts>...> {
@@ -41,19 +39,38 @@ class frame<entry<Identifiers, Ts>...> {
   using storage_type = record<entry<Identifiers, Ts>...>;
 
 public:
-  constexpr frame() = default;
+  constexpr frame() : m_alloc{m_buf, sizeof m_buf} {}
 
   template<typename... Entries>
   constexpr explicit frame(Entries &&...entries)
-      : m_storage{UPD_FWD(entries)...} {}
+      : m_alloc{m_buf, sizeof m_buf}, m_storage{UPD_FWD(entries)...} {}
 
-  constexpr frame(const frame &other) = default;
+  constexpr frame(const frame &other)
+      : m_alloc{other.m_alloc, m_buf, sizeof m_buf},
+        m_storage{other.m_storage} {}
 
-  constexpr frame(frame &&other) = default;
+  constexpr frame(frame &&other)
+      : m_alloc{other.m_alloc, m_buf, sizeof m_buf},
+        m_storage{std::move(other).m_storage} {}
 
-  constexpr auto operator=(const frame &other) -> frame & = default;
+  constexpr auto operator=(const frame &other) -> frame & {
+    other.m_alloc.m_dest = &m_alloc;
+    m_storage = other.m_storage;
 
-  constexpr auto operator=(frame &&other) -> frame & = default;
+    return *this;
+  }
+
+  constexpr auto operator=(frame &&other) -> frame & {
+    other.m_alloc.m_dest = &m_alloc;
+    m_storage = std::move(other).m_storage;
+
+    return *this;
+  }
+
+  [[nodiscard]] constexpr auto
+  allocator() const noexcept(release) -> frame_allocator & {
+    return m_alloc;
+  }
 
   template<typename Self, auto Id>
   [[nodiscard]] constexpr auto
@@ -62,6 +79,8 @@ public:
   }
 
 private:
+  alignas(std::max_align_t) char m_buf[buffer_size];
+  mutable frame_allocator m_alloc;
   storage_type m_storage;
 };
 

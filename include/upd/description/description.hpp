@@ -6,7 +6,6 @@
 #include <expected>
 #include <iosfwd>
 #include <iterator>
-#include <memory_resource>
 #include <ranges>
 #include <tuple>
 #include <type_traits>
@@ -24,6 +23,7 @@
 #include "../record/instantiate.hpp"
 #include "../record/name.hpp"
 #include "../record/record.hpp"
+#include "../record/record_element.hpp"
 #include "../record/record_like.hpp"
 #include "../record/to.hpp"
 #include "../record/transform.hpp"
@@ -48,6 +48,7 @@
 #include "../utility/is_instance_of.hpp"
 #include "codec.hpp"
 #include "frame.hpp"
+#include "frame_allocator.hpp"
 #include "variable.hpp"
 
 namespace upd {
@@ -216,7 +217,7 @@ public:
         | updv::values;
 
     auto retval = frame_type{};
-    if (auto maybe_storage = decode<Id>(src, sys, nullptr)) {
+    if (auto maybe_storage = decode<Id>(src, sys, &retval.allocator())) {
       retval.m_storage = std::move(*maybe_storage);
       return retval;
     } else {
@@ -235,7 +236,7 @@ public:
   [[nodiscard]] constexpr auto
   decode(stream_interface &src,
          const System &presys,
-         std::pmr::memory_resource *rsrc) const -> result<value_type> {
+         frame_allocator *alloc) const -> result<value_type> {
     namespace updv = record_views;
 
     constexpr auto cdinf = codec_info{
@@ -278,7 +279,7 @@ public:
           | tuple_views::to<std::tuple>;
 
       auto sys = tuple_views::concat(presys, rules);
-      if (auto maybe_value = field.template decode<Id>(src, sys, rsrc);
+      if (auto maybe_value = field.template decode<Id>(src, sys, alloc);
           maybe_value) {
         get_or<Id>(*maybe_retval, std::ignore) = *std::move(maybe_value);
       } else {

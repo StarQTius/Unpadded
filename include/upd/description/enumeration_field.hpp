@@ -2,7 +2,6 @@
 
 #include <cstddef>
 #include <expected>
-#include <memory_resource>
 #include <tuple>
 #include <type_traits>
 
@@ -14,6 +13,7 @@
 #include "../upd.hpp"
 #include "../utility/constexpr.hpp"
 #include "codec_info.hpp"
+#include "frame_allocator.hpp"
 
 namespace upd::descriptor {
 
@@ -56,7 +56,7 @@ struct enumeration_field_t {
 
   template<auto, tuple_like2 System>
   [[nodiscard]] constexpr static auto
-  decode(stream_interface &src, const System &, std::pmr::memory_resource *)
+  decode(stream_interface &src, const System &, frame_allocator *)
       -> result<value_type> {
     auto err = lite_error::none;
     auto raw = uword_t{};

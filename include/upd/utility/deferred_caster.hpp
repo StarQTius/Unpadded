@@ -1,9 +1,13 @@
 #pragma once
 
-#include <compare>
+#include <concepts>
 #include <cstddef>
 #include <iterator>
+#include <ranges>
 #include <tuple>
+#include <type_traits>
+#include <variant>
+#include <version>
 
 #include "../record.hpp"
 #include "../tuple/find.hpp"

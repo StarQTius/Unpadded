@@ -2,7 +2,6 @@
 
 #include <concepts>
 #include <cstddef>
-#include <memory_resource>
 #include <tuple>
 #include <type_traits>
 
@@ -13,6 +12,7 @@
 #include "../stream/stream_interface.hpp"
 #include "../tuple/tuple_like.hpp"
 #include "../utility/constexpr.hpp"
+#include "frame_allocator.hpp"
 
 namespace upd {
 
@@ -32,14 +32,14 @@ concept codec =
                 upd::record<> rec,
                 std::tuple<> t,
                 stream_interface &st,
-                std::pmr::memory_resource *rsrc) {
+                frame_allocator *alloc) {
          {
            x.template rules<anon>(rec, rec, expr<codec_info{}>)
          } -> upd::tuple_like2;
          {
            x.template encode<anon>(in, st, t)
          } -> std::convertible_to<result<void>>;
-         { v = *x.template decode<anon>(st, t, rsrc) };
+         { v = *x.template decode<anon>(st, t, alloc) };
          { x.bitsize(v) } -> std::convertible_to<std::size_t>;
        };
 
